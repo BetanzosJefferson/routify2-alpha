@@ -46,6 +46,16 @@ export const trips = pgTable("trips", {
   visibility: text("visibility").default("publicado"),
   tripStatus: text("trip_status"), // Estado del viaje
   routeId: integer("route_id").notNull(),
+  departureDate: timestamp("departure_date").notNull(),
+  departureTime: text("departure_time").notNull(),
+  arrivalTime: text("arrival_time").notNull(),
+  availableSeats: integer("available_seats").notNull(),
+  price: doublePrecision("price").default(0),
+  segmentPrices: json("segment_prices").notNull(),
+  isSubTrip: boolean("is_sub_trip").default(false),
+  parentTripId: integer("parent_trip_id"),
+  segmentOrigin: text("segment_origin"),
+  segmentDestination: text("segment_destination"),
 });
 
 export const insertTripSchema = createInsertSchema(trips);
