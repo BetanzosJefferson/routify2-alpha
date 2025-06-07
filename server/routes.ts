@@ -1028,6 +1028,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const mainTrip = await storage.createTrip(mainTripToCreate);
         createdTrips.push(mainTrip);
         
+        // Skip creating individual sub-trips since all trip data is now stored in trip_data JSON
+        /*
         // Create all sub-trips
         for (const segment of allSegments) {
           // Find the segment data (price and times) from user input or calculate proportionally
@@ -1158,6 +1160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const subTrip = await storage.createTrip(subTripToCreate);
           createdTrips.push(subTrip);
         }
+        */
       }
       
       res.status(201).json(createdTrips);
