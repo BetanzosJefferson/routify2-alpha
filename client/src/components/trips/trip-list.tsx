@@ -159,8 +159,38 @@ export function TripList() {
   // Extract unique locations for autocomplete
   const locationOptions = useMemo(() => {
     if (!allTrips) return [];
-    // Extract locations from ALL fetched trips, as a user might search for a subtrip origin/destination
-    return extractLocationsFromTrips(allTrips);
+    
+    // Extract locations from trips with new tripData structure
+    const locations: string[] = [];
+    
+    allTrips.forEach(trip => {
+      // Add route-based locations
+      if (trip.route?.origin) locations.push(trip.route.origin);
+      if (trip.route?.destination) locations.push(trip.route.destination);
+      if (trip.route?.stops) locations.push(...trip.route.stops);
+      
+      // Extract locations from tripData JSON
+      if (trip.tripData && typeof trip.tripData === 'object') {
+        const tripDataObj = trip.tripData as any;
+        
+        // Extract from subTrips array
+        if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
+          tripDataObj.subTrips.forEach((subTrip: any) => {
+            if (subTrip.origin) locations.push(subTrip.origin);
+            if (subTrip.destination) locations.push(subTrip.destination);
+          });
+        }
+        
+        // Extract from parentTrip
+        if (tripDataObj.parentTrip) {
+          if (tripDataObj.parentTrip.origin) locations.push(tripDataObj.parentTrip.origin);
+          if (tripDataObj.parentTrip.destination) locations.push(tripDataObj.parentTrip.destination);
+        }
+      }
+    });
+    
+    // Remove duplicates and sort
+    return Array.from(new Set(locations)).sort();
   }, [allTrips]);
 
   // Update search params in real-time as the user types
@@ -210,24 +240,59 @@ export function TripList() {
     setSelectedTrip(null);
   };
 
+  // Helper function to get trip display data from tripData
+  const getTripDisplayData = (trip: any) => {
+    if (!trip.tripData || typeof trip.tripData !== 'object') {
+      // Fallback to route data
+      return {
+        origin: trip.route?.origin || 'Origen',
+        destination: trip.route?.destination || 'Destino',
+        price: trip.price || 0,
+        hasSubTrips: false,
+        isDirectTrip: true
+      };
+    }
+
+    const tripDataObj = trip.tripData as any;
+    
+    // If we have subTrips, show the first one for display
+    if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips) && tripDataObj.subTrips.length > 0) {
+      const firstSubTrip = tripDataObj.subTrips[0];
+      return {
+        origin: firstSubTrip.origin || trip.route?.origin || 'Origen',
+        destination: firstSubTrip.destination || trip.route?.destination || 'Destino',
+        price: firstSubTrip.price || trip.price || 0,
+        hasSubTrips: tripDataObj.subTrips.length > 1,
+        isDirectTrip: false
+      };
+    }
+    
+    // If we have parentTrip data, use that
+    if (tripDataObj.parentTrip) {
+      return {
+        origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
+        destination: tripDataObj.parentTrip.destination || trip.route?.destination || 'Destino',
+        price: tripDataObj.parentTrip.price || trip.price || 0,
+        hasSubTrips: false,
+        isDirectTrip: true
+      };
+    }
+
+    // Default fallback
+    return {
+      origin: trip.route?.origin || 'Origen',
+      destination: trip.route?.destination || 'Destino',
+      price: trip.price || 0,
+      hasSubTrips: false,
+      isDirectTrip: true
+    };
+  };
+
   // Función para ordenar y filtrar los viajes según el criterio seleccionado
   const sortedAndFilteredTrips = useMemo(() => {
-    // The `trips` data already contains the `isSubTrip` filter from the API call if no specific search is active.
-    // If a search is active, it contains all relevant trips (subtrips included if they match search criteria).
     if (!trips) return [];
 
-    // Filter `trips` only if there's no active origin/destination/seats search AND `isSubTrip` is explicitly 'false' in searchParams.
-    // This handles the default view to only show non-subtrips.
-    // If a search is active, the API should return what matches, including subtrips if they fit the search.
-    let currentTrips = trips;
-    if (!origin && !destination && !seats && searchParams.isSubTrip === 'false') {
-        currentTrips = trips.filter(trip => !trip.isSubTrip);
-    }
-    // If origin/destination/seats are provided, we assume the API already returned relevant subtrips if they match.
-    // So, no extra filter needed here based on `isSubTrip` if a search is active.
-
-
-    return [...currentTrips].sort((a, b) => {
+    return [...trips].sort((a, b) => {
       if (sortMethod === "departure") {
         const getTimeValue = (timeStr: string) => {
           const [time, period] = timeStr.split(' ');
@@ -241,13 +306,8 @@ export function TripList() {
       }
 
       if (sortMethod === "price") {
-        // Use the correct price for the trip, considering segment prices for subtrips if applicable
-        const priceA = a.isSubTrip && Array.isArray(a.segmentPrices) && a.segmentPrices.length > 0
-          ? a.segmentPrices[0]?.price || a.price
-          : a.price;
-        const priceB = b.isSubTrip && Array.isArray(b.segmentPrices) && b.segmentPrices.length > 0
-          ? b.segmentPrices[0]?.price || b.price
-          : b.price;
+        const priceA = getTripDisplayData(a).price;
+        const priceB = getTripDisplayData(b).price;
         return priceA - priceB;
       }
 
@@ -274,7 +334,7 @@ export function TripList() {
       }
       return 0;
     });
-  }, [trips, sortMethod, origin, destination, seats, searchParams.isSubTrip]); // Added dependencies
+  }, [trips, sortMethod]);
 
   return (
     <div className="py-6">
@@ -404,127 +464,138 @@ export function TripList() {
         </div>
       ) : sortedAndFilteredTrips && sortedAndFilteredTrips.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-          {sortedAndFilteredTrips.map((trip) => (
-            <div key={trip.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white">
-              <div className="border-b border-gray-100 p-3 flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="mr-3 h-8 w-8 flex-shrink-0">
-                    {trip.companyLogo ? (
-                      <img
-                        src={trip.companyLogo}
-                        alt={trip.companyName || "Logo de transportista"}
-                        className="h-full w-full object-cover rounded-full"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-gray-100 rounded-full flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    {trip.companyName && (
-                      <span className="text-xs text-gray-600 mb-1">
-                        {trip.companyName}
-                      </span>
-                    )}
-                    <div className="text-sm font-medium">
-                      {trip.isSubTrip ? (
-                        <span>Conexión · {trip.availableSeats} asientos disponibles</span>
+          {sortedAndFilteredTrips.map((trip) => {
+            const displayData = getTripDisplayData(trip);
+            return (
+              <div key={trip.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white">
+                <div className="border-b border-gray-100 p-3 flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="mr-3 h-8 w-8 flex-shrink-0">
+                      {trip.companyLogo ? (
+                        <img
+                          src={trip.companyLogo}
+                          alt={trip.companyName || "Logo de transportista"}
+                          className="h-full w-full object-cover rounded-full"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
                       ) : (
-                        <span>Directo · {trip.availableSeats} asientos disponibles</span>
+                        <div className="h-full w-full bg-gray-100 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-                <div className="text-base font-medium">
-                  {formatPrice(trip.isSubTrip && Array.isArray(trip.segmentPrices) && trip.segmentPrices.length > 0
-                    ? trip.segmentPrices[0]?.price || trip.price
-                    : trip.price)}
-                  <span className="text-xs text-gray-500 ml-1">MXN</span>
-                </div>
-              </div>
-
-              <div className="p-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="flex flex-col">
-                    <div className="text-lg font-bold">
-                      {formatTripTime(trip.departureTime, true, 'pretty')}
-                    </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {trip.isSubTrip ? trip.segmentOrigin : trip.route.origin}
+                    <div className="flex flex-col">
+                      {trip.companyName && (
+                        <span className="text-xs text-gray-600 mb-1">
+                          {trip.companyName}
+                        </span>
+                      )}
+                      <div className="text-sm font-medium">
+                        {displayData.isDirectTrip ? (
+                          <span>Directo · {trip.availableSeats} asientos disponibles</span>
+                        ) : (
+                          <span>
+                            {displayData.hasSubTrips ? 'Múltiples opciones' : 'Conexión'} · {trip.availableSeats} asientos disponibles
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-base font-medium">
+                    {formatPrice(displayData.price)}
+                    <span className="text-xs text-gray-500 ml-1">MXN</span>
+                  </div>
+                </div>
 
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="text-xs text-gray-500 mb-1">
-                      {calculateDuration(trip.departureTime, trip.arrivalTime)}
+                <div className="p-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-col">
+                      <div className="text-lg font-bold">
+                        {formatTripTime(trip.departureTime, true, 'pretty')}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        {displayData.origin}
+                      </div>
                     </div>
-                    <div className="relative w-full flex items-center justify-center">
-                      <div className="border-t border-gray-300 w-full"></div>
-                      <div className="absolute">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14"></path>
-                          <path d="M12 5l7 7-7 7"></path>
-                        </svg>
+
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="text-xs text-gray-500 mb-1">
+                        {calculateDuration(trip.departureTime, trip.arrivalTime)}
+                      </div>
+                      <div className="relative w-full flex items-center justify-center">
+                        <div className="border-t border-gray-300 w-full"></div>
+                        <div className="absolute">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5l7 7-7 7"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end">
+                      <div className="text-lg font-bold">
+                        {formatTripTime(trip.arrivalTime, true, 'pretty')}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1 text-right">
+                        {displayData.destination}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end">
-                    <div className="text-lg font-bold">
-                      {formatTripTime(trip.arrivalTime, true, 'pretty')}
+                  {/* Mostrar mensaje descriptivo para viajes que cruzan la medianoche */}
+                  {(extractDayIndicator(trip.departureTime) > 0 || extractDayIndicator(trip.arrivalTime) > 0) ? (
+                    <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                      {formatTripTime(trip.departureTime, true, 'descriptive', trip.departureDate)}
                     </div>
-                    <div className="text-sm text-gray-500 mt-1 text-right">
-                      {trip.isSubTrip ? trip.segmentDestination : trip.route.destination}
-                    </div>
-                  </div>
-                </div>
+                  ) : null}
 
-                {/* Mostrar mensaje descriptivo para viajes que cruzan la medianoche */}
-                {(extractDayIndicator(trip.departureTime) > 0 || extractDayIndicator(trip.arrivalTime) > 0) ? (
-                  <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="12" y1="8" x2="12" y2="12"></line>
-                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    {formatTripTime(trip.departureTime, true, 'descriptive', trip.departureDate)}
-                  </div>
-                ) : null}
+                  <div className="mt-4 flex items-center justify-between">
+                    {trip.assignedVehicle?.brand && (
+                      <div className="text-sm">
+                        <span className="capitalize">{trip.assignedVehicle.brand} {trip.assignedVehicle.model}</span>
+                      </div>
+                    )}
 
-                <div className="mt-4 flex items-center justify-between">
-                  {trip.vehicle?.name && (
-                    <div className="text-sm">
-                      <span className="capitalize">{trip.vehicle.name}</span>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleReserve(trip)}
+                      disabled={trip.availableSeats <= 0}
+                    >
+                      Reservar
+                    </Button>
+                  </div>
+
+                  {displayData.hasSubTrips && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <span className="text-xs text-gray-500">
+                        Múltiples opciones de ruta disponibles
+                      </span>
                     </div>
                   )}
 
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleReserve(trip)}
-                    disabled={trip.availableSeats <= 0}
-                  >
-                    Reservar
-                  </Button>
+                  {trip.numStops > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <span className="text-xs text-gray-500">
+                        {trip.numStops} paradas en ruta
+                      </span>
+                    </div>
+                  )}
                 </div>
-
-                {!trip.isSubTrip && trip.numStops > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">
-                      {trip.numStops} paradas en ruta
-                    </span>
-                  </div>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <Card>
