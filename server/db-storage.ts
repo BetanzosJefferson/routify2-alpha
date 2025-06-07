@@ -886,68 +886,61 @@ export class DatabaseStorage implements IStorage {
         console.log(`Viaje ${trip.id}: Encontrado conductor asignado ${assignedDriver.firstName} ${assignedDriver.lastName}`);
       }
       
-      // For subtrips, check against segment origin and destination
-      if (trip.isSubTrip && trip.segmentOrigin && trip.segmentDestination) {
-        console.log(`[SUBTRIP-DEBUG] Procesando subTrip ${trip.id}: ${trip.segmentOrigin} -> ${trip.segmentDestination}`);
-        const originMatch = !params.origin || trip.segmentOrigin.toLowerCase().includes(params.origin.toLowerCase());
-        const destMatch = !params.destination || trip.segmentDestination.toLowerCase().includes(params.destination.toLowerCase());
+      // NEW LOGIC: With single-record approach, check tripData for segment matches
+      if (params.origin || params.destination) {
+        console.log(`[searchTrips-v3] Checking trip ${trip.id} for origin/destination filters`);
         
-        console.log(`[SUBTRIP-DEBUG] SubTrip ${trip.id}: originMatch=${originMatch}, destMatch=${destMatch}, params.origin=${params.origin}`);
+        // Parse tripData to check subTrips for matches
+        let hasMatchingSegment = false;
         
-        if (originMatch && destMatch) {
-          console.log(`[PUSH-2] *** AGREGANDO SUBTRIP ${trip.id} (isSubTrip: ${trip.isSubTrip}) - params.origin: ${params.origin} ***`);
-          tripsWithRouteInfo.push({
-            ...trip,
-            route,
-            // El estado del viaje ya no se utiliza
-            numStops: route.stops.length,
-            companyName: companyData.companyName,
-            companyLogo: companyData.companyLogo,
-            assignedVehicle,
-            assignedDriver
-          });
-        } else {
-          console.log(`[SUBTRIP-DEBUG] *** NO AGREGANDO SUBTRIP ${trip.id} - no coincide con filtros ***`);
+        if (trip.tripData && typeof trip.tripData === 'object') {
+          const tripDataObj = trip.tripData as any;
+          
+          if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
+            console.log(`[searchTrips-v3] Trip ${trip.id} has ${tripDataObj.subTrips.length} subTrips to check`);
+            
+            for (const subTrip of tripDataObj.subTrips) {
+              const originMatch = !params.origin || subTrip.origin?.toLowerCase().includes(params.origin.toLowerCase());
+              const destMatch = !params.destination || subTrip.destination?.toLowerCase().includes(params.destination.toLowerCase());
+              
+              if (originMatch && destMatch) {
+                console.log(`[searchTrips-v3] Found matching segment: ${subTrip.origin} -> ${subTrip.destination}`);
+                hasMatchingSegment = true;
+                break;
+              }
+            }
+          }
+          
+          // Also check parentTrip if no subTrip matches
+          if (!hasMatchingSegment && tripDataObj.parentTrip) {
+            const parentTrip = tripDataObj.parentTrip;
+            const originMatch = !params.origin || parentTrip.origin?.toLowerCase().includes(params.origin.toLowerCase());
+            const destMatch = !params.destination || parentTrip.destination?.toLowerCase().includes(params.destination.toLowerCase());
+            
+            if (originMatch && destMatch) {
+              console.log(`[searchTrips-v3] Found matching parentTrip: ${parentTrip.origin} -> ${parentTrip.destination}`);
+              hasMatchingSegment = true;
+            }
+          }
         }
-        continue;
+        
+        if (!hasMatchingSegment) {
+          console.log(`[searchTrips-v3] No matching segments found in trip ${trip.id}, skipping`);
+          continue;
+        }
       }
       
-      // Para viajes principales: Si hay filtro de origen/destino, EXCLUIR viajes padre completamente
-      if ((params.origin || params.destination) && !trip.isSubTrip) {
-        console.log(`[searchTrips-FINAL] *** EXCLUYENDO VIAJE PADRE ${trip.id} (isSubTrip: ${trip.isSubTrip}) debido a filtro específico de origen/destino ***`);
-        continue;
-      }
-      
-      // For main trips, check all stops for matching origin and destination
-      let originMatch = !params.origin;
-      let destMatch = !params.destination;
-      
-      if (params.origin) {
-        const searchOrigin = params.origin.toLowerCase();
-        originMatch = route.origin.toLowerCase().includes(searchOrigin) || 
-                      route.stops.some(stop => stop.toLowerCase().includes(searchOrigin));
-      }
-      
-      if (params.destination) {
-        const searchDest = params.destination.toLowerCase();
-        destMatch = route.destination.toLowerCase().includes(searchDest) || 
-                    route.stops.some(stop => stop.toLowerCase().includes(searchDest));
-      }
-      
-      // Solo procesar si coinciden origen y destino
-      if (originMatch && destMatch) {
-        console.log(`[PUSH-3] Agregando mainTrip ${trip.id} (isSubTrip: ${trip.isSubTrip}) - params.origin: ${params.origin}`);
-        tripsWithRouteInfo.push({
-          ...trip,
-          route,
-          // El estado del viaje ya no se utiliza
-          numStops: route.stops.length,
-          companyName: companyData.companyName,
-          companyLogo: companyData.companyLogo,
-          assignedVehicle,
-          assignedDriver
-        });
-      }
+      // Add the trip to results (filtering already done above)
+      console.log(`[PUSH-3] Agregando trip ${trip.id} - params.origin: ${params.origin}`);
+      tripsWithRouteInfo.push({
+        ...trip,
+        route,
+        numStops: route.stops.length,
+        companyName: companyData.companyName,
+        companyLogo: companyData.companyLogo,
+        assignedVehicle,
+        assignedDriver
+      });
     }
     
     console.timeEnd('searchTrips-optimized');
