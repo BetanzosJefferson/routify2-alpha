@@ -149,12 +149,22 @@ export function TripList() {
         Object.entries(paramsToFetch).filter(([_, v]) => v !== undefined) as [string, string][]
       ).toString();
 
+      console.log("[TripList useQuery] Fetching trips with params:", paramsToFetch);
+      console.log("[TripList useQuery] Query string:", queryString);
+
       const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
       if (!response.ok) throw new Error("Failed to fetch trips");
-      return await response.json();
+      const result = await response.json();
+      
+      console.log("[TripList useQuery] Response received:", result);
+      console.log("[TripList useQuery] Number of trips:", result?.length || 0);
+      
+      return result;
     },
     enabled: true // Always run the query based on searchParams
   });
+
+  console.log("[TripList DEBUG] Query state:", { trips, isLoading, isError, tripsLength: trips?.length });
 
   // Extract unique locations for autocomplete
   const locationOptions = useMemo(() => {
@@ -290,8 +300,12 @@ export function TripList() {
 
   // Función para ordenar y filtrar los viajes según el criterio seleccionado
   const sortedAndFilteredTrips = useMemo(() => {
+    console.log("[sortedAndFilteredTrips] Datos de viajes recibidos:", trips);
+    console.log("[sortedAndFilteredTrips] Cantidad de viajes:", trips?.length || 0);
+    
     if (!trips) return [];
 
+    console.log("[sortedAndFilteredTrips] Procesando viajes para ordenamiento...");
     return [...trips].sort((a, b) => {
       if (sortMethod === "departure") {
         const getTimeValue = (timeStr: string) => {
