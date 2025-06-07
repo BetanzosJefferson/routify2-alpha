@@ -711,13 +711,13 @@ export class DatabaseStorage implements IStorage {
     
     // 2. FILTROS ADICIONALES
     
-    // Aplicar filtro de fecha o rango de fechas usando JSONB
+    // Aplicar filtro de fecha o rango de fechas usando departure_date column
     if (params.dateRange && params.dateRange.length > 0) {
       console.log(`[searchTrips-v2] Filtro por rango de fechas optimizado:`, params.dateRange);
       
-      // Crear condiciones para cada fecha usando JSONB
+      // Crear condiciones para cada fecha usando la columna departure_date
       const dateConditions = params.dateRange.map(date => {
-        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
+        return eq(sql`DATE(${schema.trips.departureDate})`, date);
       });
       
       // Combinar todas las condiciones de fecha con OR
@@ -729,7 +729,7 @@ export class DatabaseStorage implements IStorage {
     } else if (params.date) {
       console.log(`[searchTrips-v2] Filtro de fecha individual: ${params.date}`);
       
-      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
+      condiciones.push(sql`DATE(${schema.trips.departureDate}) = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
