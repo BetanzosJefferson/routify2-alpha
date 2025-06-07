@@ -39,6 +39,11 @@ declare global {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
+  // Verificar si la contraseña existe
+  if (!stored) {
+    return false;
+  }
+  
   // Verificar si la contraseña está en formato bcrypt
   if (stored.startsWith('$2')) {
     // Usar bcrypt para comparar
@@ -107,7 +112,22 @@ export function setupAuthentication(app: Express) {
         try {
           // Buscar el usuario por email
           const userResults = await db
-            .select()
+            .select({
+              id: users.id,
+              username: users.username,
+              email: users.email,
+              password_hash: users.password_hash,
+              firstName: users.firstName,
+              lastName: users.lastName,
+              role: users.role,
+              company: users.company,
+              companyId: users.companyId,
+              profilePicture: users.profilePicture,
+              createdAt: users.createdAt,
+              updatedAt: users.updatedAt,
+              invitedById: users.invitedById,
+              commissionPercentage: users.commissionPercentage
+            })
             .from(users)
             .where(eq(users.email, email));
 
@@ -117,8 +137,13 @@ export function setupAuthentication(app: Express) {
 
           const user = userResults[0];
           
+          console.log("Stored password hash:", user.password_hash);
+          console.log("Supplied password:", password);
+          
           // Verificar la contraseña
           const isPasswordValid = await comparePasswords(password, user.password_hash);
+          console.log("Password validation result:", isPasswordValid);
+          
           if (!isPasswordValid) {
             return done(null, false, { message: "Credenciales inválidas" });
           }
