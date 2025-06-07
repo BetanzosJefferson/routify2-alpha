@@ -118,13 +118,13 @@ export function setupAuthentication(app: Express) {
           const user = userResults[0];
           
           // Verificar la contraseña
-          const isPasswordValid = await comparePasswords(password, user.password);
+          const isPasswordValid = await comparePasswords(password, user.password_hash);
           if (!isPasswordValid) {
             return done(null, false, { message: "Credenciales inválidas" });
           }
 
           // Eliminar la contraseña del objeto usuario
-          const { password: _, ...userWithoutPassword } = user;
+          const { password_hash: _, ...userWithoutPassword } = user;
           return done(null, userWithoutPassword);
         } catch (error) {
           return done(error);
