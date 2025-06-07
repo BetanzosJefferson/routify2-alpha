@@ -158,54 +158,12 @@ export function TripList() {
     enabled: true // Always run the query based on searchParams
   });
 
-  // Extract unique locations for autocomplete
+  // Extract unique locations for autocomplete using the proper utility function
   const locationOptions = useMemo(() => {
     if (!allTrips) return [];
     
-    // Extract locations from trips with new tripData structure
-    const locations: string[] = [];
-    
-    allTrips.forEach(trip => {
-      // Add route-based locations (fallback)
-      if (trip.route?.origin) locations.push(trip.route.origin);
-      if (trip.route?.destination) locations.push(trip.route.destination);
-      if (trip.route?.stops) locations.push(...trip.route.stops);
-      
-      // Extract locations from tripData JSON - this is the primary source
-      if (trip.tripData && typeof trip.tripData === 'object') {
-        const tripDataObj = trip.tripData as any;
-        
-        // Extract from parentTrip first (main route)
-        if (tripDataObj.parentTrip) {
-          if (tripDataObj.parentTrip.origin) {
-            locations.push(tripDataObj.parentTrip.origin);
-          }
-          if (tripDataObj.parentTrip.destination) {
-            locations.push(tripDataObj.parentTrip.destination);
-          }
-        }
-        
-        // Extract from subTrips array (intermediate stops)
-        if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
-          tripDataObj.subTrips.forEach((subTrip: any) => {
-            if (subTrip.origin && subTrip.origin !== tripDataObj.parentTrip?.origin) {
-              locations.push(subTrip.origin);
-            }
-            if (subTrip.destination && subTrip.destination !== tripDataObj.parentTrip?.destination) {
-              locations.push(subTrip.destination);
-            }
-          });
-        }
-      }
-    });
-    
-    // Remove duplicates, filter out undefined/null, and sort
-    const filteredLocations = Array.from(new Set(locations))
-      .filter(location => location && location !== 'undefined' && location.trim() !== '')
-      .sort();
-    
-    console.log("[locationOptions] Extracted locations:", filteredLocations);
-    return filteredLocations;
+    // Use the utility function to extract and format locations properly
+    return extractLocationsFromTrips(allTrips);
   }, [allTrips]);
 
   // Update search params in real-time as the user types
