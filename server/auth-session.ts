@@ -6,7 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { db } from "./db";
 import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -110,38 +110,24 @@ export function setupAuthentication(app: Express) {
       },
       async (email, password, done) => {
         try {
-          // Buscar el usuario por email
-          const userResults = await db
-            .select({
-              id: users.id,
-              username: users.username,
-              email: users.email,
-              password_hash: users.password_hash,
-              firstName: users.firstName,
-              lastName: users.lastName,
-              role: users.role,
-              company: users.company,
-              companyId: users.companyId,
-              profilePicture: users.profilePicture,
-              createdAt: users.createdAt,
-              updatedAt: users.updatedAt,
-              invitedById: users.invitedById,
-              commissionPercentage: users.commissionPercentage
-            })
-            .from(users)
-            .where(eq(users.email, email));
+          // Buscar el usuario por email usando SQL directo
+          const result = await db.execute(sql`
+            SELECT id, username, email, password_hash, first_name, last_name, role, company, company_id, profile_picture, created_at, updated_at, invited_by_id, commission_percentage
+            FROM users 
+            WHERE email = ${email}
+          `);
 
-          if (userResults.length === 0) {
+          if (result.rowCount === 0) {
             return done(null, false, { message: "Credenciales inválidas" });
           }
 
-          const user = userResults[0];
+          const user = result.rows[0] as any;
           
           console.log("Stored password hash:", user.password_hash);
           console.log("Supplied password:", password);
           
           // Verificar la contraseña
-          const isPasswordValid = await comparePasswords(password, user.password_hash);
+          const isPasswordValid = await comparePasswords(password, user.password_hash as string);
           console.log("Password validation result:", isPasswordValid);
           
           if (!isPasswordValid) {
