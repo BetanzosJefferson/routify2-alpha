@@ -38,11 +38,10 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
 
     if (superAdminExists.length === 0) {
       await db.insert(users).values({
-        username: "admin_principal",
         firstName: "Admin",
         lastName: "Principal",
         email: "admin@transporte.com",
-        password_hash: await hashPassword("admin123456"),
+        password: await hashPassword("admin123456"),
         role: UserRole.SUPER_ADMIN,
       });
       console.log("Usuario Super Admin creado con éxito");

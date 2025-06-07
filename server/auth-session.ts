@@ -112,7 +112,7 @@ export function setupAuthentication(app: Express) {
         try {
           // Buscar el usuario por email usando SQL directo
           const result = await db.execute(sql`
-            SELECT id, username, email, password_hash, first_name, last_name, role, company, company_id, profile_picture, created_at, updated_at, invited_by_id, commission_percentage
+            SELECT id, email, password, first_name, last_name, role, company, company_id, profile_picture, created_at, updated_at, invited_by_id, commission_percentage
             FROM users 
             WHERE email = ${email}
           `);
@@ -123,11 +123,11 @@ export function setupAuthentication(app: Express) {
 
           const user = result.rows[0] as any;
           
-          console.log("Stored password hash:", user.password_hash);
+          console.log("Stored password hash:", user.password);
           console.log("Supplied password:", password);
           
           // Verificar la contraseña
-          const isPasswordValid = await comparePasswords(password, user.password_hash as string);
+          const isPasswordValid = await comparePasswords(password, user.password as string);
           console.log("Password validation result:", isPasswordValid);
           
           if (!isPasswordValid) {
@@ -135,7 +135,7 @@ export function setupAuthentication(app: Express) {
           }
 
           // Eliminar la contraseña del objeto usuario
-          const { password_hash: _, ...userWithoutPassword } = user;
+          const { password: _, ...userWithoutPassword } = user;
           return done(null, userWithoutPassword);
         } catch (error) {
           return done(error);
