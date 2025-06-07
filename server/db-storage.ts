@@ -850,18 +850,12 @@ export class DatabaseStorage implements IStorage {
       const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      // NUEVA LÓGICA: Si se está filtrando por origen O destino específicos, excluir viajes padre
-      // Solo mostrar viajes padre cuando NO hay filtros de origen/destino
       const hasOriginOrDestinationFilter = params.origin || params.destination;
       const isMainTrip = !trip.isSubTrip;
       
       console.log(`[searchTrips-v2] Viaje ${trip.id}: isSubTrip=${trip.isSubTrip}, hasFilter=${hasOriginOrDestinationFilter}, isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
       
-      // Si hay filtro de origen/destino y es un viaje padre, saltarlo ANTES de cualquier procesamiento
-      if (hasOriginOrDestinationFilter && isMainTrip) {
-        console.log(`[searchTrips-v2] *** EXCLUYENDO VIAJE PADRE ${trip.id} (isSubTrip: ${trip.isSubTrip}) debido a filtro de origen/destino específico ***`);
-        continue;
-      }
+      // Don't exclude main trips automatically - check if they match the filter first
       
       // Ya no se calcula el estado del viaje (tripStatus), esta funcionalidad ha sido eliminada
       
@@ -900,8 +894,22 @@ export class DatabaseStorage implements IStorage {
             console.log(`[searchTrips-v3] Trip ${trip.id} has ${tripDataObj.subTrips.length} subTrips to check`);
             
             for (const subTrip of tripDataObj.subTrips) {
-              const originMatch = !params.origin || subTrip.origin?.toLowerCase().includes(params.origin.toLowerCase());
-              const destMatch = !params.destination || subTrip.destination?.toLowerCase().includes(params.destination.toLowerCase());
+              let originMatch = !params.origin;
+              let destMatch = !params.destination;
+              
+              if (params.origin) {
+                const searchOrigin = params.origin.toLowerCase();
+                const subTripOrigin = subTrip.origin?.toLowerCase() || '';
+                // Check if the searched origin is contained in the subTrip origin
+                originMatch = subTripOrigin.includes(searchOrigin) || searchOrigin.includes(subTripOrigin);
+              }
+              
+              if (params.destination) {
+                const searchDest = params.destination.toLowerCase();
+                const subTripDest = subTrip.destination?.toLowerCase() || '';
+                // Check if the searched destination is contained in the subTrip destination
+                destMatch = subTripDest.includes(searchDest) || searchDest.includes(subTripDest);
+              }
               
               if (originMatch && destMatch) {
                 console.log(`[searchTrips-v3] Found matching segment: ${subTrip.origin} -> ${subTrip.destination}`);
@@ -914,8 +922,20 @@ export class DatabaseStorage implements IStorage {
           // Also check parentTrip if no subTrip matches
           if (!hasMatchingSegment && tripDataObj.parentTrip) {
             const parentTrip = tripDataObj.parentTrip;
-            const originMatch = !params.origin || parentTrip.origin?.toLowerCase().includes(params.origin.toLowerCase());
-            const destMatch = !params.destination || parentTrip.destination?.toLowerCase().includes(params.destination.toLowerCase());
+            let originMatch = !params.origin;
+            let destMatch = !params.destination;
+            
+            if (params.origin) {
+              const searchOrigin = params.origin.toLowerCase();
+              const parentTripOrigin = parentTrip.origin?.toLowerCase() || '';
+              originMatch = parentTripOrigin.includes(searchOrigin) || searchOrigin.includes(parentTripOrigin);
+            }
+            
+            if (params.destination) {
+              const searchDest = params.destination.toLowerCase();
+              const parentTripDest = parentTrip.destination?.toLowerCase() || '';
+              destMatch = parentTripDest.includes(searchDest) || searchDest.includes(parentTripDest);
+            }
             
             if (originMatch && destMatch) {
               console.log(`[searchTrips-v3] Found matching parentTrip: ${parentTrip.origin} -> ${parentTrip.destination}`);
