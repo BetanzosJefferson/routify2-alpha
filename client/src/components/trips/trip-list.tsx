@@ -149,22 +149,14 @@ export function TripList() {
         Object.entries(paramsToFetch).filter(([_, v]) => v !== undefined) as [string, string][]
       ).toString();
 
-      console.log("[TripList useQuery] Fetching trips with params:", paramsToFetch);
-      console.log("[TripList useQuery] Query string:", queryString);
-
-      const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
+          const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
       if (!response.ok) throw new Error("Failed to fetch trips");
       const result = await response.json();
-      
-      console.log("[TripList useQuery] Response received:", result);
-      console.log("[TripList useQuery] Number of trips:", result?.length || 0);
       
       return result;
     },
     enabled: true // Always run the query based on searchParams
   });
-
-  console.log("[TripList DEBUG] Query state:", { trips, isLoading, isError, tripsLength: trips?.length });
 
   // Extract unique locations for autocomplete
   const locationOptions = useMemo(() => {
@@ -174,33 +166,46 @@ export function TripList() {
     const locations: string[] = [];
     
     allTrips.forEach(trip => {
-      // Add route-based locations
+      // Add route-based locations (fallback)
       if (trip.route?.origin) locations.push(trip.route.origin);
       if (trip.route?.destination) locations.push(trip.route.destination);
       if (trip.route?.stops) locations.push(...trip.route.stops);
       
-      // Extract locations from tripData JSON
+      // Extract locations from tripData JSON - this is the primary source
       if (trip.tripData && typeof trip.tripData === 'object') {
         const tripDataObj = trip.tripData as any;
         
-        // Extract from subTrips array
-        if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
-          tripDataObj.subTrips.forEach((subTrip: any) => {
-            if (subTrip.origin) locations.push(subTrip.origin);
-            if (subTrip.destination) locations.push(subTrip.destination);
-          });
+        // Extract from parentTrip first (main route)
+        if (tripDataObj.parentTrip) {
+          if (tripDataObj.parentTrip.origin) {
+            locations.push(tripDataObj.parentTrip.origin);
+          }
+          if (tripDataObj.parentTrip.destination) {
+            locations.push(tripDataObj.parentTrip.destination);
+          }
         }
         
-        // Extract from parentTrip
-        if (tripDataObj.parentTrip) {
-          if (tripDataObj.parentTrip.origin) locations.push(tripDataObj.parentTrip.origin);
-          if (tripDataObj.parentTrip.destination) locations.push(tripDataObj.parentTrip.destination);
+        // Extract from subTrips array (intermediate stops)
+        if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
+          tripDataObj.subTrips.forEach((subTrip: any) => {
+            if (subTrip.origin && subTrip.origin !== tripDataObj.parentTrip?.origin) {
+              locations.push(subTrip.origin);
+            }
+            if (subTrip.destination && subTrip.destination !== tripDataObj.parentTrip?.destination) {
+              locations.push(subTrip.destination);
+            }
+          });
         }
       }
     });
     
-    // Remove duplicates and sort
-    return Array.from(new Set(locations)).sort();
+    // Remove duplicates, filter out undefined/null, and sort
+    const filteredLocations = Array.from(new Set(locations))
+      .filter(location => location && location !== 'undefined' && location.trim() !== '')
+      .sort();
+    
+    console.log("[locationOptions] Extracted locations:", filteredLocations);
+    return filteredLocations;
   }, [allTrips]);
 
   // Update search params in real-time as the user types
@@ -300,12 +305,8 @@ export function TripList() {
 
   // Función para ordenar y filtrar los viajes según el criterio seleccionado
   const sortedAndFilteredTrips = useMemo(() => {
-    console.log("[sortedAndFilteredTrips] Datos de viajes recibidos:", trips);
-    console.log("[sortedAndFilteredTrips] Cantidad de viajes:", trips?.length || 0);
-    
     if (!trips) return [];
 
-    console.log("[sortedAndFilteredTrips] Procesando viajes para ordenamiento...");
     return [...trips].sort((a, b) => {
       if (sortMethod === "departure") {
         const getTimeValue = (timeStr: string) => {
