@@ -449,16 +449,12 @@ export function TripList() {
                       </span>
                     )}
                     <div className="text-sm font-medium">
-                      {trip.isSubTrip ? (
-                        <span>Conexión · {trip.availableSeats} asientos disponibles</span>
-                      ) : (
-                        <span>Directo · {trip.availableSeats} asientos disponibles</span>
-                      )}
+                      <span>Directo · {(trip as any).availableSeats || 0} asientos disponibles</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-base font-medium">
-                  {formatPrice(trip.price || 0)}
+                  {formatPrice((trip as any).price || 0)}
                   <span className="text-xs text-gray-500 ml-1">MXN</span>
                 </div>
               </div>
@@ -467,16 +463,16 @@ export function TripList() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex flex-col">
                     <div className="text-lg font-bold">
-                      {formatTripTime(trip.departureTime, true, 'pretty')}
+                      {formatTripTime((trip as any).departureTime, true, 'pretty')}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      {trip.origin || trip.route?.origin || 'Origen no disponible'}
+                      {(trip as any).origin || trip.route?.origin || 'Origen no disponible'}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-center justify-center">
                     <div className="text-xs text-gray-500 mb-1">
-                      {calculateDuration(trip.departureTime, trip.arrivalTime)}
+                      {calculateDuration((trip as any).departureTime, (trip as any).arrivalTime)}
                     </div>
                     <div className="relative w-full flex items-center justify-center">
                       <div className="border-t border-gray-300 w-full"></div>
@@ -491,30 +487,30 @@ export function TripList() {
 
                   <div className="flex flex-col items-end">
                     <div className="text-lg font-bold">
-                      {formatTripTime(trip.arrivalTime, true, 'pretty')}
+                      {formatTripTime((trip as any).arrivalTime, true, 'pretty')}
                     </div>
                     <div className="text-sm text-gray-500 mt-1 text-right">
-                      {trip.destination || trip.route?.destination || 'Destino no disponible'}
+                      {(trip as any).destination || trip.route?.destination || 'Destino no disponible'}
                     </div>
                   </div>
                 </div>
 
                 {/* Mostrar mensaje descriptivo para viajes que cruzan la medianoche */}
-                {(extractDayIndicator(trip.departureTime) > 0 || extractDayIndicator(trip.arrivalTime) > 0) ? (
+                {(extractDayIndicator((trip as any).departureTime) > 0 || extractDayIndicator((trip as any).arrivalTime) > 0) ? (
                   <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"></circle>
                       <line x1="12" y1="8" x2="12" y2="12"></line>
                       <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
-                    {formatTripTime(trip.departureTime, true, 'descriptive', trip.departureDate)}
+                    {formatTripTime((trip as any).departureTime, true, 'descriptive', (trip as any).departureDate)}
                   </div>
                 ) : null}
 
                 <div className="mt-4 flex items-center justify-between">
-                  {trip.vehicle?.name && (
+                  {(trip as any).vehicle?.name && (
                     <div className="text-sm">
-                      <span className="capitalize">{trip.vehicle.name}</span>
+                      <span className="capitalize">{(trip as any).vehicle.name}</span>
                     </div>
                   )}
 
@@ -522,13 +518,13 @@ export function TripList() {
                     variant="default"
                     size="sm"
                     onClick={() => handleReserve(trip)}
-                    disabled={trip.availableSeats <= 0}
+                    disabled={((trip as any).availableSeats || 0) <= 0}
                   >
                     Reservar
                   </Button>
                 </div>
 
-                {!trip.isSubTrip && trip.numStops > 0 && (
+                {!(trip as any).isSubTrip && (trip as any).numStops > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-500">
                       {trip.numStops} paradas en ruta
