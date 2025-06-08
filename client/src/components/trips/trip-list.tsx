@@ -266,6 +266,9 @@ export function TripList() {
   // Función para ordenar y filtrar los viajes según el criterio seleccionado
   const sortedAndFilteredTrips = useMemo(() => {
     if (!trips) return [];
+    
+    console.log('[sortedAndFilteredTrips] Trips recibidos:', trips);
+    console.log('[sortedAndFilteredTrips] Número de trips:', trips.length);
 
     return [...trips].sort((a, b) => {
       if (sortMethod === "departure") {
