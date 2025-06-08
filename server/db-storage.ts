@@ -847,12 +847,24 @@ export class DatabaseStorage implements IStorage {
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const trip of trips) {
-      const route = routeMap.get(trip.routeId);
+      // Extract data from JSON structure
+      let tripData: any = {};
+      try {
+        tripData = typeof trip.tripData === 'string' ? JSON.parse(trip.tripData) : trip.tripData;
+      } catch (error) {
+        console.error(`Error parsing tripData for trip ${trip.id}:`, error);
+        continue;
+      }
+      
+      const routeId = tripData.parentTrip?.routeId || tripData.routeId;
+      if (!routeId) continue;
+      
+      const route = routeMap.get(routeId);
       if (!route) continue;
       
-      const isMainTrip = !trip.isSubTrip;
+      const isMainTrip = true; // All trips are main trips in simplified schema
       
-      console.log(`[searchTrips-v2] Viaje ${trip.id}: isSubTrip=${trip.isSubTrip}, isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
+      console.log(`[searchTrips-v2] Viaje ${trip.id}: isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
       
       // Don't exclude main trips automatically - check if they match the filter first
       
