@@ -1032,6 +1032,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
+        console.log("DEBUG: tripCombinations antes de crear el viaje:", JSON.stringify(tripCombinations, null, 2));
+        
         const mainTripToCreate = {
           tripData: tripCombinations,
           capacity: tripData.capacity,
@@ -1042,7 +1044,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companyId: companyId
         };
         
+        console.log("DEBUG: mainTripToCreate antes de enviar a storage:", JSON.stringify(mainTripToCreate, null, 2));
+        
         const mainTrip = await storage.createTrip(mainTripToCreate);
+        console.log("DEBUG: mainTrip después de crear en storage:", JSON.stringify(mainTrip, null, 2));
         createdTrips.push(mainTrip);
         
         // Ya no creamos sub-trips separados, todo está en trip_data del viaje principal
