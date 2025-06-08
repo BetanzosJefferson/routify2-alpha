@@ -660,183 +660,139 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                   </div>
                   
                   <div className="space-y-4">
-                    {trips.map((trip: Trip) => (
-                      <div key={trip.id} className="border rounded-lg overflow-hidden bg-card">
-                        <div className="flex flex-col lg:flex-row">
-                          <div className="p-4 lg:p-6 flex-1">
-                            <div className="flex justify-between items-start">
-                              <div className="flex">
-                                {/* Logo de la compañía (si existe) */}
-                                {trip.companyLogo ? (
-                                  <div className="mr-3 h-12 w-12 flex-shrink-0">
-                                    <img 
-                                      src={trip.companyLogo} 
-                                      alt={trip.companyName || "Logo de transportista"} 
-                                      className="h-full w-full object-cover rounded-full border border-gray-100"
-                                      onError={(e) => {
-                                        // Si falla la carga, ocultar la imagen
-                                        const target = e.currentTarget as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }} 
-                                    />
-                                  </div>
-                                ) : null}
-                                
-                                <div>
-                                  <h4 className="text-base font-medium mb-1">
-                                    {trip.route?.name || trip.routeName || `Ruta #${trip.routeId}`}
-                                  </h4>
-                                  {trip.companyName && (
+                    {trips.map((trip: Trip) => {
+                      // Extraer información del tripData JSON
+                      const tripSegments = Array.isArray(trip.tripData) ? trip.tripData : [];
+                      const firstSegment = tripSegments[0] || {};
+                      const lastSegment = tripSegments[tripSegments.length - 1] || {};
+                      
+                      // Obtener información básica del primer segmento
+                      const departureDate = firstSegment.departureDate || '';
+                      const departureTime = firstSegment.departureTime || '';
+                      const arrivalTime = lastSegment.arrivalTime || firstSegment.arrivalTime || '';
+                      const origin = firstSegment.origin || '';
+                      const destination = lastSegment.destination || firstSegment.destination || '';
+                      
+                      // Contar paradas intermedias
+                      const stopsCount = Math.max(0, tripSegments.length - 1);
+                      
+                      return (
+                        <div key={trip.id} className="border rounded-lg overflow-hidden bg-card">
+                          <div className="flex flex-col lg:flex-row">
+                            <div className="p-4 lg:p-6 flex-1">
+                              <div className="flex justify-between items-start">
+                                <div className="flex">
+                                  <div>
+                                    <h4 className="text-base font-medium mb-1">
+                                      Ruta #{trip.routeId}
+                                    </h4>
                                     <div className="text-xs text-gray-500 mb-1">
-                                      {trip.companyName}
+                                      Compañía: {trip.companyId}
                                     </div>
-                                  )}
-                                  <div className="flex items-center text-sm text-muted-foreground">
-                                    <CalendarIcon className="h-4 w-4 mr-1" />
-                                    <span>
-                                      {format(normalizeToStartOfDay(trip.departureDate), "dd/MM/yyyy")}
-                                    </span>
-                                    <ClockIcon className="h-4 w-4 ml-4 mr-1" />
-                                    <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                              {/* Primera columna: Ruta */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start mb-2">
-                                  <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Ruta</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Terminal {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {getStopsCount(trip)} paradas intermedias
-                                    </p>
+                                    <div className="flex items-center text-sm text-muted-foreground">
+                                      <CalendarIcon className="h-4 w-4 mr-1" />
+                                      <span>
+                                        {departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}
+                                      </span>
+                                      <ClockIcon className="h-4 w-4 ml-4 mr-1" />
+                                      <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               
-                              {/* Segunda columna: Vehículo */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start">
-                                  <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Vehículo</p>
-                                    {trip.vehicleId || trip.assignedVehicle ? (
-                                      <p className="text-xs text-green-600 font-medium">
-                                        {trip.assignedVehicle ? 
-                                          `${trip.assignedVehicle.brand} ${trip.assignedVehicle.model} - ${trip.assignedVehicle.plates}` :
-                                          `${vehicles.find(v => v.id === trip.vehicleId)?.brand || ''} ${vehicles.find(v => v.id === trip.vehicleId)?.model || ''} - ${vehicles.find(v => v.id === trip.vehicleId)?.plates || ''}`
-                                        }
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                {/* Primera columna: Ruta */}
+                                <div className="bg-muted/50 p-3 rounded-md">
+                                  <div className="flex items-start mb-2">
+                                    <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-sm font-medium">Ruta</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {origin} → {destination}
                                       </p>
-                                    ) : (
-                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Tercera columna: Conductor */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start">
-                                  <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Conductor</p>
-                                    {trip.driverId || trip.assignedDriver ? (
-                                      <p className="text-xs text-green-600 font-medium">
-                                        {trip.assignedDriver ? 
-                                          `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` :
-                                          `${drivers.find(d => d.id === trip.driverId)?.firstName || ''} ${drivers.find(d => d.id === trip.driverId)?.lastName || ''}`
-                                        }
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {stopsCount} paradas intermedias
                                       </p>
-                                    ) : (
-                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                    )}
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Estados del viaje y Reservaciones */}
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                              <div className="flex flex-wrap items-center justify-between">
-                                <div className="flex gap-2 mb-2">
-                                  {/* Estado de visibilidad */}
-                                  {trip.visibility && (
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.visibility === 'publicado' 
-                                        ? 'bg-green-100 text-green-800' 
-                                        : trip.visibility === 'oculto' 
-                                          ? 'bg-gray-100 text-gray-800' 
-                                          : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {trip.visibility === 'publicado' 
-                                        ? 'Publicado' 
-                                        : trip.visibility === 'oculto' 
-                                          ? 'Oculto' 
-                                          : 'Cancelado'}
-                                    </span>
-                                  )}
-                                  
-                                  {/* Estado del viaje */}
-                                  {trip.tripStatus && (
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.tripStatus === 'aun_no_inicia' 
-                                        ? 'bg-blue-100 text-blue-800' 
-                                        : trip.tripStatus === 'en_progreso' 
-                                          ? 'bg-amber-100 text-amber-800' 
-                                          : 'bg-purple-100 text-purple-800'
-                                    }`}>
-                                      {trip.tripStatus === 'aun_no_inicia' 
-                                        ? 'Aún no inicia' 
-                                        : trip.tripStatus === 'en_progreso' 
-                                          ? 'En progreso' 
-                                          : 'Finalizado'}
-                                    </span>
-                                  )}
                                 </div>
                                 
-                                {/* Reservaciones */}
-                                <div className="flex items-center">
-                                  <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {/* Simplificamos la lógica de reservaciones */}
-                                    {trip.reservationCount || 0} reservas
-                                  </span>
+                                {/* Segunda columna: Vehículo */}
+                                <div className="bg-muted/50 p-3 rounded-md">
+                                  <div className="flex items-start">
+                                    <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-sm font-medium">Vehículo</p>
+                                      {trip.vehicleId ? (
+                                        <p className="text-xs text-green-600 font-medium">
+                                          Vehículo #{trip.vehicleId}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-red-500 font-medium">No asignado</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Tercera columna: Conductor */}
+                                <div className="bg-muted/50 p-3 rounded-md">
+                                  <div className="flex items-start">
+                                    <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-sm font-medium">Conductor</p>
+                                      {trip.driverId ? (
+                                        <p className="text-xs text-green-600 font-medium">
+                                          Conductor #{trip.driverId}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-red-500 font-medium">No asignado</p>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
-                            <div className="flex gap-2 mt-0 lg:mt-4">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  window.location.href = `/edit-trip/${trip.id}`;
-                                }}
-                                className="h-8 w-8"
-                              >
-                                <PencilIcon className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteClick(trip.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive/80"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </Button>
+                              
+                              {/* Estados del viaje */}
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex flex-wrap items-center justify-between">
+                                  <div className="flex gap-2 mb-2">
+                                    {/* Estado de visibilidad */}
+                                    {trip.visibility && (
+                                      <span className={`text-xs px-2 py-1 rounded-full ${
+                                        trip.visibility === 'publicado' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : trip.visibility === 'oculto' 
+                                            ? 'bg-gray-100 text-gray-800' 
+                                            : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {trip.visibility === 'publicado' 
+                                          ? 'Publicado' 
+                                          : trip.visibility === 'oculto' 
+                                            ? 'Oculto' 
+                                            : 'Cancelado'}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Capacidad */}
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                      Capacidad: {trip.capacity || 0}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Información adicional */}
+                                  <div className="flex items-center">
+                                    <span className="text-xs text-muted-foreground">
+                                      ID: {trip.id}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))
