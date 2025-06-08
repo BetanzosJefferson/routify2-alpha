@@ -990,8 +990,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate unique tripIds for subTrips
         const generateTripId = () => Date.now() + Math.floor(Math.random() * 1000);
         
-        // Build subTrips array
-        const subTrips = allSegments.map(segment => {
+        // Build trips array with all combinations including segments and the complete trip
+        const trips = [];
+        
+        // Add all segment trips
+        for (const segment of allSegments) {
           const segmentPrice = tripData.segmentPrices.find(
             (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
           );
@@ -1008,7 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[POST /trips] Usando horarios del viaje principal para segmento ${segment.origin} -> ${segment.destination}: ${segmentDepartureTime} -> ${segmentArrivalTime}`);
           }
           
-          return {
+          trips.push({
             price: segmentPrice?.price || 0,
             origin: segment.origin,
             tripId: generateTripId(),
@@ -1016,12 +1019,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             destination: segment.destination,
             departureDate: mainDepartureDate.toISOString().split('T')[0],
             departureTime: segmentDepartureTime,
-            availableSeats: tripData.capacity
-          };
-        });
+            availableSeats: tripData.capacity,
+            type: 'segment' // Identificar como segmento
+          });
+        }
         
-        // Build parentTrip object
-        const parentTrip = {
+        // Add the complete trip (previously parentTrip)
+        trips.push({
           price: mainSegmentPrice?.price || 450,
           origin: route.origin,
           tripId: generateTripId(),
@@ -1029,13 +1033,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           destination: route.destination,
           departureDate: mainDepartureDate.toISOString().split('T')[0],
           departureTime: cleanDepartureTime,
-          availableSeats: tripData.capacity
-        };
+          availableSeats: tripData.capacity,
+          type: 'complete' // Identificar como viaje completo
+        });
         
-        // Create tripData JSON structure
+        // Create tripData JSON structure with unified trips array
         const tripDataJson = {
-          subTrips: subTrips,
-          parentTrip: parentTrip
+          trips: trips
         };
 
         const mainTripToCreate = {
@@ -2598,13 +2602,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         specificTripId = reservationData.selectedSegmentTripId;
         console.log(`[POST /reservations] Usando selectedSegmentTripId del frontend: ${specificTripId}`);
       } else if (trip.tripData && typeof trip.tripData === 'object') {
-        // Fallback: Si el viaje tiene tripData con estructura de subTrips/parentTrip
+        // Fallback: Si el viaje tiene tripData con nueva estructura unificada
         const tripDataObj = trip.tripData as any;
         
-        // Por defecto, asumir que es una reserva para el viaje completo (parentTrip)
-        if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
-          specificTripId = tripDataObj.parentTrip.tripId;
-          console.log(`[POST /reservations] Usando tripId del parentTrip como fallback: ${specificTripId}`);
+        // Buscar en el array de trips el viaje completo (type: 'complete')
+        if (tripDataObj.trips && Array.isArray(tripDataObj.trips)) {
+          const completeTrip = tripDataObj.trips.find((t: any) => t.type === 'complete');
+          if (completeTrip && completeTrip.tripId) {
+            specificTripId = completeTrip.tripId;
+            console.log(`[POST /reservations] Usando tripId del viaje completo como fallback: ${specificTripId}`);
+          }
         }
       }
       
