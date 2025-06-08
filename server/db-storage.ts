@@ -610,12 +610,45 @@ export class DatabaseStorage implements IStorage {
     
     const reservationsWithDetails: ReservationWithDetails[] = [];
     
-    // Para cada reservación, obtenemos el viaje relacionado
+    // Para cada reservación, extraemos los datos del trip desde tripDetails JSON
     for (const reservation of reservations) {
-      const trip = await this.getTripWithRouteInfo(reservation.tripId);
-      if (!trip) continue;
+      let tripDetails = null;
       
+      try {
+        // Parse tripDetails JSON que contiene {recordId, tripId, seats} y datos del viaje
+        tripDetails = typeof reservation.tripDetails === 'string' 
+          ? JSON.parse(reservation.tripDetails) 
+          : reservation.tripDetails;
+      } catch (error) {
+        console.warn(`Error parsing tripDetails for reservation ${reservation.id}:`, error);
+        continue;
+      }
+      
+      if (!tripDetails) {
+        console.warn(`No tripDetails found for reservation ${reservation.id}`);
+        continue;
+      }
+      
+      // Obtener información de pasajeros
       const passengers = await this.getPassengers(reservation.id);
+      
+      // Crear objeto trip compatible con el frontend usando datos de tripDetails
+      const trip = {
+        id: tripDetails.recordId || null,
+        routeId: tripDetails.routeId || null,
+        origin: tripDetails.origin || null,
+        destination: tripDetails.destination || null,
+        departureDate: tripDetails.departureDate || null,
+        departureTime: tripDetails.departureTime || null,
+        arrivalTime: tripDetails.arrivalTime || null,
+        price: tripDetails.price || null,
+        availableSeats: tripDetails.availableSeats || null,
+        tripId: tripDetails.tripId || null,
+        companyId: tripDetails.companyId || null,
+        companyName: tripDetails.companyName || null,
+        companyLogo: tripDetails.companyLogo || null,
+        route: tripDetails.route || null
+      };
       
       reservationsWithDetails.push({
         ...reservation,
