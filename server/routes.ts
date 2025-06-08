@@ -995,14 +995,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
           );
           
+          // Usar los horarios específicos del segmento si están disponibles
+          let segmentDepartureTime = cleanDepartureTime; // fallback
+          let segmentArrivalTime = cleanArrivalTime; // fallback
+          
+          if (segmentPrice && segmentPrice.departureTime && segmentPrice.arrivalTime) {
+            segmentDepartureTime = segmentPrice.departureTime.replace(/\s*\+\d+d$/, '');
+            segmentArrivalTime = segmentPrice.arrivalTime.replace(/\s*\+\d+d$/, '');
+            console.log(`[POST /trips] Usando horarios específicos para segmento ${segment.origin} -> ${segment.destination}: ${segmentDepartureTime} -> ${segmentArrivalTime}`);
+          } else {
+            console.log(`[POST /trips] Usando horarios del viaje principal para segmento ${segment.origin} -> ${segment.destination}: ${segmentDepartureTime} -> ${segmentArrivalTime}`);
+          }
+          
           return {
             price: segmentPrice?.price || 0,
             origin: segment.origin,
             tripId: generateTripId(),
-            arrivalTime: cleanArrivalTime,
+            arrivalTime: segmentArrivalTime,
             destination: segment.destination,
             departureDate: mainDepartureDate.toISOString().split('T')[0],
-            departureTime: cleanDepartureTime,
+            departureTime: segmentDepartureTime,
             availableSeats: tripData.capacity
           };
         });
