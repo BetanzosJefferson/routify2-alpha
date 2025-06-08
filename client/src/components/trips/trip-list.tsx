@@ -237,6 +237,8 @@ export function TripList() {
         origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
         destination: tripDataObj.parentTrip.destination || trip.route?.destination || 'Destino',
         price: tripDataObj.parentTrip.price || trip.price || 0,
+        departureTime: tripDataObj.parentTrip.departureTime || trip.departureTime || '10:00 AM',
+        arrivalTime: tripDataObj.parentTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
         hasSubTrips: tripDataObj.subTrips?.length > 1 || false,
         isDirectTrip: true
       };
@@ -256,6 +258,8 @@ export function TripList() {
           origin: matchingSubTrip.origin || trip.route?.origin || 'Origen',
           destination: matchingSubTrip.destination || trip.route?.destination || 'Destino',
           price: matchingSubTrip.price || trip.price || 0,
+          departureTime: matchingSubTrip.departureTime || trip.departureTime || '10:00 AM',
+          arrivalTime: matchingSubTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
           hasSubTrips: tripDataObj.subTrips.length > 1,
           isDirectTrip: false
         };
@@ -268,6 +272,8 @@ export function TripList() {
         origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
         destination: tripDataObj.parentTrip.destination || trip.route?.destination || 'Destino',
         price: tripDataObj.parentTrip.price || trip.price || 0,
+        departureTime: tripDataObj.parentTrip.departureTime || trip.departureTime || '10:00 AM',
+        arrivalTime: tripDataObj.parentTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
         hasSubTrips: false,
         isDirectTrip: true
       };
@@ -530,7 +536,7 @@ export function TripList() {
                   <div className="grid grid-cols-3 gap-4">
                     <div className="flex flex-col">
                       <div className="text-lg font-bold">
-                        {formatTripTime(trip.departureTime, true, 'pretty')}
+                        {formatTripTime(displayData.departureTime, true, 'pretty')}
                       </div>
                       <div className="text-sm text-gray-500 mt-1">
                         {displayData.origin}
@@ -539,7 +545,7 @@ export function TripList() {
 
                     <div className="flex flex-col items-center justify-center">
                       <div className="text-xs text-gray-500 mb-1">
-                        {calculateDuration(trip.departureTime, trip.arrivalTime)}
+                        {calculateDuration(displayData.departureTime, displayData.arrivalTime)}
                       </div>
                       <div className="relative w-full flex items-center justify-center">
                         <div className="border-t border-gray-300 w-full"></div>
@@ -554,7 +560,7 @@ export function TripList() {
 
                     <div className="flex flex-col items-end">
                       <div className="text-lg font-bold">
-                        {formatTripTime(trip.arrivalTime, true, 'pretty')}
+                        {formatTripTime(displayData.arrivalTime, true, 'pretty')}
                       </div>
                       <div className="text-sm text-gray-500 mt-1 text-right">
                         {displayData.destination}
@@ -563,14 +569,14 @@ export function TripList() {
                   </div>
 
                   {/* Mostrar mensaje descriptivo para viajes que cruzan la medianoche */}
-                  {(extractDayIndicator(trip.departureTime) > 0 || extractDayIndicator(trip.arrivalTime) > 0) ? (
+                  {(extractDayIndicator(displayData.departureTime) > 0 || extractDayIndicator(displayData.arrivalTime) > 0) ? (
                     <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
-                      {formatTripTime(trip.departureTime, true, 'descriptive', trip.departureDate)}
+                      {formatTripTime(displayData.departureTime, true, 'descriptive', trip.departureDate)}
                     </div>
                   ) : null}
 
