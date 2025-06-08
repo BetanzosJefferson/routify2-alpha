@@ -2591,11 +2591,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Crear estructura trip_details JSON con información del viaje
+      // Determinar qué tripId específico usar basado en el contexto de la reserva
+      let specificTripId = trip.id; // Default fallback
+      
+      // Si el viaje tiene tripData con estructura de subTrips/parentTrip
+      if (trip.tripData && typeof trip.tripData === 'object') {
+        const tripDataObj = trip.tripData as any;
+        
+        // Por defecto, asumir que es una reserva para el viaje completo (parentTrip)
+        if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
+          specificTripId = tripDataObj.parentTrip.tripId;
+          console.log(`[POST /reservations] Usando tripId del parentTrip: ${specificTripId}`);
+        }
+        
+        // TODO: En el futuro, aquí podríamos agregar lógica para detectar 
+        // si la reserva es para un segmento específico basado en origen/destino
+        // de la reservación vs los subTrips disponibles
+      }
+      
       const tripDetailsJson = {
         recordId: trip.id, // ID del registro del viaje (columna id)
-        tripId: trip.tripData && typeof trip.tripData === 'object' && trip.tripData.parentTrip 
-          ? trip.tripData.parentTrip.tripId 
-          : trip.id, // tripId del viaje seleccionado
+        tripId: specificTripId, // tripId específico del segmento seleccionado
         seats: passengerCount // Cantidad de asientos de la reserva
       };
       

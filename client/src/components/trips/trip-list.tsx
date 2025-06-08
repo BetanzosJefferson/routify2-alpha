@@ -633,6 +633,8 @@ export function TripList() {
       {selectedTrip && (
         <ReservationStepsModal
           trip={selectedTrip}
+          searchOrigin={searchParams.origin}
+          searchDestination={searchParams.destination}
           isOpen={showModal}
           onClose={handleCloseModal}
         />
