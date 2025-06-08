@@ -2598,19 +2598,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usar el selectedSegmentTripId del frontend si está disponible
       let specificTripId: number = trip.id; // Default fallback
       
+      console.log(`[POST /reservations] selectedSegmentTripId recibido:`, reservationData.selectedSegmentTripId);
+      
       if (reservationData.selectedSegmentTripId) {
         specificTripId = typeof reservationData.selectedSegmentTripId === 'string' 
           ? parseInt(reservationData.selectedSegmentTripId, 10) 
           : reservationData.selectedSegmentTripId;
         console.log(`[POST /reservations] Usando selectedSegmentTripId del frontend: ${specificTripId}`);
-      } else if (trip.tripData && typeof trip.tripData === 'object') {
-        // Fallback: Si el viaje tiene tripData con estructura de subTrips/parentTrip
-        const tripDataObj = trip.tripData as any;
-        
-        // Por defecto, asumir que es una reserva para el viaje completo (parentTrip)
-        if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
-          specificTripId = tripDataObj.parentTrip.tripId;
-          console.log(`[POST /reservations] Usando tripId del parentTrip como fallback: ${specificTripId}`);
+      } else {
+        console.log(`[POST /reservations] No hay selectedSegmentTripId, usando fallback`);
+        if (trip.tripData && typeof trip.tripData === 'object') {
+          // Fallback: Si el viaje tiene tripData con estructura de subTrips/parentTrip
+          const tripDataObj = trip.tripData as any;
+          
+          // Por defecto, asumir que es una reserva para el viaje completo (parentTrip)
+          if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
+            specificTripId = tripDataObj.parentTrip.tripId;
+            console.log(`[POST /reservations] Usando tripId del parentTrip como fallback: ${specificTripId}`);
+          }
         }
       }
       
