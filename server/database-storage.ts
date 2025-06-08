@@ -791,21 +791,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementCouponUsage(couponId: number): Promise<void> {
+  async incrementCouponUsage(couponId: number): Promise<schema.Coupon | undefined> {
     try {
-      await db
+      const [updatedCoupon] = await db
         .update(schema.coupons)
         .set({ 
           usageCount: sql`${schema.coupons.usageCount} + 1` 
         })
-        .where(eq(schema.coupons.id, couponId));
+        .where(eq(schema.coupons.id, couponId))
+        .returning();
+      return updatedCoupon;
     } catch (error) {
       console.error('Error al incrementar uso de cupón:', error);
       throw error;
     }
   }
 
-  async getCoupons(companyId?: string): Promise<any[]> {
+  async getCoupons(companyId?: string): Promise<schema.Coupon[]> {
     try {
       if (companyId) {
         return await db
@@ -821,7 +823,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCoupon(id: number): Promise<any | undefined> {
+  async getCoupon(id: number): Promise<schema.Coupon | undefined> {
     try {
       const [coupon] = await db
         .select()
@@ -834,7 +836,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCouponByCode(code: string): Promise<any | undefined> {
+  async getCouponByCode(code: string): Promise<schema.Coupon | undefined> {
     try {
       const [coupon] = await db
         .select()
@@ -847,7 +849,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createCoupon(couponData: any): Promise<any> {
+  async createCoupon(couponData: schema.InsertCoupon): Promise<schema.Coupon> {
     try {
       const [newCoupon] = await db
         .insert(schema.coupons)
@@ -860,7 +862,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateCoupon(id: number, couponUpdate: any): Promise<any | undefined> {
+  async updateCoupon(id: number, couponUpdate: Partial<schema.Coupon>): Promise<schema.Coupon | undefined> {
     try {
       const [updatedCoupon] = await db
         .update(schema.coupons)
