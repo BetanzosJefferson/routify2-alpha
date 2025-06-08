@@ -937,7 +937,7 @@ export function ReservationList() {
                       {reservation.trip.route.name}
                     </div>
                     <div className="text-xs text-gray-600 truncate">
-                      {reservation.trip.segmentOrigin || reservation.trip.route.origin} → {reservation.trip.segmentDestination || reservation.trip.route.destination}
+                      {reservation.trip.origin} → {reservation.trip.destination}
                     </div>
                   </div>
 
