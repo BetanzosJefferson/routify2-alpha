@@ -1635,25 +1635,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Procesar la nueva estructura de datos JSON
-      const { routeId, startDate, endDate, capacity, segmentPrices, stopTimes, vehicleId, driverId } = req.body;
+      const { routeId, startDate, endDate, capacity, segmentPrices, stopTimes, vehicleId, driverId, visibility } = req.body;
       
       console.log(`[PUT /trips/${id}] Procesando actualización con nueva estructura JSON`);
+      console.log(`[PUT /trips/${id}] segmentPrices recibidos:`, segmentPrices);
+      console.log(`[PUT /trips/${id}] stopTimes recibidos:`, stopTimes);
+      
+      // Obtener información de la ruta para generar segmentos completos
+      const route = await storage.getRoute(routeId || currentTrip.routeId);
+      if (!route) {
+        return res.status(400).json({ error: "Route not found" });
+      }
+      
+      // Crear un mapa de horarios desde stopTimes
+      const timeMap: Record<string, { departureTime: string; arrivalTime: string }> = {};
+      
+      if (stopTimes && Array.isArray(stopTimes)) {
+        stopTimes.forEach((stop: any, index: number) => {
+          const time = `${stop.hour}:${stop.minute} ${stop.ampm}`;
+          timeMap[stop.location] = {
+            departureTime: time,
+            arrivalTime: index < stopTimes.length - 1 ? stopTimes[index + 1] ? `${stopTimes[index + 1].hour}:${stopTimes[index + 1].minute} ${stopTimes[index + 1].ampm}` : time : time
+          };
+        });
+      }
       
       // Generar el nuevo tripData basado en la información del formulario
       const newTripData: any[] = [];
       
       if (segmentPrices && Array.isArray(segmentPrices)) {
+        // Generar tripId único para el viaje principal basado en el primer segmento
+        const mainTripId = Date.now();
+        let isFirstSegment = true;
+        
         segmentPrices.forEach((segment: any) => {
+          // Determinar si es el viaje principal (primer segmento completo de origen a destino)
+          const isMainTrip = isFirstSegment && segment.origin === route.origin && segment.destination === route.destination;
+          
+          // Obtener horarios desde el mapa de tiempos
+          const originTimes = timeMap[segment.origin] || { departureTime: segment.departureTime || "08:00 AM", arrivalTime: segment.arrivalTime || "12:00 PM" };
+          const destinationTimes = timeMap[segment.destination] || { departureTime: segment.departureTime || "08:00 AM", arrivalTime: segment.arrivalTime || "12:00 PM" };
+          
           newTripData.push({
             price: segment.price || 0,
             origin: segment.origin,
             destination: segment.destination,
-            tripId: Date.now() + Math.random(), // ID único para el segmento
-            departureDate: startDate,
-            departureTime: "08:00 AM", // Valor por defecto
-            arrivalTime: "12:00 PM", // Valor por defecto
+            tripId: isMainTrip ? mainTripId : Date.now() + Math.random(), // ID único para el segmento
+            isMainTrip: isMainTrip,
+            departureDate: startDate || currentTrip.tripData?.[0]?.departureDate || new Date().toISOString().split('T')[0],
+            departureTime: originTimes.departureTime,
+            arrivalTime: destinationTimes.arrivalTime,
             availableSeats: capacity || currentTrip.capacity
           });
+          
+          if (isFirstSegment) isFirstSegment = false;
         });
       }
       
@@ -1663,7 +1698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         capacity: capacity !== undefined ? capacity : currentTrip.capacity,
         vehicleId: vehicleId !== undefined ? vehicleId : currentTrip.vehicleId,
         driverId: driverId !== undefined ? driverId : currentTrip.driverId,
-        visibility: req.body.visibility || currentTrip.visibility,
+        visibility: visibility || currentTrip.visibility,
         routeId: routeId !== undefined ? routeId : currentTrip.routeId,
         companyId: currentTrip.companyId // Preservar companyId existente
       };
