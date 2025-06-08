@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // FILTRO DE COMPAÑÍA - aplicar solo para roles que no son superAdmin
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = (user as any).companyId || null;
+        const userCompanyId = user.companyId || user.company || null;
         
         if (userCompanyId) {
           searchParams.companyId = userCompanyId;
@@ -506,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /admin-trips] Usuario con rol ${user.role} - ACCESO FILTRADO POR COMPAÑÍA`);
         
         // Obtener companyId del usuario (preferimos companyId pero también aceptamos company como respaldo)
-        const userCompanyId = (user as any).companyId || null;
+        const userCompanyId = user.companyId || user.company || null;
         
         if (userCompanyId) {
           // Aplicar filtro por compañía - OBLIGATORIO para usuarios que no son superAdmin o taquilla
@@ -536,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Si el usuario no tiene permisos para ver todos los viajes, verificar compañía nuevamente
       let finalTrips = trips;
       if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.TICKET_OFFICE) {
-        const userCompanyId = (user as any).companyId || null;
+        const userCompanyId = user.companyId || user.company || null;
         
         if (userCompanyId) {
           console.log(`[GET /admin-trips] Verificación adicional de seguridad por compañía: ${userCompanyId}`);
@@ -627,7 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Aplicar también el filtro de compañía normal
-          const userCompanyId = (user as any).companyId || null;
+          const userCompanyId = user.companyId || user.company || null;
           if (userCompanyId) {
             searchParams.companyId = userCompanyId;
             console.log(`[GET /trips] Filtro compañía para conductor: ${userCompanyId}`);
@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (user.role !== UserRole.SUPER_ADMIN) {
           // Usuarios normales - SIEMPRE FILTRAR POR SU COMPAÑÍA
           // Obtener companyId del usuario (preferimos companyId pero también aceptamos company como respaldo)
-          const userCompanyId = (user as any).companyId || null;
+          const userCompanyId = user.companyId || user.company || null;
           
           if (userCompanyId) {
             // Aplicar filtro por compañía - OBLIGATORIO para usuarios que no son superAdmin
@@ -754,7 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else {
           // Verificación de compañía para usuarios normales
-          const userCompany = (user as any).companyId || null;
+          const userCompany = user.companyId || user.company || null;
           
           if (userCompany) {
             // Filtrar para asegurarnos que solo devolvemos viajes de su compañía
@@ -822,7 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Para todos los roles, verificar también que el viaje pertenezca a su compañía
-          const userCompanyId = (user as any).companyId || null;
+          const userCompanyId = user.companyId || user.company || null;
           
           if (!userCompanyId) {
             console.log(`[GET /trips/${id}] Usuario sin compañía asignada intenta acceder a un viaje`);
@@ -875,7 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[POST /trips] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // SEGURIDAD: Verificar que el usuario tenga una compañía asignada
-      let companyId = (user as any).companyId || null;
+      let companyId = user.companyId || user.company || null;
       
       if (!companyId) {
         console.log(`[POST /trips] ERROR: Usuario sin companyId intenta crear un viaje`);
@@ -2616,7 +2616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // CAPA ADICIONAL DE SEGURIDAD - FILTRO POST-CONSULTA
       if (user && user.role !== UserRole.SUPER_ADMIN) {
         // Obtener la compañía del usuario
-        const userCompany = (user as any).companyId || null;
+        const userCompany = user.companyId || user.company || null;
         
         if (userCompany) {
           // Verificar que todos los vehículos sean realmente de la compañía del usuario
