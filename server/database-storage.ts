@@ -561,69 +561,16 @@ export class DatabaseStorage implements IStorage {
     
     const reservationsWithDetails: ReservationWithDetails[] = [];
     
-    // Para cada reservación, procesamos los tripDetails del JSON
-    console.log(`DB Storage: Iniciando loop con ${reservations.length} reservaciones`);
+    // Para cada reservación, obtenemos el viaje relacionado
     for (const reservation of reservations) {
-      console.log(`DB Storage: Procesando reservación ID ${reservation.id}`);
-      let tripDetails: any = {};
-      
-      try {
-        // Parse tripDetails JSON
-        if (reservation.tripDetails) {
-          const parsed = typeof reservation.tripDetails === 'string' 
-            ? JSON.parse(reservation.tripDetails) 
-            : reservation.tripDetails;
-          
-          console.log(`DB Storage: Procesando reservación ${reservation.id} con tripDetails:`, parsed);
-          
-          // Si tenemos un tripId como "10_1", necesitamos obtener el viaje completo
-          if (parsed.tripId && parsed.recordId) {
-            const fullTrip = await this.getTrip(parsed.recordId);
-            if (fullTrip && fullTrip.tripData) {
-              const tripData = typeof fullTrip.tripData === 'string' 
-                ? JSON.parse(fullTrip.tripData) 
-                : fullTrip.tripData;
-              
-              // Extraer el índice del segmento del tripId (ej: "10_1" -> índice 1)
-              const segmentIndex = parsed.tripId.includes('_') 
-                ? parseInt(parsed.tripId.split('_')[1]) 
-                : 0;
-              
-              if (Array.isArray(tripData) && tripData[segmentIndex]) {
-                tripDetails = {
-                  ...tripData[segmentIndex],
-                  seats: parsed.seats,
-                  tripId: parsed.tripId,
-                  recordId: parsed.recordId
-                };
-              } else {
-                tripDetails = parsed;
-              }
-              
-              // Agregar información de la ruta si existe
-              if (fullTrip.routeId) {
-                const route = await this.getRoute(fullTrip.routeId);
-                if (route) {
-                  tripDetails.route = route;
-                }
-              }
-            } else {
-              tripDetails = parsed;
-            }
-          } else {
-            tripDetails = parsed;
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing tripDetails JSON:', error);
-        continue;
-      }
+      const trip = await this.getTripWithRouteInfo(reservation.tripId);
+      if (!trip) continue;
       
       const passengers = await this.getPassengers(reservation.id);
       
       reservationsWithDetails.push({
         ...reservation,
-        trip: tripDetails,
+        trip,
         passengers
       });
     }
@@ -844,7 +791,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementCouponUsage(couponId: number): Promise<any | undefined> {
+  async incrementCouponUsage(couponId: number): Promise<schema.Coupon | undefined> {
     try {
       const [updatedCoupon] = await db
         .update(schema.coupons)
@@ -859,32 +806,86 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
-  // Método para gestión de notificaciones
-  async getNotifications(userId: number): Promise<any[]> {
+
+  async getCoupons(companyId?: string): Promise<schema.Coupon[]> {
     try {
-      const notifications = await db
-        .select()
-        .from(schema.notifications)
-        .where(eq(schema.notifications.userId, userId))
-        .orderBy(sql`${schema.notifications.createdAt} DESC`);
-      
-      return notifications;
+      if (companyId) {
+        return await db
+          .select()
+          .from(schema.coupons)
+          .where(eq(schema.coupons.companyId, companyId));
+      } else {
+        return await db.select().from(schema.coupons);
+      }
     } catch (error) {
-      console.error('Error al obtener notificaciones:', error);
-      return [];
+      console.error('Error al obtener cupones:', error);
+      throw error;
     }
   }
 
-  // Método para gestión de cajas de usuarios
-  async getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]> {
+  async getCoupon(id: number): Promise<schema.Coupon | undefined> {
     try {
-      // Por ahora retornamos un array vacío hasta que se implemente completamente
-      // TODO: Implementar lógica completa de cajas de usuarios
-      return [];
+      const [coupon] = await db
+        .select()
+        .from(schema.coupons)
+        .where(eq(schema.coupons.id, id));
+      return coupon;
     } catch (error) {
-      console.error('Error al obtener cajas de usuarios:', error);
-      return [];
+      console.error('Error al obtener cupón:', error);
+      throw error;
+    }
+  }
+
+  async getCouponByCode(code: string): Promise<schema.Coupon | undefined> {
+    try {
+      const [coupon] = await db
+        .select()
+        .from(schema.coupons)
+        .where(eq(schema.coupons.code, code));
+      return coupon;
+    } catch (error) {
+      console.error('Error al obtener cupón por código:', error);
+      throw error;
+    }
+  }
+
+  async createCoupon(couponData: schema.InsertCoupon): Promise<schema.Coupon> {
+    try {
+      const [newCoupon] = await db
+        .insert(schema.coupons)
+        .values(couponData)
+        .returning();
+      return newCoupon;
+    } catch (error) {
+      console.error('Error al crear cupón:', error);
+      throw error;
+    }
+  }
+
+  async updateCoupon(id: number, couponUpdate: Partial<schema.Coupon>): Promise<schema.Coupon | undefined> {
+    try {
+      const [updatedCoupon] = await db
+        .update(schema.coupons)
+        .set(couponUpdate)
+        .where(eq(schema.coupons.id, id))
+        .returning();
+      return updatedCoupon;
+    } catch (error) {
+      console.error('Error al actualizar cupón:', error);
+      throw error;
+    }
+  }
+
+  async deleteCoupon(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(schema.coupons)
+        .where(eq(schema.coupons.id, id))
+        .returning({ id: schema.coupons.id });
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error al eliminar cupón:', error);
+      throw error;
     }
   }
 }

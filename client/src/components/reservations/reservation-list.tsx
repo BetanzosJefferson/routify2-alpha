@@ -627,14 +627,14 @@ export function ReservationList() {
                       <div className="text-sm text-gray-500">Tel: {reservation.phone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{reservation.trip?.route?.name || 'Ruta no disponible'}</div>
+                      <div className="text-sm text-gray-900">{reservation.trip.route.name}</div>
                       <div className="text-sm text-gray-500">
-                        {reservation.trip?.origin || 'N/A'} → {reservation.trip?.destination || 'N/A'}
+                        {reservation.trip.origin} → {reservation.trip.destination}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{reservation.trip?.departureDate ? formatDate(reservation.trip.departureDate) : 'Fecha no disponible'}</div>
-                      <div className="text-sm text-gray-500">{reservation.trip?.departureTime ? formatTripTime(reservation.trip.departureTime, true, 'pretty') : 'Hora no disponible'}</div>
+                      <div className="text-sm text-gray-900">{formatDate(reservation.trip.departureDate)}</div>
+                      <div className="text-sm text-gray-500">{formatTripTime(reservation.trip.departureTime, true, 'pretty')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {reservation.passengers.length}
@@ -934,19 +934,19 @@ export function ReservationList() {
                   {/* Información del viaje */}
                   <div className="mb-3">
                     <div className="text-sm font-medium text-gray-900 mb-1">
-                      {reservation.trip?.route?.name || 'Ruta no disponible'}
+                      {reservation.trip.route.name}
                     </div>
                     <div className="text-xs text-gray-600 truncate">
-                      {reservation.trip?.origin || 'N/A'} → {reservation.trip?.destination || 'N/A'}
+                      {reservation.trip.origin} → {reservation.trip.destination}
                     </div>
                   </div>
 
                   {/* Footer con fecha y precio */}
                   <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                     <div className="text-xs text-gray-500">
-                      <span>{reservation.trip?.departureDate ? formatDate(reservation.trip.departureDate) : 'Fecha no disponible'}</span>
+                      <span>{formatDate(reservation.trip.departureDate)}</span>
                       <span className="mx-1">•</span>
-                      <span>{reservation.trip?.departureTime ? formatTripTime(reservation.trip.departureTime) : 'Hora no disponible'}</span>
+                      <span>{formatTripTime(reservation.trip.departureTime)}</span>
                     </div>
                     <div className="text-sm font-bold text-gray-900">
                       {formatPrice(reservation.totalAmount)}

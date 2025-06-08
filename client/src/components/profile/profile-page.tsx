@@ -157,7 +157,7 @@ export function ProfilePage({ standalone = false }: ProfilePageProps) {
               <AvatarImage src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} />
             ) : (
               <AvatarFallback className="bg-primary/5 text-primary text-2xl">
-                {user?.firstName?.charAt(0) || 'U'}{user?.lastName?.charAt(0) || 'N'}
+                {user?.firstName.charAt(0)}{user?.lastName.charAt(0)}
               </AvatarFallback>
             )}
           </Avatar>
