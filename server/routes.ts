@@ -2296,14 +2296,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passengers.push(passenger);
       }
       
-      // TODO: Adaptar updateRelatedTripsAvailability para nuevo enfoque tripData JSON
-      // Temporalmente comentado hasta implementar lógica específica del tripId
-      /*
-      console.log(`[POST /reservations] Actualizando viaje ${trip.id} y viajes relacionados con cambio de -${passengerCount} asientos`);
-      console.log(`[POST /reservations] Asientos antes de la actualización: ${trip.availableSeats}`);
-      
-      await storage.updateRelatedTripsAvailability(trip.id, -passengerCount);
-      */
+      // Actualizar asientos disponibles usando la nueva función con tripDetails
+      try {
+        const { recordId, tripId } = reservationData.tripDetails as { recordId: number, tripId: string };
+        console.log(`[POST /reservations] Actualizando registro ${recordId}, segmento ${tripId} y viajes relacionados con cambio de -${passengerCount} asientos`);
+        
+        await storage.updateRelatedTripsAvailability(recordId, tripId, -passengerCount);
+        console.log(`[POST /reservations] Asientos actualizados exitosamente para el registro ${recordId}, segmento ${tripId}`);
+      } catch (e) {
+        console.error("[POST /reservations] Error al actualizar viajes relacionados:", e);
+        // No fallamos si esto falla, podemos seguir con la operación principal
+      }
       
       // Crear transacción si hay anticipo (advanceAmount > 0)
       if (reservationData.advanceAmount && reservationData.advanceAmount > 0) {
@@ -2570,7 +2573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Actualizar todos los viajes afectados usando la nueva función con tripDetails
-          const { recordId, tripId } = reservation.tripDetails;
+          const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
           console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
@@ -2634,7 +2637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Actualizar todos los viajes afectados usando la nueva función con tripDetails
-          const { recordId, tripId } = reservation.tripDetails;
+          const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
           console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
