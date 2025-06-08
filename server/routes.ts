@@ -2569,11 +2569,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[POST /reservations/${id}/cancel] Capacidad máxima del viaje: ${capacityLimit}, asientos actuales: ${trip.availableSeats}, asientos a liberar: ${passengerCount}`);
         
         try {
-          // Actualizar todos los viajes afectados usando una sola función
-          // (esto incluye el viaje principal y todos los viajes relacionados)
-          await storage.updateRelatedTripsAvailability(trip.id, passengerCount);
+          // Actualizar todos los viajes afectados usando la nueva función con tripDetails
+          const { recordId, tripId } = reservation.tripDetails;
+          await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
-          console.log(`Asientos actualizados para el viaje ${trip.id} y viajes relacionados.`);
+          console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
         } catch (e) {
           console.error("Error al actualizar viajes relacionados:", e);
           // No fallamos si esto falla, podemos seguir con la operación principal
@@ -2633,11 +2633,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[DELETE /reservations/${id}] Capacidad máxima del viaje: ${capacityLimit}, asientos actuales: ${trip.availableSeats}, asientos a liberar: ${passengerCount}`);
         
         try {
-          // Actualizar todos los viajes afectados usando una sola función
-          // (esto incluye el viaje principal y todos los viajes relacionados)
-          await storage.updateRelatedTripsAvailability(trip.id, passengerCount);
+          // Actualizar todos los viajes afectados usando la nueva función con tripDetails
+          const { recordId, tripId } = reservation.tripDetails;
+          await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
-          console.log(`Asientos actualizados para el viaje ${trip.id} y viajes relacionados.`);
+          console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
         } catch (e) {
           console.error("Error al actualizar viajes relacionados:", e);
           // No fallamos si esto falla, podemos seguir con la operación principal
