@@ -599,6 +599,14 @@ export class DatabaseStorage implements IStorage {
               } else {
                 tripDetails = parsed;
               }
+              
+              // Agregar información de la ruta si existe
+              if (fullTrip.routeId) {
+                const route = await this.getRoute(fullTrip.routeId);
+                if (route) {
+                  tripDetails.route = route;
+                }
+              }
             } else {
               tripDetails = parsed;
             }
