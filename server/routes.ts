@@ -1785,14 +1785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tripData = validationResult.data;
       
-      // Si el viaje tiene segmentPrices del formulario, preservarlos
-      if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices)) {
-        console.log("Actualizando precios por segmento:", tripData.segmentPrices);
-      } else if (currentTrip.segmentPrices) {
-        // Preservar los segmentPrices actuales si no se proporcionaron nuevos
-        tripData.segmentPrices = currentTrip.segmentPrices;
-        console.log("Preservando precios por segmento existentes");
-      }
+      // Los precios por segmento ahora están en trip_data JSON, no como columna separada
       
       // No procesamos stopTimes en el servidor ya que no forma parte del esquema de la base de datos
       // Solo lo usamos para cálculos en memoria
