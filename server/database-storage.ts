@@ -561,16 +561,61 @@ export class DatabaseStorage implements IStorage {
     
     const reservationsWithDetails: ReservationWithDetails[] = [];
     
-    // Para cada reservación, obtenemos el viaje relacionado
+    // Para cada reservación, procesamos los tripDetails del JSON
+    console.log(`DB Storage: Iniciando loop con ${reservations.length} reservaciones`);
     for (const reservation of reservations) {
-      const trip = await this.getTripWithRouteInfo(reservation.tripId);
-      if (!trip) continue;
+      console.log(`DB Storage: Procesando reservación ID ${reservation.id}`);
+      let tripDetails: any = {};
+      
+      try {
+        // Parse tripDetails JSON
+        if (reservation.tripDetails) {
+          const parsed = typeof reservation.tripDetails === 'string' 
+            ? JSON.parse(reservation.tripDetails) 
+            : reservation.tripDetails;
+          
+          console.log(`DB Storage: Procesando reservación ${reservation.id} con tripDetails:`, parsed);
+          
+          // Si tenemos un tripId como "10_1", necesitamos obtener el viaje completo
+          if (parsed.tripId && parsed.recordId) {
+            const fullTrip = await this.getTrip(parsed.recordId);
+            if (fullTrip && fullTrip.tripData) {
+              const tripData = typeof fullTrip.tripData === 'string' 
+                ? JSON.parse(fullTrip.tripData) 
+                : fullTrip.tripData;
+              
+              // Extraer el índice del segmento del tripId (ej: "10_1" -> índice 1)
+              const segmentIndex = parsed.tripId.includes('_') 
+                ? parseInt(parsed.tripId.split('_')[1]) 
+                : 0;
+              
+              if (Array.isArray(tripData) && tripData[segmentIndex]) {
+                tripDetails = {
+                  ...tripData[segmentIndex],
+                  seats: parsed.seats,
+                  tripId: parsed.tripId,
+                  recordId: parsed.recordId
+                };
+              } else {
+                tripDetails = parsed;
+              }
+            } else {
+              tripDetails = parsed;
+            }
+          } else {
+            tripDetails = parsed;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing tripDetails JSON:', error);
+        continue;
+      }
       
       const passengers = await this.getPassengers(reservation.id);
       
       reservationsWithDetails.push({
         ...reservation,
-        trip,
+        trip: tripDetails,
         passengers
       });
     }
