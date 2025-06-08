@@ -4421,6 +4421,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyId = req.user!.company || (req.user as any).companyId;
       }
       
+      // Calcular la fecha de expiración basada en las horas de expiración
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + (req.body.expirationHours * 60 * 60 * 1000));
+      
       // Preparar los datos del cupón
       const couponData = {
         code,
@@ -4429,9 +4433,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usageLimit: req.body.usageLimit,
         usageCount: 0,
         expirationHours: req.body.expirationHours,
+        expiresAt,
         isActive: req.body.isActive !== undefined ? req.body.isActive : true,
         companyId,
-        // La fecha de creación se establece en el modelo, igual que la fecha de expiración
       };
       
       // Crear el cupón
