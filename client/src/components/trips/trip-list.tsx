@@ -306,9 +306,7 @@ export function TripList() {
           if (period === 'AM' && hours === 12) value = minutes;
           return value;
         };
-        const timeA = getTripDisplayData(a, origin, destination).departureTime;
-        const timeB = getTripDisplayData(b, origin, destination).departureTime;
-        return getTimeValue(timeA) - getTimeValue(timeB);
+        return getTimeValue(a.departureTime) - getTimeValue(b.departureTime);
       }
 
       if (sortMethod === "price") {
@@ -334,10 +332,8 @@ export function TripList() {
           }
           return arrival - departure;
         };
-        const dataA = getTripDisplayData(a, origin, destination);
-        const dataB = getTripDisplayData(b, origin, destination);
-        const durationA = getDuration(dataA.departureTime, dataA.arrivalTime);
-        const durationB = getDuration(dataB.departureTime, dataB.arrivalTime);
+        const durationA = getDuration(a.departureTime, a.arrivalTime);
+        const durationB = getDuration(b.departureTime, b.arrivalTime);
         return durationA - durationB;
       }
       return 0;
@@ -521,10 +517,10 @@ export function TripList() {
                       )}
                       <div className="text-sm font-medium">
                         {displayData.isDirectTrip ? (
-                          <span>Directo · {getTripDisplayData(trip, origin, destination).availableSeats} asientos disponibles</span>
+                          <span>Directo · {trip.availableSeats} asientos disponibles</span>
                         ) : (
                           <span>
-                            {displayData.hasSubTrips ? 'Múltiples opciones' : 'Conexión'} · {getTripDisplayData(trip, origin, destination).availableSeats} asientos disponibles
+                            {displayData.hasSubTrips ? 'Múltiples opciones' : 'Conexión'} · {trip.availableSeats} asientos disponibles
                           </span>
                         )}
                       </div>
@@ -580,7 +576,7 @@ export function TripList() {
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
-                      {formatTripTime(displayData.departureTime, true, 'descriptive', getTripDisplayData(trip, origin, destination).departureDate)}
+                      {formatTripTime(displayData.departureTime, true, 'descriptive', trip.departureDate)}
                     </div>
                   ) : null}
 
@@ -595,7 +591,7 @@ export function TripList() {
                       variant="default"
                       size="sm"
                       onClick={() => handleReserve(trip)}
-                      disabled={getTripDisplayData(trip, origin, destination).availableSeats <= 0}
+                      disabled={trip.availableSeats <= 0}
                     >
                       Reservar
                     </Button>

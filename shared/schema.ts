@@ -34,7 +34,7 @@ export const insertRouteSchema = createInsertSchema(routes);
 export type InsertRoute = z.infer<typeof insertRouteSchema>;
 export type Route = typeof routes.$inferSelect;
 
-// TRIP SCHEMA - Simplificado, usando trip_data JSON para toda la información específica del viaje
+// TRIP SCHEMA - Actualizado para coincidir con la estructura real de la base de datos
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   tripData: jsonb("trip_data").notNull(), // Contiene toda la información del viaje
@@ -45,6 +45,17 @@ export const trips = pgTable("trips", {
   driverId: integer("driver_id"),
   visibility: text("visibility").default("publicado"),
   tripStatus: text("trip_status"), // Estado del viaje
+  routeId: integer("route_id").notNull(),
+  departureDate: timestamp("departure_date").notNull(),
+  departureTime: text("departure_time").notNull(),
+  arrivalTime: text("arrival_time").notNull(),
+  availableSeats: integer("available_seats").notNull(),
+  price: doublePrecision("price").default(0),
+  segmentPrices: json("segment_prices").notNull(),
+  isSubTrip: boolean("is_sub_trip").default(false),
+  parentTripId: integer("parent_trip_id"),
+  segmentOrigin: text("segment_origin"),
+  segmentDestination: text("segment_destination"),
 });
 
 export const insertTripSchema = createInsertSchema(trips);
@@ -53,13 +64,23 @@ export type InsertTrip = z.infer<typeof insertTripSchema>;
 // Extended trip type with additional fields for API usage 
 // (not extending InsertTrip directly to avoid type errors)
 export interface TripWithTimes {
+  routeId: number;
+  departureDate: Date;
+  departureTime?: string;
+  arrivalTime?: string;
   capacity: number;
+  availableSeats: number;
+  price: number; 
   vehicleType: string;
+  segmentPrices: any;
+  isSubTrip: boolean;
+  parentTripId: number | null;
+  segmentOrigin?: string;
+  segmentDestination?: string;
   vehicleId?: number | null;
   driverId?: number | null;
   companyId?: string | null;
   visibility?: string;
-  tripData: any; // Contains all trip-specific data
 }
 export type Trip = typeof trips.$inferSelect;
 
@@ -410,7 +431,11 @@ export const routeRelations = relations(routes, ({ many }) => ({
 }));
 
 export const tripRelations = relations(trips, ({ one, many }) => ({
-  // Route information is now stored in tripData JSON
+  route: one(routes, {
+    fields: [trips.routeId],
+    references: [routes.id]
+  }),
+  // Relaciones de sub-viajes removidas temporalmente por incompatibilidad con estructura JSONB
   vehicle: one(vehicles, {
     fields: [trips.vehicleId],
     references: [vehicles.id]
@@ -621,18 +646,30 @@ export const userRelations = relations(users, ({ many, one }) => ({
   // Relación con las compañías asignadas (para usuarios taquilla)
   assignedCompanies: many(userCompanies),
   // Relación para las reservaciones creadas por este usuario
-  createdReservations: many(reservations),
+  createdReservations: many(reservations, {
+    fields: [users.id],
+    references: [reservations.createdBy]
+  }),
   // Relación para las reservaciones escaneadas por este usuario
-  checkedReservations: many(reservations),
+  checkedReservations: many(reservations, {
+    fields: [users.id],
+    references: [reservations.checkedBy]
+  }),
   // Relación para las reservaciones marcadas como pagadas por este usuario
-  paidReservations: many(reservations),
+  paidReservations: many(reservations, {
+    fields: [users.id],
+    references: [reservations.paidBy]
+  }),
   // Relación con la compañía a la que pertenece el usuario
   company: one(companies, {
     fields: [users.companyId],
     references: [companies.identifier]
   }),
   // Relación para las compañías creadas por este usuario
-  companiesCreated: many(companies)
+  companiesCreated: many(companies, {
+    fields: [users.id],
+    references: [companies.createdBy]
+  })
 }));
 
 export const invitationRelations = relations(invitations, ({ one }) => ({

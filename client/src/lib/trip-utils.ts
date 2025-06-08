@@ -2,54 +2,6 @@ import { TripWithRouteInfo } from "@shared/schema";
 import { LocationOption } from "@/components/ui/location-selector";
 
 /**
- * Extracts trip display data from the JSON structure
- * @param trip Trip object with tripData JSON field
- * @param origin Optional origin filter for subtrips
- * @param destination Optional destination filter for subtrips
- * @returns Display data including times, price, and available seats
- */
-export function getTripDisplayData(trip: TripWithRouteInfo, origin?: string, destination?: string) {
-  if (!trip.tripData || typeof trip.tripData !== 'object') {
-    return {
-      departureTime: '00:00 AM',
-      arrivalTime: '00:00 AM',
-      price: 0,
-      availableSeats: trip.capacity || 0,
-      departureDate: new Date().toISOString().split('T')[0]
-    };
-  }
-
-  const data = trip.tripData as any;
-  
-  // If searching for specific origin/destination, look in subTrips
-  if (origin && destination && data.subTrips && Array.isArray(data.subTrips)) {
-    const matchingSubTrip = data.subTrips.find((subTrip: any) => 
-      subTrip.origin === origin && subTrip.destination === destination
-    );
-    
-    if (matchingSubTrip) {
-      return {
-        departureTime: matchingSubTrip.departureTime || '00:00 AM',
-        arrivalTime: matchingSubTrip.arrivalTime || '00:00 AM',
-        price: matchingSubTrip.price || 0,
-        availableSeats: matchingSubTrip.availableSeats || trip.capacity || 0,
-        departureDate: matchingSubTrip.departureDate || data.parentTrip?.departureDate || new Date().toISOString().split('T')[0]
-      };
-    }
-  }
-  
-  // Default to parent trip data
-  const parentTrip = data.parentTrip || data;
-  return {
-    departureTime: parentTrip.departureTime || '00:00 AM',
-    arrivalTime: parentTrip.arrivalTime || '00:00 AM', 
-    price: parentTrip.price || 0,
-    availableSeats: parentTrip.availableSeats || trip.capacity || 0,
-    departureDate: parentTrip.departureDate || new Date().toISOString().split('T')[0]
-  };
-}
-
-/**
  * Formatea la hora de viaje que podría contener indicador de día siguiente
  * @param timeString Cadena de tiempo en formato "HH:MM AM/PM +Nd" donde N es el número de días
  * @param includeDayIndicator Si se debe incluir el indicador de día en el resultado
@@ -221,7 +173,11 @@ export function extractLocationsFromTrips(trips: TripWithRouteInfo[]): LocationO
       }
     }
     
-    // Legacy code removed - subtrips now handled through tripData JSON
+    // Legacy: Si es un sub-viaje, procesar origen y destino del segmento
+    if (trip.isSubTrip) {
+      if (trip.segmentOrigin) processLocation(trip.segmentOrigin, locationMap);
+      if (trip.segmentDestination) processLocation(trip.segmentDestination, locationMap);
+    }
   });
   
   // Convertir el mapa a un array de opciones

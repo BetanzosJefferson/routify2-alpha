@@ -711,13 +711,13 @@ export class DatabaseStorage implements IStorage {
     
     // 2. FILTROS ADICIONALES
     
-    // Aplicar filtro de fecha o rango de fechas usando trip_data JSON
+    // Aplicar filtro de fecha o rango de fechas usando departure_date column
     if (params.dateRange && params.dateRange.length > 0) {
       console.log(`[searchTrips-v2] Filtro por rango de fechas optimizado:`, params.dateRange);
       
-      // Crear condiciones para cada fecha usando el campo JSON trip_data
+      // Crear condiciones para cada fecha usando la columna departure_date
       const dateConditions = params.dateRange.map(date => {
-        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
+        return eq(sql`DATE(${schema.trips.departureDate})`, date);
       });
       
       // Combinar todas las condiciones de fecha con OR
@@ -729,7 +729,7 @@ export class DatabaseStorage implements IStorage {
     } else if (params.date) {
       console.log(`[searchTrips-v2] Filtro de fecha individual: ${params.date}`);
       
-      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
+      condiciones.push(sql`DATE(${schema.trips.departureDate}) = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -738,10 +738,10 @@ export class DatabaseStorage implements IStorage {
       condiciones.push(eq(schema.trips.driverId, params.driverId));
     }
     
-    // Aplicar filtro de asientos usando capacidad total
+    // Aplicar filtro de asientos
     if (params.seats) {
       console.log(`[searchTrips-v2] Filtro: Mínimo ${params.seats} asientos disponibles`);
-      condiciones.push(gte(schema.trips.capacity, params.seats));
+      condiciones.push(gte(schema.trips.availableSeats, params.seats));
     }
     
     // CONSULTA FINAL: Construir y ejecutar la consulta con todas las condiciones
@@ -847,34 +847,12 @@ export class DatabaseStorage implements IStorage {
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const trip of trips) {
-      // Extract data from JSON structure
-      let tripData: any = {};
-      try {
-        tripData = typeof trip.tripData === 'string' ? JSON.parse(trip.tripData) : trip.tripData;
-      } catch (error) {
-        console.error(`Error parsing tripData for trip ${trip.id}:`, error);
-        continue;
-      }
+      const route = routeMap.get(trip.routeId);
+      if (!route) continue;
       
-      // Create a route object from the parentTrip data since we don't store routeId anymore
-      let route;
-      if (tripData.parentTrip) {
-        route = {
-          id: 0, // Mock route ID
-          name: `${tripData.parentTrip.origin} - ${tripData.parentTrip.destination}`,
-          origin: tripData.parentTrip.origin,
-          destination: tripData.parentTrip.destination,
-          stops: [tripData.parentTrip.origin, tripData.parentTrip.destination],
-          companyId: trip.companyId
-        };
-      } else {
-        console.log(`Trip ${trip.id} has no parentTrip data, skipping`);
-        continue;
-      }
+      const isMainTrip = !trip.isSubTrip;
       
-      const isMainTrip = true; // All trips are main trips in simplified schema
-      
-      console.log(`[searchTrips-v2] Viaje ${trip.id}: isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
+      console.log(`[searchTrips-v2] Viaje ${trip.id}: isSubTrip=${trip.isSubTrip}, isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
       
       // Don't exclude main trips automatically - check if they match the filter first
       
@@ -910,15 +888,9 @@ export class DatabaseStorage implements IStorage {
         // Si hay filtros de origen/destino, buscar en subTrips para coincidencias exactas
         let hasMatchingSegment = false;
         
-        let tripDataObj: any = {};
-        try {
-          tripDataObj = typeof trip.tripData === 'string' ? JSON.parse(trip.tripData) : trip.tripData;
-        } catch (error) {
-          console.error(`Error parsing tripData for trip ${trip.id}:`, error);
-          continue;
-        }
-        
-        if (tripDataObj) {
+        if (trip.tripData && typeof trip.tripData === 'object') {
+          const tripDataObj = trip.tripData as any;
+          
           if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
             console.log(`[searchTrips-v3] Trip ${trip.id} has ${tripDataObj.subTrips.length} subTrips to check`);
             
@@ -981,25 +953,18 @@ export class DatabaseStorage implements IStorage {
         // Sin filtros de origen/destino: Solo mostrar viajes que tienen parentTrip válido
         console.log(`[searchTrips-v3] No origin/destination filters - checking if trip ${trip.id} has valid parentTrip`);
         
-        let tripDataObj: any = {};
-        try {
-          tripDataObj = typeof trip.tripData === 'string' ? JSON.parse(trip.tripData) : trip.tripData;
-          console.log(`[searchTrips-v3] Trip ${trip.id} parsed tripData:`, JSON.stringify(tripDataObj, null, 2));
-        } catch (error) {
-          console.error(`Error parsing tripData for trip ${trip.id}:`, error);
-          continue;
-        }
-        
-        if (tripDataObj && tripDataObj.parentTrip) {
+        if (trip.tripData && typeof trip.tripData === 'object') {
+          const tripDataObj = trip.tripData as any;
+          
           // Verificar que el viaje tenga un parentTrip válido
-          if (!tripDataObj.parentTrip.origin || !tripDataObj.parentTrip.destination) {
-            console.log(`[searchTrips-v3] Trip ${trip.id} has incomplete parentTrip data, skipping for default view`);
+          if (!tripDataObj.parentTrip || !tripDataObj.parentTrip.origin || !tripDataObj.parentTrip.destination) {
+            console.log(`[searchTrips-v3] Trip ${trip.id} has no valid parentTrip, skipping for default view`);
             continue;
           }
           
           console.log(`[searchTrips-v3] Trip ${trip.id} has valid parentTrip: ${tripDataObj.parentTrip.origin} -> ${tripDataObj.parentTrip.destination}`);
         } else {
-          console.log(`[searchTrips-v3] Trip ${trip.id} has no parentTrip data, skipping for default view`);
+          console.log(`[searchTrips-v3] Trip ${trip.id} has no tripData, skipping for default view`);
           continue;
         }
       }
