@@ -372,22 +372,23 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
 
     // Filtrar por fecha usando nuestras utilidades de normalización
     if (dateFilter) {
-      // Usar isSameLocalDay para comparar las fechas correctamente
+      // Con la nueva estructura, necesitamos revisar el tripData
       try {
-        // Se utiliza la función isSameLocalDay que maneja correctamente zonas horarias
-        matchesDate = isSameLocalDay(trip.departureDate, dateFilter);
+        if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
+          // Verificar si alguna fecha en tripData coincide con el filtro
+          matchesDate = trip.tripData.some((tripSegment: any) => {
+            if (tripSegment.departureDate) {
+              return isSameLocalDay(tripSegment.departureDate, dateFilter);
+            }
+            return false;
+          });
+        } else {
+          // Fallback para estructura antigua si existe
+          matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
+        }
         
         if (process.env.NODE_ENV === 'development') {
-          // Solo registrar en consola en desarrollo
-          const formattedOriginal = typeof trip.departureDate === 'string' 
-            ? trip.departureDate 
-            : formatDateForApiQuery(trip.departureDate);
-            
-          const formattedFilter = formatDateForApiQuery(dateFilter);
-          
-          console.log(
-            `Comparando fechas: ${formattedOriginal} con ${formattedFilter} - Resultado: ${matchesDate}`
-          );
+          console.log(`Filtro de fecha aplicado: ${matchesDate}`);
         }
       } catch (error) {
         console.error(`Error al comparar fechas: ${error}`);
@@ -413,41 +414,73 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
     const current: Record<string, Trip[]> = {};
     let archived: Trip[] = [];
     
-    // Primero filtramos solo los viajes principales (no sub-viajes)
-    filteredTrips.filter((trip: Trip) => !trip.isSubTrip).forEach((trip: Trip) => {
-      // Normalizar la fecha para evitar problemas de zona horaria
-      const localDate = normalizeToStartOfDay(trip.departureDate);
+    // Procesar todos los viajes (con nueva estructura tripData)
+    filteredTrips.forEach((trip: Trip) => {
+      // Con la nueva estructura, extraer fechas del tripData
+      let tripDates: string[] = [];
       
-      // Verificar si el viaje es para una fecha pasada
-      const isPastTrip = localDate.getTime() < today.getTime();
-      
-      if (isPastTrip) {
-        // Es un viaje archivado
-        archived.push(trip);
-      } else {
-        // Es un viaje actual, lo agrupamos por fecha
-        const dateKey = format(localDate, "yyyy-MM-dd");
-        
-        if (!current[dateKey]) {
-          current[dateKey] = [];
-        }
-        
-        current[dateKey].push(trip);
+      if (trip.tripData && Array.isArray(trip.tripData)) {
+        tripDates = trip.tripData.map((segment: any) => segment.departureDate).filter(Boolean);
+      } else if (trip.departureDate) {
+        // Fallback para estructura antigua
+        tripDates = [trip.departureDate];
       }
+      
+      // Procesar cada fecha del viaje
+      tripDates.forEach(dateStr => {
+        try {
+          const localDate = normalizeToStartOfDay(dateStr);
+          const isPastTrip = localDate.getTime() < today.getTime();
+          
+          if (isPastTrip) {
+            // Solo agregar una vez al archivo (evitar duplicados)
+            if (!archived.find(t => t.id === trip.id)) {
+              archived.push(trip);
+            }
+          } else {
+            const dateKey = format(localDate, "yyyy-MM-dd");
+            if (!current[dateKey]) {
+              current[dateKey] = [];
+            }
+            // Solo agregar una vez por fecha (evitar duplicados)
+            if (!current[dateKey].find(t => t.id === trip.id)) {
+              current[dateKey].push(trip);
+            }
+          }
+        } catch (error) {
+          console.error(`Error procesando fecha del viaje: ${error}`);
+        }
+      });
     });
     
     // Ordenar viajes archivados por fecha (más reciente primero)
     archived.sort((a, b) => {
-      const dateA = normalizeToStartOfDay(a.departureDate);
-      const dateB = normalizeToStartOfDay(b.departureDate);
+      // Obtener primera fecha disponible de cada viaje
+      const getFirstDate = (trip: any) => {
+        if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData[0]?.departureDate) {
+          return normalizeToStartOfDay(trip.tripData[0].departureDate);
+        }
+        return trip.departureDate ? normalizeToStartOfDay(trip.departureDate) : new Date(0);
+      };
+      
+      const dateA = getFirstDate(a);
+      const dateB = getFirstDate(b);
       return dateB.getTime() - dateA.getTime(); // Orden descendente
     });
     
     // Ordenar viajes actuales por hora dentro de cada fecha
     Object.keys(current).forEach(dateKey => {
-      current[dateKey].sort((a, b) => 
-        a.departureTime.localeCompare(b.departureTime)
-      );
+      current[dateKey].sort((a, b) => {
+        // Obtener primera hora disponible de cada viaje
+        const getFirstTime = (trip: any) => {
+          if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData[0]?.departureTime) {
+            return trip.tripData[0].departureTime;
+          }
+          return trip.departureTime || "00:00";
+        };
+        
+        return getFirstTime(a).localeCompare(getFirstTime(b));
+      });
     });
     
     return { currentTrips: current, archivedTrips: archived };
