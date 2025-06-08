@@ -53,6 +53,7 @@ const PACKAGE_CREATE_ROLES = [
 
 import { setupAuthRoutes } from "./auth"; // Mantenemos para compatibilidad
 import { setupAuthentication } from "./auth-session";
+import tripRoutes from "./trip-routes";
 // Utility function to check if two locations are in the same city
 function isSameCity(location1: string, location2: string): boolean {
   // Validar que ambas ubicaciones tienen el formato esperado
@@ -6858,4 +6859,12 @@ function setupPackageRoutes(app: Express) {
       return res.status(500).json({ error: "Error al realizar corte de caja" });
     }
   });
+
+  // Configurar rutas de viajes separadas
+  app.use(apiRouter("/trips-management"), isAuthenticated, tripRoutes);
+
+  // Crear el servidor HTTP
+  const server = createServer(app);
+
+  return server;
 }
