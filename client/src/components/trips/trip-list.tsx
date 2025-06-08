@@ -244,7 +244,7 @@ export function TripList() {
                   placeholder="Cargando ubicaciones..."
                   value={origin}
                   onChange={(e) => setOrigin(e.target.value)}
-                  disabled={isLoadingAll}
+                  disabled={isLoading}
                 />
               )}
             </div>
@@ -265,7 +265,7 @@ export function TripList() {
                   placeholder="Cargando ubicaciones..."
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
-                  disabled={isLoadingAll}
+                  disabled={isLoading}
                 />
               )}
             </div>
