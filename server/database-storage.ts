@@ -755,4 +755,53 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: schema.commissions.id });
     return result.length > 0;
   }
+  
+  // Métodos para gestión de cupones
+  async verifyCouponValidity(code: string): Promise<{ valid: boolean; message?: string; coupon?: any }> {
+    try {
+      const [coupon] = await db
+        .select()
+        .from(schema.coupons)
+        .where(eq(schema.coupons.code, code));
+
+      if (!coupon) {
+        return { valid: false, message: 'Cupón no encontrado' };
+      }
+
+      // Verificar si el cupón está activo
+      if (!coupon.isActive) {
+        return { valid: false, message: 'Cupón inactivo' };
+      }
+
+      // Verificar si el cupón ha expirado
+      const now = new Date();
+      if (coupon.expiresAt < now) {
+        return { valid: false, message: 'Cupón expirado' };
+      }
+
+      // Verificar si el cupón ha alcanzado su límite de uso
+      if (coupon.usageCount >= coupon.usageLimit) {
+        return { valid: false, message: 'Cupón agotado' };
+      }
+
+      return { valid: true, coupon };
+    } catch (error) {
+      console.error('Error al verificar cupón:', error);
+      return { valid: false, message: 'Error al verificar cupón' };
+    }
+  }
+
+  async incrementCouponUsage(couponId: number): Promise<void> {
+    try {
+      await db
+        .update(schema.coupons)
+        .set({ 
+          usageCount: sql`${schema.coupons.usageCount} + 1` 
+        })
+        .where(eq(schema.coupons.id, couponId));
+    } catch (error) {
+      console.error('Error al incrementar uso de cupón:', error);
+      throw error;
+    }
+  }
 }
