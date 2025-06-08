@@ -988,7 +988,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cleanArrivalTime = arrivalTime.replace(/\s*\+\d+d$/, '');
         
         // Generate unique tripIds for subTrips
-        const generateTripId = () => Date.now() + Math.floor(Math.random() * 1000);
+        let tripIdCounter = 0;
+        const generateTripId = () => {
+          tripIdCounter++;
+          return Date.now() + tripIdCounter * 100; // Garantizar unicidad con contador incremental
+        };
         
         // Build subTrips array
         const subTrips = allSegments.map(segment => {
@@ -2592,10 +2596,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Crear estructura trip_details JSON con información del viaje
       // Usar el selectedSegmentTripId del frontend si está disponible
-      let specificTripId = trip.id; // Default fallback
+      let specificTripId: number = trip.id; // Default fallback
       
       if (reservationData.selectedSegmentTripId) {
-        specificTripId = reservationData.selectedSegmentTripId;
+        specificTripId = typeof reservationData.selectedSegmentTripId === 'string' 
+          ? parseInt(reservationData.selectedSegmentTripId, 10) 
+          : reservationData.selectedSegmentTripId;
         console.log(`[POST /reservations] Usando selectedSegmentTripId del frontend: ${specificTripId}`);
       } else if (trip.tripData && typeof trip.tripData === 'object') {
         // Fallback: Si el viaje tiene tripData con estructura de subTrips/parentTrip
