@@ -4308,7 +4308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener el ID de la compañía del usuario si no es superAdmin
       let companyId = null;
       if (req.user!.role !== UserRole.SUPER_ADMIN && req.user!.role !== UserRole.DEVELOPER) {
-        companyId = req.user!.company || (req.user as any).companyId;
+        companyId = (req.user as any).companyId;
       }
       
       const coupons = await storage.getCoupons(companyId);
@@ -4428,7 +4428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Asignar la compañía del usuario al cupón
       let companyId = null;
       if (req.user!.role !== UserRole.SUPER_ADMIN && req.user!.role !== UserRole.DEVELOPER) {
-        companyId = req.user!.company || (req.user as any).companyId;
+        companyId = (req.user as any).companyId;
       }
       console.log('[POST /coupons] CompanyId asignado:', companyId);
       
