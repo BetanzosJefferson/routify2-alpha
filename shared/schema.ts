@@ -291,7 +291,9 @@ export const createReservationValidationSchema = z.object({
   // Campos para cupones y descuentos
   couponCode: z.string().optional(),
   discountAmount: z.number().min(0).optional(),
-  originalAmount: z.number().min(0).optional()
+  originalAmount: z.number().min(0).optional(),
+  // Campo para identificar el segmento específico seleccionado
+  selectedSegmentTripId: z.union([z.number(), z.string()]).optional()
 }).superRefine((data, ctx) => {
   // Validar que el anticipo no sea mayor que el monto total
   if (data.advanceAmount && data.advanceAmount > data.totalAmount) {

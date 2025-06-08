@@ -110,16 +110,25 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
 
     const tripDataObj = trip.tripData as any;
     
-    // If no search filters, use parentTrip
-    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
-      return tripDataObj.parentTrip.tripId || trip.id;
-    }
+    console.log(`[getSelectedSegmentTripId] Buscando segmento para: ${searchOrigin} -> ${searchDestination}`);
+    console.log(`[getSelectedSegmentTripId] subTrips disponibles:`, tripDataObj.subTrips);
     
     // If there are search filters, find matching subTrip
     if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
       const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
-        const originMatch = !searchOrigin || subTrip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
-        const destMatch = !searchDestination || subTrip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
+        // Extract city/state from full location strings for comparison
+        const subTripOriginCity = subTrip.origin?.split(' - ')[0] || subTrip.origin;
+        const subTripDestCity = subTrip.destination?.split(' - ')[0] || subTrip.destination;
+        
+        console.log(`[getSelectedSegmentTripId] Comparando:
+          SubTrip: ${subTripOriginCity} -> ${subTripDestCity}
+          Búsqueda: ${searchOrigin} -> ${searchDestination}`);
+        
+        const originMatch = !searchOrigin || subTripOriginCity?.toLowerCase().includes(searchOrigin.toLowerCase());
+        const destMatch = !searchDestination || subTripDestCity?.toLowerCase().includes(searchDestination.toLowerCase());
+        
+        console.log(`[getSelectedSegmentTripId] Matches: origin=${originMatch}, dest=${destMatch}`);
+        
         return originMatch && destMatch;
       });
       
@@ -127,6 +136,12 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
         console.log(`[ReservationModal] Using subTrip tripId: ${matchingSubTrip.tripId} for search ${searchOrigin}->${searchDestination}`);
         return matchingSubTrip.tripId;
       }
+    }
+    
+    // If no search filters, use parentTrip
+    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
+      console.log(`[ReservationModal] No search filters, using parentTrip: ${tripDataObj.parentTrip.tripId}`);
+      return tripDataObj.parentTrip.tripId || trip.id;
     }
     
     // Fallback to parentTrip if available
