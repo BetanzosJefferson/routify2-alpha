@@ -2590,6 +2590,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[POST /reservations] Marcando como PAGADO: anticipo ${reservationData.advanceAmount} cubre el monto final ${finalAmount}`);
       }
       
+      // Crear estructura trip_details JSON con información del viaje
+      const tripDetailsJson = {
+        recordId: trip.id, // ID del registro del viaje (columna id)
+        tripId: trip.tripData && typeof trip.tripData === 'object' && trip.tripData.parentTrip 
+          ? trip.tripData.parentTrip.tripId 
+          : trip.id, // tripId del viaje seleccionado
+        seats: passengerCount // Cantidad de asientos de la reserva
+      };
+      
+      console.log(`[POST /reservations] Creando trip_details:`, JSON.stringify(tripDetailsJson, null, 2));
+      
       const reservation = await storage.createReservation({
         tripId: reservationData.tripId,
         totalAmount: finalAmount, // Usamos el monto final con descuento
@@ -2606,7 +2617,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: createdByUserId, // ID del usuario que crea la reservación (para comisiones)
         couponCode: couponCode, // Guardar el código del cupón aplicado
         discountAmount: discountAmount, // Guardar el monto del descuento
-        originalAmount: discountAmount > 0 ? totalAmount : null // Guardar el monto original si hay descuento
+        originalAmount: discountAmount > 0 ? totalAmount : null, // Guardar el monto original si hay descuento
+        tripDetails: tripDetailsJson // Agregar detalles del viaje
       });
       
       // Create the passengers
