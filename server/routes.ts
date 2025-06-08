@@ -1623,7 +1623,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // SEGURIDAD: Si no es superAdmin, verificar que el viaje pertenece a su compañía
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = user.company;
+        // Usar companyId si está disponible, sino usar company como fallback
+        const userCompany = user.companyId || user.company;
         
         if (currentTrip.companyId && currentTrip.companyId !== userCompany) {
           console.log(`[PUT /trips/${id}] ACCESO DENEGADO: El viaje pertenece a compañía ${currentTrip.companyId} pero el usuario es de ${userCompany}`);
