@@ -1018,7 +1018,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           capacity: tripData.capacity,
           vehicleId: null,
           driverId: null,
-          visibility: tripData.visibility || "publicado"
+          visibility: tripData.visibility || "publicado",
+          routeId: tripData.routeId,
+          companyId: companyId
         };
         
         const mainTrip = await storage.createTrip(mainTripToCreate);
