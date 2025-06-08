@@ -19,7 +19,7 @@ export function useTrips(options: UseTripsOptions = {}) {
   
   return useQuery<TripWithRouteInfo[]>({
     queryKey: ["/api/trips", { routeId, departureDate, searchTerm }],
-    enabled: !!user && enabled,
+    enabled: enabled, // Allow anonymous access to public trips
     staleTime: 5000,
     refetchInterval: 15000,
     queryFn: async () => {
