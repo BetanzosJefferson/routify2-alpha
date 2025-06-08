@@ -439,10 +439,6 @@ export const tripRelations = relations(trips, ({ one, many }) => ({
 }));
 
 export const reservationRelations = relations(reservations, ({ one, many }) => ({
-  trip: one(trips, {
-    fields: [reservations.tripId],
-    references: [trips.id]
-  }),
   passengers: many(passengers),
   createdByUser: one(users, {
     fields: [reservations.createdBy],

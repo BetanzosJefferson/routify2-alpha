@@ -55,7 +55,11 @@ interface Passenger {
 import { PaymentMethod, PaymentStatus, PaymentStatusType } from "@shared/schema";
 
 interface ReservationFormData {
-  tripId: number;
+  tripDetails: {
+    recordId: number;
+    tripId: string;
+    seats: number;
+  };
   numPassengers: number;
   passengers: Passenger[];
   email: string | null; // Ahora puede ser null para hacerlo opcional
@@ -214,7 +218,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       if (isCommissioner) {
         // El endpoint /api/reservation-requests espera passengersData en lugar de passengers
         const adaptedData = {
-          tripId: data.tripId,
+          tripDetails: data.tripDetails,
           passengersData: data.passengers,
           totalAmount: data.totalAmount,
           email: data.email,
@@ -352,7 +356,11 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       : totalPrice;
     
     const reservationData: ReservationFormData = {
-      tripId: trip.id,
+      tripDetails: {
+        recordId: parseInt(trip.id.split('_')[0]), // Extraer el recordId del tripId (ej: "10_0" -> 10)
+        tripId: trip.id, // El ID completo del viaje específico (ej: "10_0")
+        seats: numPassengers
+      },
       numPassengers,
       passengers,
       email: email.trim() || null, // Guardar null si está vacío para consistencia
