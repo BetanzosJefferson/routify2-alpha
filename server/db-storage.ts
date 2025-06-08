@@ -668,7 +668,7 @@ export class DatabaseStorage implements IStorage {
       let createdByUser = null;
       if (reservation.createdBy) {
         try {
-          const [user] = await db.select().from(users).where(eq(users.id, reservation.createdBy));
+          const [user] = await db.select().from(schema.users).where(eq(schema.users.id, reservation.createdBy));
           if (user) {
             createdByUser = {
               id: user.id,

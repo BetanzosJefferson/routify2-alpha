@@ -41,12 +41,12 @@ export default function ReservationDetailsModal({
     reservation?: any;
   } | null>(null);
 
-  // Cargar los detalles de la reservación usando el endpoint público
+  // Cargar los detalles de la reservación usando el endpoint principal
   const { data: reservation, isLoading, error, refetch } = useQuery({
-    queryKey: ["/api/public/reservations", reservationId],
+    queryKey: ["/api/reservations", reservationId],
     queryFn: async () => {
       if (!reservationId) return null;
-      const response = await fetch(`/api/public/reservations/${reservationId}`);
+      const response = await fetch(`/api/reservations/${reservationId}`);
       if (!response.ok) {
         throw new Error("Error al cargar los detalles de la reservación");
       }
