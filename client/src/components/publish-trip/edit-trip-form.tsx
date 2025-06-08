@@ -522,9 +522,20 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   });
 
   const onSubmit = (data: FormValues) => {
-    console.log("Datos de formulario enviados para actualizar:", data);
+    console.log("🔄 onSubmit ejecutado - Datos de formulario enviados para actualizar:", data);
+    console.log("🔄 Form state:", {
+      isValid: form.formState.isValid,
+      errors: form.formState.errors,
+      isDirty: form.formState.isDirty
+    });
+    console.log("🔄 StopTimes disponibles:", stopTimes);
+    console.log("🔄 SegmentPrices disponibles:", segmentPrices);
+    
     // Incluir los tiempos de parada en los datos del formulario
     data.stopTimes = stopTimes;
+    data.segmentPrices = segmentPrices;
+    
+    console.log("🔄 Datos finales a enviar:", data);
     
     // Llamar a la mutación para actualizar el viaje
     updateTripMutation.mutate(data);
@@ -1031,6 +1042,12 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
               type="submit" 
               className="w-full md:w-auto"
               disabled={updateTripMutation.isPending}
+              onClick={() => {
+                console.log("🔥 Botón 'Actualizar Viaje' clickeado");
+                console.log("🔥 Form errors:", form.formState.errors);
+                console.log("🔥 Form values:", form.getValues());
+                console.log("🔥 Form isValid:", form.formState.isValid);
+              }}
             >
               {updateTripMutation.isPending && (
                 <span className="mr-2 animate-spin">⏳</span>
