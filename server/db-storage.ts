@@ -856,11 +856,21 @@ export class DatabaseStorage implements IStorage {
         continue;
       }
       
-      const routeId = tripData.parentTrip?.routeId || tripData.routeId;
-      if (!routeId) continue;
-      
-      const route = routeMap.get(routeId);
-      if (!route) continue;
+      // Create a route object from the parentTrip data since we don't store routeId anymore
+      let route;
+      if (tripData.parentTrip) {
+        route = {
+          id: 0, // Mock route ID
+          name: `${tripData.parentTrip.origin} - ${tripData.parentTrip.destination}`,
+          origin: tripData.parentTrip.origin,
+          destination: tripData.parentTrip.destination,
+          stops: [tripData.parentTrip.origin, tripData.parentTrip.destination],
+          companyId: trip.companyId
+        };
+      } else {
+        console.log(`Trip ${trip.id} has no parentTrip data, skipping`);
+        continue;
+      }
       
       const isMainTrip = true; // All trips are main trips in simplified schema
       
@@ -900,9 +910,15 @@ export class DatabaseStorage implements IStorage {
         // Si hay filtros de origen/destino, buscar en subTrips para coincidencias exactas
         let hasMatchingSegment = false;
         
-        if (trip.tripData && typeof trip.tripData === 'object') {
-          const tripDataObj = trip.tripData as any;
-          
+        let tripDataObj: any = {};
+        try {
+          tripDataObj = typeof trip.tripData === 'string' ? JSON.parse(trip.tripData) : trip.tripData;
+        } catch (error) {
+          console.error(`Error parsing tripData for trip ${trip.id}:`, error);
+          continue;
+        }
+        
+        if (tripDataObj) {
           if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
             console.log(`[searchTrips-v3] Trip ${trip.id} has ${tripDataObj.subTrips.length} subTrips to check`);
             
@@ -965,18 +981,25 @@ export class DatabaseStorage implements IStorage {
         // Sin filtros de origen/destino: Solo mostrar viajes que tienen parentTrip válido
         console.log(`[searchTrips-v3] No origin/destination filters - checking if trip ${trip.id} has valid parentTrip`);
         
-        if (trip.tripData && typeof trip.tripData === 'object') {
-          const tripDataObj = trip.tripData as any;
-          
+        let tripDataObj: any = {};
+        try {
+          tripDataObj = typeof trip.tripData === 'string' ? JSON.parse(trip.tripData) : trip.tripData;
+          console.log(`[searchTrips-v3] Trip ${trip.id} parsed tripData:`, JSON.stringify(tripDataObj, null, 2));
+        } catch (error) {
+          console.error(`Error parsing tripData for trip ${trip.id}:`, error);
+          continue;
+        }
+        
+        if (tripDataObj && tripDataObj.parentTrip) {
           // Verificar que el viaje tenga un parentTrip válido
-          if (!tripDataObj.parentTrip || !tripDataObj.parentTrip.origin || !tripDataObj.parentTrip.destination) {
-            console.log(`[searchTrips-v3] Trip ${trip.id} has no valid parentTrip, skipping for default view`);
+          if (!tripDataObj.parentTrip.origin || !tripDataObj.parentTrip.destination) {
+            console.log(`[searchTrips-v3] Trip ${trip.id} has incomplete parentTrip data, skipping for default view`);
             continue;
           }
           
           console.log(`[searchTrips-v3] Trip ${trip.id} has valid parentTrip: ${tripDataObj.parentTrip.origin} -> ${tripDataObj.parentTrip.destination}`);
         } else {
-          console.log(`[searchTrips-v3] Trip ${trip.id} has no tripData, skipping for default view`);
+          console.log(`[searchTrips-v3] Trip ${trip.id} has no parentTrip data, skipping for default view`);
           continue;
         }
       }
