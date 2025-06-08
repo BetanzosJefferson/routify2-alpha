@@ -271,41 +271,92 @@ export class DatabaseStorage implements IStorage {
     origin?: string;
     destination?: string;
     date?: string;
+    dateRange?: string[];
     seats?: number;
-    companyId?: string | null;
+    companyId?: string;
+    companyIds?: string[];
+    driverId?: number;
+    visibility?: string;
+    includeAllVisibilities?: boolean;
   }): Promise<TripWithRouteInfo[]> {
-    // Base query for trips
-    const tripsQuery = db.select().from(schema.trips);
+    console.log(`[searchTrips] Iniciando búsqueda con parámetros:`, params);
     
-    // Apply seat filter
+    // Construir los filtros como un array de condiciones 
+    const condiciones = [];
+    
+    // Aplicar filtro de visibilidad
+    if (params.includeAllVisibilities) {
+      console.log(`[searchTrips] Incluyendo TODOS los estados de visibilidad`);
+    } else if (params.visibility) {
+      console.log(`[searchTrips] Filtro por visibilidad: ${params.visibility}`);
+      condiciones.push(eq(schema.trips.visibility, params.visibility));
+    } else {
+      // Por defecto, solo mostrar viajes publicados
+      condiciones.push(eq(schema.trips.visibility, 'publicado'));
+      console.log(`[searchTrips] Aplicando filtro predeterminado: solo viajes publicados`);
+    }
+    
+    // Filtrado por compañía
+    if (params.companyIds && params.companyIds.length > 0) {
+      console.log(`[searchTrips] FILTRADO MÚLTIPLE POR COMPAÑÍAS: [${params.companyIds.join(', ')}]`);
+      // Para múltiples compañías usamos OR
+      const companyConditions = params.companyIds.map(id => eq(schema.trips.companyId, id));
+      condiciones.push(or(...companyConditions));
+    } else if (params.companyId) {
+      if (params.companyId === 'ALL') {
+        console.log(`[searchTrips] ACCESO TOTAL: Sin filtrar por compañía`);
+      } else {
+        console.log(`[searchTrips] FILTRADO POR COMPAÑÍA: "${params.companyId}"`);
+        condiciones.push(eq(schema.trips.companyId, params.companyId));
+      }
+    }
+    
+    // Aplicar filtro de fecha o rango de fechas usando JSONB
+    if (params.dateRange && params.dateRange.length > 0) {
+      console.log(`[searchTrips] Filtro por rango de fechas:`, params.dateRange);
+      
+      const dateConditions = params.dateRange.map(date => {
+        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
+      });
+      
+      if (dateConditions.length === 1) {
+        condiciones.push(dateConditions[0]);
+      } else {
+        condiciones.push(or(...dateConditions));
+      }
+    } else if (params.date) {
+      console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
+      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
+    }
+    
+    // Aplicar filtro por conductor (driverId)
+    if (params.driverId) {
+      console.log(`[searchTrips] Filtro por conductor ID: ${params.driverId}`);
+      condiciones.push(eq(schema.trips.driverId, params.driverId));
+    }
+    
+    // Aplicar filtro de asientos
     if (params.seats) {
-      tripsQuery.where(gte(schema.trips.availableSeats, params.seats));
+      console.log(`[searchTrips] Filtro: Mínimo ${params.seats} asientos disponibles`);
+      condiciones.push(gte(schema.trips.availableSeats, params.seats));
     }
     
-    // Apply date filter
-    if (params.date) {
-      const searchDate = new Date(params.date);
-      searchDate.setHours(0, 0, 0, 0);
-      
-      const nextDay = new Date(searchDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      
-      tripsQuery.where(
-        and(
-          gte(schema.trips.departureDate, searchDate),
-          lt(schema.trips.departureDate, nextDay)
-        )
-      );
+    // Ejecutar consulta con todas las condiciones
+    let trips;
+    
+    if (condiciones.length > 0) {
+      const whereClause = condiciones.length === 1 ? condiciones[0] : and(...condiciones);
+      console.log(`[searchTrips] Ejecutando consulta con ${condiciones.length} filtros`);
+      trips = await db.select().from(schema.trips).where(whereClause);
+    } else {
+      console.log(`[searchTrips] Ejecutando consulta SIN FILTROS`);
+      trips = await db.select().from(schema.trips);
     }
     
-    // Apply company filter if provided
-    if (params.companyId) {
-      tripsQuery.where(eq(schema.trips.companyId, params.companyId));
-      console.log(`Filtrando viajes por compañía ID: ${params.companyId}`);
-    }
+    console.log(`[searchTrips] Encontrados ${trips.length} viajes que coinciden con los filtros SQL`);
     
-    // Get trips
-    const trips = await tripsQuery;
+    // Get all routes in a single query for better performance
+    const routes = await db.select().from(schema.routes);
     
     // Obtener todos los usuarios dueños (Owner) para relacionar con las compañías
     const owners = await db
@@ -313,7 +364,7 @@ export class DatabaseStorage implements IStorage {
       .from(schema.users)
       .where(eq(schema.users.role, schema.UserRole.OWNER));
     
-    // Crear un mapa de compañía -> datos del dueño para buscar rápidamente
+    // Crear un mapa de compañía -> datos del dueño para búsqueda rápida
     const companyMap = new Map();
     owners.forEach(owner => {
       const companyId = owner.companyId || owner.company;
@@ -325,17 +376,78 @@ export class DatabaseStorage implements IStorage {
       }
     });
     
+    // Create map for quick lookups
+    const routeMap = new Map<number, Route>();
+    routes.forEach(route => {
+      routeMap.set(route.id, route);
+    });
+    
+    // Obtener todos los vehículos en una sola consulta
+    const vehicles = await db.select().from(schema.vehicles);
+    
+    // Crear un mapa de vehículos para búsqueda rápida
+    const vehicleMap = new Map<number, schema.Vehicle>();
+    vehicles.forEach(vehicle => {
+      vehicleMap.set(vehicle.id, vehicle);
+    });
+    
+    // Obtener todos los conductores (choferes) en una sola consulta
+    const drivers = await db
+      .select()
+      .from(schema.users)
+      .where(
+        or(
+          eq(schema.users.role, "chofer"),
+          eq(schema.users.role, "CHOFER"),
+          eq(schema.users.role, "Chofer"),
+          eq(schema.users.role, "driver"),
+          eq(schema.users.role, "DRIVER"),
+          eq(schema.users.role, "Driver")
+        )
+      );
+    
+    // Crear un mapa de conductores para búsqueda rápida
+    const driverMap = new Map<number, schema.User>();
+    drivers.forEach(driver => {
+      driverMap.set(driver.id, driver);
+    });
+    
+    console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
+    
     // Now filter by origin and destination if provided
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const trip of trips) {
-      const route = await this.getRoute(trip.routeId);
+      const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      // Obtener datos de la compañía si existen
+      // Si se está filtrando por origen O destino específicos, excluir viajes padre
+      const hasOriginOrDestinationFilter = params.origin || params.destination;
+      const isMainTrip = !trip.isSubTrip;
+      
+      // Si hay filtro de origen/destino y es un viaje padre, saltarlo
+      if (hasOriginOrDestinationFilter && isMainTrip) {
+        console.log(`[searchTrips] EXCLUYENDO VIAJE PADRE ${trip.id} debido a filtro de origen/destino específico`);
+        continue;
+      }
+      
+      // Buscar información de la compañía si existe
       let companyData = { companyName: undefined, companyLogo: undefined };
+      
       if (trip.companyId && companyMap.has(trip.companyId)) {
         companyData = companyMap.get(trip.companyId);
+      }
+      
+      // Buscar vehículo asignado
+      let assignedVehicle = undefined;
+      if (trip.vehicleId && vehicleMap.has(trip.vehicleId)) {
+        assignedVehicle = vehicleMap.get(trip.vehicleId);
+      }
+      
+      // Buscar conductor asignado
+      let assignedDriver = undefined;
+      if (trip.driverId && driverMap.has(trip.driverId)) {
+        assignedDriver = driverMap.get(trip.driverId);
       }
       
       // For subtrips, check against segment origin and destination
@@ -348,11 +460,17 @@ export class DatabaseStorage implements IStorage {
             ...trip,
             route,
             numStops: route.stops.length,
-            // Agregar información de la compañía
             companyName: companyData.companyName,
-            companyLogo: companyData.companyLogo
+            companyLogo: companyData.companyLogo,
+            assignedVehicle,
+            assignedDriver
           });
         }
+        continue;
+      }
+      
+      // Para viajes principales: Si hay filtro de origen/destino, EXCLUIR viajes padre completamente
+      if ((params.origin || params.destination) && !trip.isSubTrip) {
         continue;
       }
       
@@ -361,23 +479,27 @@ export class DatabaseStorage implements IStorage {
       let destMatch = !params.destination;
       
       if (params.origin) {
-        originMatch = route.origin.toLowerCase().includes(params.origin.toLowerCase()) || 
-                      route.stops.some(stop => stop.toLowerCase().includes(params.origin!.toLowerCase()));
+        const searchOrigin = params.origin.toLowerCase();
+        originMatch = route.origin.toLowerCase().includes(searchOrigin) || 
+                      route.stops.some(stop => stop.toLowerCase().includes(searchOrigin));
       }
       
       if (params.destination) {
-        destMatch = route.destination.toLowerCase().includes(params.destination.toLowerCase()) || 
-                    route.stops.some(stop => stop.toLowerCase().includes(params.destination!.toLowerCase()));
+        const searchDest = params.destination.toLowerCase();
+        destMatch = route.destination.toLowerCase().includes(searchDest) || 
+                    route.stops.some(stop => stop.toLowerCase().includes(searchDest));
       }
       
+      // Solo procesar si coinciden origen y destino
       if (originMatch && destMatch) {
         tripsWithRouteInfo.push({
           ...trip,
           route,
           numStops: route.stops.length,
-          // Agregar información de la compañía
           companyName: companyData.companyName,
-          companyLogo: companyData.companyLogo
+          companyLogo: companyData.companyLogo,
+          assignedVehicle,
+          assignedDriver
         });
       }
     }
