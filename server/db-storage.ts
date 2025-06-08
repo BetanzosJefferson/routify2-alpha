@@ -592,6 +592,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTrip(trip: InsertTrip): Promise<Trip> {
+    // Filtrar solo las columnas que existen en la nueva tabla
     const tripToInsert = {
       tripData: trip.tripData,
       capacity: trip.capacity,
