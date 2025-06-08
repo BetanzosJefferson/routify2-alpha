@@ -674,11 +674,20 @@ export class DatabaseStorage implements IStorage {
               id: user.id,
               firstName: user.firstName,
               lastName: user.lastName,
-              email: user.email
+              email: user.email,
+              role: user.role
             };
           }
         } catch (error) {
           console.warn(`Error fetching created_by user ${reservation.createdBy}:`, error);
+          // Fallback to avoid blocking the reservation data
+          createdByUser = {
+            id: reservation.createdBy,
+            firstName: "Usuario",
+            lastName: "Desconocido",
+            email: "no-disponible@example.com",
+            role: "usuario"
+          };
         }
       }
       
@@ -721,21 +730,112 @@ export class DatabaseStorage implements IStorage {
     const reservation = await this.getReservation(id);
     if (!reservation) return undefined;
     
-    const trip = await this.getTripWithRouteInfo(reservation.tripId);
-    if (!trip) return undefined;
-    
-    // Si se proporciona companyId, verificar que el viaje pertenezca a esa compañía
-    if (companyId && trip.companyId !== companyId) {
-      console.log(`Acceso denegado: El viaje ${trip.id} pertenece a la compañía ${trip.companyId} pero se solicita acceso desde la compañía ${companyId}`);
-      return undefined; // No permitir acceso a reservaciones de otras compañías
+    // Parse tripDetails JSON para obtener información del viaje
+    let tripDetails;
+    try {
+      tripDetails = typeof reservation.tripDetails === 'string' 
+        ? JSON.parse(reservation.tripDetails) 
+        : reservation.tripDetails;
+    } catch (error) {
+      console.warn(`Error parsing tripDetails for reservation ${reservation.id}:`, error);
+      return undefined;
     }
     
+    if (!tripDetails || !tripDetails.recordId || !tripDetails.tripId) {
+      console.warn(`Invalid tripDetails for reservation ${reservation.id}:`, tripDetails);
+      return undefined;
+    }
+    
+    // Obtener el trip record usando recordId desde tripDetails
+    const tripRecord = await this.getTrip(tripDetails.recordId);
+    if (!tripRecord) {
+      console.warn(`Trip record ${tripDetails.recordId} not found for reservation ${reservation.id}`);
+      return undefined;
+    }
+    
+    // Parse tripData JSON array para encontrar el segmento específico
+    let tripDataArray = [];
+    try {
+      tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
+    } catch (error) {
+      console.warn(`Error parsing tripData for trip ${tripRecord.id}:`, error);
+      return undefined;
+    }
+    
+    // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
+    const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+    const tripSegment = tripDataArray[segmentIndex];
+    
+    if (!tripSegment) {
+      console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
+      return undefined;
+    }
+    
+    // Obtener información de la ruta
+    const route = await this.getRoute(tripRecord.routeId);
+    if (!route) {
+      console.warn(`Route ${tripRecord.routeId} not found for trip ${tripRecord.id}`);
+      return undefined;
+    }
+    
+    // Si se proporciona companyId, verificar que el viaje pertenezca a esa compañía
+    if (companyId && tripRecord.companyId !== companyId) {
+      console.log(`Acceso denegado: El viaje ${tripRecord.id} pertenece a la compañía ${tripRecord.companyId} pero se solicita acceso desde la compañía ${companyId}`);
+      return undefined;
+    }
+    
+    // Obtener información de pasajeros
     const passengers = await this.getPassengers(reservation.id);
+    
+    // Obtener información del usuario que creó la reservación
+    let createdByUser = null;
+    if (reservation.createdBy) {
+      try {
+        const [user] = await db.select().from(schema.users).where(eq(schema.users.id, reservation.createdBy));
+        if (user) {
+          createdByUser = {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role
+          };
+        }
+      } catch (error) {
+        console.warn(`Error fetching created_by user ${reservation.createdBy}:`, error);
+        createdByUser = {
+          id: reservation.createdBy,
+          firstName: "Usuario",
+          lastName: "Desconocido",
+          email: "no-disponible@example.com",
+          role: "usuario"
+        };
+      }
+    }
+    
+    // Crear objeto trip compatible con el frontend usando datos del segmento específico
+    const trip = {
+      id: tripDetails.tripId,
+      recordId: tripRecord.id,
+      routeId: tripRecord.routeId,
+      route: route,
+      origin: tripSegment.origin,
+      destination: tripSegment.destination,
+      departureDate: tripSegment.departureDate,
+      departureTime: tripSegment.departureTime,
+      arrivalTime: tripSegment.arrivalTime,
+      price: tripSegment.price,
+      availableSeats: tripSegment.availableSeats,
+      capacity: tripRecord.capacity,
+      companyId: tripRecord.companyId,
+      visibility: tripRecord.visibility
+    };
     
     return {
       ...reservation,
       trip,
-      passengers
+      passengers,
+      createdByUser
     };
   }
   
