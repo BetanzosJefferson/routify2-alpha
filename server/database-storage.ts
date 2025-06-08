@@ -791,100 +791,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementCouponUsage(couponId: number): Promise<schema.Coupon | undefined> {
+  async incrementCouponUsage(couponId: number): Promise<void> {
     try {
-      const [updatedCoupon] = await db
+      await db
         .update(schema.coupons)
         .set({ 
           usageCount: sql`${schema.coupons.usageCount} + 1` 
         })
-        .where(eq(schema.coupons.id, couponId))
-        .returning();
-      return updatedCoupon;
+        .where(eq(schema.coupons.id, couponId));
     } catch (error) {
       console.error('Error al incrementar uso de cupón:', error);
-      throw error;
-    }
-  }
-
-  async getCoupons(companyId?: string): Promise<schema.Coupon[]> {
-    try {
-      if (companyId) {
-        return await db
-          .select()
-          .from(schema.coupons)
-          .where(eq(schema.coupons.companyId, companyId));
-      } else {
-        return await db.select().from(schema.coupons);
-      }
-    } catch (error) {
-      console.error('Error al obtener cupones:', error);
-      throw error;
-    }
-  }
-
-  async getCoupon(id: number): Promise<schema.Coupon | undefined> {
-    try {
-      const [coupon] = await db
-        .select()
-        .from(schema.coupons)
-        .where(eq(schema.coupons.id, id));
-      return coupon;
-    } catch (error) {
-      console.error('Error al obtener cupón:', error);
-      throw error;
-    }
-  }
-
-  async getCouponByCode(code: string): Promise<schema.Coupon | undefined> {
-    try {
-      const [coupon] = await db
-        .select()
-        .from(schema.coupons)
-        .where(eq(schema.coupons.code, code));
-      return coupon;
-    } catch (error) {
-      console.error('Error al obtener cupón por código:', error);
-      throw error;
-    }
-  }
-
-  async createCoupon(couponData: schema.InsertCoupon): Promise<schema.Coupon> {
-    try {
-      const [newCoupon] = await db
-        .insert(schema.coupons)
-        .values(couponData)
-        .returning();
-      return newCoupon;
-    } catch (error) {
-      console.error('Error al crear cupón:', error);
-      throw error;
-    }
-  }
-
-  async updateCoupon(id: number, couponUpdate: Partial<schema.Coupon>): Promise<schema.Coupon | undefined> {
-    try {
-      const [updatedCoupon] = await db
-        .update(schema.coupons)
-        .set(couponUpdate)
-        .where(eq(schema.coupons.id, id))
-        .returning();
-      return updatedCoupon;
-    } catch (error) {
-      console.error('Error al actualizar cupón:', error);
-      throw error;
-    }
-  }
-
-  async deleteCoupon(id: number): Promise<boolean> {
-    try {
-      const result = await db
-        .delete(schema.coupons)
-        .where(eq(schema.coupons.id, id))
-        .returning({ id: schema.coupons.id });
-      return result.length > 0;
-    } catch (error) {
-      console.error('Error al eliminar cupón:', error);
       throw error;
     }
   }
