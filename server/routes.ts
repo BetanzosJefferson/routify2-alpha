@@ -123,14 +123,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // ACCESO PARA ADMIN - solo ver rutas de su compañía
         else if (user.role === UserRole.ADMIN) {
           // Admin access with company filter
-          if (user.companyId || user.company) {
-            companyId = user.companyId || user.company;
+          if ((user as any).companyId) {
+            companyId = (user as any).companyId;
           } else {
             // Admin without company defined
           }
         } else {
           // USUARIOS NORMALES - Filtrar por su compañía
-          companyId = user.companyId || user.company;
+          companyId = (user as any).companyId;
           
           if (!companyId) {
             // User without company - no routes shown
@@ -169,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let companyId = null;
       
       if (user) {
-        companyId = user.companyId || user.company;
+        companyId = (user as any).companyId;
       }
       
       // Verificar acceso a la ruta
@@ -229,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (user) {
         // CRÍTICO: Obtener correctamente la compañía del usuario
-        companyId = user.companyId || user.company;
+        companyId = (user as any).companyId;
         // User creating route
         
         // Verificar explícitamente si tenemos un valor de companyId
@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Si no es superAdmin, verificar que la ruta pertenece a su compañía
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = user.companyId || user.company;
+        const userCompany = (user as any).companyId;
         
         if (existingRoute.companyId && existingRoute.companyId !== userCompany) {
           // Access denied: route belongs to different company
@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Si no es superAdmin, verificar que la ruta pertenece a su compañía
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = user.companyId || user.company;
+        const userCompany = (user as any).companyId;
         
         if (existingRoute.companyId && existingRoute.companyId !== userCompany) {
           // Access denied: route belongs to different company
@@ -401,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log para depuración
       console.log(`[GET /admin-trips] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /admin-trips] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /admin-trips] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // Verificar que el usuario esté autenticado y tenga permisos de administrador
@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // FILTRO DE COMPAÑÍA - aplicar solo para roles que no son superAdmin
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company || null;
+        const userCompanyId = (user as any).companyId || null;
         
         if (userCompanyId) {
           searchParams.companyId = userCompanyId;
@@ -506,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /admin-trips] Usuario con rol ${user.role} - ACCESO FILTRADO POR COMPAÑÍA`);
         
         // Obtener companyId del usuario (preferimos companyId pero también aceptamos company como respaldo)
-        const userCompanyId = user.companyId || user.company || null;
+        const userCompanyId = (user as any).companyId || null;
         
         if (userCompanyId) {
           // Aplicar filtro por compañía - OBLIGATORIO para usuarios que no son superAdmin o taquilla
@@ -536,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Si el usuario no tiene permisos para ver todos los viajes, verificar compañía nuevamente
       let finalTrips = trips;
       if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.TICKET_OFFICE) {
-        const userCompanyId = user.companyId || user.company || null;
+        const userCompanyId = (user as any).companyId || null;
         
         if (userCompanyId) {
           console.log(`[GET /admin-trips] Verificación adicional de seguridad por compañía: ${userCompanyId}`);
@@ -576,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log para depuración
       console.log(`[GET /trips] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /trips] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /trips] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // Parámetros de búsqueda desde la query
@@ -627,7 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Aplicar también el filtro de compañía normal
-          const userCompanyId = user.companyId || user.company || null;
+          const userCompanyId = (user as any).companyId || null;
           if (userCompanyId) {
             searchParams.companyId = userCompanyId;
             console.log(`[GET /trips] Filtro compañía para conductor: ${userCompanyId}`);
@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (user.role !== UserRole.SUPER_ADMIN) {
           // Usuarios normales - SIEMPRE FILTRAR POR SU COMPAÑÍA
           // Obtener companyId del usuario (preferimos companyId pero también aceptamos company como respaldo)
-          const userCompanyId = user.companyId || user.company || null;
+          const userCompanyId = (user as any).companyId || null;
           
           if (userCompanyId) {
             // Aplicar filtro por compañía - OBLIGATORIO para usuarios que no son superAdmin
@@ -754,7 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else {
           // Verificación de compañía para usuarios normales
-          const userCompany = user.companyId || user.company || null;
+          const userCompany = (user as any).companyId || null;
           
           if (userCompany) {
             // Filtrar para asegurarnos que solo devolvemos viajes de su compañía
@@ -792,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /trips/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // Primero obtenemos el viaje
@@ -822,7 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Para todos los roles, verificar también que el viaje pertenezca a su compañía
-          const userCompanyId = user.companyId || user.company || null;
+          const userCompanyId = (user as any).companyId || null;
           
           if (!userCompanyId) {
             console.log(`[GET /trips/${id}] Usuario sin compañía asignada intenta acceder a un viaje`);
@@ -875,7 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[POST /trips] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // SEGURIDAD: Verificar que el usuario tenga una compañía asignada
-      let companyId = user.companyId || user.company || null;
+      let companyId = (user as any).companyId || null;
       
       if (!companyId) {
         console.log(`[POST /trips] ERROR: Usuario sin companyId intenta crear un viaje`);
@@ -1613,7 +1613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PUT /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[PUT /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[PUT /trips/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
         console.log(`[PUT /trips/${id}] DEBUG - user.companyId: ${user.companyId}, user.company: ${user.company}`);
       }
       
@@ -1758,7 +1758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DELETE /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[DELETE /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[DELETE /trips/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // Primero verificar que el viaje existe
@@ -1822,7 +1822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PATCH /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[PATCH /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[PATCH /trips/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // Obtener viaje actual
@@ -1834,7 +1834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // SEGURIDAD: Si no es superAdmin, verificar que el viaje pertenece a su compañía
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = user.companyId || user.company;
+        const userCompany = (user as any).companyId;
         
         if (currentTrip.companyId && currentTrip.companyId !== userCompany) {
           console.log(`[PATCH /trips/${id}] ACCESO DENEGADO: El viaje pertenece a compañía ${currentTrip.companyId} pero el usuario es de ${userCompany}`);
@@ -1945,7 +1945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                user.role !== UserRole.ADMIN && 
                user.role !== UserRole.CHECKER) {
         // Otros roles: filtrar por su compañía
-        companyId = user.companyId || user.company;
+        companyId = (user as any).companyId;
         if (!companyId) {
           return res.json([]);
         }
@@ -2005,7 +2005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /reservations/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /reservations/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /reservations/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Control de acceso a datos por compañía
@@ -2031,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[GET /reservations/${id}] Acceso permitido: Reservación transferida al usuario`);
           } else {
             // Obtener la compañía del usuario para verificación normal
-            companyId = user.companyId || user.company;
+            companyId = (user as any).companyId;
             
             if (!companyId) {
               console.log(`[GET /reservations/${id}] ACCESO DENEGADO: Usuario sin compañía asignada`);
@@ -2578,7 +2578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /vehicles] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /vehicles] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /vehicles] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Filtrado de datos por compañía
@@ -2591,7 +2591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Los roles que NO son superAdmin tienen acceso restringido
         if (user.role !== UserRole.SUPER_ADMIN) {
           // Obtener la compañía del usuario
-          companyId = user.companyId || user.company;
+          companyId = (user as any).companyId;
           
           if (!companyId) {
             console.log(`[GET /vehicles] ADVERTENCIA: Usuario sin compañía asignada`);
@@ -2616,7 +2616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // CAPA ADICIONAL DE SEGURIDAD - FILTRO POST-CONSULTA
       if (user && user.role !== UserRole.SUPER_ADMIN) {
         // Obtener la compañía del usuario
-        const userCompany = user.companyId || user.company || null;
+        const userCompany = (user as any).companyId || null;
         
         if (userCompany) {
           // Verificar que todos los vehículos sean realmente de la compañía del usuario
@@ -2653,7 +2653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /vehicles/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /vehicles/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /vehicles/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Control de acceso a datos por compañía
@@ -2665,7 +2665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user) {
         if (user.role !== UserRole.SUPER_ADMIN) {
           // Obtener la compañía del usuario
-          companyId = user.companyId || user.company;
+          companyId = (user as any).companyId;
           
           if (!companyId) {
             console.log(`[GET /vehicles/${id}] ACCESO DENEGADO: Usuario sin compañía asignada`);
@@ -2728,7 +2728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[POST /vehicles] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[POST /vehicles] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[POST /vehicles] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Verificar autenticación
@@ -2738,7 +2738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener companyId del usuario
-      let companyId = user.companyId || user.company;
+      let companyId = (user as any).companyId;
       
       // SEGURIDAD: Verificar asignación de compañía
       if (!companyId && user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.ADMIN) {
@@ -2799,7 +2799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PUT /vehicles/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[PUT /vehicles/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[PUT /vehicles/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Verificar autenticación
@@ -2818,7 +2818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verificar permisos (solo los superAdmin y admin pueden editar cualquier vehículo)
       if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.ADMIN) {
-        const userCompanyId = user.companyId || user.company;
+        const userCompanyId = (user as any).companyId;
         
         // Si no tiene compañía asignada, no puede editar
         if (!userCompanyId) {
@@ -2870,7 +2870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DELETE /vehicles/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[DELETE /vehicles/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[DELETE /vehicles/${id}] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Verificar autenticación
@@ -2898,7 +2898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Si es owner, verificar que el vehículo pertenece a su compañía
       if (user.role === UserRole.OWNER) {
-        const userCompanyId = user.companyId || user.company;
+        const userCompanyId = (user as any).companyId;
         
         if (!userCompanyId) {
           console.log(`[DELETE /vehicles/${id}] ACCESO DENEGADO: Usuario sin compañía asignada`);
@@ -3327,7 +3327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /commissions/reservations] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /commissions/reservations] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /commissions/reservations] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Verificar que solo los roles autorizados puedan acceder
@@ -3346,7 +3346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Aplicar filtro de compañía para todos excepto superAdmin
       if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.DEVELOPER) {
-        companyId = user.companyId || user.company;
+        companyId = (user as any).companyId;
         
         if (!companyId) {
           console.log(`[GET /commissions/reservations] ADVERTENCIA: Usuario sin compañía asignada`);
@@ -3382,7 +3382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /commissions/my-commissions] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[GET /commissions/my-commissions] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /commissions/my-commissions] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Verificar que solo los comisionistas puedan acceder
@@ -3397,7 +3397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener la compañía del usuario
-      const companyId = user.companyId || user.company;
+      const companyId = (user as any).companyId;
       
       if (!companyId) {
         console.log(`[GET /commissions/my-commissions] ADVERTENCIA: Usuario sin compañía asignada`);
@@ -3500,7 +3500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PUT /commissions/pay] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[PUT /commissions/pay] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[PUT /commissions/pay] Rol: ${user.role}, CompanyId: ${(user as any).companyId || 'No definido'}`);
       }
       
       // SEGURIDAD: Verificar que solo los roles autorizados puedan acceder
@@ -3535,7 +3535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // SEGURIDAD: Verificar que pertenece a la compañía del usuario
           if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.DEVELOPER) {
-            const userCompanyId = user.companyId || user.company;
+            const userCompanyId = (user as any).companyId;
             if (reservation.companyId && reservation.companyId !== userCompanyId) {
               results.push({ id, success: false, message: "No tiene permisos para modificar reservaciones de otra compañía" });
               continue;
@@ -3902,7 +3902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else {
         // Para Owner y Admin, filtramos por companyId o company
-        const companyFilter = user.companyId || user.company || '';
+        const companyFilter = (user as any).companyId || '';
         
         if (roleFilter) {
           // Si hay filtro de rol, usar función optimizada con filtro combinado
@@ -4739,7 +4739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[GET /packages] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Extraer companyId del usuario para aislamiento de datos
-      const userCompanyId = user.companyId || user.company;
+      const userCompanyId = (user as any).companyId;
       
       // Si el usuario no tiene una compañía asignada, devolver lista vacía
       if (!userCompanyId && user.role !== UserRole.SUPER_ADMIN) {
@@ -4815,7 +4815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validar aislamiento por compañía excepto para superAdmin
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company;
+        const userCompanyId = (user as any).companyId;
         
         if (packageWithTrip.companyId !== userCompanyId) {
           console.log(`[GET /packages/${id}] Acceso denegado: La paquetería pertenece a otra compañía`);
@@ -4856,7 +4856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Extraer companyId del usuario para aislamiento de datos
-      const userCompanyId = user.companyId || user.company;
+      const userCompanyId = (user as any).companyId;
       
       // Preparar datos para crear la paquetería
       const packageData = {
@@ -5020,7 +5020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validar aislamiento por compañía excepto para superAdmin
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company;
+        const userCompanyId = (user as any).companyId;
         
         if (existingPackage.companyId !== userCompanyId) {
           console.log(`[PATCH /packages/${id}] Acceso denegado: La paquetería pertenece a otra compañía`);
@@ -5080,7 +5080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validar aislamiento por compañía excepto para superAdmin
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company;
+        const userCompanyId = (user as any).companyId;
         
         if (existingPackage.companyId !== userCompanyId) {
           console.log(`[DELETE /packages/${id}] Acceso denegado: La paquetería pertenece a otra compañía`);
@@ -6091,7 +6091,7 @@ function setupPackageRoutes(app: Express) {
       // Si el usuario es dueño o administrador, mostrar todas las reservaciones de la compañía
       if (user.role === UserRole.OWNER || user.role === UserRole.ADMIN) {
         // Obtener ID de la compañía
-        const companyId = user.companyId || user.company;
+        const companyId = (user as any).companyId;
         
         if (!companyId) {
           console.log(`[GET /cash-register] Usuario dueño/admin sin compañía asignada. Usando vista limitada.`);
@@ -6263,7 +6263,7 @@ function setupPackageRoutes(app: Express) {
       
       // Para Owner y Admin, mostrar todas las compañías excepto la propia
       if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company;
+        const userCompanyId = (user as any).companyId;
         if (userCompanyId) {
           companiesList = companiesList.filter(company => company.identifier !== userCompanyId);
           console.log(`[GET /companies/transfer] Filtrando a ${companiesList.length} empresas (excluyendo la propia: ${userCompanyId})`);
@@ -6296,14 +6296,14 @@ function setupPackageRoutes(app: Express) {
         if ((user.role === UserRole.OWNER || user.role === UserRole.ADMIN) && 
             req.query.forTransfer === 'true') {
           // Para transferencias, mostrar todas las compañías excepto la propia
-          const userCompanyId = user.companyId || user.company;
+          const userCompanyId = (user as any).companyId;
           if (userCompanyId) {
             allCompanies = allCompanies.filter(company => company.identifier !== userCompanyId);
             console.log(`[GET /companies] Filtradas para transferencia: ${allCompanies.length} empresas (excluyendo ${userCompanyId})`);
           }
         } else if (user.role === UserRole.OWNER || user.role === UserRole.ADMIN) {
           // Para otros casos, solo mostrar su propia compañía
-          const userCompanyId = user.companyId || user.company;
+          const userCompanyId = (user as any).companyId;
           if (userCompanyId) {
             allCompanies = allCompanies.filter(company => company.identifier === userCompanyId);
           }
@@ -6367,7 +6367,7 @@ function setupPackageRoutes(app: Express) {
       
       const { period } = req.query;
       
-      console.log(`[GET /transactions/cutoff-history] Solicitando historial de transacciones para usuario ${user.id}, período: ${period || 'todos'}, compañía: ${user.companyId || user.company || 'no definida'}`);
+      console.log(`[GET /transactions/cutoff-history] Solicitando historial de transacciones para usuario ${user.id}, período: ${period || 'todos'}, compañía: ${(user as any).companyId || 'no definida'}`);
       
       // Preparar filtros
       const filters: any = {
