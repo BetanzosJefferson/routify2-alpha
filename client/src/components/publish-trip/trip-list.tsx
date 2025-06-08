@@ -800,8 +800,18 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                   window.location.href = `/edit-trip/${trip.id}`;
                                 }}
                                 className="h-8 w-8"
+                                title="Editar viaje"
                               >
                                 <PencilIcon className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(trip.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                title="Eliminar viaje"
+                              >
+                                <TrashIcon className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
@@ -1181,6 +1191,36 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                 </>
               ) : (
                 "Asignar Conductor"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo de confirmación para eliminar viaje */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar viaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El viaje será eliminado permanentemente
+              junto con todas sus reservaciones asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteTripMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteTripMutation.isPending ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar viaje"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
