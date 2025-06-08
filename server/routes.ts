@@ -71,7 +71,6 @@ function isSameCity(location1: string, location2: string): boolean {
   return city1 === city2;
 }
 import { populateLocationData } from "./populate-locations";
-import { db } from "./db";
 import { setupFinancialRoutes } from "./financial-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -888,11 +887,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tripData = validationResult.data;
       
-      // Calculate departure/arrival time from stopTimes
+      // Get the route details first
+      const route = await storage.getRouteWithSegments(tripData.routeId);
+      if (!route) {
+        return res.status(404).json({ error: "Route not found" });
+      }
+      
+      // Calculate departure/arrival time from segmentPrices or stopTimes
       let departureTime = "";
       let arrivalTime = "";
       
-      if (tripData.stopTimes && tripData.stopTimes.length > 0) {
+      // Primero intentar extraer horarios del segmento principal en segmentPrices
+      const mainSegmentPrice = tripData.segmentPrices.find(
+        (sp: any) => sp.origin === route.origin && sp.destination === route.destination
+      );
+      
+      if (mainSegmentPrice && mainSegmentPrice.departureTime && mainSegmentPrice.arrivalTime) {
+        // Usar horarios del segmento principal
+        departureTime = mainSegmentPrice.departureTime.replace(/\s*\+\d+d$/, ''); // Limpiar indicadores de día
+        arrivalTime = mainSegmentPrice.arrivalTime.replace(/\s*\+\d+d$/, '');
+        console.log(`[POST /trips] Usando horarios del segmento principal: ${departureTime} -> ${arrivalTime}`);
+      } else if (tripData.stopTimes && tripData.stopTimes.length > 0) {
+        // Fallback: usar stopTimes si están disponibles
         const stopTimes = tripData.stopTimes;
         // El primer tiempo de parada es la salida
         if (stopTimes[0] && stopTimes[0].hour && stopTimes[0].minute && stopTimes[0].ampm) {
@@ -906,16 +922,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             arrivalTime = `${lastStop.hour.padStart(2, '0')}:${lastStop.minute.padStart(2, '0')} ${lastStop.ampm}`;
           }
         }
+        console.log(`[POST /trips] Usando horarios de stopTimes: ${departureTime} -> ${arrivalTime}`);
       }
       
-      // Si no pudimos extraer los tiempos, usar valores predeterminados
-      if (!departureTime) departureTime = "12:00 PM";
-      if (!arrivalTime) arrivalTime = "01:00 PM";
-      
-      // Get the route details to generate all possible sub-trips
-      const route = await storage.getRouteWithSegments(tripData.routeId);
-      if (!route) {
-        return res.status(404).json({ error: "Route not found" });
+      // Si aún no tenemos horarios, usar valores predeterminados
+      if (!departureTime) {
+        departureTime = "08:00 AM";
+        console.log(`[POST /trips] Usando horario de salida predeterminado: ${departureTime}`);
+      }
+      if (!arrivalTime) {
+        arrivalTime = "12:00 PM";
+        console.log(`[POST /trips] Usando horario de llegada predeterminado: ${arrivalTime}`);
       }
       
       // Create a trip for each date in the range
