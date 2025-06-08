@@ -216,7 +216,7 @@ export function TripList() {
   };
 
   // Helper function to get trip display data from tripData
-  const getTripDisplayData = (trip: any) => {
+  const getTripDisplayData = (trip: any, searchOrigin?: string, searchDestination?: string) => {
     if (!trip.tripData || typeof trip.tripData !== 'object') {
       // Fallback to route data
       return {
@@ -236,15 +236,16 @@ export function TripList() {
       let selectedSubTrip = tripDataObj.subTrips[0]; // Default to first
       
       // If we have search parameters, try to find matching subtrip
-      if (origin || destination) {
+      if (searchOrigin || searchDestination) {
         const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
-          const originMatch = !origin || subTrip.origin?.toLowerCase().includes(origin.toLowerCase());
-          const destMatch = !destination || subTrip.destination?.toLowerCase().includes(destination.toLowerCase());
+          const originMatch = !searchOrigin || subTrip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
+          const destMatch = !searchDestination || subTrip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
           return originMatch && destMatch;
         });
         
         if (matchingSubTrip) {
           selectedSubTrip = matchingSubTrip;
+          console.log(`[getTripDisplayData] Found matching subtrip for search ${searchOrigin}->${searchDestination}:`, selectedSubTrip);
         }
       }
       
@@ -302,8 +303,8 @@ export function TripList() {
       }
 
       if (sortMethod === "price") {
-        const priceA = getTripDisplayData(a).price;
-        const priceB = getTripDisplayData(b).price;
+        const priceA = getTripDisplayData(a, origin, destination).price;
+        const priceB = getTripDisplayData(b, origin, destination).price;
         return priceA - priceB;
       }
 
@@ -477,7 +478,7 @@ export function TripList() {
       ) : sortedAndFilteredTrips && sortedAndFilteredTrips.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
           {sortedAndFilteredTrips.map((trip) => {
-            const displayData = getTripDisplayData(trip);
+            const displayData = getTripDisplayData(trip, origin, destination);
             return (
               <div key={trip.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white">
                 <div className="border-b border-gray-100 p-3 flex justify-between items-center">
