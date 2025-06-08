@@ -804,4 +804,11 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+  
+  // Método para gestión de notificaciones
+  async getNotifications(): Promise<any[]> {
+    // Por ahora retornamos un array vacío hasta que se implemente el schema de notificaciones
+    // TODO: Implementar schema de notificaciones en shared/schema.ts
+    return [];
+  }
 }
