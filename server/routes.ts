@@ -1592,8 +1592,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       
-      console.log(`[PUT /trips/${id}] Actualizando viaje con nueva estructura`);
-      console.log(`[PUT /trips/${id}] Datos recibidos:`, JSON.stringify(req.body, null, 2));
+      // Log detallado de la solicitud para diagnóstico
+      console.log(`⬆️ PUT /trips/${id} - Datos recibidos:`, JSON.stringify(req.body, null, 2));
+      
+      const validationResult = insertTripSchema.partial().safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid trip data", 
+          details: validationResult.error.format() 
+        });
+      }
       
       // Obtener el usuario autenticado
       const { user } = req as any;
@@ -1622,60 +1631,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Validar los datos de entrada
-      if (!req.body.routeId || !req.body.segmentPrices || !Array.isArray(req.body.segmentPrices)) {
-        return res.status(400).json({
-          error: "Datos inválidos",
-          details: "Se requiere routeId y segmentPrices como array"
-        });
+      const tripData = validationResult.data;
+      
+      // Si el viaje tiene segmentPrices del formulario, preservarlos
+      if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices)) {
+        console.log("Actualizando precios por segmento:", tripData.segmentPrices);
+      } else if (currentTrip.segmentPrices) {
+        // Preservar los segmentPrices actuales si no se proporcionaron nuevos
+        tripData.segmentPrices = currentTrip.segmentPrices;
+        console.log("Preservando precios por segmento existentes");
       }
       
-      // Procesar los segmentPrices y stopTimes para generar la nueva estructura tripData
-      const { segmentPrices, stopTimes } = req.body;
+      // No procesamos stopTimes en el servidor ya que no forma parte del esquema de la base de datos
+      // Solo lo usamos para cálculos en memoria
       
-      console.log(`[PUT /trips/${id}] Procesando ${segmentPrices.length} segmentos de precio`);
-      console.log(`[PUT /trips/${id}] Procesando ${stopTimes?.length || 0} tiempos de parada`);
-      
-      // Crear el mapa de tiempos por ubicación si stopTimes está disponible
-      const locationTimeMap: Record<string, string> = {};
-      if (stopTimes && Array.isArray(stopTimes)) {
-        stopTimes.forEach((stopTime: any) => {
-          if (stopTime.location && stopTime.hour && stopTime.minute && stopTime.ampm) {
-            const formattedTime = `${stopTime.hour.padStart(2, '0')}:${stopTime.minute.padStart(2, '0')} ${stopTime.ampm}`;
-            locationTimeMap[stopTime.location] = formattedTime;
-          }
-        });
+      // Preservar campos críticos que no deberían ser nulos
+      if (tripData.price === undefined || tripData.price === null) {
+        tripData.price = currentTrip.price;
       }
       
-      // Crear la nueva estructura tripData con los segmentos
-      const tripDataSegments = segmentPrices.map((segment: any) => {
-        const departureTime = locationTimeMap[segment.origin] || "08:00 AM";
-        const arrivalTime = locationTimeMap[segment.destination] || "12:00 PM";
+      if (tripData.capacity === undefined || tripData.capacity === null) {
+        tripData.capacity = currentTrip.capacity;
+      } else if (tripData.capacity !== currentTrip.capacity) {
+        // Si la capacidad cambió, ajustar los asientos disponibles proporcionalmente
+        const asientosOcupados = currentTrip.capacity - currentTrip.availableSeats;
+        const nuevosAsientosDisponibles = tripData.capacity - asientosOcupados;
         
-        return {
-          origin: segment.origin,
-          destination: segment.destination,
-          price: Number(segment.price) || 0,
-          departureTime,
-          arrivalTime,
-          departureDate: req.body.startDate || req.body.date || new Date().toISOString().split('T')[0]
-        };
-      });
+        console.log(`[PUT /trips/${id}] Ajustando asientos disponibles automáticamente:`);
+        console.log(`  - Capacidad antigua: ${currentTrip.capacity}, Asientos disponibles: ${currentTrip.availableSeats}`);
+        console.log(`  - Capacidad nueva: ${tripData.capacity}, Asientos ocupados: ${asientosOcupados}`);
+        console.log(`  - Nuevos asientos disponibles: ${nuevosAsientosDisponibles}`);
+        
+        // Asegurar que siempre haya al menos 0 asientos disponibles (no negativos)
+        tripData.availableSeats = Math.max(0, nuevosAsientosDisponibles);
+      }
       
-      // Preparar los datos de actualización con solo las columnas de la tabla
-      const updateData = {
-        tripData: tripDataSegments,
-        capacity: req.body.capacity || currentTrip.capacity,
-        vehicleId: req.body.vehicleId || currentTrip.vehicleId,
-        driverId: req.body.driverId || currentTrip.driverId,
-        visibility: req.body.visibility || currentTrip.visibility,
-        routeId: req.body.routeId || currentTrip.routeId
-      };
+      // Manejar campos de visibilidad y estado
+      if (tripData.visibility === undefined || tripData.visibility === null) {
+        tripData.visibility = currentTrip.visibility || TripVisibility.PUBLISHED;
+      }
       
-      console.log(`[PUT /trips/${id}] Datos de actualización preparados:`, JSON.stringify(updateData, null, 2));
+      // Ya no utilizamos el estado del viaje (tripStatus), esta funcionalidad ha sido eliminada
       
-      // Actualizar el viaje usando updateTrip con los datos preparados
-      const updatedTrip = await storage.updateTrip(id, updateData);
+      // Identificar y extraer información de tiempos de parada y precios para el viaje principal
+      console.log("⏰ Procesando tiempos y precios para actualización del viaje principal");
+      
+      // 1. ACTUALIZACIÓN DE HORARIOS
+      // Obtener los tiempos de parada del formulario (si están disponibles)
+      if (req.body.stopTimes && Array.isArray(req.body.stopTimes) && req.body.stopTimes.length > 0) {
+        console.log("⏰ stopTimes recibidos:", req.body.stopTimes);
+        
+        // Asignar hora de origen (primera parada) al departureTime
+        if (req.body.stopTimes[0]) {
+          const firstStopTime = req.body.stopTimes[0];
+          if (firstStopTime && typeof firstStopTime === 'object') {
+            const formattedTime = `${firstStopTime.hour || '00'}:${firstStopTime.minute || '00'} ${firstStopTime.ampm || 'AM'}`;
+            console.log(`⏰ HORA ORIGEN establecida a: ${formattedTime}`);
+            tripData.departureTime = formattedTime;
+          }
+        }
+        
+        // Asignar hora de destino (última parada) al arrivalTime
+        const lastIndex = req.body.stopTimes.length - 1;
+        if (req.body.stopTimes[lastIndex]) {
+          const lastStopTime = req.body.stopTimes[lastIndex];
+          if (lastStopTime && typeof lastStopTime === 'object') {
+            const formattedTime = `${lastStopTime.hour || '00'}:${lastStopTime.minute || '00'} ${lastStopTime.ampm || 'AM'}`;
+            console.log(`⏰ HORA DESTINO establecida a: ${formattedTime}`);
+            tripData.arrivalTime = formattedTime;
+          }
+        }
+      } 
+      // Alternativamente, si no hay stopTimes, revisar los segmentPrices para horarios
+      else if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices) && tripData.segmentPrices.length > 0) {
+        console.log("⏰ Calculando horarios para el viaje principal basado en segmentPrices");
+        
+        const allOrigins = new Set(tripData.segmentPrices.map(seg => seg.origin));
+        const allDestinations = new Set(tripData.segmentPrices.map(seg => seg.destination));
+        
+        console.log(`⏰ Orígenes disponibles: ${Array.from(allOrigins).join(', ')}`);
+        console.log(`⏰ Destinos disponibles: ${Array.from(allDestinations).join(', ')}`);
+        
+        // Si existe la ruta directa entre el origen y destino principal
+        const directSegment = tripData.segmentPrices.find(
+          segment => segment.origin === currentTrip.segmentOrigin && 
+                    segment.destination === currentTrip.segmentDestination
+        );
+        
+        if (directSegment) {
+          console.log("⏰ Encontrada ruta directa entre origen y destino principal");
+          if (directSegment.departureTime) {
+            console.log(`⏰ HORA ORIGEN (directa) establecida a: ${directSegment.departureTime}`);
+            tripData.departureTime = directSegment.departureTime;
+          }
+          if (directSegment.arrivalTime) {
+            console.log(`⏰ HORA DESTINO (directa) establecida a: ${directSegment.arrivalTime}`);
+            tripData.arrivalTime = directSegment.arrivalTime;
+          }
+        }
+        // De lo contrario, buscar el primer segmento y el último
+        else {
+          // Encontrar el primer segmento (que inicia en el origen del viaje)
+          const originSegments = tripData.segmentPrices.filter(seg => 
+            seg.origin === currentTrip.segmentOrigin
+          );
+          
+          if (originSegments.length > 0 && originSegments[0].departureTime) {
+            console.log(`⏰ HORA ORIGEN establecida a: ${originSegments[0].departureTime}`);
+            tripData.departureTime = originSegments[0].departureTime;
+          }
+          
+          // Encontrar el último segmento (que termina en el destino del viaje)
+          const destinationSegments = tripData.segmentPrices.filter(seg => 
+            seg.destination === currentTrip.segmentDestination
+          );
+          
+          if (destinationSegments.length > 0 && destinationSegments[0].arrivalTime) {
+            console.log(`⏰ HORA DESTINO establecida a: ${destinationSegments[0].arrivalTime}`);
+            tripData.arrivalTime = destinationSegments[0].arrivalTime;
+          }
+        }
+      }
+
+      // 2. ACTUALIZACIÓN DE PRECIO
+      // Calcular el precio del viaje principal como la suma de los precios de todos los segmentos directos
+      if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices) && tripData.segmentPrices.length > 0) {
+        console.log("💰 Calculando precio del viaje principal basado en segmentos");
+        
+        // Buscar si existe un segmento directo que represente la ruta completa
+        const directSegment = tripData.segmentPrices.find(
+          segment => segment.origin === currentTrip.segmentOrigin && 
+                    segment.destination === currentTrip.segmentDestination
+        );
+        
+        if (directSegment) {
+          // Si hay un segmento directo, usar su precio
+          console.log(`💰 PRECIO DIRECTO encontrado: ${directSegment.price}`);
+          tripData.price = directSegment.price;
+        } 
+        else {
+          // Si no hay un segmento directo, usar el segmento más caro como precio base
+          const prices = tripData.segmentPrices.map(segment => Number(segment.price) || 0);
+          console.log(`💰 Precios de segmentos: ${prices.join(', ')}`);
+          
+          // Usar reduce para encontrar el máximo de forma segura
+          const maxPrice = prices.length > 0 
+            ? prices.reduce((max, price) => Math.max(max, price), 0)
+            : 0;
+            
+          console.log(`💰 PRECIO MÁXIMO entre segmentos: ${maxPrice}`);
+          
+          if (maxPrice > 0) {
+            // Establecer el precio como el precio máximo de segmento para viajes completos
+            tripData.price = maxPrice;
+            console.log(`💰 PRECIO PRINCIPAL establecido a: ${tripData.price}`);
+          } else {
+            console.log("💰 No se pudo determinar un precio basado en segmentos, manteniendo el actual");
+          }
+        }
+      }
+      
+      // Actualizar el viaje principal
+      const updatedTrip = await storage.updateTrip(id, tripData);
       
       if (!updatedTrip) {
         return res.status(404).json({ error: "Trip not found" });
