@@ -221,11 +221,7 @@ export function extractLocationsFromTrips(trips: TripWithRouteInfo[]): LocationO
       }
     }
     
-    // Legacy: Si es un sub-viaje, procesar origen y destino del segmento
-    if (trip.isSubTrip) {
-      if (trip.segmentOrigin) processLocation(trip.segmentOrigin, locationMap);
-      if (trip.segmentDestination) processLocation(trip.segmentDestination, locationMap);
-    }
+    // Legacy code removed - subtrips now handled through tripData JSON
   });
   
   // Convertir el mapa a un array de opciones
