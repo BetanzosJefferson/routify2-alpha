@@ -142,7 +142,73 @@ export function TripList() {
     return extractLocationsFromTrips(trips);
   }, [trips]);
 
-  // No se necesita filtrado, mostramos todos los viajes
+  // Filter trips based on search parameters
+  const filteredTrips = useMemo(() => {
+    if (!trips) return [];
+    
+    // If no search parameters, return all trips
+    if (Object.keys(searchParams).length === 0) {
+      return trips;
+    }
+    
+    return trips.filter((trip: any) => {
+      // Filter by origin
+      if (searchParams.origin) {
+        const tripOrigin = trip.origin || trip.route?.origin || '';
+        if (!tripOrigin.toLowerCase().includes(searchParams.origin.toLowerCase())) {
+          return false;
+        }
+      }
+      
+      // Filter by destination
+      if (searchParams.destination) {
+        const tripDestination = trip.destination || trip.route?.destination || '';
+        if (!tripDestination.toLowerCase().includes(searchParams.destination.toLowerCase())) {
+          return false;
+        }
+      }
+      
+      // Filter by date
+      if (searchParams.date) {
+        const tripDate = trip.date || trip.departureDate;
+        if (tripDate !== searchParams.date) {
+          return false;
+        }
+      }
+      
+      // Filter by available seats
+      if (searchParams.seats) {
+        if ((trip.availableSeats || 0) < searchParams.seats) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [trips, searchParams]);
+
+  // Handler for search button click
+  const handleSearch = () => {
+    const newSearchParams: SearchParams = {};
+    
+    if (origin.trim()) {
+      newSearchParams.origin = origin.trim();
+    }
+    
+    if (destination.trim()) {
+      newSearchParams.destination = destination.trim();
+    }
+    
+    if (date) {
+      newSearchParams.date = date;
+    }
+    
+    if (seats.trim() && parseInt(seats) > 0) {
+      newSearchParams.seats = parseInt(seats);
+    }
+    
+    setSearchParams(newSearchParams);
+  };
 
   // Handler for reservation button click
   const handleReserve = (trip: TripWithRouteInfo) => {
@@ -156,24 +222,11 @@ export function TripList() {
     setSelectedTrip(null);
   };
 
-  // Función para ordenar y filtrar los viajes según el criterio seleccionado
+  // Función para ordenar los viajes filtrados según el criterio seleccionado
   const sortedAndFilteredTrips = useMemo(() => {
-    // The `trips` data already contains the `isSubTrip` filter from the API call if no specific search is active.
-    // If a search is active, it contains all relevant trips (subtrips included if they match search criteria).
-    if (!trips) return [];
+    if (!filteredTrips) return [];
 
-    // Filter `trips` only if there's no active origin/destination/seats search AND `isSubTrip` is explicitly 'false' in searchParams.
-    // This handles the default view to only show non-subtrips.
-    // If a search is active, the API should return what matches, including subtrips if they fit the search.
-    let currentTrips = trips;
-    if (!origin && !destination && !seats && searchParams.isSubTrip === 'false') {
-        currentTrips = trips.filter(trip => !trip.isSubTrip);
-    }
-    // If origin/destination/seats are provided, we assume the API already returned relevant subtrips if they match.
-    // So, no extra filter needed here based on `isSubTrip` if a search is active.
-
-
-    return [...currentTrips].sort((a, b) => {
+    return [...filteredTrips].sort((a: any, b: any) => {
       if (sortMethod === "departure") {
         const getTimeValue = (timeStr: string) => {
           const [time, period] = timeStr.split(' ');
@@ -187,13 +240,8 @@ export function TripList() {
       }
 
       if (sortMethod === "price") {
-        // Use the correct price for the trip, considering segment prices for subtrips if applicable
-        const priceA = a.isSubTrip && Array.isArray(a.segmentPrices) && a.segmentPrices.length > 0
-          ? a.segmentPrices[0]?.price || a.price
-          : a.price;
-        const priceB = b.isSubTrip && Array.isArray(b.segmentPrices) && b.segmentPrices.length > 0
-          ? b.segmentPrices[0]?.price || b.price
-          : b.price;
+        const priceA = a.price || 0;
+        const priceB = b.price || 0;
         return priceA - priceB;
       }
 
@@ -220,7 +268,7 @@ export function TripList() {
       }
       return 0;
     });
-  }, [trips, sortMethod, origin, destination, seats, searchParams.isSubTrip]); // Added dependencies
+  }, [filteredTrips, sortMethod]);
 
   return (
     <div className="py-6">
@@ -295,6 +343,27 @@ export function TripList() {
                 value={seats}
                 onChange={(e) => setSeats(e.target.value)}
               />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleSearch}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+                    Buscando...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Buscar viaje
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </CardContent>
