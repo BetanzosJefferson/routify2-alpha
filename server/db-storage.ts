@@ -978,6 +978,14 @@ export class DatabaseStorage implements IStorage {
               };
               
               console.log(`[INDIVIDUAL-TRIPS] Agregando viaje individual ${individualTrip.id}: ${individualTrip.origin} -> ${individualTrip.destination}`);
+              console.log(`[INDIVIDUAL-TRIPS] Detalles del viaje ${individualTrip.id}:`, {
+                price: individualTrip.price,
+                departureTime: individualTrip.departureTime,
+                arrivalTime: individualTrip.arrivalTime,
+                availableSeats: individualTrip.availableSeats,
+                origin: individualTrip.origin,
+                destination: individualTrip.destination
+              });
               tripsWithRouteInfo.push(individualTrip);
             }
           }
