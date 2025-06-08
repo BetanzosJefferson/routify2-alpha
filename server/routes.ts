@@ -1624,11 +1624,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // SEGURIDAD: Si no es superAdmin, verificar que el viaje pertenece a su compañía
       if (user.role !== UserRole.SUPER_ADMIN) {
-        // Usar companyId si está disponible, sino usar company como fallback
-        const userCompany = user.companyId || user.company;
+        // Usar companyId (column company_id en la tabla users)
+        const userCompanyId = user.companyId;
         
-        if (currentTrip.companyId && currentTrip.companyId !== userCompany) {
-          console.log(`[PUT /trips/${id}] ACCESO DENEGADO: El viaje pertenece a compañía ${currentTrip.companyId} pero el usuario es de ${userCompany}`);
+        if (!userCompanyId) {
+          console.log(`[PUT /trips/${id}] ACCESO DENEGADO: Usuario sin companyId asignado`);
+          return res.status(403).json({ 
+            error: "Acceso denegado", 
+            details: "Usuario sin compañía asignada" 
+          });
+        }
+        
+        if (currentTrip.companyId && currentTrip.companyId !== userCompanyId) {
+          console.log(`[PUT /trips/${id}] ACCESO DENEGADO: El viaje pertenece a compañía ${currentTrip.companyId} pero el usuario es de ${userCompanyId}`);
           return res.status(403).json({ 
             error: "Acceso denegado", 
             details: "No tiene permiso para editar viajes de otra compañía" 
