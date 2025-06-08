@@ -230,38 +230,39 @@ export function TripList() {
 
     const tripDataObj = trip.tripData as any;
     
-    // If we have subTrips, find the best one to display based on current search
-    if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips) && tripDataObj.subTrips.length > 0) {
-      // Try to find a subtrip that matches the current search criteria
-      let selectedSubTrip = tripDataObj.subTrips[0]; // Default to first
-      
-      // If we have search parameters, try to find matching subtrip
-      if (searchOrigin || searchDestination) {
-        const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
-          const originMatch = !searchOrigin || subTrip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
-          const destMatch = !searchDestination || subTrip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
-          return originMatch && destMatch;
-        });
-        
-        if (matchingSubTrip) {
-          selectedSubTrip = matchingSubTrip;
-          console.log(`[getTripDisplayData] Found matching subtrip for search ${searchOrigin}->${searchDestination}:`, selectedSubTrip);
-        }
-      }
-      
-      const displayData = {
-        origin: selectedSubTrip.origin || trip.route?.origin || 'Origen',
-        destination: selectedSubTrip.destination || trip.route?.destination || 'Destino',
-        price: selectedSubTrip.price || trip.price || 0,
-        hasSubTrips: tripDataObj.subTrips.length > 1,
-        isDirectTrip: false
+    // Por defecto, mostrar SOLO parentTrip cuando no hay filtros
+    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
+      console.log(`[getTripDisplayData] No search filters - showing parentTrip for trip ${trip.id}`);
+      return {
+        origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
+        destination: tripDataObj.parentTrip.destination || trip.route?.destination || 'Destino',
+        price: tripDataObj.parentTrip.price || trip.price || 0,
+        hasSubTrips: tripDataObj.subTrips?.length > 1 || false,
+        isDirectTrip: true
       };
-      
-      console.log(`[getTripDisplayData] Trip ${trip.id} display data:`, displayData);
-      return displayData;
     }
     
-    // If we have parentTrip data, use that
+    // Si hay filtros de búsqueda, buscar en subTrips
+    if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips) && tripDataObj.subTrips.length > 0) {
+      const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
+        const originMatch = !searchOrigin || subTrip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
+        const destMatch = !searchDestination || subTrip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
+        return originMatch && destMatch;
+      });
+      
+      if (matchingSubTrip) {
+        console.log(`[getTripDisplayData] Found matching subtrip for search ${searchOrigin}->${searchDestination}:`, matchingSubTrip);
+        return {
+          origin: matchingSubTrip.origin || trip.route?.origin || 'Origen',
+          destination: matchingSubTrip.destination || trip.route?.destination || 'Destino',
+          price: matchingSubTrip.price || trip.price || 0,
+          hasSubTrips: tripDataObj.subTrips.length > 1,
+          isDirectTrip: false
+        };
+      }
+    }
+    
+    // Fallback a parentTrip si existe
     if (tripDataObj.parentTrip) {
       return {
         origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
