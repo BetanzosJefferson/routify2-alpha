@@ -43,6 +43,8 @@ import {
 
 interface ReservationStepsModalProps {
   trip: TripWithRouteInfo;
+  searchOrigin?: string;
+  searchDestination?: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -68,9 +70,10 @@ interface ReservationFormData {
   notes: string;
   createdBy?: number;
   couponCode?: string; // Código de cupón opcional
+  selectedSegmentTripId?: number | string; // ID específico del segmento seleccionado
 }
 
-export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStepsModalProps) {
+export function ReservationStepsModal({ trip, searchOrigin, searchDestination, isOpen, onClose }: ReservationStepsModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -98,6 +101,44 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
   
   // Steps state
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Function to determine which segment's tripId to use based on search context
+  const getSelectedSegmentTripId = () => {
+    if (!trip.tripData || typeof trip.tripData !== 'object') {
+      return trip.id; // Fallback to database record ID
+    }
+
+    const tripDataObj = trip.tripData as any;
+    
+    // If no search filters, use parentTrip
+    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
+      return tripDataObj.parentTrip.tripId || trip.id;
+    }
+    
+    // If there are search filters, find matching subTrip
+    if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
+      const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
+        const originMatch = !searchOrigin || subTrip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
+        const destMatch = !searchDestination || subTrip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
+        return originMatch && destMatch;
+      });
+      
+      if (matchingSubTrip && matchingSubTrip.tripId) {
+        console.log(`[ReservationModal] Using subTrip tripId: ${matchingSubTrip.tripId} for search ${searchOrigin}->${searchDestination}`);
+        return matchingSubTrip.tripId;
+      }
+    }
+    
+    // Fallback to parentTrip if available
+    if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
+      console.log(`[ReservationModal] Using parentTrip tripId: ${tripDataObj.parentTrip.tripId} as fallback`);
+      return tripDataObj.parentTrip.tripId;
+    }
+    
+    // Final fallback to database record ID
+    console.log(`[ReservationModal] Using database record ID as final fallback: ${trip.id}`);
+    return trip.id;
+  };
   const [submittedReservation, setSubmittedReservation] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   
@@ -351,8 +392,12 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       ? totalPrice - couponDiscount 
       : totalPrice;
     
+    // Get the specific segment's tripId based on search context
+    const selectedTripId = getSelectedSegmentTripId();
+    console.log(`[ReservationModal] Creating reservation with tripId: ${selectedTripId} (recordId: ${trip.id})`);
+
     const reservationData: ReservationFormData = {
-      tripId: trip.id,
+      tripId: trip.id, // This is still the database record ID for backend processing
       numPassengers,
       passengers,
       email: email.trim() || null, // Guardar null si está vacío para consistencia
@@ -365,7 +410,9 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       notes,
       createdBy: user?.id, // Usamos el ID del usuario actual desde el context de autenticación
       // Solo incluir el código de cupón si ha sido verificado
-      couponCode: couponVerified ? couponCode : undefined
+      couponCode: couponVerified ? couponCode : undefined,
+      // Add the specific segment tripId for trip_details
+      selectedSegmentTripId: selectedTripId
     };
     
     createReservationMutation.mutate(reservationData);
