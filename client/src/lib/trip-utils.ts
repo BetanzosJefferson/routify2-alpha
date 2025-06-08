@@ -1,5 +1,5 @@
 import { TripWithRouteInfo } from "@shared/schema";
-import { LocationOption } from "@/components/ui/location-selector";
+import { LocationOption } from "@/components/ui/command-combobox";
 
 /**
  * Formatea la hora de viaje que podría contener indicador de día siguiente
@@ -132,48 +132,26 @@ export function extractLocationsFromTrips(trips: TripWithRouteInfo[]): LocationO
   const locationMap = new Map<string, LocationOption>();
   
   trips.forEach(trip => {
-    // Extract from route data (fallback)
     const mainRoute = trip.route;
+    
+    // Procesar el origen principal de la ruta
     if (mainRoute && mainRoute.origin) {
       processLocation(mainRoute.origin, locationMap);
     }
+    
+    // Procesar el destino principal de la ruta
     if (mainRoute && mainRoute.destination) {
       processLocation(mainRoute.destination, locationMap);
     }
+    
+    // Procesar paradas intermedias
     if (mainRoute && mainRoute.stops && Array.isArray(mainRoute.stops)) {
       mainRoute.stops.forEach(stop => {
         if (stop) processLocation(stop, locationMap);
       });
     }
-
-    // Extract from tripData JSON - this is the primary source
-    if (trip.tripData && typeof trip.tripData === 'object') {
-      const tripDataObj = trip.tripData as any;
-      
-      // Extract from parentTrip first (main route)
-      if (tripDataObj.parentTrip) {
-        if (tripDataObj.parentTrip.origin) {
-          processLocation(tripDataObj.parentTrip.origin, locationMap);
-        }
-        if (tripDataObj.parentTrip.destination) {
-          processLocation(tripDataObj.parentTrip.destination, locationMap);
-        }
-      }
-      
-      // Extract from subTrips array (intermediate stops)
-      if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
-        tripDataObj.subTrips.forEach((subTrip: any) => {
-          if (subTrip.origin) {
-            processLocation(subTrip.origin, locationMap);
-          }
-          if (subTrip.destination) {
-            processLocation(subTrip.destination, locationMap);
-          }
-        });
-      }
-    }
     
-    // Legacy: Si es un sub-viaje, procesar origen y destino del segmento
+    // Si es un sub-viaje, procesar origen y destino del segmento
     if (trip.isSubTrip) {
       if (trip.segmentOrigin) processLocation(trip.segmentOrigin, locationMap);
       if (trip.segmentDestination) processLocation(trip.segmentDestination, locationMap);

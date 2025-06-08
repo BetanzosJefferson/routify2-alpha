@@ -53,7 +53,6 @@ const PACKAGE_CREATE_ROLES = [
 
 import { setupAuthRoutes } from "./auth"; // Mantenemos para compatibilidad
 import { setupAuthentication } from "./auth-session";
-import tripRoutes from "./trip-routes";
 // Utility function to check if two locations are in the same city
 function isSameCity(location1: string, location2: string): boolean {
   // Validar que ambas ubicaciones tienen el formato esperado
@@ -72,6 +71,7 @@ function isSameCity(location1: string, location2: string): boolean {
   return city1 === city2;
 }
 import { populateLocationData } from "./populate-locations";
+import { db } from "./db";
 import { setupFinancialRoutes } from "./financial-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -888,28 +888,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tripData = validationResult.data;
       
-      // Get the route details first
-      const route = await storage.getRouteWithSegments(tripData.routeId);
-      if (!route) {
-        return res.status(404).json({ error: "Route not found" });
-      }
-      
-      // Calculate departure/arrival time from segmentPrices or stopTimes
+      // Calculate departure/arrival time from stopTimes
       let departureTime = "";
       let arrivalTime = "";
       
-      // Primero intentar extraer horarios del segmento principal en segmentPrices
-      const mainSegmentPrice = tripData.segmentPrices.find(
-        (sp: any) => sp.origin === route.origin && sp.destination === route.destination
-      );
-      
-      if (mainSegmentPrice && mainSegmentPrice.departureTime && mainSegmentPrice.arrivalTime) {
-        // Usar horarios del segmento principal
-        departureTime = mainSegmentPrice.departureTime.replace(/\s*\+\d+d$/, ''); // Limpiar indicadores de día
-        arrivalTime = mainSegmentPrice.arrivalTime.replace(/\s*\+\d+d$/, '');
-        console.log(`[POST /trips] Usando horarios del segmento principal: ${departureTime} -> ${arrivalTime}`);
-      } else if (tripData.stopTimes && tripData.stopTimes.length > 0) {
-        // Fallback: usar stopTimes si están disponibles
+      if (tripData.stopTimes && tripData.stopTimes.length > 0) {
         const stopTimes = tripData.stopTimes;
         // El primer tiempo de parada es la salida
         if (stopTimes[0] && stopTimes[0].hour && stopTimes[0].minute && stopTimes[0].ampm) {
@@ -923,17 +906,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             arrivalTime = `${lastStop.hour.padStart(2, '0')}:${lastStop.minute.padStart(2, '0')} ${lastStop.ampm}`;
           }
         }
-        console.log(`[POST /trips] Usando horarios de stopTimes: ${departureTime} -> ${arrivalTime}`);
       }
       
-      // Si aún no tenemos horarios, usar valores predeterminados
-      if (!departureTime) {
-        departureTime = "08:00 AM";
-        console.log(`[POST /trips] Usando horario de salida predeterminado: ${departureTime}`);
-      }
-      if (!arrivalTime) {
-        arrivalTime = "12:00 PM";
-        console.log(`[POST /trips] Usando horario de llegada predeterminado: ${arrivalTime}`);
+      // Si no pudimos extraer los tiempos, usar valores predeterminados
+      if (!departureTime) departureTime = "12:00 PM";
+      if (!arrivalTime) arrivalTime = "01:00 PM";
+      
+      // Get the route details to generate all possible sub-trips
+      const route = await storage.getRouteWithSegments(tripData.routeId);
+      if (!route) {
+        return res.status(404).json({ error: "Route not found" });
       }
       
       // Create a trip for each date in the range
@@ -987,61 +969,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cleanDepartureTime = departureTime.replace(/\s*\+\d+d$/, '');
         const cleanArrivalTime = arrivalTime.replace(/\s*\+\d+d$/, '');
         
-        // Generate unique tripIds for subTrips
-        let tripIdCounter = 0;
-        const generateTripId = () => {
-          tripIdCounter++;
-          return Date.now() + tripIdCounter * 100; // Garantizar unicidad con contador incremental
-        };
-        
-        // Build subTrips array
-        const subTrips = allSegments.map(segment => {
-          const segmentPrice = tripData.segmentPrices.find(
-            (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
-          );
-          
-          // Usar los horarios específicos del segmento si están disponibles
-          let segmentDepartureTime = cleanDepartureTime; // fallback
-          let segmentArrivalTime = cleanArrivalTime; // fallback
-          
-          if (segmentPrice && segmentPrice.departureTime && segmentPrice.arrivalTime) {
-            segmentDepartureTime = segmentPrice.departureTime.replace(/\s*\+\d+d$/, '');
-            segmentArrivalTime = segmentPrice.arrivalTime.replace(/\s*\+\d+d$/, '');
-            console.log(`[POST /trips] Usando horarios específicos para segmento ${segment.origin} -> ${segment.destination}: ${segmentDepartureTime} -> ${segmentArrivalTime}`);
-          } else {
-            console.log(`[POST /trips] Usando horarios del viaje principal para segmento ${segment.origin} -> ${segment.destination}: ${segmentDepartureTime} -> ${segmentArrivalTime}`);
-          }
-          
-          return {
-            price: segmentPrice?.price || 0,
-            origin: segment.origin,
-            tripId: generateTripId(),
-            arrivalTime: segmentArrivalTime,
-            destination: segment.destination,
-            departureDate: mainDepartureDate.toISOString().split('T')[0],
-            departureTime: segmentDepartureTime,
-            availableSeats: tripData.capacity
-          };
-        });
-        
-        // Build parentTrip object
-        const parentTrip = {
-          price: mainSegmentPrice?.price || 450,
-          origin: route.origin,
-          tripId: generateTripId(),
-          arrivalTime: cleanArrivalTime,
-          destination: route.destination,
-          departureDate: mainDepartureDate.toISOString().split('T')[0],
-          departureTime: cleanDepartureTime,
-          availableSeats: tripData.capacity
-        };
-        
-        // Create tripData JSON structure
-        const tripDataJson = {
-          subTrips: subTrips,
-          parentTrip: parentTrip
-        };
-
         const mainTripToCreate = {
           routeId: tripData.routeId,
           departureDate: mainDepartureDate, // Fecha de salida (sin ajuste)
@@ -1050,20 +977,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           capacity: tripData.capacity,
           availableSeats: tripData.capacity,
           price: mainSegmentPrice?.price || 450, // Usar el precio del segmento principal o un valor por defecto
-          segmentPrices: tripData.segmentPrices,
+          // vehicleType: ya no se utiliza
+          segmentPrices: tripData.segmentPrices.map((sp: any) => {
+            // Si es el segmento principal y cruza la medianoche, añadir información
+            if (sp.origin === route.origin && sp.destination === route.destination && mainTripCrossesMidnight) {
+              return {
+                ...sp,
+                // Incluir información completa con indicadores de día para referencia futura
+                departureTime: departureTime,
+                arrivalTime: mainTripCrossesMidnight ? addDayIndicator(arrivalTime, 1) : arrivalTime
+              };
+            }
+            return sp;
+          }),
           isSubTrip: false,
           parentTripId: null,
           companyId: companyId, // Asignar la compañía del usuario al viaje
+          // Campos nuevos para visibilidad y estado
           visibility: tripData.visibility || TripVisibility.PUBLISHED, // Por defecto publicado
-          tripStatus: "aun_no_inicia", // Por defecto aún no inicia
-          tripData: tripDataJson // Add the JSON structure here
+          tripStatus: "aun_no_inicia" // Por defecto aún no inicia
         };
         
         const mainTrip = await storage.createTrip(mainTripToCreate);
         createdTrips.push(mainTrip);
         
-        // Skip creating individual sub-trips since all trip data is now stored in trip_data JSON
-        /*
         // Create all sub-trips
         for (const segment of allSegments) {
           // Find the segment data (price and times) from user input or calculate proportionally
@@ -1194,7 +1131,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const subTrip = await storage.createTrip(subTripToCreate);
           createdTrips.push(subTrip);
         }
-        */
       }
       
       res.status(201).json(createdTrips);
@@ -1947,71 +1883,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 3. ACTUALIZACIÓN DE TRIP_DATA JSON
-      // Si se actualizaron horarios o precios, actualizar también el trip_data JSON
-      if (currentTrip.tripData && (tripData.departureTime || tripData.arrivalTime || tripData.segmentPrices)) {
-        console.log("🔄 Actualizando trip_data JSON con nuevos horarios y precios");
-        
-        let tripDataJson = currentTrip.tripData;
-        
-        // Si trip_data es un string JSON, parsearlo
-        if (typeof tripDataJson === 'string') {
-          try {
-            tripDataJson = JSON.parse(tripDataJson);
-          } catch (e) {
-            console.log("⚠️ Error parseando trip_data existente, creando nuevo objeto");
-            tripDataJson = {};
-          }
-        }
-        
-        // Actualizar parentTrip con nuevos horarios si existen
-        if (tripDataJson.parentTrip) {
-          if (tripData.departureTime) {
-            tripDataJson.parentTrip.departureTime = tripData.departureTime;
-            console.log(`🔄 Actualizando parentTrip.departureTime: ${tripData.departureTime}`);
-          }
-          if (tripData.arrivalTime) {
-            tripDataJson.parentTrip.arrivalTime = tripData.arrivalTime;
-            console.log(`🔄 Actualizando parentTrip.arrivalTime: ${tripData.arrivalTime}`);
-          }
-          if (tripData.price) {
-            tripDataJson.parentTrip.price = tripData.price;
-            console.log(`🔄 Actualizando parentTrip.price: ${tripData.price}`);
-          }
-        }
-        
-        // Actualizar subTrips con nuevos horarios de segmentos si existen
-        if (tripDataJson.subTrips && Array.isArray(tripDataJson.subTrips) && tripData.segmentPrices) {
-          for (let i = 0; i < tripDataJson.subTrips.length; i++) {
-            const subTrip = tripDataJson.subTrips[i];
-            
-            // Buscar el segmento correspondiente en los nuevos precios
-            const matchingSegment = tripData.segmentPrices.find(seg => 
-              seg.origin === subTrip.origin && seg.destination === subTrip.destination
-            );
-            
-            if (matchingSegment) {
-              if (matchingSegment.departureTime) {
-                subTrip.departureTime = matchingSegment.departureTime;
-                console.log(`🔄 Actualizando subTrip[${i}].departureTime: ${matchingSegment.departureTime}`);
-              }
-              if (matchingSegment.arrivalTime) {
-                subTrip.arrivalTime = matchingSegment.arrivalTime;
-                console.log(`🔄 Actualizando subTrip[${i}].arrivalTime: ${matchingSegment.arrivalTime}`);
-              }
-              if (matchingSegment.price !== undefined) {
-                subTrip.price = matchingSegment.price;
-                console.log(`🔄 Actualizando subTrip[${i}].price: ${matchingSegment.price}`);
-              }
-            }
-          }
-        }
-        
-        // Asignar el trip_data actualizado
-        tripData.tripData = tripDataJson;
-        console.log("✅ trip_data JSON actualizado correctamente");
-      }
-      
       // Actualizar el viaje principal
       const updatedTrip = await storage.updateTrip(id, tripData);
       
@@ -2594,39 +2465,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[POST /reservations] Marcando como PAGADO: anticipo ${reservationData.advanceAmount} cubre el monto final ${finalAmount}`);
       }
       
-      // Crear estructura trip_details JSON con información del viaje
-      // Usar el selectedSegmentTripId del frontend si está disponible
-      let specificTripId: number = trip.id; // Default fallback
-      
-      console.log(`[POST /reservations] selectedSegmentTripId recibido:`, reservationData.selectedSegmentTripId);
-      
-      if (reservationData.selectedSegmentTripId) {
-        specificTripId = typeof reservationData.selectedSegmentTripId === 'string' 
-          ? parseInt(reservationData.selectedSegmentTripId, 10) 
-          : reservationData.selectedSegmentTripId;
-        console.log(`[POST /reservations] Usando selectedSegmentTripId del frontend: ${specificTripId}`);
-      } else {
-        console.log(`[POST /reservations] No hay selectedSegmentTripId, usando fallback`);
-        if (trip.tripData && typeof trip.tripData === 'object') {
-          // Fallback: Si el viaje tiene tripData con estructura de subTrips/parentTrip
-          const tripDataObj = trip.tripData as any;
-          
-          // Por defecto, asumir que es una reserva para el viaje completo (parentTrip)
-          if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
-            specificTripId = tripDataObj.parentTrip.tripId;
-            console.log(`[POST /reservations] Usando tripId del parentTrip como fallback: ${specificTripId}`);
-          }
-        }
-      }
-      
-      const tripDetailsJson = {
-        recordId: trip.id, // ID del registro del viaje (columna id)
-        tripId: specificTripId, // tripId específico del segmento seleccionado
-        seats: passengerCount // Cantidad de asientos de la reserva
-      };
-      
-      console.log(`[POST /reservations] Creando trip_details:`, JSON.stringify(tripDetailsJson, null, 2));
-      
       const reservation = await storage.createReservation({
         tripId: reservationData.tripId,
         totalAmount: finalAmount, // Usamos el monto final con descuento
@@ -2643,8 +2481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: createdByUserId, // ID del usuario que crea la reservación (para comisiones)
         couponCode: couponCode, // Guardar el código del cupón aplicado
         discountAmount: discountAmount, // Guardar el monto del descuento
-        originalAmount: discountAmount > 0 ? totalAmount : null, // Guardar el monto original si hay descuento
-        tripDetails: tripDetailsJson // Agregar detalles del viaje
+        originalAmount: discountAmount > 0 ? totalAmount : null // Guardar el monto original si hay descuento
       });
       
       // Create the passengers
@@ -6962,12 +6799,4 @@ function setupPackageRoutes(app: Express) {
       return res.status(500).json({ error: "Error al realizar corte de caja" });
     }
   });
-
-  // Configurar rutas de viajes separadas
-  app.use(apiRouter("/trips-management"), isAuthenticated, tripRoutes);
-
-  // Crear el servidor HTTP
-  const server = createServer(app);
-
-  return server;
 }

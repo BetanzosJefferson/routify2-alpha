@@ -43,8 +43,6 @@ import {
 
 interface ReservationStepsModalProps {
   trip: TripWithRouteInfo;
-  searchOrigin?: string;
-  searchDestination?: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -70,10 +68,9 @@ interface ReservationFormData {
   notes: string;
   createdBy?: number;
   couponCode?: string; // Código de cupón opcional
-  selectedSegmentTripId?: number | string; // ID específico del segmento seleccionado
 }
 
-export function ReservationStepsModal({ trip, searchOrigin, searchDestination, isOpen, onClose }: ReservationStepsModalProps) {
+export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStepsModalProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -101,67 +98,6 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
   
   // Steps state
   const [currentStep, setCurrentStep] = useState(0);
-
-  // Function to determine which segment's tripId to use based on search context
-  const getSelectedSegmentTripId = () => {
-    console.log(`[getSelectedSegmentTripId] INICIANDO - Props del modal:`, {
-      searchOrigin,
-      searchDestination,
-      tripId: trip.id
-    });
-    
-    if (!trip.tripData || typeof trip.tripData !== 'object') {
-      console.log(`[getSelectedSegmentTripId] No hay tripData válida, usando fallback: ${trip.id}`);
-      return trip.id; // Fallback to database record ID
-    }
-
-    const tripDataObj = trip.tripData as any;
-    
-    console.log(`[getSelectedSegmentTripId] Buscando segmento para: ${searchOrigin} -> ${searchDestination}`);
-    console.log(`[getSelectedSegmentTripId] subTrips disponibles:`, tripDataObj.subTrips);
-    console.log(`[getSelectedSegmentTripId] parentTrip disponible:`, tripDataObj.parentTrip);
-    
-    // If there are search filters, find matching subTrip
-    if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
-      const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
-        // Extract city/state from full location strings for comparison
-        const subTripOriginCity = subTrip.origin?.split(' - ')[0] || subTrip.origin;
-        const subTripDestCity = subTrip.destination?.split(' - ')[0] || subTrip.destination;
-        
-        console.log(`[getSelectedSegmentTripId] Comparando:
-          SubTrip: ${subTripOriginCity} -> ${subTripDestCity}
-          Búsqueda: ${searchOrigin} -> ${searchDestination}`);
-        
-        const originMatch = !searchOrigin || subTripOriginCity?.toLowerCase().includes(searchOrigin.toLowerCase());
-        const destMatch = !searchDestination || subTripDestCity?.toLowerCase().includes(searchDestination.toLowerCase());
-        
-        console.log(`[getSelectedSegmentTripId] Matches: origin=${originMatch}, dest=${destMatch}`);
-        
-        return originMatch && destMatch;
-      });
-      
-      if (matchingSubTrip && matchingSubTrip.tripId) {
-        console.log(`[ReservationModal] Using subTrip tripId: ${matchingSubTrip.tripId} for search ${searchOrigin}->${searchDestination}`);
-        return matchingSubTrip.tripId;
-      }
-    }
-    
-    // If no search filters, use parentTrip
-    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
-      console.log(`[ReservationModal] No search filters, using parentTrip: ${tripDataObj.parentTrip.tripId}`);
-      return tripDataObj.parentTrip.tripId || trip.id;
-    }
-    
-    // Fallback to parentTrip if available
-    if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
-      console.log(`[ReservationModal] Using parentTrip tripId: ${tripDataObj.parentTrip.tripId} as fallback`);
-      return tripDataObj.parentTrip.tripId;
-    }
-    
-    // Final fallback to database record ID
-    console.log(`[ReservationModal] Using database record ID as final fallback: ${trip.id}`);
-    return trip.id;
-  };
   const [submittedReservation, setSubmittedReservation] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   
@@ -415,12 +351,8 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
       ? totalPrice - couponDiscount 
       : totalPrice;
     
-    // Get the specific segment's tripId based on search context
-    const selectedTripId = getSelectedSegmentTripId();
-    console.log(`[ReservationModal] Creating reservation with tripId: ${selectedTripId} (recordId: ${trip.id})`);
-
     const reservationData: ReservationFormData = {
-      tripId: trip.id, // Database record ID for backend processing
+      tripId: trip.id,
       numPassengers,
       passengers,
       email: email.trim() || null, // Guardar null si está vacío para consistencia
@@ -433,9 +365,7 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
       notes,
       createdBy: user?.id, // Usamos el ID del usuario actual desde el context de autenticación
       // Solo incluir el código de cupón si ha sido verificado
-      couponCode: couponVerified ? couponCode : undefined,
-      // Add the specific segment tripId for trip_details
-      selectedSegmentTripId: selectedTripId
+      couponCode: couponVerified ? couponCode : undefined
     };
     
     createReservationMutation.mutate(reservationData);
