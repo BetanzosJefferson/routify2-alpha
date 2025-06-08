@@ -790,6 +790,21 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                               </div>
                             </div>
                           </div>
+                          
+                          <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
+                            <div className="flex gap-2 mt-0 lg:mt-4">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  window.location.href = `/edit-trip/${trip.id}`;
+                                }}
+                                className="h-8 w-8"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
