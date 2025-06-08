@@ -340,6 +340,8 @@ export function PublishTripForm() {
   // Actualizar el tiempo de parada directamente desde el input
   const updateStopTime = (index: number, timeString: string) => {
     console.log("Actualizando tiempo de parada...", index, timeString);
+    console.log("stopTimes before update:", stopTimes);
+    console.log("segmentPrices before update:", segmentPrices);
 
     const [time, period] = timeString.split(" ");
     const [hour, minute] = time.split(":");
@@ -372,7 +374,9 @@ export function PublishTripForm() {
     setStopTimes(validatedStopTimes);
 
     // Actualizar tiempos de segmentos automáticamente
+    console.log("Calling updateSegmentTimesFromStops with:", validatedStopTimes);
     updateSegmentTimesFromStops(validatedStopTimes);
+    console.log("segmentPrices after updateSegmentTimesFromStops:", segmentPrices);
   };
 
   // Función para calcular los tiempos de los segmentos basados en los tiempos de las paradas
