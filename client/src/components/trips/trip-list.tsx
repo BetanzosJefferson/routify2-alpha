@@ -230,16 +230,34 @@ export function TripList() {
 
     const tripDataObj = trip.tripData as any;
     
-    // If we have subTrips, show the first one for display
+    // If we have subTrips, find the best one to display based on current search
     if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips) && tripDataObj.subTrips.length > 0) {
-      const firstSubTrip = tripDataObj.subTrips[0];
-      return {
-        origin: firstSubTrip.origin || trip.route?.origin || 'Origen',
-        destination: firstSubTrip.destination || trip.route?.destination || 'Destino',
-        price: firstSubTrip.price || trip.price || 0,
+      // Try to find a subtrip that matches the current search criteria
+      let selectedSubTrip = tripDataObj.subTrips[0]; // Default to first
+      
+      // If we have search parameters, try to find matching subtrip
+      if (origin || destination) {
+        const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
+          const originMatch = !origin || subTrip.origin?.toLowerCase().includes(origin.toLowerCase());
+          const destMatch = !destination || subTrip.destination?.toLowerCase().includes(destination.toLowerCase());
+          return originMatch && destMatch;
+        });
+        
+        if (matchingSubTrip) {
+          selectedSubTrip = matchingSubTrip;
+        }
+      }
+      
+      const displayData = {
+        origin: selectedSubTrip.origin || trip.route?.origin || 'Origen',
+        destination: selectedSubTrip.destination || trip.route?.destination || 'Destino',
+        price: selectedSubTrip.price || trip.price || 0,
         hasSubTrips: tripDataObj.subTrips.length > 1,
         isDirectTrip: false
       };
+      
+      console.log(`[getTripDisplayData] Trip ${trip.id} display data:`, displayData);
+      return displayData;
     }
     
     // If we have parentTrip data, use that
