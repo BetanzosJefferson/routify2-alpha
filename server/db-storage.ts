@@ -592,7 +592,16 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTrip(trip: InsertTrip): Promise<Trip> {
-    const [newTrip] = await db.insert(schema.trips).values(trip).returning();
+    // Filtrar solo las columnas que existen en la nueva tabla
+    const tripToInsert = {
+      tripData: trip.tripData,
+      capacity: trip.capacity,
+      vehicleId: trip.vehicleId || null,
+      driverId: trip.driverId || null,
+      visibility: trip.visibility || "publicado"
+    };
+    
+    const [newTrip] = await db.insert(schema.trips).values(tripToInsert).returning();
     return newTrip;
   }
   
