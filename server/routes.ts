@@ -1039,20 +1039,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         const mainTripToCreate = {
-          routeId: tripData.routeId,
-          departureDate: mainDepartureDate, // Fecha de salida (sin ajuste)
-          departureTime: cleanDepartureTime, // Hora de salida sin indicador de día
-          arrivalTime: cleanArrivalTime,     // Hora de llegada sin indicador de día
           capacity: tripData.capacity,
-          availableSeats: tripData.capacity,
-          price: mainSegmentPrice?.price || 450, // Usar el precio del segmento principal o un valor por defecto
-          segmentPrices: tripData.segmentPrices,
-          isSubTrip: false,
-          parentTripId: null,
           companyId: companyId, // Asignar la compañía del usuario al viaje
           visibility: tripData.visibility || TripVisibility.PUBLISHED, // Por defecto publicado
           tripStatus: "aun_no_inicia", // Por defecto aún no inicia
-          tripData: tripDataJson // Add the JSON structure here
+          tripData: tripDataJson // All trip information stored in JSON structure
         };
         
         const mainTrip = await storage.createTrip(mainTripToCreate);

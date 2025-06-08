@@ -711,13 +711,13 @@ export class DatabaseStorage implements IStorage {
     
     // 2. FILTROS ADICIONALES
     
-    // Aplicar filtro de fecha o rango de fechas usando departure_date column
+    // Aplicar filtro de fecha o rango de fechas usando trip_data JSON
     if (params.dateRange && params.dateRange.length > 0) {
       console.log(`[searchTrips-v2] Filtro por rango de fechas optimizado:`, params.dateRange);
       
-      // Crear condiciones para cada fecha usando la columna departure_date
+      // Crear condiciones para cada fecha usando el campo JSON trip_data
       const dateConditions = params.dateRange.map(date => {
-        return eq(sql`DATE(${schema.trips.departureDate})`, date);
+        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
       });
       
       // Combinar todas las condiciones de fecha con OR
@@ -729,7 +729,7 @@ export class DatabaseStorage implements IStorage {
     } else if (params.date) {
       console.log(`[searchTrips-v2] Filtro de fecha individual: ${params.date}`);
       
-      condiciones.push(sql`DATE(${schema.trips.departureDate}) = ${params.date}`);
+      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -738,10 +738,10 @@ export class DatabaseStorage implements IStorage {
       condiciones.push(eq(schema.trips.driverId, params.driverId));
     }
     
-    // Aplicar filtro de asientos
+    // Aplicar filtro de asientos usando capacidad total
     if (params.seats) {
       console.log(`[searchTrips-v2] Filtro: Mínimo ${params.seats} asientos disponibles`);
-      condiciones.push(gte(schema.trips.availableSeats, params.seats));
+      condiciones.push(gte(schema.trips.capacity, params.seats));
     }
     
     // CONSULTA FINAL: Construir y ejecutar la consulta con todas las condiciones
