@@ -4370,15 +4370,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/coupons - Crear un nuevo cupón
   app.post(apiRouter('/coupons'), isAuthenticated, async (req, res) => {
     try {
-      console.log('[POST /coupons] Iniciando creación de cupón');
-      console.log('[POST /coupons] Datos recibidos:', req.body);
-      console.log('[POST /coupons] Usuario:', req.user?.firstName, req.user?.lastName, 'Rol:', req.user?.role);
-      
       // Verificar permisos: solo administradores y dueños pueden crear cupones
       const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, UserRole.DEVELOPER];
       
       if (!allowedRoles.includes(req.user!.role)) {
-        console.log('[POST /coupons] Acceso denegado por rol');
         return res.status(403).json({ 
           success: false, 
           message: 'No tienes permiso para crear cupones' 
@@ -4388,7 +4383,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validar los datos recibidos
       if (!req.body.discountType || !req.body.discountValue 
           || !req.body.usageLimit || !req.body.expirationHours) {
-        console.log('[POST /coupons] Faltan campos requeridos');
         return res.status(400).json({ 
           success: false, 
           message: 'Faltan campos requeridos para crear el cupón' 
@@ -4405,20 +4399,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           result += characters.charAt(Math.floor(Math.random() * characters.length));
         }
         code = result;
-        console.log('[POST /coupons] Código generado automáticamente:', code);
       } else if (!code || code.trim() === '') {
-        console.log('[POST /coupons] No se proporcionó código');
         return res.status(400).json({ 
           success: false, 
           message: 'Debe proporcionar un código de cupón o activar la generación automática' 
         });
       }
       
-      console.log('[POST /coupons] Verificando código existente:', code);
       // Verificar si ya existe un cupón con ese código
       const existingCoupon = await storage.getCouponByCode(code);
       if (existingCoupon) {
-        console.log('[POST /coupons] Código ya existe');
         return res.status(400).json({ 
           success: false, 
           message: 'Ya existe un cupón con ese código' 
@@ -4430,12 +4420,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user!.role !== UserRole.SUPER_ADMIN && req.user!.role !== UserRole.DEVELOPER) {
         companyId = req.user!.company || (req.user as any).companyId;
       }
-      console.log('[POST /coupons] CompanyId asignado:', companyId);
-      
-      // Calcular la fecha de expiración basada en las horas de expiración
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + (req.body.expirationHours * 60 * 60 * 1000));
-      console.log('[POST /coupons] Fecha de expiración calculada:', expiresAt);
       
       // Preparar los datos del cupón
       const couponData = {
@@ -4445,21 +4429,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usageLimit: req.body.usageLimit,
         usageCount: 0,
         expirationHours: req.body.expirationHours,
-        expiresAt,
         isActive: req.body.isActive !== undefined ? req.body.isActive : true,
         companyId,
+        // La fecha de creación se establece en el modelo, igual que la fecha de expiración
       };
       
-      console.log('[POST /coupons] Datos del cupón preparados:', couponData);
-      
       // Crear el cupón
-      console.log('[POST /coupons] Llamando a storage.createCoupon');
       const newCoupon = await storage.createCoupon(couponData);
-      console.log('[POST /coupons] Cupón creado exitosamente:', newCoupon);
       
       res.status(201).json(newCoupon);
     } catch (error) {
-      console.error('[POST /coupons] Error al crear cupón:', error);
+      console.error('Error al crear cupón:', error);
       res.status(500).json({ 
         success: false, 
         message: 'Error al crear el cupón' 
