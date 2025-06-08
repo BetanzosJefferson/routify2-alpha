@@ -425,6 +425,7 @@ export class DatabaseStorage implements IStorage {
       let tripDataArray = [];
       try {
         tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+        console.log(`[searchTrips] Trip ${trip.id} has ${tripDataArray.length} segments in tripData`);
       } catch (error) {
         console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
         continue;
@@ -449,7 +450,15 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Process each segment in the tripData array
-      for (const segment of tripDataArray) {
+      for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
+        const segment = tripDataArray[segmentIndex];
+        console.log(`[searchTrips] Processing segment ${segmentIndex} for trip ${trip.id}:`, {
+          origin: segment.origin,
+          destination: segment.destination,
+          price: segment.price,
+          availableSeats: segment.availableSeats
+        });
+        
         // Check origin and destination filters
         let originMatch = !params.origin;
         let destMatch = !params.destination;
@@ -467,11 +476,18 @@ export class DatabaseStorage implements IStorage {
         // Check seat availability filter
         let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
         
+        console.log(`[searchTrips] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
+        
         // Only include segment if it matches all filters
         if (originMatch && destMatch && seatMatch) {
+          // Create a unique identifier for this segment using recordId_segmentIndex format
+          const uniqueTripId = `${trip.id}_${segmentIndex}`;
+          
           // Create a trip object that combines the base trip with segment data
           const expandedTrip = {
             ...trip,
+            // Use the unique trip ID for frontend compatibility
+            id: uniqueTripId,
             // Override with segment-specific data for frontend compatibility
             origin: segment.origin,
             destination: segment.destination,
@@ -482,6 +498,8 @@ export class DatabaseStorage implements IStorage {
             availableSeats: segment.availableSeats,
             tripId: segment.tripId,
             isMainTrip: segment.isMainTrip,
+            // Store original record ID for reservations
+            recordId: trip.id,
             // Add route and company info
             route,
             numStops: route.stops.length,
@@ -491,6 +509,7 @@ export class DatabaseStorage implements IStorage {
             assignedDriver
           };
           
+          console.log(`[searchTrips] Adding expanded trip ${uniqueTripId} with origin: ${expandedTrip.origin}, destination: ${expandedTrip.destination}`);
           tripsWithRouteInfo.push(expandedTrip as TripWithRouteInfo);
         }
       }
