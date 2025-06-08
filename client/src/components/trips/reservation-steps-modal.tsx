@@ -104,7 +104,14 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
 
   // Function to determine which segment's tripId to use based on search context
   const getSelectedSegmentTripId = () => {
+    console.log(`[getSelectedSegmentTripId] INICIANDO - Props del modal:`, {
+      searchOrigin,
+      searchDestination,
+      tripId: trip.id
+    });
+    
     if (!trip.tripData || typeof trip.tripData !== 'object') {
+      console.log(`[getSelectedSegmentTripId] No hay tripData válida, usando fallback: ${trip.id}`);
       return trip.id; // Fallback to database record ID
     }
 
@@ -112,6 +119,7 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
     
     console.log(`[getSelectedSegmentTripId] Buscando segmento para: ${searchOrigin} -> ${searchDestination}`);
     console.log(`[getSelectedSegmentTripId] subTrips disponibles:`, tripDataObj.subTrips);
+    console.log(`[getSelectedSegmentTripId] parentTrip disponible:`, tripDataObj.parentTrip);
     
     // If there are search filters, find matching subTrip
     if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
@@ -412,7 +420,7 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
     console.log(`[ReservationModal] Creating reservation with tripId: ${selectedTripId} (recordId: ${trip.id})`);
 
     const reservationData: ReservationFormData = {
-      tripId: trip.id, // This is still the database record ID for backend processing
+      tripId: trip.id, // Database record ID for backend processing
       numPassengers,
       passengers,
       email: email.trim() || null, // Guardar null si está vacío para consistencia
