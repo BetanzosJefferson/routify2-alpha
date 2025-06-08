@@ -966,9 +966,9 @@ export class DatabaseStorage implements IStorage {
                 availableSeats: tripElement.availableSeats || trip.capacity || 0,
                 departureDate: tripElement.departureDate || trip.departureDate,
                 isMainTrip: tripElement.isMainTrip || false,
-                tripId: tripElement.tripId || trip.id,
                 // Crear un ID único combinando el ID del viaje padre con el índice
                 id: `${trip.id}_${i}`,
+                tripId: `${trip.id}_${i}`, // Usar el mismo ID único para tripId
                 route,
                 numStops: route.stops.length,
                 companyName: companyData.companyName,
