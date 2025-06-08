@@ -124,79 +124,25 @@ export function TripList() {
   const [date, setDate] = useState(today);
   const [seats, setSeats] = useState("");
 
-  // Query optimizada para traer solo viajes de ayer, hoy y mañana para opciones de autocomplete
-  // This query fetches ALL trips (including subtrips) for autocomplete to ensure comprehensive options.
-  // The filtering for isSubTrip is then done in the `useMemo` for `locationOptions`.
-  const { data: allTrips, isLoading: isLoadingAll } = useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", "limited-dates", "all"], // Changed key to distinguish from filtered trips
-    queryFn: async () => {
-      const dateRange = `${yesterday},${today},${tomorrow}`;
-      // Fetch all trips for autocomplete, don't filter by isSubTrip here
-      const response = await fetch(`/api/trips?dateRange=${encodeURIComponent(dateRange)}&visibility=publicado`);
-      if (!response.ok) throw new Error("Failed to fetch trips");
-      return await response.json();
-    },
-  });
-
-  // Filter trips based on search parameters
+  // Query para traer TODOS los viajes de la base de datos sin filtros
   const { data: trips, isLoading, isError } = useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", searchParams],
+    queryKey: ["/api/trips", "all"],
     queryFn: async () => {
-      // Add the published visibility filter
-      const paramsToFetch = { ...searchParams, visibility: 'publicado' };
-
-      const queryString = new URLSearchParams(
-        Object.entries(paramsToFetch).filter(([_, v]) => v !== undefined) as [string, string][]
-      ).toString();
-
-      const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
+      // Fetch ALL trips without any filters
+      const response = await fetch(`/api/trips`);
       if (!response.ok) throw new Error("Failed to fetch trips");
       return await response.json();
     },
-    enabled: true // Always run the query based on searchParams
   });
 
   // Extract unique locations for autocomplete
   const locationOptions = useMemo(() => {
-    if (!allTrips) return [];
+    if (!trips) return [];
     // Extract locations from ALL fetched trips, as a user might search for a subtrip origin/destination
-    return extractLocationsFromTrips(allTrips);
-  }, [allTrips]);
+    return extractLocationsFromTrips(trips);
+  }, [trips]);
 
-  // Update search params in real-time as the user types
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      const newParams: SearchParams = {};
-      newParams.date = formatDateForApiQuery(date); // Date always included
-
-      let hasUserSearchInput = false;
-
-      if (origin) {
-        newParams.origin = origin;
-        hasUserSearchInput = true;
-      }
-      if (destination) {
-        newParams.destination = destination;
-        hasUserSearchInput = true;
-      }
-      if (seats && !isNaN(parseInt(seats, 10))) {
-        newParams.seats = parseInt(seats, 10);
-        hasUserSearchInput = true;
-      }
-
-      // If no specific origin, destination, or seats are entered,
-      // default to showing only non-subtrips.
-      // Otherwise, if the user is searching for something specific,
-      // allow all trip types to be returned by the API.
-      if (!hasUserSearchInput) {
-        newParams.isSubTrip = 'false';
-      }
-
-      setSearchParams(newParams);
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(debounceTimer);
-  }, [origin, destination, date, seats]);
+  // No se necesita filtrado, mostramos todos los viajes
 
   // Handler for reservation button click
   const handleReserve = (trip: TripWithRouteInfo) => {
