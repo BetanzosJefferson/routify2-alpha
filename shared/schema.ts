@@ -243,7 +243,11 @@ export const publishTripValidationSchema = z.object({
 });
 
 export const createReservationValidationSchema = z.object({
-  tripId: z.number(),
+  tripDetails: z.object({
+    recordId: z.number().min(1, "ID del registro del viaje es requerido"),
+    tripId: z.union([z.number(), z.string()]).refine(val => val != null, "ID del viaje específico es requerido"),
+    seats: z.number().min(1, "Cantidad de asientos es requerida")
+  }),
   numPassengers: z.number().min(1, "Al menos 1 pasajero es requerido"),
   passengers: z.array(
     z.object({

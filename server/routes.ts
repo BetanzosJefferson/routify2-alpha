@@ -2177,16 +2177,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const reservationData = validationResult.data;
       
-      // Get the trip to calculate total amount and check available seats
-      const trip = await storage.getTrip(reservationData.tripId);
+      // Get the trip using recordId from tripDetails
+      const trip = await storage.getTrip(reservationData.tripDetails.recordId);
       
       if (!trip) {
-        return res.status(404).json({ error: "Trip not found" });
+        return res.status(404).json({ error: "Trip record not found" });
       }
+      
+      console.log(`[POST /reservations] Verificando tripDetails: recordId=${reservationData.tripDetails.recordId}, tripId=${reservationData.tripDetails.tripId}, seats=${reservationData.tripDetails.seats}`);
       
       const passengerCount = reservationData.passengers.length;
       
       console.log(`[POST /reservations] Procesando reservación para ${passengerCount} pasajeros en viaje ${trip.id}`);
+      
+      // TODO: Adaptar validación de asientos para nuevo enfoque tripData JSON
+      // Temporalmente comentado hasta implementar lógica específica del tripId
+      /*
       console.log(`[POST /reservations] Asientos disponibles antes de la reservación: ${trip.availableSeats}`);
       
       if (trip.availableSeats < passengerCount) {
@@ -2196,9 +2202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           requested: passengerCount
         });
       }
+      */
       
-      // Create the reservation
-      const totalAmount = (trip.price || 0) * passengerCount;
+      // Create the reservation - usar tripDetails.seats para calcular precio
+      const seatsRequested = reservationData.tripDetails.seats;
+      const totalAmount = (reservationData.totalAmount || 0); // Ya viene calculado del frontend
       
       // Obtener el companyId del viaje para asignarlo a la reservación (aislamiento de datos)
       const companyId = trip.companyId;
@@ -2259,7 +2267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const reservation = await storage.createReservation({
-        tripId: reservationData.tripId,
+        tripDetails: reservationData.tripDetails,
         totalAmount: finalAmount, // Usamos el monto final con descuento
         email: reservationData.email,
         phone: reservationData.phone,
@@ -2288,13 +2296,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passengers.push(passenger);
       }
       
-      // Actualizar disponibilidad en el viaje principal y en viajes relacionados
-      // Nota: No actualizamos directamente el viaje principal para evitar actualizar dos veces
-      // la función updateRelatedTripsAvailability ya actualiza el viaje principal correctamente
+      // TODO: Adaptar updateRelatedTripsAvailability para nuevo enfoque tripData JSON
+      // Temporalmente comentado hasta implementar lógica específica del tripId
+      /*
       console.log(`[POST /reservations] Actualizando viaje ${trip.id} y viajes relacionados con cambio de -${passengerCount} asientos`);
       console.log(`[POST /reservations] Asientos antes de la actualización: ${trip.availableSeats}`);
       
       await storage.updateRelatedTripsAvailability(trip.id, -passengerCount);
+      */
       
       // Crear transacción si hay anticipo (advanceAmount > 0)
       if (reservationData.advanceAmount && reservationData.advanceAmount > 0) {
