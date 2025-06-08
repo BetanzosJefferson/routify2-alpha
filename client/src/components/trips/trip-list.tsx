@@ -230,50 +230,51 @@ export function TripList() {
 
     const tripDataObj = trip.tripData as any;
     
-    // Por defecto, mostrar SOLO parentTrip cuando no hay filtros
-    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
-      console.log(`[getTripDisplayData] No search filters - showing parentTrip for trip ${trip.id}`);
+    // Por defecto, mostrar SOLO complete trip cuando no hay filtros
+    const completeTrip = tripDataObj.trips?.find((t: any) => t.type === 'complete');
+    if (!searchOrigin && !searchDestination && completeTrip) {
+      console.log(`[getTripDisplayData] No search filters - showing complete trip for trip ${trip.id}`);
       return {
-        origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
-        destination: tripDataObj.parentTrip.destination || trip.route?.destination || 'Destino',
-        price: tripDataObj.parentTrip.price || trip.price || 0,
-        departureTime: tripDataObj.parentTrip.departureTime || trip.departureTime || '10:00 AM',
-        arrivalTime: tripDataObj.parentTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
-        hasSubTrips: tripDataObj.subTrips?.length > 1 || false,
+        origin: completeTrip.origin || trip.route?.origin || 'Origen',
+        destination: completeTrip.destination || trip.route?.destination || 'Destino',
+        price: completeTrip.price || trip.price || 0,
+        departureTime: completeTrip.departureTime || trip.departureTime || '10:00 AM',
+        arrivalTime: completeTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
+        hasSubTrips: tripDataObj.trips?.filter((t: any) => t.type === 'segment').length > 1 || false,
         isDirectTrip: true
       };
     }
     
-    // Si hay filtros de búsqueda, buscar en subTrips
-    if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips) && tripDataObj.subTrips.length > 0) {
-      const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
-        const originMatch = !searchOrigin || subTrip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
-        const destMatch = !searchDestination || subTrip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
+    // Si hay filtros de búsqueda, buscar en trips
+    if ((searchOrigin || searchDestination) && tripDataObj.trips && Array.isArray(tripDataObj.trips) && tripDataObj.trips.length > 0) {
+      const matchingTrip = tripDataObj.trips.find((tripOption: any) => {
+        const originMatch = !searchOrigin || tripOption.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
+        const destMatch = !searchDestination || tripOption.destination?.toLowerCase().includes(searchDestination.toLowerCase());
         return originMatch && destMatch;
       });
       
-      if (matchingSubTrip) {
-        console.log(`[getTripDisplayData] Found matching subtrip for search ${searchOrigin}->${searchDestination}:`, matchingSubTrip);
+      if (matchingTrip) {
+        console.log(`[getTripDisplayData] Found matching trip for search ${searchOrigin}->${searchDestination}:`, matchingTrip);
         return {
-          origin: matchingSubTrip.origin || trip.route?.origin || 'Origen',
-          destination: matchingSubTrip.destination || trip.route?.destination || 'Destino',
-          price: matchingSubTrip.price || trip.price || 0,
-          departureTime: matchingSubTrip.departureTime || trip.departureTime || '10:00 AM',
-          arrivalTime: matchingSubTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
-          hasSubTrips: tripDataObj.subTrips.length > 1,
-          isDirectTrip: false
+          origin: matchingTrip.origin || trip.route?.origin || 'Origen',
+          destination: matchingTrip.destination || trip.route?.destination || 'Destino',
+          price: matchingTrip.price || trip.price || 0,
+          departureTime: matchingTrip.departureTime || trip.departureTime || '10:00 AM',
+          arrivalTime: matchingTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
+          hasSubTrips: tripDataObj.trips?.filter((t: any) => t.type === 'segment').length > 1,
+          isDirectTrip: matchingTrip.type === 'complete'
         };
       }
     }
     
-    // Fallback a parentTrip si existe
-    if (tripDataObj.parentTrip) {
+    // Fallback to complete trip if it exists
+    if (completeTrip) {
       return {
-        origin: tripDataObj.parentTrip.origin || trip.route?.origin || 'Origen',
-        destination: tripDataObj.parentTrip.destination || trip.route?.destination || 'Destino',
-        price: tripDataObj.parentTrip.price || trip.price || 0,
-        departureTime: tripDataObj.parentTrip.departureTime || trip.departureTime || '10:00 AM',
-        arrivalTime: tripDataObj.parentTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
+        origin: completeTrip.origin || trip.route?.origin || 'Origen',
+        destination: completeTrip.destination || trip.route?.destination || 'Destino',
+        price: completeTrip.price || trip.price || 0,
+        departureTime: completeTrip.departureTime || trip.departureTime || '10:00 AM',
+        arrivalTime: completeTrip.arrivalTime || trip.arrivalTime || '03:00 PM',
         hasSubTrips: false,
         isDirectTrip: true
       };

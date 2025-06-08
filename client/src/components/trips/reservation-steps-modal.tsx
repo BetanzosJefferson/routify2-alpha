@@ -111,43 +111,44 @@ export function ReservationStepsModal({ trip, searchOrigin, searchDestination, i
     const tripDataObj = trip.tripData as any;
     
     console.log(`[getSelectedSegmentTripId] Buscando segmento para: ${searchOrigin} -> ${searchDestination}`);
-    console.log(`[getSelectedSegmentTripId] subTrips disponibles:`, tripDataObj.subTrips);
+    console.log(`[getSelectedSegmentTripId] trips disponibles:`, tripDataObj.trips);
     
-    // If there are search filters, find matching subTrip
-    if ((searchOrigin || searchDestination) && tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
-      const matchingSubTrip = tripDataObj.subTrips.find((subTrip: any) => {
+    // If there are search filters, find matching trip
+    if ((searchOrigin || searchDestination) && tripDataObj.trips && Array.isArray(tripDataObj.trips)) {
+      const matchingTrip = tripDataObj.trips.find((tripOption: any) => {
         // Extract city/state from full location strings for comparison
-        const subTripOriginCity = subTrip.origin?.split(' - ')[0] || subTrip.origin;
-        const subTripDestCity = subTrip.destination?.split(' - ')[0] || subTrip.destination;
+        const tripOriginCity = tripOption.origin?.split(' - ')[0] || tripOption.origin;
+        const tripDestCity = tripOption.destination?.split(' - ')[0] || tripOption.destination;
         
         console.log(`[getSelectedSegmentTripId] Comparando:
-          SubTrip: ${subTripOriginCity} -> ${subTripDestCity}
+          Trip: ${tripOriginCity} -> ${tripDestCity} (type: ${tripOption.type})
           Búsqueda: ${searchOrigin} -> ${searchDestination}`);
         
-        const originMatch = !searchOrigin || subTripOriginCity?.toLowerCase().includes(searchOrigin.toLowerCase());
-        const destMatch = !searchDestination || subTripDestCity?.toLowerCase().includes(searchDestination.toLowerCase());
+        const originMatch = !searchOrigin || tripOriginCity?.toLowerCase().includes(searchOrigin.toLowerCase());
+        const destMatch = !searchDestination || tripDestCity?.toLowerCase().includes(searchDestination.toLowerCase());
         
         console.log(`[getSelectedSegmentTripId] Matches: origin=${originMatch}, dest=${destMatch}`);
         
         return originMatch && destMatch;
       });
       
-      if (matchingSubTrip && matchingSubTrip.tripId) {
-        console.log(`[ReservationModal] Using subTrip tripId: ${matchingSubTrip.tripId} for search ${searchOrigin}->${searchDestination}`);
-        return matchingSubTrip.tripId;
+      if (matchingTrip && matchingTrip.tripId) {
+        console.log(`[ReservationModal] Using trip tripId: ${matchingTrip.tripId} for search ${searchOrigin}->${searchDestination}`);
+        return matchingTrip.tripId;
       }
     }
     
-    // If no search filters, use parentTrip
-    if (!searchOrigin && !searchDestination && tripDataObj.parentTrip) {
-      console.log(`[ReservationModal] No search filters, using parentTrip: ${tripDataObj.parentTrip.tripId}`);
-      return tripDataObj.parentTrip.tripId || trip.id;
+    // If no search filters, use complete trip
+    const completeTrip = tripDataObj.trips?.find((t: any) => t.type === 'complete');
+    if (!searchOrigin && !searchDestination && completeTrip) {
+      console.log(`[ReservationModal] No search filters, using complete trip: ${completeTrip.tripId}`);
+      return completeTrip.tripId || trip.id;
     }
     
-    // Fallback to parentTrip if available
-    if (tripDataObj.parentTrip && tripDataObj.parentTrip.tripId) {
-      console.log(`[ReservationModal] Using parentTrip tripId: ${tripDataObj.parentTrip.tripId} as fallback`);
-      return tripDataObj.parentTrip.tripId;
+    // Fallback to complete trip if available
+    if (completeTrip && completeTrip.tripId) {
+      console.log(`[ReservationModal] Using complete trip tripId: ${completeTrip.tripId} as fallback`);
+      return completeTrip.tripId;
     }
     
     // Final fallback to database record ID
