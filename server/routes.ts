@@ -681,9 +681,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[GET /trips] Estableciendo acceso total para rol privilegiado`);
         } 
       } else {
-        // Usuario no autenticado
-        console.log(`[GET /trips] Acceso anónimo denegado`);
-        return res.status(401).json({ error: "No autenticado" });
+        // Usuario no autenticado - permitir acceso a viajes públicos
+        console.log(`[GET /trips] Usuario no autenticado - mostrando solo viajes públicos`);
+        searchParams.visibility = 'publicado';
+        searchParams.companyId = 'ALL'; // Permitir ver de todas las compañías pero solo públicos
       }
       
       // Ejecutar búsqueda con todos los parámetros
