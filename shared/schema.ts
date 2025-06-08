@@ -621,30 +621,18 @@ export const userRelations = relations(users, ({ many, one }) => ({
   // Relación con las compañías asignadas (para usuarios taquilla)
   assignedCompanies: many(userCompanies),
   // Relación para las reservaciones creadas por este usuario
-  createdReservations: many(reservations, {
-    fields: [users.id],
-    references: [reservations.createdBy]
-  }),
+  createdReservations: many(reservations),
   // Relación para las reservaciones escaneadas por este usuario
-  checkedReservations: many(reservations, {
-    fields: [users.id],
-    references: [reservations.checkedBy]
-  }),
+  checkedReservations: many(reservations),
   // Relación para las reservaciones marcadas como pagadas por este usuario
-  paidReservations: many(reservations, {
-    fields: [users.id],
-    references: [reservations.paidBy]
-  }),
+  paidReservations: many(reservations),
   // Relación con la compañía a la que pertenece el usuario
   company: one(companies, {
     fields: [users.companyId],
     references: [companies.identifier]
   }),
   // Relación para las compañías creadas por este usuario
-  companiesCreated: many(companies, {
-    fields: [users.id],
-    references: [companies.createdBy]
-  })
+  companiesCreated: many(companies)
 }));
 
 export const invitationRelations = relations(invitations, ({ one }) => ({
