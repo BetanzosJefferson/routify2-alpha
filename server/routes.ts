@@ -987,7 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Crear el array de combinaciones para trip_data
         const tripCombinations = [];
         
-        // Añadir el viaje principal completo
+        // Añadir el viaje principal completo (viaje de origen a destino final)
         tripCombinations.push({
           tripId: mainTripId,
           origin: route.origin,
@@ -996,10 +996,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           departureTime: cleanDepartureTime,
           arrivalTime: cleanArrivalTime,
           price: mainSegmentPrice?.price || 450,
-          availableSeats: tripData.capacity
+          availableSeats: tripData.capacity,
+          isMainTrip: true // VIAJE PRINCIPAL - ruta completa
         });
         
-        // Añadir todos los segmentos
+        // Añadir todos los segmentos (combinaciones)
         for (const segment of allSegments) {
           const segmentData = tripData.segmentPrices.find(
             (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
@@ -1013,6 +1014,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           segmentDepartureTime = segmentDepartureTime.replace(/\s*\+\d+d$/, '');
           segmentArrivalTime = segmentArrivalTime.replace(/\s*\+\d+d$/, '');
           
+          // Determinar si este segmento es el viaje principal o una combinación
+          const isMainTrip = segment.origin === route.origin && segment.destination === route.destination;
+          
           tripCombinations.push({
             tripId: Math.floor(Date.now() + Math.random() * 1000), // ID único para cada segmento
             origin: segment.origin,
@@ -1021,7 +1025,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             departureTime: segmentDepartureTime,
             arrivalTime: segmentArrivalTime,
             price: segmentPrice,
-            availableSeats: tripData.capacity
+            availableSeats: tripData.capacity,
+            isMainTrip: isMainTrip // false para combinaciones, true solo para el viaje completo
           });
         }
 
