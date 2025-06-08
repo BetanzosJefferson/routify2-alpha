@@ -598,7 +598,9 @@ export class DatabaseStorage implements IStorage {
       capacity: trip.capacity,
       vehicleId: trip.vehicleId || null,
       driverId: trip.driverId || null,
-      visibility: trip.visibility || "publicado"
+      visibility: trip.visibility || "publicado",
+      routeId: trip.routeId || null,
+      companyId: trip.companyId || null
     };
     
     const [newTrip] = await db.insert(schema.trips).values(tripToInsert).returning();

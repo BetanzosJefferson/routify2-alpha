@@ -42,6 +42,8 @@ export const trips = pgTable("trips", {
   vehicleId: integer("vehicle_id"),
   driverId: integer("driver_id"),
   visibility: text("visibility").default("publicado"),
+  routeId: integer("route_id"),
+  companyId: text("company_id"),
 });
 
 export const insertTripSchema = createInsertSchema(trips);
@@ -417,6 +419,10 @@ export const routeRelations = relations(routes, ({ many }) => ({
 }));
 
 export const tripRelations = relations(trips, ({ one, many }) => ({
+  route: one(routes, {
+    fields: [trips.routeId],
+    references: [routes.id]
+  }),
   vehicle: one(vehicles, {
     fields: [trips.vehicleId],
     references: [vehicles.id]
