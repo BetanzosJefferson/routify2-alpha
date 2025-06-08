@@ -850,10 +850,9 @@ export class DatabaseStorage implements IStorage {
       const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      const hasOriginOrDestinationFilter = params.origin || params.destination;
       const isMainTrip = !trip.isSubTrip;
       
-      console.log(`[searchTrips-v2] Viaje ${trip.id}: isSubTrip=${trip.isSubTrip}, hasFilter=${hasOriginOrDestinationFilter}, isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
+      console.log(`[searchTrips-v2] Viaje ${trip.id}: isSubTrip=${trip.isSubTrip}, isMainTrip=${isMainTrip}, params.origin=${params.origin}`);
       
       // Don't exclude main trips automatically - check if they match the filter first
       
@@ -880,11 +879,13 @@ export class DatabaseStorage implements IStorage {
         console.log(`Viaje ${trip.id}: Encontrado conductor asignado ${assignedDriver.firstName} ${assignedDriver.lastName}`);
       }
       
-      // NEW LOGIC: With single-record approach, check tripData for segment matches
-      if (params.origin || params.destination) {
+      // NUEVA LÓGICA: Mostrar solo parentTrips por defecto, subTrips solo con filtros específicos
+      const hasOriginOrDestinationFilter = params.origin || params.destination;
+      
+      if (hasOriginOrDestinationFilter) {
         console.log(`[searchTrips-v3] Checking trip ${trip.id} for origin/destination filters`);
         
-        // Parse tripData to check subTrips for matches
+        // Si hay filtros de origen/destino, buscar en subTrips para coincidencias exactas
         let hasMatchingSegment = false;
         
         if (trip.tripData && typeof trip.tripData === 'object') {
@@ -946,6 +947,24 @@ export class DatabaseStorage implements IStorage {
         
         if (!hasMatchingSegment) {
           console.log(`[searchTrips-v3] No matching segments found in trip ${trip.id}, skipping`);
+          continue;
+        }
+      } else {
+        // Sin filtros de origen/destino: Solo mostrar viajes que tienen parentTrip válido
+        console.log(`[searchTrips-v3] No origin/destination filters - checking if trip ${trip.id} has valid parentTrip`);
+        
+        if (trip.tripData && typeof trip.tripData === 'object') {
+          const tripDataObj = trip.tripData as any;
+          
+          // Verificar que el viaje tenga un parentTrip válido
+          if (!tripDataObj.parentTrip || !tripDataObj.parentTrip.origin || !tripDataObj.parentTrip.destination) {
+            console.log(`[searchTrips-v3] Trip ${trip.id} has no valid parentTrip, skipping for default view`);
+            continue;
+          }
+          
+          console.log(`[searchTrips-v3] Trip ${trip.id} has valid parentTrip: ${tripDataObj.parentTrip.origin} -> ${tripDataObj.parentTrip.destination}`);
+        } else {
+          console.log(`[searchTrips-v3] Trip ${trip.id} has no tripData, skipping for default view`);
           continue;
         }
       }
