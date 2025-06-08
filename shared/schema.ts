@@ -417,11 +417,6 @@ export const routeRelations = relations(routes, ({ many }) => ({
 }));
 
 export const tripRelations = relations(trips, ({ one, many }) => ({
-  route: one(routes, {
-    fields: [trips.routeId],
-    references: [routes.id]
-  }),
-  // Relaciones de sub-viajes removidas temporalmente por incompatibilidad con estructura JSONB
   vehicle: one(vehicles, {
     fields: [trips.vehicleId],
     references: [vehicles.id]
