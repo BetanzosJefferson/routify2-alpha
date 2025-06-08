@@ -389,9 +389,7 @@ export function TripList() {
                   </div>
                 </div>
                 <div className="text-base font-medium">
-                  {formatPrice(trip.isSubTrip && Array.isArray(trip.segmentPrices) && trip.segmentPrices.length > 0
-                    ? trip.segmentPrices[0]?.price || trip.price
-                    : trip.price)}
+                  {formatPrice(trip.price || 0)}
                   <span className="text-xs text-gray-500 ml-1">MXN</span>
                 </div>
               </div>
@@ -403,7 +401,7 @@ export function TripList() {
                       {formatTripTime(trip.departureTime, true, 'pretty')}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      {trip.isSubTrip ? trip.segmentOrigin : trip.route.origin}
+                      {trip.origin || trip.route?.origin || 'Origen no disponible'}
                     </div>
                   </div>
 
@@ -427,7 +425,7 @@ export function TripList() {
                       {formatTripTime(trip.arrivalTime, true, 'pretty')}
                     </div>
                     <div className="text-sm text-gray-500 mt-1 text-right">
-                      {trip.isSubTrip ? trip.segmentDestination : trip.route.destination}
+                      {trip.destination || trip.route?.destination || 'Destino no disponible'}
                     </div>
                   </div>
                 </div>

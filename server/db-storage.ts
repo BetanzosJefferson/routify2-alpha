@@ -941,16 +941,58 @@ export class DatabaseStorage implements IStorage {
       // Solo procesar si coinciden origen y destino
       if (originMatch && destMatch) {
         console.log(`[PUSH-3] Agregando mainTrip ${trip.id} (isSubTrip: ${trip.isSubTrip}) - params.origin: ${params.origin}`);
-        tripsWithRouteInfo.push({
-          ...trip,
-          route,
-          // El estado del viaje ya no se utiliza
-          numStops: route.stops.length,
-          companyName: companyData.companyName,
-          companyLogo: companyData.companyLogo,
-          assignedVehicle,
-          assignedDriver
-        });
+        
+        // NUEVO: Si el viaje tiene tripData JSON, generar viajes individuales
+        if (trip.tripData && Array.isArray(trip.tripData)) {
+          console.log(`[INDIVIDUAL-TRIPS] Procesando ${trip.tripData.length} elementos de tripData para viaje ${trip.id}`);
+          
+          // Generar un viaje individual por cada elemento en tripData
+          for (let i = 0; i < trip.tripData.length; i++) {
+            const tripElement = trip.tripData[i];
+            
+            // Verificar que el elemento tenga las propiedades necesarias
+            if (tripElement && typeof tripElement === 'object' && 
+                tripElement.origin && tripElement.destination && 
+                tripElement.departureTime && tripElement.arrivalTime) {
+              
+              const individualTrip = {
+                ...trip,
+                // Usar información del elemento específico del tripData
+                origin: tripElement.origin,
+                destination: tripElement.destination,
+                departureTime: tripElement.departureTime,
+                arrivalTime: tripElement.arrivalTime,
+                price: tripElement.price || trip.price || 0,
+                availableSeats: tripElement.availableSeats || trip.capacity || 0,
+                departureDate: tripElement.departureDate || trip.departureDate,
+                isMainTrip: tripElement.isMainTrip || false,
+                tripId: tripElement.tripId || trip.id,
+                // Crear un ID único combinando el ID del viaje padre con el índice
+                id: `${trip.id}_${i}`,
+                route,
+                numStops: route.stops.length,
+                companyName: companyData.companyName,
+                companyLogo: companyData.companyLogo,
+                assignedVehicle,
+                assignedDriver
+              };
+              
+              console.log(`[INDIVIDUAL-TRIPS] Agregando viaje individual ${individualTrip.id}: ${individualTrip.origin} -> ${individualTrip.destination}`);
+              tripsWithRouteInfo.push(individualTrip);
+            }
+          }
+        } else {
+          // Si no hay tripData, agregar el viaje como antes
+          tripsWithRouteInfo.push({
+            ...trip,
+            route,
+            numStops: route.stops.length,
+            companyName: companyData.companyName,
+            companyLogo: companyData.companyLogo,
+            assignedVehicle,
+            assignedDriver
+          });
+        }
       }
     }
     
