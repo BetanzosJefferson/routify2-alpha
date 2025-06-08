@@ -39,23 +39,9 @@ export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   tripData: jsonb("trip_data").notNull(), // Contiene toda la información del viaje
   capacity: integer("capacity").notNull(),
-  vehicleType: text("vehicle_type"),
-  companyId: text("company_id"),
   vehicleId: integer("vehicle_id"),
   driverId: integer("driver_id"),
   visibility: text("visibility").default("publicado"),
-  tripStatus: text("trip_status"), // Estado del viaje
-  routeId: integer("route_id").notNull(),
-  departureDate: timestamp("departure_date").notNull(),
-  departureTime: text("departure_time").notNull(),
-  arrivalTime: text("arrival_time").notNull(),
-  availableSeats: integer("available_seats").notNull(),
-  price: doublePrecision("price").default(0),
-  segmentPrices: json("segment_prices").notNull(),
-  isSubTrip: boolean("is_sub_trip").default(false),
-  parentTripId: integer("parent_trip_id"),
-  segmentOrigin: text("segment_origin"),
-  segmentDestination: text("segment_destination"),
 });
 
 export const insertTripSchema = createInsertSchema(trips);
