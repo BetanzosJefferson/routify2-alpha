@@ -791,14 +791,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async incrementCouponUsage(couponId: number): Promise<void> {
+  async incrementCouponUsage(couponId: number): Promise<any | undefined> {
     try {
-      await db
+      const [updatedCoupon] = await db
         .update(schema.coupons)
         .set({ 
           usageCount: sql`${schema.coupons.usageCount} + 1` 
         })
-        .where(eq(schema.coupons.id, couponId));
+        .where(eq(schema.coupons.id, couponId))
+        .returning();
+      return updatedCoupon;
     } catch (error) {
       console.error('Error al incrementar uso de cupón:', error);
       throw error;
@@ -806,9 +808,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Método para gestión de notificaciones
-  async getNotifications(): Promise<any[]> {
-    // Por ahora retornamos un array vacío hasta que se implemente el schema de notificaciones
-    // TODO: Implementar schema de notificaciones en shared/schema.ts
-    return [];
+  async getNotifications(userId: number): Promise<any[]> {
+    try {
+      const notifications = await db
+        .select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, userId))
+        .orderBy(sql`${schema.notifications.createdAt} DESC`);
+      
+      return notifications;
+    } catch (error) {
+      console.error('Error al obtener notificaciones:', error);
+      return [];
+    }
+  }
+
+  // Método para gestión de cajas de usuarios
+  async getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]> {
+    try {
+      // Por ahora retornamos un array vacío hasta que se implemente completamente
+      // TODO: Implementar lógica completa de cajas de usuarios
+      return [];
+    } catch (error) {
+      console.error('Error al obtener cajas de usuarios:', error);
+      return [];
+    }
   }
 }
