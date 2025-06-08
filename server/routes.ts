@@ -1670,12 +1670,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Generar el nuevo tripData basado en la información del formulario
+      // PRESERVAR los tripId existentes del tripData original
+      const existingTripData = Array.isArray(currentTrip.tripData) ? currentTrip.tripData : [];
+      console.log(`[PUT /trips/${id}] tripData existente:`, existingTripData);
+      
+      // Crear mapa de tripId existentes por segmento (origin -> destination)
+      const existingTripIdMap: Record<string, any> = {};
+      existingTripData.forEach((trip: any) => {
+        const key = `${trip.origin} -> ${trip.destination}`;
+        existingTripIdMap[key] = trip;
+      });
+      
+      // Generar el nuevo tripData PRESERVANDO los tripId existentes
       const newTripData: any[] = [];
       
       if (segmentPrices && Array.isArray(segmentPrices)) {
-        // Generar tripId único para el viaje principal basado en el primer segmento
-        const mainTripId = Date.now();
         let isFirstSegment = true;
         
         segmentPrices.forEach((segment: any) => {
@@ -1686,11 +1695,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const originTimes = timeMap[segment.origin] || { departureTime: segment.departureTime || "08:00 AM", arrivalTime: segment.arrivalTime || "12:00 PM" };
           const destinationTimes = timeMap[segment.destination] || { departureTime: segment.departureTime || "08:00 AM", arrivalTime: segment.arrivalTime || "12:00 PM" };
           
+          // CRÍTICO: Buscar tripId existente para este segmento
+          const segmentKey = `${segment.origin} -> ${segment.destination}`;
+          const existingTrip = existingTripIdMap[segmentKey];
+          const preservedTripId = existingTrip ? existingTrip.tripId : Date.now() + Math.random(); // Solo generar nuevo ID si no existe
+          
+          console.log(`[PUT /trips/${id}] Segmento ${segmentKey}: tripId ${existingTrip ? 'PRESERVADO' : 'NUEVO'} = ${preservedTripId}`);
+          
           newTripData.push({
             price: segment.price || 0,
             origin: segment.origin,
             destination: segment.destination,
-            tripId: isMainTrip ? mainTripId : Date.now() + Math.random(), // ID único para el segmento
+            tripId: preservedTripId, // PRESERVAR el tripId existente
             isMainTrip: isMainTrip,
             departureDate: startDate || currentTrip.tripData?.[0]?.departureDate || new Date().toISOString().split('T')[0],
             departureTime: originTimes.departureTime,
