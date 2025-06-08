@@ -664,6 +664,24 @@ export class DatabaseStorage implements IStorage {
       // Obtener información de pasajeros
       const passengers = await this.getPassengers(reservation.id);
       
+      // Obtener información del usuario que creó la reservación
+      let createdByUser = null;
+      if (reservation.createdBy) {
+        try {
+          const [user] = await db.select().from(users).where(eq(users.id, reservation.createdBy));
+          if (user) {
+            createdByUser = {
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email
+            };
+          }
+        } catch (error) {
+          console.warn(`Error fetching created_by user ${reservation.createdBy}:`, error);
+        }
+      }
+      
       // Crear objeto trip compatible con el frontend usando datos del segmento específico
       const trip = {
         id: tripDetails.tripId, // Use the specific segment ID
@@ -685,7 +703,8 @@ export class DatabaseStorage implements IStorage {
       reservationsWithDetails.push({
         ...reservation,
         trip,
-        passengers
+        passengers,
+        createdByUser
       });
     }
     

@@ -629,7 +629,7 @@ export function ReservationList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{reservation.trip.route.name}</div>
                       <div className="text-sm text-gray-500">
-                        {reservation.trip.segmentOrigin || reservation.trip.route.origin} → {reservation.trip.segmentDestination || reservation.trip.route.destination}
+                        {reservation.trip.origin} → {reservation.trip.destination}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
