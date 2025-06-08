@@ -592,6 +592,9 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTrip(trip: InsertTrip): Promise<Trip> {
+    // Agregar logs para depuración
+    console.log('🔍 [createTrip] Datos recibidos:', JSON.stringify(trip, null, 2));
+    
     // Filtrar solo las columnas que existen en la nueva tabla
     const tripToInsert = {
       tripData: trip.tripData,
@@ -603,7 +606,12 @@ export class DatabaseStorage implements IStorage {
       companyId: trip.companyId || null
     };
     
+    console.log('🔍 [createTrip] Datos a insertar:', JSON.stringify(tripToInsert, null, 2));
+    
     const [newTrip] = await db.insert(schema.trips).values(tripToInsert).returning();
+    
+    console.log('🔍 [createTrip] Viaje creado:', JSON.stringify(newTrip, null, 2));
+    
     return newTrip;
   }
   
