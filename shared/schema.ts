@@ -123,7 +123,7 @@ export type TripVisibilityType = typeof TripVisibility[keyof typeof TripVisibili
 // RESERVATION SCHEMA
 export const reservations = pgTable("reservations", {
   id: serial("id").primaryKey(),
-  tripId: integer("trip_id").notNull(),
+  tripDetails: jsonb("trip_details").notNull(), // JSON con recordId, tripId, seats
   totalAmount: doublePrecision("total_amount").notNull(),
   email: text("email"), // Ahora es opcional
   phone: text("phone").notNull(),
