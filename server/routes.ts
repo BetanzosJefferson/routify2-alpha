@@ -1612,7 +1612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PUT /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
-        console.log(`[PUT /trips/${id}] Rol: ${user.role}, CompanyId: ${user.company || 'No definido'}`);
+        console.log(`[PUT /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[PUT /trips/${id}] DEBUG - user.companyId: ${user.companyId}, user.company: ${user.company}`);
       }
       
       // Obtener viaje actual antes de actualizar
