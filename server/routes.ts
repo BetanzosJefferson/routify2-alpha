@@ -548,7 +548,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      res.json(finalTrips);
+      // Devolver solo las columnas de la tabla trips sin procesamiento adicional
+      const simplifiedTrips = finalTrips.map(trip => ({
+        id: trip.id,
+        tripData: trip.tripData,
+        capacity: trip.capacity,
+        vehicleId: trip.vehicleId,
+        driverId: trip.driverId,
+        visibility: trip.visibility,
+        routeId: trip.routeId,
+        companyId: trip.companyId
+      }));
+      
+      res.json(simplifiedTrips);
     } catch (error: any) {
       console.error("Error al obtener viajes administrativos:", error.message);
       res.status(500).json({ error: "Error al obtener viajes" });
