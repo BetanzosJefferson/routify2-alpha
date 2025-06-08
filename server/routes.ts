@@ -1943,6 +1943,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // 3. ACTUALIZACIÓN DE TRIP_DATA JSON
+      // Si se actualizaron horarios o precios, actualizar también el trip_data JSON
+      if (currentTrip.tripData && (tripData.departureTime || tripData.arrivalTime || tripData.segmentPrices)) {
+        console.log("🔄 Actualizando trip_data JSON con nuevos horarios y precios");
+        
+        let tripDataJson = currentTrip.tripData;
+        
+        // Si trip_data es un string JSON, parsearlo
+        if (typeof tripDataJson === 'string') {
+          try {
+            tripDataJson = JSON.parse(tripDataJson);
+          } catch (e) {
+            console.log("⚠️ Error parseando trip_data existente, creando nuevo objeto");
+            tripDataJson = {};
+          }
+        }
+        
+        // Actualizar parentTrip con nuevos horarios si existen
+        if (tripDataJson.parentTrip) {
+          if (tripData.departureTime) {
+            tripDataJson.parentTrip.departureTime = tripData.departureTime;
+            console.log(`🔄 Actualizando parentTrip.departureTime: ${tripData.departureTime}`);
+          }
+          if (tripData.arrivalTime) {
+            tripDataJson.parentTrip.arrivalTime = tripData.arrivalTime;
+            console.log(`🔄 Actualizando parentTrip.arrivalTime: ${tripData.arrivalTime}`);
+          }
+          if (tripData.price) {
+            tripDataJson.parentTrip.price = tripData.price;
+            console.log(`🔄 Actualizando parentTrip.price: ${tripData.price}`);
+          }
+        }
+        
+        // Actualizar subTrips con nuevos horarios de segmentos si existen
+        if (tripDataJson.subTrips && Array.isArray(tripDataJson.subTrips) && tripData.segmentPrices) {
+          for (let i = 0; i < tripDataJson.subTrips.length; i++) {
+            const subTrip = tripDataJson.subTrips[i];
+            
+            // Buscar el segmento correspondiente en los nuevos precios
+            const matchingSegment = tripData.segmentPrices.find(seg => 
+              seg.origin === subTrip.origin && seg.destination === subTrip.destination
+            );
+            
+            if (matchingSegment) {
+              if (matchingSegment.departureTime) {
+                subTrip.departureTime = matchingSegment.departureTime;
+                console.log(`🔄 Actualizando subTrip[${i}].departureTime: ${matchingSegment.departureTime}`);
+              }
+              if (matchingSegment.arrivalTime) {
+                subTrip.arrivalTime = matchingSegment.arrivalTime;
+                console.log(`🔄 Actualizando subTrip[${i}].arrivalTime: ${matchingSegment.arrivalTime}`);
+              }
+              if (matchingSegment.price !== undefined) {
+                subTrip.price = matchingSegment.price;
+                console.log(`🔄 Actualizando subTrip[${i}].price: ${matchingSegment.price}`);
+              }
+            }
+          }
+        }
+        
+        // Asignar el trip_data actualizado
+        tripData.tripData = tripDataJson;
+        console.log("✅ trip_data JSON actualizado correctamente");
+      }
+      
       // Actualizar el viaje principal
       const updatedTrip = await storage.updateTrip(id, tripData);
       
