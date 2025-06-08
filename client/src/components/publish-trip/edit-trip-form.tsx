@@ -240,8 +240,14 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       };
       
       // Establecer fechas en formato correcto para input date
-      const formattedDate = formatDateForInput(tripData.date || tripData.departureDate);
-      console.log("Fecha formateada para input:", formattedDate);
+      // Extraer la fecha del primer segmento de tripData
+      let departureDate = '';
+      if (tripData.tripData && Array.isArray(tripData.tripData) && tripData.tripData.length > 0) {
+        departureDate = tripData.tripData[0].departureDate || '';
+      }
+      
+      const formattedDate = formatDateForInput(departureDate || tripData.date || tripData.departureDate);
+      console.log("🔧 Fecha formateada para input:", formattedDate);
       
       form.setValue("startDate", formattedDate);
       form.setValue("endDate", formattedDate);
@@ -272,10 +278,35 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   useEffect(() => {
     if (tripQuery.data && routeSegmentsQuery.data && !form.formState.isDirty) {
       const tripData = tripQuery.data;
+      console.log("🔧 Procesando tripData para edición:", tripData);
       
-      // Si el viaje tiene precios de segmentos guardados, usarlos
-      if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices) && tripData.segmentPrices.length > 0) {
-        console.log("Cargando precios y horarios de segmentos:", tripData.segmentPrices);
+      // Extraer los precios de segmentos desde tripData JSON
+      if (tripData.tripData && Array.isArray(tripData.tripData) && tripData.tripData.length > 0) {
+        console.log("🔧 Extrayendo precios desde tripData JSON:", tripData.tripData);
+        
+        // Convertir tripData a segmentPrices formato esperado por el formulario
+        const extractedSegmentPrices = tripData.tripData.map((segment: any) => ({
+          origin: segment.origin,
+          destination: segment.destination,
+          price: segment.price || 0,
+          departureTime: segment.departureTime,
+          arrivalTime: segment.arrivalTime
+        }));
+        
+        console.log("🔧 Precios de segmentos extraídos:", extractedSegmentPrices);
+        
+        // Actualizar los precios en el estado local
+        setSegmentPrices(extractedSegmentPrices);
+        
+        // Asignar valores al formulario
+        form.setValue("segmentPrices", extractedSegmentPrices);
+        
+        // Reconstruir los tiempos de parada a partir de los segmentos
+        reconstructStopTimesFromTripDataSegments(extractedSegmentPrices);
+      }
+      // Fallback: usar segmentPrices si existe (compatibilidad con versiones anteriores)
+      else if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices) && tripData.segmentPrices.length > 0) {
+        console.log("🔧 Usando segmentPrices legacy:", tripData.segmentPrices);
         
         // Actualizar los precios en el estado local
         setSegmentPrices(tripData.segmentPrices);
@@ -293,6 +324,63 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       }
     }
   }, [tripQuery.data, routeSegmentsQuery.data, form]);
+
+  // Función para reconstruir los tiempos de parada a partir de tripData segments
+  const reconstructStopTimesFromTripDataSegments = (segmentPrices: SegmentTimePrice[]) => {
+    if (!routeSegmentsQuery.data || !segmentPrices || segmentPrices.length === 0) return;
+    
+    // Obtener todas las ubicaciones de la ruta (origen, paradas, destino)
+    const allLocations = [
+      routeSegmentsQuery.data.origin,
+      ...(routeSegmentsQuery.data.stops || []),
+      routeSegmentsQuery.data.destination
+    ];
+    
+    // Crear un mapa para almacenar los tiempos por ubicación
+    const locationTimes: Record<string, { hour: string; minute: string; ampm: "AM" | "PM" }> = {};
+    
+    // Procesar cada segmento para extraer tiempos
+    segmentPrices.forEach(segment => {
+      // Si tiene tiempo de salida
+      if (segment.departureTime) {
+        const [time, period] = segment.departureTime.split(' ');
+        const [hour, minute] = time.split(':');
+        const ampm = period as "AM" | "PM";
+        
+        locationTimes[segment.origin] = { hour, minute, ampm };
+      }
+      
+      // Si tiene tiempo de llegada
+      if (segment.arrivalTime) {
+        const [time, period] = segment.arrivalTime.split(' ');
+        const [hour, minute] = time.split(':');
+        const ampm = period as "AM" | "PM";
+        
+        locationTimes[segment.destination] = { hour, minute, ampm };
+      }
+    });
+    
+    // Crear el array de tiempos de parada
+    const newStopTimes = allLocations.map((location, index) => {
+      if (locationTimes[location]) {
+        return {
+          ...locationTimes[location],
+          location
+        };
+      } else {
+        // Si no hay información para esta ubicación, usar valor predeterminado
+        return {
+          hour: "08",
+          minute: "00",
+          ampm: "AM" as "AM" | "PM",
+          location
+        };
+      }
+    });
+    
+    console.log("🔧 Tiempos de parada reconstruidos desde tripData:", newStopTimes);
+    setStopTimes(ensureValidStopTimes(newStopTimes));
+  };
 
   // Función para reconstruir los tiempos de parada a partir de los tiempos de segmentos
   const reconstructStopTimesFromSegments = (segmentPrices: SegmentTimePrice[]) => {
