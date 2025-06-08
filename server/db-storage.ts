@@ -885,64 +885,62 @@ export class DatabaseStorage implements IStorage {
       if (hasOriginOrDestinationFilter) {
         console.log(`[searchTrips-v3] Checking trip ${trip.id} for origin/destination filters`);
         
-        // Si hay filtros de origen/destino, buscar en trips para coincidencias exactas
+        // Si hay filtros de origen/destino, buscar en subTrips para coincidencias exactas
         let hasMatchingSegment = false;
         
         if (trip.tripData && typeof trip.tripData === 'object') {
           const tripDataObj = trip.tripData as any;
           
-          if (tripDataObj.trips && Array.isArray(tripDataObj.trips)) {
-            console.log(`[searchTrips-v3] Trip ${trip.id} has ${tripDataObj.trips.length} trips to check`);
+          if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
+            console.log(`[searchTrips-v3] Trip ${trip.id} has ${tripDataObj.subTrips.length} subTrips to check`);
             
-            for (const tripOption of tripDataObj.trips) {
+            for (const subTrip of tripDataObj.subTrips) {
               let originMatch = !params.origin;
               let destMatch = !params.destination;
               
               if (params.origin) {
                 const searchOrigin = params.origin.toLowerCase();
-                const tripOrigin = tripOption.origin?.toLowerCase() || '';
-                // Check if the searched origin is contained in the trip origin
-                originMatch = tripOrigin.includes(searchOrigin) || searchOrigin.includes(tripOrigin);
+                const subTripOrigin = subTrip.origin?.toLowerCase() || '';
+                // Check if the searched origin is contained in the subTrip origin
+                originMatch = subTripOrigin.includes(searchOrigin) || searchOrigin.includes(subTripOrigin);
               }
               
               if (params.destination) {
                 const searchDest = params.destination.toLowerCase();
-                const tripDest = tripOption.destination?.toLowerCase() || '';
-                // Check if the searched destination is contained in the trip destination
-                destMatch = tripDest.includes(searchDest) || searchDest.includes(tripDest);
+                const subTripDest = subTrip.destination?.toLowerCase() || '';
+                // Check if the searched destination is contained in the subTrip destination
+                destMatch = subTripDest.includes(searchDest) || searchDest.includes(subTripDest);
               }
               
               if (originMatch && destMatch) {
-                console.log(`[searchTrips-v3] Found matching trip: ${tripOption.origin} -> ${tripOption.destination} (type: ${tripOption.type})`);
+                console.log(`[searchTrips-v3] Found matching segment: ${subTrip.origin} -> ${subTrip.destination}`);
                 hasMatchingSegment = true;
                 break;
               }
             }
           }
           
-          // Check complete trip if no segment matches
-          if (!hasMatchingSegment) {
-            const completeTrip = tripDataObj.trips?.find((t: any) => t.type === 'complete');
-            if (completeTrip) {
-              let originMatch = !params.origin;
-              let destMatch = !params.destination;
-              
-              if (params.origin) {
-                const searchOrigin = params.origin.toLowerCase();
-                const completeTripOrigin = completeTrip.origin?.toLowerCase() || '';
-                originMatch = completeTripOrigin.includes(searchOrigin) || searchOrigin.includes(completeTripOrigin);
-              }
-              
-              if (params.destination) {
-                const searchDest = params.destination.toLowerCase();
-                const completeTripDest = completeTrip.destination?.toLowerCase() || '';
-                destMatch = completeTripDest.includes(searchDest) || searchDest.includes(completeTripDest);
-              }
-              
-              if (originMatch && destMatch) {
-                console.log(`[searchTrips-v3] Found matching complete trip: ${completeTrip.origin} -> ${completeTrip.destination}`);
-                hasMatchingSegment = true;
-              }
+          // Also check parentTrip if no subTrip matches
+          if (!hasMatchingSegment && tripDataObj.parentTrip) {
+            const parentTrip = tripDataObj.parentTrip;
+            let originMatch = !params.origin;
+            let destMatch = !params.destination;
+            
+            if (params.origin) {
+              const searchOrigin = params.origin.toLowerCase();
+              const parentTripOrigin = parentTrip.origin?.toLowerCase() || '';
+              originMatch = parentTripOrigin.includes(searchOrigin) || searchOrigin.includes(parentTripOrigin);
+            }
+            
+            if (params.destination) {
+              const searchDest = params.destination.toLowerCase();
+              const parentTripDest = parentTrip.destination?.toLowerCase() || '';
+              destMatch = parentTripDest.includes(searchDest) || searchDest.includes(parentTripDest);
+            }
+            
+            if (originMatch && destMatch) {
+              console.log(`[searchTrips-v3] Found matching parentTrip: ${parentTrip.origin} -> ${parentTrip.destination}`);
+              hasMatchingSegment = true;
             }
           }
         }
@@ -952,20 +950,19 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
       } else {
-        // Sin filtros de origen/destino: Solo mostrar viajes que tienen complete trip válido
-        console.log(`[searchTrips-v3] No origin/destination filters - checking if trip ${trip.id} has valid complete trip`);
+        // Sin filtros de origen/destino: Solo mostrar viajes que tienen parentTrip válido
+        console.log(`[searchTrips-v3] No origin/destination filters - checking if trip ${trip.id} has valid parentTrip`);
         
         if (trip.tripData && typeof trip.tripData === 'object') {
           const tripDataObj = trip.tripData as any;
           
-          // Verificar que el viaje tenga un complete trip válido
-          const completeTrip = tripDataObj.trips?.find((t: any) => t.type === 'complete');
-          if (!completeTrip || !completeTrip.origin || !completeTrip.destination) {
-            console.log(`[searchTrips-v3] Trip ${trip.id} has no valid complete trip, skipping for default view`);
+          // Verificar que el viaje tenga un parentTrip válido
+          if (!tripDataObj.parentTrip || !tripDataObj.parentTrip.origin || !tripDataObj.parentTrip.destination) {
+            console.log(`[searchTrips-v3] Trip ${trip.id} has no valid parentTrip, skipping for default view`);
             continue;
           }
           
-          console.log(`[searchTrips-v3] Trip ${trip.id} has valid complete trip: ${completeTrip.origin} -> ${completeTrip.destination}`);
+          console.log(`[searchTrips-v3] Trip ${trip.id} has valid parentTrip: ${tripDataObj.parentTrip.origin} -> ${tripDataObj.parentTrip.destination}`);
         } else {
           console.log(`[searchTrips-v3] Trip ${trip.id} has no tripData, skipping for default view`);
           continue;

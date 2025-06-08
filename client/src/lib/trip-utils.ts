@@ -150,14 +150,24 @@ export function extractLocationsFromTrips(trips: TripWithRouteInfo[]): LocationO
     if (trip.tripData && typeof trip.tripData === 'object') {
       const tripDataObj = trip.tripData as any;
       
-      // Extract from unified trips array
-      if (tripDataObj.trips && Array.isArray(tripDataObj.trips)) {
-        tripDataObj.trips.forEach((tripOption: any) => {
-          if (tripOption.origin) {
-            processLocation(tripOption.origin, locationMap);
+      // Extract from parentTrip first (main route)
+      if (tripDataObj.parentTrip) {
+        if (tripDataObj.parentTrip.origin) {
+          processLocation(tripDataObj.parentTrip.origin, locationMap);
+        }
+        if (tripDataObj.parentTrip.destination) {
+          processLocation(tripDataObj.parentTrip.destination, locationMap);
+        }
+      }
+      
+      // Extract from subTrips array (intermediate stops)
+      if (tripDataObj.subTrips && Array.isArray(tripDataObj.subTrips)) {
+        tripDataObj.subTrips.forEach((subTrip: any) => {
+          if (subTrip.origin) {
+            processLocation(subTrip.origin, locationMap);
           }
-          if (tripOption.destination) {
-            processLocation(tripOption.destination, locationMap);
+          if (subTrip.destination) {
+            processLocation(subTrip.destination, locationMap);
           }
         });
       }
