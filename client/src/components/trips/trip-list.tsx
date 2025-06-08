@@ -114,6 +114,7 @@ export function TripList() {
   // Initialize searchParams. Default to isSubTrip: 'false' for initial load.
   // This will be conditionally removed if a specific search is performed.
   const [searchParams, setSearchParams] = useState<SearchParams>({ date: today, isSubTrip: 'false' });
+  const [pendingSearchParams, setPendingSearchParams] = useState<SearchParams>({ date: today, isSubTrip: 'false' });
   const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [sortMethod, setSortMethod] = useState<"departure" | "price" | "duration">("departure");
@@ -166,40 +167,41 @@ export function TripList() {
     return extractLocationsFromTrips(allTrips);
   }, [allTrips]);
 
-  // Update search params in real-time as the user types
+  // Update pending search params as the user types (but don't trigger search yet)
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      const newParams: SearchParams = {};
-      newParams.date = formatDateForApiQuery(date); // Date always included
+    const newParams: SearchParams = {};
+    newParams.date = formatDateForApiQuery(date); // Date always included
 
-      let hasUserSearchInput = false;
+    let hasUserSearchInput = false;
 
-      if (origin) {
-        newParams.origin = origin;
-        hasUserSearchInput = true;
-      }
-      if (destination) {
-        newParams.destination = destination;
-        hasUserSearchInput = true;
-      }
-      if (seats && !isNaN(parseInt(seats, 10))) {
-        newParams.seats = parseInt(seats, 10);
-        hasUserSearchInput = true;
-      }
+    if (origin) {
+      newParams.origin = origin;
+      hasUserSearchInput = true;
+    }
+    if (destination) {
+      newParams.destination = destination;
+      hasUserSearchInput = true;
+    }
+    if (seats && !isNaN(parseInt(seats, 10))) {
+      newParams.seats = parseInt(seats, 10);
+      hasUserSearchInput = true;
+    }
 
-      // If no specific origin, destination, or seats are entered,
-      // default to showing only non-subtrips.
-      // Otherwise, if the user is searching for something specific,
-      // allow all trip types to be returned by the API.
-      if (!hasUserSearchInput) {
-        newParams.isSubTrip = 'false';
-      }
+    // If no specific origin, destination, or seats are entered,
+    // default to showing only non-subtrips.
+    // Otherwise, if the user is searching for something specific,
+    // allow all trip types to be returned by the API.
+    if (!hasUserSearchInput) {
+      newParams.isSubTrip = 'false';
+    }
 
-      setSearchParams(newParams);
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(debounceTimer);
+    setPendingSearchParams(newParams);
   }, [origin, destination, date, seats]);
+
+  // Handler for search button click
+  const handleSearch = () => {
+    setSearchParams(pendingSearchParams);
+  };
 
   // Handler for reservation button click
   const handleReserve = (trip: TripWithRouteInfo) => {
@@ -382,6 +384,22 @@ export function TripList() {
                 value={seats}
                 onChange={(e) => setSeats(e.target.value)}
               />
+            </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={handleSearch}
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                    Buscando...
+                  </>
+                ) : (
+                  'Buscar viaje'
+                )}
+              </Button>
             </div>
           </div>
         </CardContent>
