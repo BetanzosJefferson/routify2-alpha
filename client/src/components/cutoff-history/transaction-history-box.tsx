@@ -96,14 +96,12 @@ interface TransactionDetails {
 
 interface Transaction {
   id: number;
-  detalles: {
+  details: {
     type: "reservation" | "package" | "reservation-final-payment" | "package-final-payment";
     details: TransactionDetails;
   };
-  usuario_id: number; // Nombre en español que viene del cliente
-  user_id: number; // Nombre en inglés que viene de la BD
-  id_corte: number | null;
-  cutoff_id: number | null; // Nombre en inglés que viene de la BD
+  user_id: number;
+  cutoff_id: number | null;
   createdAt: string;
   updatedAt: string;
   companyId?: string;
@@ -248,21 +246,21 @@ async function generateCutoffTicketPDF(
       doc.setFont("courier", "normal");
       
       // ID y tipo de transacción (en negrita)
-      const type = transaction.detalles.type.includes("reservation") ? "RESERVA" : "PAQUETE";
+      const type = transaction.details.type.includes("reservation") ? "RESERVA" : "PAQUETE";
       doc.setFont("courier", "bold");
       doc.text(`#${transaction.id} - ${type}`, 5, y);
       
       // Monto y método de pago
       y += 3;
       doc.setFont("courier", "normal");
-      const monto = transaction.detalles.details.monto || 0;
-      const metodoPago = transaction.detalles.details.metodoPago === "efectivo" ? "Efectivo" : "Transferencia";
+      const monto = transaction.details.details.monto || 0;
+      const metodoPago = transaction.details.details.metodoPago === "efectivo" ? "Efectivo" : "Transferencia";
       doc.text(`${formatCurrency(monto)} - ${metodoPago}`, 5, y);
       
       // Detalles específicos según el tipo
-      const details = transaction.detalles.details;
+      const details = transaction.details.details;
       
-      if (transaction.detalles.type.includes("package")) {
+      if (transaction.details.type.includes("package")) {
         // Para paquetes: origen-destino, remitente/destinatario, descripción
         if (details.origen && details.destino) {
           y += 3;
@@ -539,7 +537,7 @@ const TransactionHistoryBox: React.FC = () => {
 
   // Sumar montos de reservaciones
   reservationTransactions.forEach(transaction => {
-    const details = transaction.detalles?.details || {};
+    const details = transaction.details?.details || {};
     const amount = details.monto || 0;
     totalAmount += amount;
     
@@ -552,7 +550,7 @@ const TransactionHistoryBox: React.FC = () => {
 
   // Sumar montos de paqueterías
   packageTransactions.forEach(transaction => {
-    const details = transaction.detalles?.details || {};
+    const details = transaction.details?.details || {};
     const amount = details.monto || 0;
     totalAmount += amount;
     
@@ -782,10 +780,10 @@ const TransactionHistoryBox: React.FC = () => {
                           </TableHeader>
                           <TableBody>
                             {group.transactions.filter(t => 
-                              t.detalles?.type === "reservation" || t.detalles?.type === "reservation-final-payment"
+                              t.details?.type === "reservation" || t.details?.type === "reservation-final-payment"
                             ).map((transaction) => {
                               try {
-                                const details = transaction.detalles?.details || {};
+                                const details = transaction.details?.details || {};
                                 return (
                                   <TableRow key={transaction.id}>
                                     <TableCell>{transaction.id}</TableCell>
@@ -839,10 +837,10 @@ const TransactionHistoryBox: React.FC = () => {
                           </TableHeader>
                           <TableBody>
                             {group.transactions.filter(t => 
-                              t.detalles?.type === "package" || t.detalles?.type === "package-final-payment"
+                              t.details?.type === "package" || t.details?.type === "package-final-payment"
                             ).map((transaction) => {
                               try {
-                                const details = transaction.detalles?.details || {};
+                                const details = transaction.details?.details || {};
                                 return (
                                   <TableRow key={transaction.id}>
                                     <TableCell>{transaction.id}</TableCell>
