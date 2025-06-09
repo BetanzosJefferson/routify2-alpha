@@ -355,8 +355,17 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
     setShowFilter(false);
   };
 
-  // Filtrar los viajes
+  // Filtrar los viajes - Mostrar solo viajes padre (no subviajes)
   const filteredTrips = trips.filter((trip: Trip) => {
+    // NUEVO: Filtrar para mostrar solo viajes padre (no combinaciones/subviajes)
+    // Un viaje padre es aquel que no tiene parentTripId o isSubTrip es false
+    const isParentTrip = !trip.isSubTrip && (!trip.parentTripId || trip.parentTripId === null);
+    
+    // Si no es un viaje padre, no lo mostramos
+    if (!isParentTrip) {
+      return false;
+    }
+
     let matchesSearch = true;
     let matchesDate = true;
     let matchesRoute = true;
