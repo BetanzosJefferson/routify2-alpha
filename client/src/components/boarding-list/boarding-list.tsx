@@ -18,8 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
 import { formatTripTime } from "@/lib/trip-utils";
 
-// Importamos nuestros nuevos hooks especializados para conductores
-import { useDriverTrips, Trip } from "@/hooks/use-driver-trips";
+// Importamos el hook de reservaciones
 import { useAllDriverReservations, Reservation, Passenger } from "@/hooks/use-driver-reservations";
 import { PassengerListSidebar } from "./passenger-list-sidebar";
 
@@ -34,14 +33,7 @@ export function BoardingList() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   
-  // Usamos nuestro nuevo hook para obtener viajes directamente sin depender de la sección "viajes"
-  const { 
-    data: trips, 
-    isLoading: isLoadingTrips,
-    error: tripsError
-  } = useDriverTrips();
-  
-  // Usamos el nuevo hook para obtener todas las reservaciones del conductor sin depender de otros datos
+  // Solo usamos reservaciones para extraer los viajes
   const {
     data: reservations,
     isLoading: isLoadingReservations,
@@ -50,69 +42,55 @@ export function BoardingList() {
 
   // Filtrar y agrupar viajes del día actual
   const filteredTrips = useMemo(() => {
-    if (!trips) {
-      console.log("No hay datos de viajes disponibles");
+    if (!reservations) {
+      console.log("[BoardingList] No hay reservaciones disponibles");
       return [];
     }
+
+    const today = normalizeToStartOfDay(currentDate);
     
-    console.log(`Total de viajes obtenidos: ${trips.length}`);
+    console.log(`[BoardingList] Agrupando reservaciones por viajes para la fecha: ${today.toISOString()}`);
+    console.log(`[BoardingList] Total reservaciones disponibles: ${reservations.length}`);
     
-    // Mostrar algunos ejemplos de viajes para depuración
-    if (trips.length > 0) {
-      const sampleTrips = trips.slice(0, 3);
-      console.log("Ejemplos de viajes:", sampleTrips.map(t => ({
-        id: t.id,
-        routeId: t.routeId,
-        driverId: t.driverId,
-        companyId: t.companyId,
-        date: t.departureDate
-      })));
-    }
+    // Agrupar reservaciones por tripDetails.id y extraer información del viaje
+    const tripGroups = new Map();
     
-    // Ya no necesitamos filtrar por conductor aquí porque se hace en el servidor
-    if (user && user.role === 'chofer' && user.id) {
-      console.log(`Total de viajes asignados al conductor: ${trips.length}`);
-    }
-    
-    // Agrupar viajes por recordId_routeId_fecha
-    const tripGroups = new Map<string, Trip[]>();
-    
-    trips.forEach((trip) => {
-      const tripDate = trip.departureDate || '';
-      
-      // Solo incluir viajes de la fecha seleccionada
-      if (!isSameLocalDay(tripDate, currentDate)) {
+    reservations.forEach((reservation: any) => {
+      if (!reservation.tripDetails?.id || !reservation.tripDetails?.departureDate) {
         return;
       }
       
-      // Extraer recordId del ID del viaje (formato: recordId_segmentIndex)
-      const recordId = trip.id.toString().split('_')[0];
-      const groupKey = `${tripDate}_${trip.routeId}`;
+      const tripId = reservation.tripDetails.id.toString();
+      const tripDate = new Date(reservation.tripDetails.departureDate);
       
-      if (!tripGroups.has(groupKey)) {
-        tripGroups.set(groupKey, []);
+      // Solo incluir viajes del día seleccionado
+      if (!isSameLocalDay(tripDate, today)) {
+        return;
       }
-      tripGroups.get(groupKey)!.push(trip);
-    });
-    
-    // Seleccionar solo el viaje padre (primer segmento) de cada grupo
-    const parentTrips: Trip[] = [];
-    
-    tripGroups.forEach((tripsGroup, groupKey) => {
-      console.log(`[BoardingList] Grupo ${groupKey}: ${tripsGroup.length} viajes, seleccionando viaje padre ID ${tripsGroup[0].id}`);
       
-      // Ordenar por ID para asegurar que tomamos el primer segmento
-      tripsGroup.sort((a: Trip, b: Trip) => a.id.toString().localeCompare(b.id.toString()));
+      if (!tripGroups.has(tripId)) {
+        // Crear un objeto de viaje basado en tripDetails
+        tripGroups.set(tripId, {
+          id: tripId,
+          departureDate: reservation.tripDetails.departureDate,
+          departureTime: reservation.tripDetails.departureTime,
+          arrivalTime: reservation.tripDetails.arrivalTime,
+          origin: reservation.tripDetails.origin,
+          destination: reservation.tripDetails.destination,
+          price: reservation.tripDetails.price,
+          availableSeats: reservation.tripDetails.availableSeats,
+          reservationsCount: 0
+        });
+      }
       
-      // Tomar solo el primer viaje (viaje padre)
-      parentTrips.push(tripsGroup[0]);
+      tripGroups.get(tripId).reservationsCount++;
     });
+
+    const grouped = Array.from(tripGroups.values());
+    console.log(`[BoardingList] Viajes agrupados para ${today.toDateString()}: ${grouped.length}`);
     
-    console.log(`Filtrando viajes por fecha: ${format(currentDate, 'yyyy-MM-dd')}`);
-    console.log(`Viajes agrupados y filtrados por fecha (${format(currentDate, 'yyyy-MM-dd')}): ${parentTrips.length}`);
-    
-    return parentTrips;
-  }, [trips, user, currentDate]);
+    return grouped;
+  }, [reservations, currentDate]);
 
   // La lógica de procesamiento de pasajeros ya no es necesaria aquí
   // ya que ahora se maneja en la página dedicada de PassengerListPage
@@ -203,8 +181,7 @@ export function BoardingList() {
       ) : filteredTrips.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTrips.map(trip => {
-            const passengerCount = getPassengerCount(trip.id);
-            const occupancyRate = Math.round(((trip.capacity - trip.availableSeats) / trip.capacity) * 100);
+            const passengerCount = trip.reservationsCount;
             
             return (
               <Card 
