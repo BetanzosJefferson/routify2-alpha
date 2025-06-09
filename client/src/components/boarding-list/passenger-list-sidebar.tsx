@@ -183,13 +183,15 @@ export function PassengerListSidebar({ tripId, onClose }: PassengerListSidebarPr
         }
       });
       
-      // Filtrar solo reservaciones que tienen pasajeros
-      const relevantReservations = reservations.map(res => {
-        if (!res.passengers || !Array.isArray(res.passengers)) {
-          return {...res, passengers: []};
-        }
-        return res;
-      });
+      // Filtrar solo reservaciones confirmadas y que tienen pasajeros
+      const relevantReservations = reservations
+        .filter(res => res.status === 'confirmed')
+        .map(res => {
+          if (!res.passengers || !Array.isArray(res.passengers)) {
+            return {...res, passengers: []};
+          }
+          return res;
+        });
       
       if (relevantReservations.length === 0) {
         return [];
