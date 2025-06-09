@@ -620,7 +620,7 @@ const TransactionBox: React.FC = () => {
               ) : (
                 reservationTransactions.map((transaction) => {
                   try {
-                    const details = transaction.detalles?.details || {};
+                    const details = transaction.details?.details || {};
                     return (
                       <div key={transaction.id} className="border rounded-xl p-4 bg-white">
                         {/* Header con ID y fecha */}
@@ -770,7 +770,7 @@ const TransactionBox: React.FC = () => {
               ) : (
                 packageTransactions.map((transaction) => {
                   try {
-                    const details = transaction.detalles?.details || {};
+                    const details = transaction.details?.details || {};
                     return (
                       <div key={transaction.id} className="border rounded-xl p-4 bg-white">
                         {/* Header con ID y fecha */}
