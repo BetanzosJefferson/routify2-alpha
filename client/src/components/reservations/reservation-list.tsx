@@ -840,12 +840,14 @@ export function ReservationList() {
                             <span className="text-sm font-medium">{formatPrice(reservation.totalAmount)}</span>
                           )}
                           <Badge
-                            variant={reservation.paymentStatus === 'pagado' ? "outline" : "secondary"}
-                            className={reservation.paymentStatus === 'pagado'
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : "bg-amber-100 text-amber-800 border-amber-200"}
+                            variant={reservation.status === 'CanceledAndRefund' ? "outline" : (reservation.paymentStatus === 'pagado' ? "outline" : "secondary")}
+                            className={reservation.status === 'CanceledAndRefund'
+                              ? "bg-blue-100 text-blue-800 border-blue-200"
+                              : (reservation.paymentStatus === 'pagado'
+                                ? "bg-green-100 text-green-800 border-green-200"
+                                : "bg-amber-100 text-amber-800 border-amber-200")}
                           >
-                            {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
+                            {reservation.status === 'CanceledAndRefund' ? 'REEMBOLSADO' : (reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE')}
                           </Badge>
                         </div>
 
@@ -903,9 +905,11 @@ export function ReservationList() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge
                           variant="outline"
-                          className="bg-red-100 text-red-800 border-red-200"
+                          className={reservation.status === 'CanceledAndRefund' 
+                            ? "bg-blue-100 text-blue-800 border-blue-200"
+                            : "bg-red-100 text-red-800 border-red-200"}
                         >
-                          CANCELADA
+                          {reservation.status === 'CanceledAndRefund' ? 'CANCELADA Y REEMBOLSADA' : 'CANCELADA'}
                         </Badge>
                       </td>
                     )}
