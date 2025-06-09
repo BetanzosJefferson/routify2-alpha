@@ -376,7 +376,7 @@ const TransactionBox: React.FC = () => {
 
   // Sumar montos de reservaciones
   reservationTransactions.forEach(transaction => {
-    const details = transaction.detalles?.details || {};
+    const details = transaction.details?.details || {};
     const amount = details.monto || 0;
     totalAmount += amount;
     
@@ -389,7 +389,7 @@ const TransactionBox: React.FC = () => {
 
   // Sumar montos de paqueterías
   packageTransactions.forEach(transaction => {
-    const details = transaction.detalles?.details || {};
+    const details = transaction.details?.details || {};
     const amount = details.monto || 0;
     totalAmount += amount;
     
