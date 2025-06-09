@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import { db } from "./db";
-import { eq, and, gte, lt, like, or, sql } from "drizzle-orm";
+import { eq, and, gte, lt, like, or, sql, isNotNull, isNull } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   async getRoutes(companyId?: string): Promise<Route[]> {
@@ -1007,16 +1007,32 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getTransacciones(filters?: { usuario_id?: number, id_corte?: number }): Promise<schema.Transaccion[]> {
+  async getTransacciones(filters?: any): Promise<schema.Transaccion[]> {
     try {
       let query = db.select().from(schema.transacciones);
       
-      if (filters?.usuario_id) {
-        query = query.where(eq(schema.transacciones.user_id, filters.usuario_id));
+      if (filters?.user_id) {
+        query = query.where(eq(schema.transacciones.user_id, filters.user_id));
       }
       
-      if (filters?.id_corte) {
-        query = query.where(eq(schema.transacciones.cutoff_id, filters.id_corte));
+      if (filters?.cutoff_id !== undefined) {
+        if (filters.cutoff_id === null) {
+          query = query.where(isNull(schema.transacciones.cutoff_id));
+        } else {
+          query = query.where(eq(schema.transacciones.cutoff_id, filters.cutoff_id));
+        }
+      }
+      
+      if (filters?.cutoff_id_not_null) {
+        query = query.where(isNotNull(schema.transacciones.cutoff_id));
+      }
+      
+      if (filters?.companyId) {
+        query = query.where(eq(schema.transacciones.companyId, filters.companyId));
+      }
+      
+      if (filters?.startDate) {
+        query = query.where(gte(schema.transacciones.createdAt, filters.startDate));
       }
       
       const transactions = await query;
