@@ -205,8 +205,12 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getTripWithRouteInfo(id: number, tripId?: string): Promise<TripWithRouteInfo | undefined> {
+    console.log(`[getTripWithRouteInfo] INICIO - id: ${id}, tripId: ${tripId}`);
     const trip = await this.getTrip(id);
-    if (!trip) return undefined;
+    if (!trip) {
+      console.log(`[getTripWithRouteInfo] No se encontró trip con id: ${id}`);
+      return undefined;
+    }
     
     const route = await this.getRoute(trip.routeId);
     if (!route) return undefined;
