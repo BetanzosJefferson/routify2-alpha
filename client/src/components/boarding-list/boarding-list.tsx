@@ -109,38 +109,8 @@ export function BoardingList() {
 
   // Función para obtener conteo de pasajeros por viaje padre usando tripDetails.id
   const getPassengerCount = (tripId: string | number) => {
-    if (!trips || !reservations) return 0;
-    
-    const tripIdStr = tripId.toString();
-    
-    // Extraer recordId del tripId (formato: recordId_segmentIndex)
-    const recordId = tripIdStr.split('_')[0];
-    
-    // Buscar todas las reservaciones que pertenecen a cualquier segmento de este record
-    // Las reservaciones tienen tripDetails.id que puede ser "recordId_X" donde X es cualquier índice
-    const relatedReservations = reservations.filter(reservation => {
-      if (!reservation.tripDetails?.id) return false;
-      
-      const reservationTripId = reservation.tripDetails.id.toString();
-      const reservationRecordId = reservationTripId.split('_')[0];
-      
-      // Incluir si pertenece al mismo record (independientemente del segmento)
-      return reservationRecordId === recordId;
-    });
-    
-    // Contar todos los pasajeros de las reservaciones relacionadas
-    let totalPassengers = 0;
-    for (const reservation of relatedReservations) {
-      if (reservation.passengers && Array.isArray(reservation.passengers)) {
-        totalPassengers += reservation.passengers.length;
-      }
-    }
-    
-    console.log(`[BoardingList] ANÁLISIS COMPLETO para viaje ${tripIdStr} - con ${relatedReservations.length - 1} subviajes relacionados`);
-    console.log(`[BoardingList] Encontradas localmente ${relatedReservations.length} reservaciones para viaje ${tripIdStr} y sus subviajes`);
-    console.log(`[BoardingList] TOTAL FINAL para viaje ${tripIdStr}: ${totalPassengers} pasajeros en ${relatedReservations.length} reservaciones`);
-    
-    return totalPassengers;
+    const trip = filteredTrips.find(t => t.id === tripId.toString());
+    return trip?.reservationsCount || 0;
   };
 
   return (
@@ -174,7 +144,7 @@ export function BoardingList() {
         </div>
       </div>
 
-      {isLoadingTrips || isLoadingReservations ? (
+      {isLoadingReservations ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -195,9 +165,9 @@ export function BoardingList() {
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h3 className="font-semibold text-lg">{trip.route?.name}</h3>
+                        <h3 className="font-semibold text-lg">Viaje {trip.id}</h3>
                         <p className="text-sm text-gray-500">
-                          {trip.segmentOrigin || (trip.route?.origin || 'Origen')} → {trip.segmentDestination || (trip.route?.destination || 'Destino')}
+                          {trip.origin} → {trip.destination}
                         </p>
                       </div>
                     </div>
@@ -215,35 +185,13 @@ export function BoardingList() {
                       
                       <div className="flex items-center text-gray-600">
                         <Bus className="h-4 w-4 mr-2" />
-                        <span className="capitalize">
-                          {(() => {
-                            // Primero intentamos mostrar la info desde assignedVehicle si existe
-                            if (trip.assignedVehicle) {
-                              return `${trip.assignedVehicle.brand} ${trip.assignedVehicle.model} - ${trip.assignedVehicle.plates}`;
-                            }
-                            // Si no hay assignedVehicle pero hay vehicleId, buscamos por ID
-                            else if (trip.vehicleId && trips) {
-                              // Buscar el vehículo en trips (algún viaje podría tener la info)
-                              const vehicleInfo = trips
-                                .filter(t => t.assignedVehicle !== undefined)
-                                .find(t => t.vehicleId === trip.vehicleId)?.assignedVehicle;
-                              
-                              if (vehicleInfo) {
-                                return `${vehicleInfo.brand} ${vehicleInfo.model} - ${vehicleInfo.plates}`;
-                              }
-                            }
-                            // Si no tenemos info, mostramos "Sin unidad asignada"
-                            return 'Sin unidad asignada';
-                          })()}
-                        </span>
+                        <span>Disponible {trip.availableSeats} asientos</span>
                       </div>
                       
-                      {trip.driverId && user?.role === 'chofer' && (
-                        <div className="flex items-center text-green-600">
-                          <User className="h-4 w-4 mr-2" />
-                          <span className="font-medium">Asignado a ti</span>
-                        </div>
-                      )}
+                      <div className="flex items-center text-gray-600">
+                        <Users className="h-4 w-4 mr-2" />
+                        <span>{passengerCount} pasajeros</span>
+                      </div>
                     </div>
                   </div>
                   
