@@ -2642,11 +2642,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Esta reservación ya ha sido cancelada" });
       }
       
-      // Obtener el viaje asociado a la reservación
-      const trip = await storage.getTrip(reservation.tripId);
+      // Obtener el viaje asociado a la reservación usando tripDetails
+      const { recordId } = reservation.tripDetails as { recordId: number, tripId: string };
+      const trip = await storage.getTrip(recordId);
       
       if (!trip) {
-        console.error(`Error al cancelar reservación: No se encontró el viaje ${reservation.tripId}`);
+        console.error(`Error al cancelar reservación: No se encontró el viaje ${recordId}`);
         return res.status(500).json({ error: "Failed to find associated trip" });
       }
       
