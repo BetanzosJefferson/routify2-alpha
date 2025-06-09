@@ -2859,18 +2859,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 3. Buscar transacción asociada sin corte
       const transactions = await storage.getTransacciones();
-      const associatedTransaction = transactions.find(t => 
-        t.details && 
-        typeof t.details === 'object' && 
-        'type' in t.details && 
-        t.details.type === 'reservation' &&
-        'details' in t.details &&
-        t.details.details &&
-        typeof t.details.details === 'object' &&
-        'id' in t.details.details &&
-        t.details.details.id === id &&
-        t.cutoff_id === null
-      );
+      console.log(`[POST /reservations/${id}/cancel-refund] Total transacciones: ${transactions.length}`);
+      
+      // Log de debug para ver la estructura de las transacciones
+      transactions.forEach((t, index) => {
+        if (index < 3) { // Solo log las primeras 3 para no saturar
+          console.log(`[DEBUG] Transacción ${t.id}:`, JSON.stringify(t.details, null, 2));
+          console.log(`[DEBUG] cutoff_id: ${t.cutoff_id}`);
+        }
+      });
+
+      const associatedTransaction = transactions.find(t => {
+        console.log(`[DEBUG] Evaluando transacción ${t.id} para reservación ${id}`);
+        if (!t.details || typeof t.details !== 'object') {
+          console.log(`[DEBUG] - No tiene details o no es objeto`);
+          return false;
+        }
+        if (!('type' in t.details) || t.details.type !== 'reservation') {
+          console.log(`[DEBUG] - No es tipo reservation, es: ${t.details.type}`);
+          return false;
+        }
+        if (!('details' in t.details) || !t.details.details) {
+          console.log(`[DEBUG] - No tiene details internos`);
+          return false;
+        }
+        if (typeof t.details.details !== 'object') {
+          console.log(`[DEBUG] - Details internos no son objeto`);
+          return false;
+        }
+        if (!('id' in t.details.details)) {
+          console.log(`[DEBUG] - No tiene id en details internos`);
+          return false;
+        }
+        if (t.details.details.id !== id) {
+          console.log(`[DEBUG] - ID no coincide: ${t.details.details.id} !== ${id}`);
+          return false;
+        }
+        if (t.cutoff_id !== null) {
+          console.log(`[DEBUG] - Tiene cutoff_id: ${t.cutoff_id}`);
+          return false;
+        }
+        console.log(`[DEBUG] - ¡COINCIDE! Transacción ${t.id} para reservación ${id}`);
+        return true;
+      });
 
       if (!associatedTransaction) {
         return res.status(400).json({ 
