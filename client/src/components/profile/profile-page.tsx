@@ -157,7 +157,7 @@ export function ProfilePage({ standalone = false }: ProfilePageProps) {
               <AvatarImage src={user.profilePicture} alt={`${user.firstName} ${user.lastName}`} />
             ) : (
               <AvatarFallback className="bg-primary/5 text-primary text-2xl">
-                {user?.firstName.charAt(0)}{user?.lastName.charAt(0)}
+                {user?.firstName?.charAt(0) || ''}{user?.lastName?.charAt(0) || ''}
               </AvatarFallback>
             )}
           </Avatar>
@@ -276,3 +276,5 @@ export function ProfilePage({ standalone = false }: ProfilePageProps) {
   // De lo contrario, solo devuelve el contenido
   return profileContent;
 }
+
+export default ProfilePage;
