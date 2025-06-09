@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useAuth } from "@/hooks/use-auth";
@@ -32,7 +32,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input"; 
 import { useDriverTrips, Trip } from "@/hooks/use-driver-trips";
-import { useDriverReservations, Reservation, Passenger } from "@/hooks/use-driver-reservations";
+import { useAllDriverReservations, Reservation, Passenger } from "@/hooks/use-driver-reservations";
 import { useTripBudget } from "@/hooks/use-trip-budget";
 import { useTripExpenses, TripExpense } from "@/hooks/use-trip-expenses";
 import { useTripPackages } from "@/hooks/use-trip-packages";
@@ -117,15 +117,33 @@ export function PassengerListSidebar({ tripId, onClose }: PassengerListSidebarPr
   // Buscar el viaje específico en la lista de viajes
   const tripDetails = trips?.find(trip => trip.id === tripId);
   
-  // Cargar reservaciones del viaje
+  // Usar reservaciones ya cargadas globalmente para evitar peticiones redundantes
   const { 
-    data: reservations, 
+    data: allReservations, 
     isLoading: isLoadingReservations,
     error: reservationsError 
-  } = useDriverReservations({
-    tripId: tripId,
-    includeRelated: true
-  });
+  } = useAllDriverReservations();
+
+  // Filtrar reservaciones localmente por tripId relacionado
+  const reservations = useMemo(() => {
+    if (!allReservations || !tripId) return [];
+    
+    // Filtrar reservaciones que pertenecen al tripId especificado o a viajes relacionados
+    return allReservations.filter(reservation => {
+      // Verificar si es para el trip específico
+      if (reservation.tripDetails && typeof reservation.tripDetails === 'object') {
+        const tripDetails = reservation.tripDetails as any;
+        if (tripDetails.id === tripId.toString()) return true;
+        
+        // También incluir si el ID base coincide (ej: "11_0" incluye reservaciones para "11_1", "11_2")
+        const baseId = tripId.toString().split('_')[0];
+        const reservationBaseId = tripDetails.id?.split('_')[0];
+        if (baseId === reservationBaseId) return true;
+      }
+      
+      return false;
+    });
+  }, [allReservations, tripId]);
   
   // Cargar el presupuesto del viaje (específicamente para conductores)
   const {
