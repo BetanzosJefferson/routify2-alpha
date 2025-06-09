@@ -162,8 +162,15 @@ export function setupAuthentication(app: Express) {
       }
 
       const user = userResults[0];
-      const { password: _, ...userWithoutPassword } = user;
-      done(null, userWithoutPassword);
+      const { password: _, profile_picture, ...userWithoutPassword } = user;
+      
+      // Mapear campos de snake_case a camelCase para compatibilidad con frontend
+      const userForFrontend = {
+        ...userWithoutPassword,
+        profilePicture: profile_picture
+      };
+      
+      done(null, userForFrontend);
     } catch (error) {
       done(error);
     }
@@ -240,10 +247,10 @@ export function setupAuthentication(app: Express) {
         return res.status(400).json({ message: "Se requiere un usuario autenticado y una imagen de perfil" });
       }
       
-      // Actualizar la foto de perfil en la base de datos
+      // Actualizar la foto de perfil en la base de datos (snake_case)
       const [updatedUser] = await db
         .update(users)
-        .set({ profilePicture })
+        .set({ profile_picture: profilePicture })
         .where(eq(users.id, userId))
         .returning();
       
@@ -251,13 +258,18 @@ export function setupAuthentication(app: Express) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
       
-      // Actualizar el usuario en la sesión
-      const { password: _, ...userWithoutPassword } = updatedUser;
-      req.login(userWithoutPassword, (err) => {
+      // Mapear datos para frontend (camelCase)
+      const { password: _, profile_picture, ...userWithoutPassword } = updatedUser;
+      const userForFrontend = {
+        ...userWithoutPassword,
+        profilePicture: profile_picture
+      };
+      
+      req.login(userForFrontend, (err) => {
         if (err) {
           return res.status(500).json({ message: "Error al actualizar la sesión" });
         }
-        return res.json(userWithoutPassword);
+        return res.json(userForFrontend);
       });
     } catch (error) {
       console.error("Error al actualizar la foto de perfil:", error);
