@@ -2466,9 +2466,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Crear la transacción en la base de datos
             const transaccionData = {
-              detalles: detallesTransaccion, // Se mapeará a "details" en la BD
-              usuario_id: createdByUserId || (user ? user.id : null), // Se mapeará a "user_id" en la BD
-              id_corte: null, // Se mapeará a "cutoff_id" en la BD - Inicialmente NULL, se actualizará cuando se haga un corte de caja
+              details: detallesTransaccion, // Campo correcto que coincide con la BD
+              user_id: createdByUserId || (user ? user.id : null), // Campo correcto que coincide con la BD
+              cutoff_id: null, // Campo correcto que coincide con la BD
               companyId: tripCompanyId // Añadimos el ID de la compañía a la transacción
             };
             
@@ -2591,9 +2591,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   // Crear la transacción en la base de datos
                   const transaccionData = {
-                    detalles: detallesTransaccion,
-                    usuario_id: user?.id || null,
-                    id_corte: null, // Inicialmente NULL, se actualizará cuando se haga un corte de caja
+                    details: detallesTransaccion, // Campo correcto que coincide con la BD
+                    user_id: user?.id || null, // Campo correcto que coincide con la BD
+                    cutoff_id: null, // Campo correcto que coincide con la BD
                     companyId: companyId // Añadimos el ID de la compañía a la transacción
                   };
                   
