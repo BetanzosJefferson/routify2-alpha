@@ -1889,6 +1889,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint temporal para diagnosticar extracción de datos
+  app.get(apiRouter("/test-trip-extraction/:reservationId"), isAuthenticated, async (req, res) => {
+    try {
+      const reservationId = parseInt(req.params.reservationId);
+      const reservation = await storage.getReservation(reservationId);
+      
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservación no encontrada" });
+      }
+
+      // Extraer tripDetails
+      const tripDetails = typeof reservation.tripDetails === 'string' 
+        ? JSON.parse(reservation.tripDetails) 
+        : reservation.tripDetails;
+      
+      console.log(`[TEST] Reservación ${reservationId}:`, {
+        tripDetails,
+        recordId: tripDetails.recordId,
+        specificTripId: tripDetails.tripId
+      });
+
+      // Obtener el trip con información de ruta
+      const trip = await storage.getTripWithRouteInfo(tripDetails.recordId, tripDetails.tripId);
+      
+      console.log(`[TEST] Trip extraído:`, {
+        id: trip?.id,
+        origin: trip?.origin,
+        destination: trip?.destination,
+        departureTime: trip?.departureTime,
+        segmentOrigin: trip?.segmentOrigin,
+        segmentDestination: trip?.segmentDestination
+      });
+
+      res.json({
+        reservation: {
+          id: reservation.id,
+          tripDetails
+        },
+        trip: trip ? {
+          id: trip.id,
+          origin: trip.origin,
+          destination: trip.destination,
+          departureTime: trip.departureTime,
+          departureDate: trip.departureDate,
+          segmentOrigin: trip.segmentOrigin,
+          segmentDestination: trip.segmentDestination,
+          isSubTrip: trip.isSubTrip
+        } : null
+      });
+    } catch (error) {
+      console.error(`[TEST] Error:`, error);
+      res.status(500).json({ error: "Error en extracción de datos" });
+    }
+  });
+
   // RESERVATIONS ENDPOINTS
   app.get(apiRouter("/reservations"), async (req: Request, res: Response) => {
     try {
