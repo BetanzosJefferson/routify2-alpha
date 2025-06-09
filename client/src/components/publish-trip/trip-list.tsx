@@ -356,63 +356,95 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   };
 
   // Filtrar los viajes - Mostrar solo viajes padre (no subviajes)
-  const filteredTrips = trips.filter((trip: Trip) => {
-    // NUEVO: Filtrar para mostrar solo viajes padre (no combinaciones/subviajes)
-    // Un viaje padre es aquel que no tiene parentTripId o isSubTrip es false
-    const isParentTrip = !trip.isSubTrip && (!trip.parentTripId || trip.parentTripId === null);
+  const filteredTrips = useMemo(() => {
+    // DEBUG: Log para ver la estructura completa de los primeros viajes
+    if (process.env.NODE_ENV === 'development' && trips.length > 0) {
+      console.log(`[TripList] Estructura del primer viaje:`, trips[0]);
+      console.log(`[TripList] Total de viajes recibidos: ${trips.length}`);
+    }
+
+    // Crear un mapa para agrupar viajes por fecha y ruta
+    const tripsByDateAndRoute = new Map();
     
-    // Si no es un viaje padre, no lo mostramos
-    if (!isParentTrip) {
-      return false;
-    }
-
-    let matchesSearch = true;
-    let matchesDate = true;
-    let matchesRoute = true;
-
-    // Filtrar por búsqueda en origen, destino o nombre de ruta
-    if (searchQuery.trim()) {
-      const search = searchQuery.toLowerCase();
-      matchesSearch = 
-        (trip.origin?.toLowerCase().includes(search) ?? false) ||
-        (trip.destination?.toLowerCase().includes(search) ?? false) ||
-        (trip.routeName?.toLowerCase().includes(search) ?? false);
-    }
-
-    // Filtrar por fecha usando nuestras utilidades de normalización
-    if (dateFilter) {
-      // Con la nueva estructura, necesitamos revisar el tripData
-      try {
-        if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
-          // Verificar si alguna fecha en tripData coincide con el filtro
-          matchesDate = trip.tripData.some((tripSegment: any) => {
-            if (tripSegment.departureDate) {
-              return isSameLocalDay(tripSegment.departureDate, dateFilter);
-            }
-            return false;
-          });
-        } else {
-          // Fallback para estructura antigua si existe
-          matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
-        }
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`Filtro de fecha aplicado: ${matchesDate}`);
-        }
-      } catch (error) {
-        console.error(`Error al comparar fechas: ${error}`);
-        matchesDate = false;
+    trips.forEach((trip: Trip) => {
+      // Extraer fecha de departure desde tripData
+      let tripDate = '';
+      if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
+        tripDate = trip.tripData[0]?.departureDate || '';
       }
-    }
-    
-    // Filtrar por ruta
-    if (routeFilter !== "all") {
-      const routeId = parseInt(routeFilter, 10);
-      matchesRoute = trip.routeId === routeId;
-    }
+      
+      // Crear clave única por fecha y ruta
+      const key = `${tripDate}_${trip.routeId}`;
+      
+      if (!tripsByDateAndRoute.has(key)) {
+        tripsByDateAndRoute.set(key, []);
+      }
+      tripsByDateAndRoute.get(key).push(trip);
+    });
 
-    return matchesSearch && matchesDate && matchesRoute;
-  });
+    // Seleccionar solo el primer viaje de cada grupo (viaje padre)
+    const parentTrips: Trip[] = [];
+    tripsByDateAndRoute.forEach((tripsGroup, key) => {
+      // Ordenar por ID para tomar el más bajo (que normalmente es el padre)
+      tripsGroup.sort((a: Trip, b: Trip) => a.id - b.id);
+      const parentTrip = tripsGroup[0];
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[TripList] Grupo ${key}: ${tripsGroup.length} viajes, seleccionando viaje padre ID ${parentTrip.id}`);
+      }
+      
+      parentTrips.push(parentTrip);
+    });
+
+    return parentTrips.filter((trip: Trip) => {
+      let matchesSearch = true;
+      let matchesDate = true;
+      let matchesRoute = true;
+
+      // Filtrar por búsqueda en origen, destino o nombre de ruta
+      if (searchQuery.trim()) {
+        const search = searchQuery.toLowerCase();
+        matchesSearch = 
+          (trip.origin?.toLowerCase().includes(search) ?? false) ||
+          (trip.destination?.toLowerCase().includes(search) ?? false) ||
+          (trip.routeName?.toLowerCase().includes(search) ?? false);
+      }
+
+      // Filtrar por fecha usando nuestras utilidades de normalización
+      if (dateFilter) {
+        // Con la nueva estructura, necesitamos revisar el tripData
+        try {
+          if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
+            // Verificar si alguna fecha en tripData coincide con el filtro
+            matchesDate = trip.tripData.some((tripSegment: any) => {
+              if (tripSegment.departureDate) {
+                return isSameLocalDay(tripSegment.departureDate, dateFilter);
+              }
+              return false;
+            });
+          } else {
+            // Fallback para estructura antigua si existe
+            matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
+          }
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Filtro de fecha aplicado: ${matchesDate}`);
+          }
+        } catch (error) {
+          console.error(`Error al comparar fechas: ${error}`);
+          matchesDate = false;
+        }
+      }
+      
+      // Filtrar por ruta
+      if (routeFilter !== "all") {
+        const routeId = parseInt(routeFilter, 10);
+        matchesRoute = trip.routeId === routeId;
+      }
+
+      return matchesSearch && matchesDate && matchesRoute;
+    });
+  }, [trips, searchQuery, dateFilter, routeFilter]);
 
   // Obtener y organizar viajes, separando actuales y archivados
   const { currentTrips, archivedTrips } = useMemo(() => {
