@@ -142,7 +142,7 @@ export function ReservationList() {
   // Separar reservaciones en actuales, archivadas y canceladas
   // Primero, separamos las canceladas (tendrán su propia pestaña)
   const canceledReservations = reservations?.filter(
-    (reservation) => reservation.status === 'canceled' || reservation.status === 'CanceledAndRefund'
+    (reservation) => reservation.status === 'cancelled'
   ) || [];
 
   // Usar la fecha actual real del sistema
@@ -840,14 +840,12 @@ export function ReservationList() {
                             <span className="text-sm font-medium">{formatPrice(reservation.totalAmount)}</span>
                           )}
                           <Badge
-                            variant={reservation.status === 'CanceledAndRefund' ? "outline" : (reservation.paymentStatus === 'pagado' ? "outline" : "secondary")}
-                            className={reservation.status === 'CanceledAndRefund'
-                              ? "bg-blue-100 text-blue-800 border-blue-200"
-                              : (reservation.paymentStatus === 'pagado'
-                                ? "bg-green-100 text-green-800 border-green-200"
-                                : "bg-amber-100 text-amber-800 border-amber-200")}
+                            variant={reservation.paymentStatus === 'pagado' ? "outline" : "secondary"}
+                            className={reservation.paymentStatus === 'pagado'
+                              ? "bg-green-100 text-green-800 border-green-200"
+                              : "bg-amber-100 text-amber-800 border-amber-200"}
                           >
-                            {reservation.status === 'CanceledAndRefund' ? 'REEMBOLSADO' : (reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE')}
+                            {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
                           </Badge>
                         </div>
 
@@ -905,11 +903,9 @@ export function ReservationList() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge
                           variant="outline"
-                          className={reservation.status === 'canceledAndRefund' 
-                            ? "bg-blue-100 text-blue-800 border-blue-200"
-                            : "bg-red-100 text-red-800 border-red-200"}
+                          className="bg-red-100 text-red-800 border-red-200"
                         >
-                          {reservation.status === 'canceledAndRefund' ? 'CANCELADA Y REEMBOLSADA' : 'CANCELADA'}
+                          CANCELADA
                         </Badge>
                       </td>
                     )}
