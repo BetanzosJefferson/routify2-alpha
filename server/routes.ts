@@ -6515,8 +6515,8 @@ function setupPackageRoutes(app: Express) {
       
       // Filtrar transacciones del usuario actual que no están en un corte de caja
       const filters = {
-        usuario_id: user.id,  // Mantenemos el nombre usuario_id en el filtro, ya que la función getTransacciones mapeará internamente a user_id
-        id_corte: null // La función getTransacciones mapeará este campo a cutoff_id
+        user_id: user.id,  // Usar el nombre correcto que coincide con la BD
+        cutoff_id: null // Usar el nombre correcto que coincide con la BD
       };
       
       const transacciones = await storage.getTransacciones(filters);
