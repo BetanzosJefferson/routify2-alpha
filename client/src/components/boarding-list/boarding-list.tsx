@@ -52,21 +52,40 @@ export function BoardingList() {
     console.log(`[BoardingList] Agrupando reservaciones por viajes para la fecha: ${today.toISOString()}`);
     console.log(`[BoardingList] Total reservaciones disponibles: ${reservations.length}`);
     
+    // Mostrar algunas reservaciones de ejemplo para debug
+    if (reservations.length > 0) {
+      const samples = reservations.slice(0, 3);
+      console.log(`[BoardingList] Ejemplo de reservaciones:`, samples.map(r => ({
+        id: r.id,
+        tripId: r.tripDetails?.id,
+        departureDate: r.tripDetails?.departureDate,
+        origin: r.tripDetails?.origin,
+        destination: r.tripDetails?.destination
+      })));
+    }
+    
     // Agrupar reservaciones por tripDetails.id y extraer información del viaje
     const tripGroups = new Map();
     
     reservations.forEach((reservation: any) => {
       if (!reservation.tripDetails?.id || !reservation.tripDetails?.departureDate) {
+        console.log(`[BoardingList] Reservación ${reservation.id} sin tripDetails o departureDate`);
         return;
       }
       
       const tripId = reservation.tripDetails.id.toString();
       const tripDate = new Date(reservation.tripDetails.departureDate);
       
-      // Solo incluir viajes del día seleccionado
-      if (!isSameLocalDay(tripDate, today)) {
+      console.log(`[BoardingList] Evaluando reservación ${reservation.id} - Trip ${tripId} - Fecha: ${tripDate.toISOString()} vs Hoy: ${today.toISOString()}`);
+      
+      // MODO DEBUG: Temporalmente mostrar todos los viajes sin filtrar por fecha
+      const shouldInclude = true; // isSameLocalDay(tripDate, today);
+      if (!shouldInclude) {
+        console.log(`[BoardingList] Reservación ${reservation.id} descartada por fecha diferente`);
         return;
       }
+      
+      console.log(`[BoardingList] Reservación ${reservation.id} incluida para viaje ${tripId} (fecha: ${tripDate.toDateString()})`);
       
       if (!tripGroups.has(tripId)) {
         // Crear un objeto de viaje basado en tripDetails
@@ -141,6 +160,43 @@ export function BoardingList() {
               }}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Panel de información del sistema */}
+      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="text-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-blue-800">Estado del Sistema:</span>
+            <span className="text-blue-600">Nueva arquitectura usando solo /api/reservations</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <span className="font-medium text-blue-800">Total Reservaciones:</span>
+              <span className="ml-2 text-blue-600">{reservations?.length || 0}</span>
+            </div>
+            <div>
+              <span className="font-medium text-blue-800">Viajes Encontrados:</span>
+              <span className="ml-2 text-blue-600">{filteredTrips.length}</span>
+            </div>
+            <div>
+              <span className="font-medium text-blue-800">Fecha Seleccionada:</span>
+              <span className="ml-2 text-blue-600">{formatDisplayDate(currentDate)}</span>
+            </div>
+          </div>
+          {reservations && reservations.length > 0 && (
+            <div className="text-xs text-blue-700 border-t border-blue-200 pt-2">
+              <div className="font-medium mb-1">Ejemplo de reservaciones disponibles:</div>
+              {reservations.slice(0, 2).map((res: any) => (
+                <div key={res.id} className="ml-2">
+                  • ID: {res.id} | Viaje: {res.tripDetails?.id || 'N/A'} | Fecha: {res.tripDetails?.departureDate || 'N/A'}
+                </div>
+              ))}
+              {reservations.length > 2 && (
+                <div className="ml-2 text-blue-500">... y {reservations.length - 2} más</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
