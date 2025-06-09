@@ -1061,4 +1061,34 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  async createBoxCutoff(cutoffData: schema.InsertBoxCutoff): Promise<schema.BoxCutoff> {
+    const [cutoff] = await this.db
+      .insert(schema.boxCutoff)
+      .values(cutoffData)
+      .returning();
+    return cutoff;
+  }
+
+  async updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined> {
+    try {
+      const whereClause = userId 
+        ? and(eq(schema.transacciones.id, id), eq(schema.transacciones.user_id, userId))
+        : eq(schema.transacciones.id, id);
+
+      const [updated] = await this.db
+        .update(schema.transacciones)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(whereClause)
+        .returning();
+
+      return updated;
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al actualizar transacción:", error);
+      return undefined;
+    }
+  }
 }
