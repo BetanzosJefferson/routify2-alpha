@@ -749,17 +749,10 @@ export function ReservationList() {
                         </div>
 
                         {(!reservation.advanceAmount || reservation.advanceAmount <= 0) ? (
-                          activeTab === "canceled" ? (
-                            <div className="flex text-xs">
-                              <span className="text-gray-500">Método de pago:</span>
-                              <span className="ml-1">{reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}</span>
-                            </div>
-                          ) : (
-                            <div className="flex text-xs">
-                              <span className="text-gray-500">Método de pago:</span>
-                              <span className="ml-1">{reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}</span>
-                            </div>
-                          )
+                          <div className="flex text-xs">
+                            <span className="text-gray-500">Método de pago:</span>
+                            <span className="ml-1">{reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}</span>
+                          </div>
                         ) : (
                           <>
                             <div className="text-xs mb-1 flex">
@@ -773,19 +766,12 @@ export function ReservationList() {
                             {reservation.advanceAmount < reservation.totalAmount && (
                               <div className="text-xs flex">
                                 <span className="text-gray-500">{reservation.paymentStatus === 'pagado' ? 'Pagó:' : 'Resta:'}</span>
-                                {/* Si está cancelado pero pagado, mostrar normal; si está cancelado y pendiente, tachar */}
-                                {activeTab === "canceled" ? (
-                                  reservation.paymentStatus === 'pagado' ? (
-                                    <span className="font-medium ml-1">
-                                      {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
-                                      <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
-                                    </span>
-                                  ) : (
-                                    <span className="font-medium ml-1 line-through text-gray-500">
-                                      {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
-                                      <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
-                                    </span>
-                                  )
+                                {/* Show strikethrough for canceled reservations with pending payment */}
+                                {reservation.status === "canceled" && reservation.paymentStatus !== 'pagado' ? (
+                                  <span className="font-medium ml-1 line-through text-gray-500">
+                                    {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
+                                    <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
+                                  </span>
                                 ) : (
                                   <span className="font-medium ml-1">
                                     {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
@@ -798,7 +784,7 @@ export function ReservationList() {
                         )}
                       </div>
                     </td>
-                    {activeTab === "canceled" && (
+                    {reservation.status === "canceled" && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge 
                           variant="outline"
