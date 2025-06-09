@@ -170,7 +170,7 @@ export function setupAuthentication(app: Express) {
         profilePicture: profile_picture
       };
       
-      done(null, userForFrontend);
+      done(null, userForFrontend as any);
     } catch (error) {
       done(error);
     }
@@ -265,7 +265,7 @@ export function setupAuthentication(app: Express) {
         profilePicture: profile_picture
       };
       
-      req.login(userForFrontend, (err) => {
+      req.login(userForFrontend as any, (err) => {
         if (err) {
           return res.status(500).json({ message: "Error al actualizar la sesión" });
         }
