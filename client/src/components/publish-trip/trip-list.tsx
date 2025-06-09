@@ -698,137 +698,88 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                       
                       return (
                         <div key={trip.id} className="border rounded-lg overflow-hidden bg-card">
-                          <div className="flex flex-col lg:flex-row">
-                            <div className="p-4 lg:p-6 flex-1">
-                              <div className="flex justify-between items-start">
-                                <div className="flex">
-                                  <div>
-                                    <h4 className="text-base font-medium mb-1">
-                                      Ruta #{trip.routeId}
-                                    </h4>
-                                    <div className="text-xs text-gray-500 mb-1">
-                                      Compañía: {trip.companyId}
-                                    </div>
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                      <ClockIcon className="h-4 w-4 mr-1" />
-                                      <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                                {/* Primera columna: Ruta */}
-                                <div className="bg-muted/50 p-3 rounded-md">
-                                  <div className="flex items-start mb-2">
-                                    <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                    <div>
-                                      <p className="text-sm font-medium">Ruta</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {origin} → {destination}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        {stopsCount} paradas intermedias
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                {/* Segunda columna: Vehículo */}
-                                <div className="bg-muted/50 p-3 rounded-md">
-                                  <div className="flex items-start">
-                                    <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                    <div>
-                                      <p className="text-sm font-medium">Vehículo</p>
-                                      {trip.vehicleId ? (
-                                        <p className="text-xs text-green-600 font-medium">
-                                          Vehículo #{trip.vehicleId}
-                                        </p>
-                                      ) : (
-                                        <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                {/* Tercera columna: Conductor */}
-                                <div className="bg-muted/50 p-3 rounded-md">
-                                  <div className="flex items-start">
-                                    <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                    <div>
-                                      <p className="text-sm font-medium">Conductor</p>
-                                      {trip.driverId ? (
-                                        <p className="text-xs text-green-600 font-medium">
-                                          Conductor #{trip.driverId}
-                                        </p>
-                                      ) : (
-                                        <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Estados del viaje */}
-                              <div className="mt-4 pt-4 border-t border-gray-100">
-                                <div className="flex flex-wrap items-center justify-between">
-                                  <div className="flex gap-2 mb-2">
-                                    {/* Estado de visibilidad */}
-                                    {trip.visibility && (
-                                      <span className={`text-xs px-2 py-1 rounded-full ${
-                                        trip.visibility === 'publicado' 
-                                          ? 'bg-green-100 text-green-800' 
-                                          : trip.visibility === 'oculto' 
-                                            ? 'bg-gray-100 text-gray-800' 
-                                            : 'bg-red-100 text-red-800'
-                                      }`}>
-                                        {trip.visibility === 'publicado' 
-                                          ? 'Publicado' 
-                                          : trip.visibility === 'oculto' 
-                                            ? 'Oculto' 
-                                            : 'Cancelado'}
-                                      </span>
-                                    )}
-                                    
-                                    {/* Capacidad */}
-                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                      Capacidad: {trip.capacity || 0}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Información adicional */}
-                                  <div className="flex items-center">
-                                    <span className="text-xs text-muted-foreground">
-                                      ID: {trip.id}
-                                    </span>
-                                  </div>
-                                </div>
+                          <div className="p-4 flex items-start space-x-4">
+                            {/* Logo de la empresa */}
+                            <div className="flex-shrink-0">
+                              <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
+                                <img 
+                                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21l8-10-8-10v20z'/%3E%3C/svg%3E" 
+                                  alt={trip.companyId || 'Logo'}
+                                  className="w-6 h-6 text-primary"
+                                />
                               </div>
                             </div>
-                          </div>
-                          
-                          <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
-                            <div className="flex gap-2 mt-0 lg:mt-4">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  window.location.href = `/edit-trip/${trip.id}`;
-                                }}
-                                className="h-8 w-8"
-                                title="Editar viaje"
-                              >
-                                <PencilIcon className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteClick(trip.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                title="Eliminar viaje"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </Button>
+
+                            {/* Contenido principal */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="text-lg font-medium text-gray-900 mb-1">
+                                    {origin} - {destination}
+                                  </h3>
+                                  <div className="text-sm text-gray-600 mb-2">
+                                    {trip.companyId?.toUpperCase() || 'COMPAÑÍA'}
+                                  </div>
+                                  <div className="flex items-center text-sm text-gray-500">
+                                    <CalendarIcon className="w-4 h-4 mr-1" />
+                                    <span>{departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}</span>
+                                    <ClockIcon className="w-4 h-4 ml-4 mr-1" />
+                                    <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
+                                  </div>
+                                </div>
+
+                                {/* Botones de acción */}
+                                <div className="flex space-x-2 ml-4">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onEditTrip(trip.id)}
+                                    className="p-2"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setTripToDelete(trip.id);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                    className="p-2 text-red-600 hover:text-red-700"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Información adicional simplificada */}
+                              <div className="mt-3 flex items-center justify-between">
+                                <div>
+                                  <div className="flex items-center text-sm text-gray-500">
+                                    <MapPinIcon className="w-4 h-4 mr-1" />
+                                    <span>{origin} → {destination}</span>
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1">
+                                    {stopsCount} paradas intermedias
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  <Badge 
+                                    variant="default"
+                                    className="bg-green-100 text-green-800 border-green-200"
+                                  >
+                                    Publicado
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs">
+                                    Capacidad: {trip.capacity || 18}
+                                  </Badge>
+                                  <div className="flex items-center text-xs text-gray-500">
+                                    <UsersIcon className="w-3 h-3 mr-1" />
+                                    <span>{trip.reservationCount || 0} reservas</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
