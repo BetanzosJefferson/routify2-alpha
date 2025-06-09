@@ -841,11 +841,19 @@ export function ReservationList() {
                           )}
                           <Badge
                             variant={reservation.paymentStatus === 'pagado' ? "outline" : "secondary"}
-                            className={reservation.paymentStatus === 'pagado'
-                              ? "bg-green-100 text-green-800 border-green-200"
-                              : "bg-amber-100 text-amber-800 border-amber-200"}
+                            className={
+                              reservation.status === 'canceledAndRefund'
+                                ? "bg-blue-100 text-blue-800 border-blue-200"
+                                : reservation.paymentStatus === 'pagado'
+                                ? "bg-green-100 text-green-800 border-green-200"
+                                : "bg-amber-100 text-amber-800 border-amber-200"
+                            }
                           >
-                            {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
+                            {reservation.status === 'canceledAndRefund' 
+                              ? 'REEMBOLSADO' 
+                              : reservation.paymentStatus === 'pagado' 
+                              ? 'PAGADO' 
+                              : 'PENDIENTE'}
                           </Badge>
                         </div>
 
@@ -903,9 +911,15 @@ export function ReservationList() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge
                           variant="outline"
-                          className="bg-red-100 text-red-800 border-red-200"
+                          className={
+                            reservation.status === 'canceledAndRefund'
+                              ? "bg-blue-100 text-blue-800 border-blue-200"
+                              : "bg-red-100 text-red-800 border-red-200"
+                          }
                         >
-                          CANCELADA
+                          {reservation.status === 'canceledAndRefund' 
+                            ? 'CANCELADA Y REEMBOLSADA' 
+                            : 'CANCELADA'}
                         </Badge>
                       </td>
                     )}
@@ -986,7 +1000,7 @@ export function ReservationList() {
                                 Editar
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              {reservation.status === 'canceled' ? (
+                              {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') ? (
                                 <DropdownMenuItem
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -1071,15 +1085,27 @@ export function ReservationList() {
                       </span>
                       <div className="flex space-x-1">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          reservation.paymentStatus === 'pagado'
+                          reservation.status === 'canceledAndRefund'
+                            ? 'bg-blue-100 text-blue-800'
+                            : reservation.paymentStatus === 'pagado'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {reservation.paymentStatus === 'pagado' ? 'Pagado' : 'Pendiente'}
+                          {reservation.status === 'canceledAndRefund' 
+                            ? 'Reembolsado' 
+                            : reservation.paymentStatus === 'pagado' 
+                            ? 'Pagado' 
+                            : 'Pendiente'}
                         </span>
-                        {reservation.status === 'canceled' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Cancelada
+                        {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            reservation.status === 'canceledAndRefund'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {reservation.status === 'canceledAndRefund' 
+                              ? 'Cancelada y reembolsada' 
+                              : 'Cancelada'}
                           </span>
                         )}
                       </div>

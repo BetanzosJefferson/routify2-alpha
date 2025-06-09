@@ -67,7 +67,7 @@ export default function ReservationDetailsModal({
     }
 
     // Verificar si la reservación está cancelada
-    if (reservation?.status === 'canceled') {
+    if (reservation?.status === 'canceled' || reservation?.status === 'canceledAndRefund') {
       toast({
         title: "Reservación cancelada",
         description: "Las reservaciones canceladas no pueden ser verificadas.",
@@ -986,17 +986,25 @@ export default function ReservationDetailsModal({
                         <div className="text-sm text-gray-500 font-medium">ESTADO DE PAGO</div>
                         <div className="text-right">
                           <Badge
-                            className={reservation.paymentStatus === 'pagado'
-                              ? 'bg-green-100 text-green-800 border-green-200'
-                              : 'bg-yellow-100 text-yellow-800 border-yellow-200'}
+                            className={
+                              reservation.status === 'canceledAndRefund'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                : reservation.paymentStatus === 'pagado'
+                                ? 'bg-green-100 text-green-800 border-green-200'
+                                : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                            }
                           >
-                            {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
+                            {reservation.status === 'canceledAndRefund' 
+                              ? 'REEMBOLSADO' 
+                              : reservation.paymentStatus === 'pagado' 
+                              ? 'PAGADO' 
+                              : 'PENDIENTE'}
                           </Badge>
                         </div>
                       </div>
 
                       {/* NUEVO FORMATO MEJORADO PARA INFORMACIÓN DE PAGO */}
-                      {reservation.status !== 'canceled' ? (
+                      {reservation.status !== 'canceled' && reservation.status !== 'canceledAndRefund' ? (
                         <>
                           {(() => {
                             const hasAdvance = reservation.advanceAmount && reservation.advanceAmount > 0;
