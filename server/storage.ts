@@ -171,6 +171,7 @@ export interface IStorage {
   getTransacciones(filters?: { usuario_id?: number, id_corte?: number }): Promise<schema.Transaccion[]>;
   getTransactionsByCompanyExcludingUser(companyId: string, excludeUserId: number): Promise<schema.Transaccion[]>;
   updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined>;
+  deleteTransaccion(id: number): Promise<boolean>;
   
   // Cajas de usuarios methods
   getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]>;

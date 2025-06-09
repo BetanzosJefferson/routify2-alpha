@@ -2832,6 +2832,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para cancelar reservación con reembolso
+  app.post(apiRouter("/reservations/:id/cancel-refund"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const { user } = req as any;
+
+      console.log(`[POST /reservations/${id}/cancel-refund] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+
+      // 1. Verificar que la reservación existe y pertenece al usuario/empresa
+      const reservation = await storage.getReservationWithDetails(id, user.companyId);
+      
+      if (!reservation) {
+        return res.status(404).json({ error: "Reservación no encontrada" });
+      }
+
+      // Verificar permisos de empresa
+      if (user.role !== 'superAdmin' && reservation.companyId !== user.companyId) {
+        return res.status(403).json({ error: "No tienes permisos para cancelar esta reservación" });
+      }
+
+      // 2. Verificar que la reservación no esté ya cancelada
+      if (reservation.status === 'cancelled') {
+        return res.status(400).json({ error: "La reservación ya está cancelada" });
+      }
+
+      // 3. Buscar transacción asociada sin corte
+      const transactions = await storage.getTransacciones();
+      const associatedTransaction = transactions.find(t => 
+        t.details && 
+        typeof t.details === 'object' && 
+        'type' in t.details && 
+        t.details.type === 'reservation' &&
+        'details' in t.details &&
+        t.details.details &&
+        typeof t.details.details === 'object' &&
+        'id' in t.details.details &&
+        t.details.details.id === id &&
+        t.cutoff_id === null
+      );
+
+      if (!associatedTransaction) {
+        return res.status(400).json({ 
+          error: "No se encontró una transacción sin corte asociada a esta reservación" 
+        });
+      }
+
+      console.log(`[POST /reservations/${id}/cancel-refund] Transacción encontrada: ${associatedTransaction.id}`);
+
+      // Cancelar reservación (igual que cancelación normal)
+      const updatedReservation = await storage.updateReservation(id, {
+        status: 'cancelled',
+        updatedAt: new Date()
+      });
+
+      if (!updatedReservation) {
+        return res.status(500).json({ error: "Error al cancelar la reservación" });
+      }
+
+      // Liberar asientos
+      const passengers = await storage.getPassengers(id);
+      const passengerCount = passengers.length;
+
+      if (passengerCount > 0) {
+        try {
+          const tripDetails = reservation.tripDetails as any;
+          const { recordId, tripId } = tripDetails;
+          
+          await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
+          console.log(`[POST /reservations/${id}/cancel-refund] Asientos liberados: ${passengerCount}`);
+        } catch (e) {
+          console.error("Error al liberar asientos:", e);
+        }
+      }
+
+      // Eliminar la transacción
+      const transactionDeleted = await storage.deleteTransaccion(associatedTransaction.id);
+      
+      if (!transactionDeleted) {
+        console.error(`[POST /reservations/${id}/cancel-refund] Error al eliminar transacción ${associatedTransaction.id}`);
+        return res.status(500).json({ error: "Error al procesar el reembolso" });
+      }
+
+      console.log(`[POST /reservations/${id}/cancel-refund] Transacción ${associatedTransaction.id} eliminada exitosamente`);
+
+      res.json({ 
+        success: true, 
+        message: "Reservación cancelada con reembolso exitosamente",
+        reservation: updatedReservation,
+        refundAmount: associatedTransaction.details?.details?.monto || 0
+      });
+
+    } catch (error) {
+      console.error("Error al cancelar reservación con reembolso:", error);
+      res.status(500).json({ error: "Error interno al procesar la cancelación con reembolso" });
+    }
+  });
+
   // Rutas de API para vehículos (unidades)
   app.get(apiRouter("/vehicles"), async (req: Request, res: Response) => {
     try {

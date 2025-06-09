@@ -1097,4 +1097,17 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
   }
+
+  async deleteTransaccion(id: number): Promise<boolean> {
+    try {
+      const result = await this.db
+        .delete(schema.transacciones)
+        .where(eq(schema.transacciones.id, id));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al eliminar transacción:", error);
+      return false;
+    }
+  }
 }

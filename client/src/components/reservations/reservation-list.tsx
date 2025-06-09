@@ -388,6 +388,46 @@ export function ReservationList() {
     },
   });
 
+  // Cancel reservation with refund mutation
+  const cancelReservationWithRefundMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/reservations/${id}/cancel-refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cancelar la reservación con reembolso');
+      }
+
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Reservación cancelada con reembolso",
+        description: `La reservación ha sido cancelada y se ha procesado un reembolso de ${formatPrice(data.refundAmount)}.`,
+      });
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+
+      // Close confirmation dialog
+      setConfirmingDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al cancelar reservación con reembolso",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Estados adicionales para el formulario de edición
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
@@ -498,9 +538,9 @@ export function ReservationList() {
   };
 
   // Confirmation dialog handlers
-  const [confirmationType, setConfirmationType] = useState<'cancel' | 'delete'>('cancel');
+  const [confirmationType, setConfirmationType] = useState<'cancel' | 'cancel-refund' | 'delete'>('cancel');
 
-  const openDeleteConfirm = (id: number, type: 'cancel' | 'delete' = 'cancel') => {
+  const openDeleteConfirm = (id: number, type: 'cancel' | 'cancel-refund' | 'delete' = 'cancel') => {
     setConfirmingDelete(id);
     setConfirmationType(type);
   };
@@ -509,6 +549,8 @@ export function ReservationList() {
     if (confirmingDelete !== null) {
       if (confirmationType === 'cancel') {
         cancelReservationMutation.mutate(confirmingDelete);
+      } else if (confirmationType === 'cancel-refund') {
+        cancelReservationWithRefundMutation.mutate(confirmingDelete);
       } else {
         deleteReservationMutation.mutate(confirmingDelete);
       }
@@ -956,16 +998,28 @@ export function ReservationList() {
                                   Eliminar
                                 </DropdownMenuItem>
                               ) : (
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openDeleteConfirm(reservation.id, 'cancel');
-                                  }}
-                                  className="text-amber-600"
-                                >
-                                  <X className="mr-2 h-4 w-4" />
-                                  Cancelar
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openDeleteConfirm(reservation.id, 'cancel');
+                                    }}
+                                    className="text-amber-600"
+                                  >
+                                    <X className="mr-2 h-4 w-4" />
+                                    Cancelar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openDeleteConfirm(reservation.id, 'cancel-refund');
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <X className="mr-2 h-4 w-4" />
+                                    Cancelar con reembolso
+                                  </DropdownMenuItem>
+                                </>
                               )}
                             </>
                           )}
