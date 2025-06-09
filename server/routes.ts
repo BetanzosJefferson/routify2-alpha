@@ -2438,8 +2438,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`[POST /reservations] DEPURACIÓN - tripData parseado:`, JSON.stringify(tripDataArray, null, 2));
               
-              // Buscar el segmento específico que corresponde al tripId
-              const targetSegment = tripDataArray.find((segment: any) => segment.id === tripId);
+              // Buscar el segmento específico usando el índice del tripId sintético
+              const tripIndex = parseInt(tripId.split("_")[1], 10);
+              const targetSegment = tripDataArray[tripIndex];
               
               if (targetSegment) {
                 console.log(`[POST /reservations] DEPURACIÓN - Segmento encontrado:`, JSON.stringify(targetSegment, null, 2));
@@ -2600,8 +2601,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     
                     console.log(`[PUT /reservations/${id}] DEPURACIÓN - tripData parseado:`, JSON.stringify(tripDataArray, null, 2));
                     
-                    // Buscar el segmento específico que corresponde al tripId
-                    const targetSegment = tripDataArray.find((segment: any) => segment.id === tripId);
+                    // Buscar el segmento específico usando el índice del tripId sintético
+                    const tripIndex = parseInt(tripId.split("_")[1], 10);
+                    const targetSegment = tripDataArray[tripIndex];
                     
                     if (targetSegment) {
                       console.log(`[PUT /reservations/${id}] DEPURACIÓN - Segmento encontrado:`, JSON.stringify(targetSegment, null, 2));
