@@ -2445,7 +2445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: "reservation",
               details: {
                 id: reservation.id,
-                tripId: reservation.tripId, // Añadimos el ID del viaje
+                tripId: (reservation.tripDetails as any)?.tripId || 'unknown', // Extraer tripId de tripDetails
                 isSubTrip: tripWithRouteInfo.isSubTrip || false, // Indicar si es sub-viaje
                 pasajeros: passengers.map(p => `${p.firstName} ${p.lastName}`).join(", "),
                 contacto: {
@@ -2536,12 +2536,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (remainingAmount > 0) {
               console.log(`[PUT /reservations/${id}] Creando transacción para pago restante de $${remainingAmount}`);
               
-              // Obtener información del viaje para los detalles de la transacción
-              const trip = await storage.getTrip(originalReservation.tripId);
-              if (!trip) {
-                console.log(`[PUT /reservations/${id}] No se encontró el viaje ${originalReservation.tripId}`);
+              // Extraer información del viaje desde tripDetails
+              const { recordId, tripId } = originalReservation.tripDetails as { recordId: number, tripId: string };
+              
+              if (!recordId) {
+                console.log(`[PUT /reservations/${id}] No se encontró recordId en tripDetails`);
                 // Continuamos con la actualización aunque no se pueda crear la transacción
               } else {
+                // Obtener información del viaje usando recordId
+                const trip = await storage.getTrip(recordId);
+                if (!trip) {
+                  console.log(`[PUT /reservations/${id}] No se encontró el viaje ${recordId}`);
+                  // Continuamos con la actualización aunque no se pueda crear la transacción
+                } else {
                 const tripWithRouteInfo = await storage.getTripWithRouteInfo(trip.id);
                 
                 // Obtener los pasajeros de la reservación
@@ -2571,7 +2578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     type: "reservation",
                     details: {
                       id: originalReservation.id,
-                      tripId: originalReservation.tripId,
+                      tripId: tripId, // Usar el tripId extraído de tripDetails
                       isSubTrip: tripWithRouteInfo.isSubTrip || false,
                       pasajeros: passengers.map(p => `${p.firstName} ${p.lastName}`).join(", "),
                       contacto: {
@@ -2599,6 +2606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   
                   const transaccion = await storage.createTransaccion(transaccionData);
                   console.log(`[PUT /reservations/${id}] Transacción de pago final creada exitosamente con ID: ${transaccion.id}`);
+                  }
                 }
               }
             } else {
