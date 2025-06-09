@@ -546,119 +546,100 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   };
 
   return (
-    <Card>
-      <CardHeader className="bg-primary/5">
-        <div className="flex flex-wrap items-center justify-between">
-          <CardTitle className="text-xl">{title}</CardTitle>
-        </div>
-      </CardHeader>
-
-      {/* Tabs para Actuales y Archivados */}
-      <div className="flex justify-center border-b">
-        <div className="w-full max-w-2xl flex">
-          <button
-            onClick={() => setShowArchived(false)}
-            className={`flex items-center justify-center py-2 px-4 flex-1 text-sm font-medium border-b-2 transition-colors relative ${
-              !showArchived 
-                ? "border-primary text-primary" 
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>Actuales y Futuros</span>
-            <span className="ml-1 bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-              {Object.values(currentTrips).reduce((sum, trips) => sum + trips.length, 0)}
-            </span>
-          </button>
-          
-          <button
-            onClick={() => setShowArchived(true)}
-            className={`flex items-center justify-center py-2 px-4 flex-1 text-sm font-medium border-b-2 transition-colors ${
-              showArchived 
-                ? "border-primary text-primary" 
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>Archivados</span>
-            <span className="ml-1 bg-muted text-muted-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-              {archivedTrips.length}
-            </span>
-          </button>
-        </div>
+    <div className="space-y-4">
+      {/* Tabs simplificados */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg max-w-sm">
+        <button
+          onClick={() => setShowArchived(false)}
+          className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            !showArchived 
+              ? "bg-white text-blue-600 shadow-sm" 
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          <span>Activos</span>
+          <span className="bg-blue-100 text-blue-600 rounded-full h-5 w-5 flex items-center justify-center text-xs">
+            {Object.values(currentTrips).reduce((sum, trips) => sum + trips.length, 0)}
+          </span>
+        </button>
+        
+        <button
+          onClick={() => setShowArchived(true)}
+          className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            showArchived 
+              ? "bg-white text-blue-600 shadow-sm" 
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          <span>Archivados</span>
+          <span className="bg-gray-100 text-gray-600 rounded-full h-5 w-5 flex items-center justify-center text-xs">
+            {archivedTrips.length}
+          </span>
+        </button>
       </div>
 
-      {/* Filtros siempre visibles */}
-      <div className="p-4 border-b">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <div className="flex w-full items-center space-x-2">
-              <SearchIcon className="h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar por origen o destino"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-          </div>
+      {/* Filtros simplificados */}
+      <div className="flex flex-wrap gap-3">
+        <div className="flex items-center space-x-2 min-w-[250px]">
+          <SearchIcon className="h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar por origen o destino"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+        </div>
 
-          <div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateFilter ? (
-                    format(dateFilter, "dd/MM/yyyy")
-                  ) : (
-                    <span>Seleccionar fecha</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={dateFilter}
-                  onSelect={setDateFilter}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div>
-            <Select
-              value={routeFilter}
-              onValueChange={setRouteFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Todas las rutas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las rutas</SelectItem>
-                {routes.map((route: any) => (
-                  <SelectItem key={route.id} value={route.id.toString()}>
-                    {route.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
-              variant="secondary"
-              className="w-full"
-              onClick={clearFilters}
+              variant="outline"
+              className="justify-start text-left font-normal"
             >
-              Limpiar filtros
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFilter ? (
+                format(dateFilter, "dd/MM/yyyy")
+              ) : (
+                <span>Filtrar por fecha</span>
+              )}
             </Button>
-          </div>
-        </div>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dateFilter}
+              onSelect={setDateFilter}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
+        <Select
+          value={routeFilter}
+          onValueChange={setRouteFilter}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todas las rutas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las rutas</SelectItem>
+            {routes.map((route: any) => (
+              <SelectItem key={route.id} value={route.id.toString()}>
+                {route.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="secondary"
+          onClick={clearFilters}
+        >
+          Limpiar filtros
+        </Button>
       </div>
 
-      <CardContent className="p-4">
+      <div className="space-y-4">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-10">
             <RefreshCcwIcon className="h-10 w-10 animate-spin text-primary mb-4" />
@@ -671,19 +652,12 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
             </div>
           </div>
         ) : !showArchived ? (
-          // Contenido de viajes actuales (pestaña 1)
-          <div className="space-y-6 mb-10">
-            <div className="mb-4">
-              <h3 className="text-lg font-medium">Viajes actuales y futuros</h3>
-              <p className="text-sm text-muted-foreground">
-                Gestiona los viajes programados, asigna vehículos y conductores.
-              </p>
-            </div>
-
+          // Contenido de viajes actuales
+          <div className="space-y-4">
             {Object.entries(currentTrips).length === 0 ? (
               <div className="text-center py-10">
                 <div className="text-muted-foreground">
-                  No hay viajes actuales o futuros disponibles.
+                  No hay viajes activos disponibles.
                 </div>
               </div>
             ) : (
@@ -695,10 +669,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                   return dateA.getTime() - dateB.getTime();
                 })
                 .map(([dateKey, trips]) => (
-                <div key={dateKey} className="space-y-4 border-b pb-6 mb-6 last:border-0">
-                  <div>
-                    <h4 className="text-base font-medium">{formatDateHeader(dateKey)}</h4>
-                  </div>
+                <div key={dateKey} className="space-y-3">
                   
                   <div className="space-y-4">
                     {trips.map((trip: Trip) => {
@@ -731,11 +702,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                       Compañía: {trip.companyId}
                                     </div>
                                     <div className="flex items-center text-sm text-muted-foreground">
-                                      <CalendarIcon className="h-4 w-4 mr-1" />
-                                      <span>
-                                        {departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}
-                                      </span>
-                                      <ClockIcon className="h-4 w-4 ml-4 mr-1" />
+                                      <ClockIcon className="h-4 w-4 mr-1" />
                                       <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
                                     </div>
                                   </div>
@@ -1076,7 +1043,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
             )}
           </div>
         )}
-      </CardContent>
+      </div>
 
       {/* Dialog de confirmación para eliminar viaje */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
