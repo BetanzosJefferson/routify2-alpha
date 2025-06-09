@@ -988,4 +988,61 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: schema.commissions.id });
     return result.length > 0;
   }
+
+  // Transactions methods
+  async createTransaccion(transaccionData: schema.InsertTransaccion): Promise<schema.Transaccion> {
+    console.log("[DatabaseStorage] Creando transacción:", JSON.stringify(transaccionData, null, 2));
+    
+    try {
+      const [newTransaction] = await db
+        .insert(schema.transacciones)
+        .values(transaccionData)
+        .returning();
+      
+      console.log("[DatabaseStorage] Transacción creada exitosamente con ID:", newTransaction.id);
+      return newTransaction;
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al crear transacción:", error);
+      throw error;
+    }
+  }
+
+  async getTransacciones(filters?: { usuario_id?: number, id_corte?: number }): Promise<schema.Transaccion[]> {
+    try {
+      let query = db.select().from(schema.transacciones);
+      
+      if (filters?.usuario_id) {
+        query = query.where(eq(schema.transacciones.user_id, filters.usuario_id));
+      }
+      
+      if (filters?.id_corte) {
+        query = query.where(eq(schema.transacciones.cutoff_id, filters.id_corte));
+      }
+      
+      const transactions = await query;
+      return transactions;
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al obtener transacciones:", error);
+      return [];
+    }
+  }
+
+  async getTransactionsByCompanyExcludingUser(companyId: string, excludeUserId: number): Promise<schema.Transaccion[]> {
+    try {
+      const transactions = await db
+        .select()
+        .from(schema.transacciones)
+        .where(
+          and(
+            eq(schema.transacciones.companyId, companyId),
+            sql`${schema.transacciones.user_id} != ${excludeUserId}`
+          )
+        );
+      
+      return transactions;
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al obtener transacciones por compañía:", error);
+      return [];
+    }
+  }
 }
