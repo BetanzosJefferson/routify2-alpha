@@ -1230,11 +1230,17 @@ export function ReservationList() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmationType === 'cancel' ? 'Cancelar Reservación' : 'Eliminar Reservación'}
+              {confirmationType === 'cancel' 
+                ? 'Cancelar Reservación' 
+                : confirmationType === 'cancel-refund'
+                ? 'Cancelar con Reembolso'
+                : 'Eliminar Reservación'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmationType === 'cancel'
                 ? "¿Estás seguro que deseas cancelar esta reservación? La reservación quedará registrada en el sistema pero los asientos serán liberados para que otros pasajeros puedan reservarlos."
+                : confirmationType === 'cancel-refund'
+                ? "¿Estás seguro que deseas cancelar esta reservación con reembolso? Se cancelará la reservación, se liberarán los asientos y se eliminará la transacción asociada sin corte del sistema."
                 : "¿Estás seguro que deseas eliminar completamente esta reservación? Esta acción no se puede deshacer y la reservación será eliminada de la base de datos."
               }
             </AlertDialogDescription>
@@ -1248,7 +1254,11 @@ export function ReservationList() {
               }
               onClick={handleDeleteConfirm}
             >
-              {confirmationType === 'cancel' ? 'Cancelar Reservación' : 'Eliminar Permanentemente'}
+              {confirmationType === 'cancel' 
+                ? 'Cancelar Reservación' 
+                : confirmationType === 'cancel-refund'
+                ? 'Cancelar con Reembolso'
+                : 'Eliminar Permanentemente'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
