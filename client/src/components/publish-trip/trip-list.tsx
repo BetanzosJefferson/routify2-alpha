@@ -670,6 +670,14 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                 })
                 .map(([dateKey, trips]) => (
                 <div key={dateKey} className="space-y-3">
+                  {/* Encabezado de fecha simplificado */}
+                  <div className="flex items-center gap-2 py-2">
+                    <div className="h-px bg-border flex-1"></div>
+                    <span className="text-sm font-medium text-muted-foreground px-3">
+                      {format(normalizeToStartOfDay(dateKey), "EEEE, d 'de' MMMM", { locale: es })}
+                    </span>
+                    <div className="h-px bg-border flex-1"></div>
+                  </div>
                   
                   <div className="space-y-4">
                     {trips.map((trip: Trip) => {
@@ -1236,6 +1244,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       </AlertDialog>
 
       {/* Utilizamos la navegación para ir a la página de edición en lugar de un dialog */}
-    </Card>
+    </div>
   );
 }
