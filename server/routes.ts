@@ -2643,7 +2643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener el viaje asociado a la reservación usando tripDetails
-      const { recordId } = reservation.tripDetails as { recordId: number, tripId: string };
+      const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
       const trip = await storage.getTrip(recordId);
       
       if (!trip) {
@@ -2671,11 +2671,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tripDetails = await storage.getTripWithRouteInfo(trip.id);
         const capacityLimit = tripDetails?.capacity || trip.capacity;
         
-        console.log(`[POST /reservations/${id}/cancel] Capacidad máxima del viaje: ${capacityLimit}, asientos actuales: ${trip.availableSeats}, asientos a liberar: ${passengerCount}`);
+        console.log(`[POST /reservations/${id}/cancel] Capacidad máxima del viaje: ${capacityLimit}, asientos a liberar: ${passengerCount}`);
         
         try {
           // Actualizar todos los viajes afectados usando la nueva función con tripDetails
-          const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
           console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
