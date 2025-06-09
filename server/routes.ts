@@ -1889,6 +1889,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint - force extraction test
+  app.get(apiRouter("/debug-extraction"), isAuthenticated, async (req, res) => {
+    try {
+      const reservations = await storage.getReservations("bamo-350045");
+      const testReservation = reservations[0];
+      
+      if (!testReservation) {
+        return res.json({ error: "No reservations found" });
+      }
+
+      res.json({
+        reservationId: testReservation.id,
+        tripId: testReservation.trip.id,
+        origin: testReservation.trip.origin,
+        destination: testReservation.trip.destination,
+        departureTime: testReservation.trip.departureTime,
+        routeOrigin: testReservation.trip.route?.origin,
+        routeDestination: testReservation.trip.route?.destination
+      });
+    } catch (error) {
+      console.error("[DEBUG] Error:", error);
+      res.status(500).json({ error: "Debug failed" });
+    }
+  });
+
   // Endpoint temporal para diagnosticar extracción de datos
   app.get(apiRouter("/test-trip-extraction/:reservationId"), isAuthenticated, async (req, res) => {
     try {
