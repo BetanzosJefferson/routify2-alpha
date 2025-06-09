@@ -1906,8 +1906,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let tripId: number | null = null;
       let companyIds: string[] | undefined = undefined;
       let dateFilter: string | null = null;
-      let archivedFilter: boolean = false;
-      let canceledFilter: boolean = false;
       
       // Verificar si se solicita filtrar por viaje específico
       if (req.query.tripId) {
@@ -1919,17 +1917,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.query.date) {
         dateFilter = req.query.date as string;
         console.log(`[GET /reservations] Filtrando por fecha: ${dateFilter}`);
-      }
-      
-      // Verificar filtros de archivadas y canceladas
-      if (req.query.archived === 'true') {
-        archivedFilter = true;
-        console.log(`[GET /reservations] Filtrando por reservaciones archivadas`);
-      }
-      
-      if (req.query.canceled === 'true') {
-        canceledFilter = true;
-        console.log(`[GET /reservations] Filtrando por reservaciones canceladas`);
       }
       
       // Determinar filtros de seguridad según el rol
@@ -1974,64 +1961,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Apply additional filtering if needed
         let filteredReservations = reservations;
         
-        // Filter by canceled status if requested
-        if (canceledFilter) {
-          console.log(`[GET /reservations] Filtering by canceled status`);
-          filteredReservations = filteredReservations.filter(reservation => 
-            reservation.status === "canceled"
-          );
-        }
-        
-        // Filter by archived status (dates before today) if requested
-        if (archivedFilter) {
-          console.log(`[GET /reservations] Filtering by archived status (dates before today)`);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          filteredReservations = filteredReservations.filter(reservation => {
-            // Get departure date from tripData array or trip object
-            let departureDate = null;
-            if (reservation.trip?.tripData && Array.isArray(reservation.trip.tripData) && reservation.trip.tripData.length > 0) {
-              departureDate = reservation.trip.tripData[0].departureDate;
-            }
-            
-            if (!departureDate) return false;
-            const reservationDate = new Date(departureDate);
-            reservationDate.setHours(0, 0, 0, 0);
-            return reservationDate < today;
-          });
-        }
-        
-        // Filter by specific date if provided
+        // Filter by date if provided
         if (dateFilter) {
           console.log(`[GET /reservations] Filtering by date: ${dateFilter}`);
-          filteredReservations = filteredReservations.filter(reservation => {
-            // Get departure date from tripData array or trip object
-            let departureDate = null;
-            if (reservation.trip?.tripData && Array.isArray(reservation.trip.tripData) && reservation.trip.tripData.length > 0) {
-              departureDate = reservation.trip.tripData[0].departureDate;
-            }
-            
-            if (!departureDate) return false;
-            const reservationDate = new Date(departureDate);
+          filteredReservations = reservations.filter(reservation => {
+            if (!reservation.trip?.departureDate) return false;
+            const reservationDate = new Date(reservation.trip.departureDate);
             const targetDate = new Date(dateFilter);
             return reservationDate.toDateString() === targetDate.toDateString();
           });
-        } else if (!archivedFilter && !canceledFilter) {
-          // Without specific filters: show current and future reservations (default behavior)
-          console.log(`[GET /reservations] Showing current and future reservations (default)`);
+        } else {
+          // Without date filter: show current and future reservations
+          console.log(`[GET /reservations] Showing current and future reservations`);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           
-          filteredReservations = filteredReservations.filter(reservation => {
-            // Get departure date from tripData array or trip object
-            let departureDate = null;
-            if (reservation.trip?.tripData && Array.isArray(reservation.trip.tripData) && reservation.trip.tripData.length > 0) {
-              departureDate = reservation.trip.tripData[0].departureDate;
-            }
-            
-            if (!departureDate) return false;
-            const reservationDate = new Date(departureDate);
+          filteredReservations = reservations.filter(reservation => {
+            if (!reservation.trip?.departureDate) return false;
+            const reservationDate = new Date(reservation.trip.departureDate);
             reservationDate.setHours(0, 0, 0, 0);
             return reservationDate >= today;
           });
