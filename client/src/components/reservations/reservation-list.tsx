@@ -905,11 +905,11 @@ export function ReservationList() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge
                           variant="outline"
-                          className={reservation.status === 'CanceledAndRefund' 
+                          className={reservation.status === 'canceledAndRefund' 
                             ? "bg-blue-100 text-blue-800 border-blue-200"
                             : "bg-red-100 text-red-800 border-red-200"}
                         >
-                          {reservation.status === 'CanceledAndRefund' ? 'CANCELADA Y REEMBOLSADA' : 'CANCELADA'}
+                          {reservation.status === 'canceledAndRefund' ? 'CANCELADA Y REEMBOLSADA' : 'CANCELADA'}
                         </Badge>
                       </td>
                     )}
