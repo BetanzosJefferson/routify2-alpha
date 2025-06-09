@@ -162,14 +162,12 @@ export function setupAuthentication(app: Express) {
       }
 
       const user = userResults[0];
-      const { password: _, profile_picture, first_name, last_name, ...userWithoutPassword } = user;
+      const { password: _, profile_picture, ...userWithoutPassword } = user;
       
       // Mapear campos de snake_case a camelCase para compatibilidad con frontend
       const userForFrontend = {
         ...userWithoutPassword,
-        firstName: first_name,
-        lastName: last_name,
-        profilePicture: profile_picture
+        profilePicture: profile_picture || null
       };
       
       done(null, userForFrontend as any);
@@ -261,12 +259,10 @@ export function setupAuthentication(app: Express) {
       }
       
       // Mapear datos para frontend (camelCase)
-      const { password: _, profile_picture, first_name, last_name, ...userWithoutPassword } = updatedUser;
+      const { password: _, profile_picture, ...userWithoutPassword } = updatedUser;
       const userForFrontend = {
         ...userWithoutPassword,
-        firstName: first_name,
-        lastName: last_name,
-        profilePicture: profile_picture
+        profilePicture: profile_picture || null
       };
       
       req.login(userForFrontend as any, (err) => {

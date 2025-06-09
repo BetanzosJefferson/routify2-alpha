@@ -1,3 +1,5 @@
-import ProfilePage from "@/components/profile/profile-page";
+import { ProfilePage } from "@/components/profile/profile-page";
 
-export default ProfilePage;
+export default function ProfilePageRoute() {
+  return <ProfilePage />;
+}
