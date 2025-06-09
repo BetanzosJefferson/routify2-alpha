@@ -203,8 +203,8 @@ export function ReservationList() {
       
       switch (sortBy) {
         case "date": {
-          const dateA = new Date(a.trip.tripData?.departureDate || a.createdAt);
-          const dateB = new Date(b.trip.tripData?.departureDate || b.createdAt);
+          const dateA = new Date((a.trip as any).tripData?.departureDate || a.createdAt);
+          const dateB = new Date((b.trip as any).tripData?.departureDate || b.createdAt);
           comparison = dateA.getTime() - dateB.getTime();
           break;
         }
@@ -215,8 +215,8 @@ export function ReservationList() {
           break;
         }
         case "time": {
-          const timeA = a.trip.tripData?.departureTime || "00:00";
-          const timeB = b.trip.tripData?.departureTime || "00:00";
+          const timeA = (a.trip as any).tripData?.departureTime || "00:00";
+          const timeB = (b.trip as any).tripData?.departureTime || "00:00";
           comparison = timeA.localeCompare(timeB);
           break;
         }
@@ -250,7 +250,7 @@ export function ReservationList() {
     // Aplicar filtro de fecha específica
     let matchesDate = true;
     if (selectedDate) {
-      const tripDate = normalizeToStartOfDay(reservation.trip.tripData?.departureDate || reservation.createdAt);
+      const tripDate = normalizeToStartOfDay((reservation.trip as any).tripData?.departureDate || reservation.createdAt);
       const filterDate = normalizeToStartOfDay(new Date(selectedDate));
       matchesDate = isSameLocalDay(tripDate, filterDate);
     }
@@ -259,7 +259,7 @@ export function ReservationList() {
     let matchesDateFilter = true;
     if (dateFilter) {
       // Usar isSameLocalDay para comparar las fechas
-      const tripDate = normalizeToStartOfDay(reservation.trip.tripData?.departureDate || reservation.createdAt);
+      const tripDate = normalizeToStartOfDay((reservation.trip as any).tripData?.departureDate || reservation.createdAt);
       const filterDate = normalizeToStartOfDay(dateFilter);
       matchesDateFilter = isSameLocalDay(tripDate, filterDate);
     }
@@ -753,11 +753,6 @@ export function ReservationList() {
                       checked={isAllSelected}
                       onCheckedChange={handleSelectAll}
                       className="data-[state=indeterminate]:bg-primary data-[state=indeterminate]:border-primary"
-                      ref={(ref) => {
-                        if (ref) {
-                          ref.indeterminate = isIndeterminate;
-                        }
-                      }}
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
@@ -838,12 +833,12 @@ export function ReservationList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{reservation.trip.route.name}</div>
                       <div className="text-sm text-gray-500">
-                        {reservation.trip.origin} → {reservation.trip.destination}
+                        {(reservation.trip as any).tripData?.origin || (reservation.trip as any).route?.origin} → {(reservation.trip as any).tripData?.destination || (reservation.trip as any).route?.destination}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDate(reservation.trip.departureDate)}</div>
-                      <div className="text-sm text-gray-500">{formatTripTime(reservation.trip.departureTime, true, 'pretty')}</div>
+                      <div className="text-sm text-gray-900">{formatDate((reservation.trip as any).tripData?.departureDate || reservation.createdAt)}</div>
+                      <div className="text-sm text-gray-500">{formatTripTime((reservation.trip as any).tripData?.departureTime || "00:00", true, 'pretty')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {reservation.passengers.length}
@@ -863,7 +858,7 @@ export function ReservationList() {
                                   <span className="text-sm font-medium line-through text-gray-500">{formatPrice(reservation.totalAmount)}</span>
 
                                   {/* Si tiene anticipo mostrar ese valor, si no mostrar $0 */}
-                                  {reservation.advanceAmount > 0 ? (
+                                  {(reservation.advanceAmount && reservation.advanceAmount > 0) ? (
                                     <span className="text-sm font-medium ml-1">{formatPrice(reservation.advanceAmount)}</span>
                                   ) : (
                                     <span className="text-sm font-medium ml-1">{formatPrice(0)}</span>
