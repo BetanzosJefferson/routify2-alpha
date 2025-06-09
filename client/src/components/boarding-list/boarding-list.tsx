@@ -24,12 +24,11 @@ import { useAllDriverReservations, Reservation, Passenger } from "@/hooks/use-dr
 import { PassengerListSidebar } from "./passenger-list-sidebar";
 
 export function BoardingList() {
-  // Usamos la fecha del sistema fija (28 de mayo) por defecto, pero permitimos cambiarla con el selector
+  // Usar la fecha actual por defecto
   const [currentDate, setCurrentDate] = useState<Date>(() => {
-    // Usar la fecha del sistema configurada (28 de mayo 2025)
-    const systemDate = new Date('2025-05-28T12:00:00.000Z');
-    console.log(`[BoardingList] Inicializando con la fecha del sistema: ${systemDate.toISOString()}`);
-    return systemDate;
+    const today = new Date();
+    console.log(`[BoardingList] Inicializando con la fecha actual: ${today.toISOString()}`);
+    return today;
   });
   const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
   const [, navigate] = useLocation();
@@ -49,7 +48,7 @@ export function BoardingList() {
     error: reservationsError
   } = useAllDriverReservations();
 
-  // Filtrar viajes del día actual solamente
+  // Filtrar y agrupar viajes del día actual
   const filteredTrips = useMemo(() => {
     if (!trips) {
       console.log("No hay datos de viajes disponibles");
@@ -75,19 +74,44 @@ export function BoardingList() {
       console.log(`Total de viajes asignados al conductor: ${trips.length}`);
     }
     
-    // Filtrar viajes excluyendo sub-viajes primero
-    const noSubTripsFiltered = trips.filter(trip => !trip.isSubTrip);
+    // Agrupar viajes por recordId_routeId_fecha
+    const tripGroups = new Map<string, Trip[]>();
     
-    // Siempre filtrar por la fecha actual
-    const dateFilteredTrips = noSubTripsFiltered.filter(trip => {
-      // Utilizar la función isSameLocalDay para comparar las fechas correctamente
-      return isSameLocalDay(trip.departureDate, currentDate);
+    trips.forEach((trip) => {
+      const tripDate = trip.departureDate || '';
+      
+      // Solo incluir viajes de la fecha seleccionada
+      if (!isSameLocalDay(tripDate, currentDate)) {
+        return;
+      }
+      
+      // Extraer recordId del ID del viaje (formato: recordId_segmentIndex)
+      const recordId = trip.id.toString().split('_')[0];
+      const groupKey = `${tripDate}_${trip.routeId}`;
+      
+      if (!tripGroups.has(groupKey)) {
+        tripGroups.set(groupKey, []);
+      }
+      tripGroups.get(groupKey)!.push(trip);
+    });
+    
+    // Seleccionar solo el viaje padre (primer segmento) de cada grupo
+    const parentTrips: Trip[] = [];
+    
+    tripGroups.forEach((tripsGroup, groupKey) => {
+      console.log(`[BoardingList] Grupo ${groupKey}: ${tripsGroup.length} viajes, seleccionando viaje padre ID ${tripsGroup[0].id}`);
+      
+      // Ordenar por ID para asegurar que tomamos el primer segmento
+      tripsGroup.sort((a: Trip, b: Trip) => a.id.toString().localeCompare(b.id.toString()));
+      
+      // Tomar solo el primer viaje (viaje padre)
+      parentTrips.push(tripsGroup[0]);
     });
     
     console.log(`Filtrando viajes por fecha: ${format(currentDate, 'yyyy-MM-dd')}`);
-    console.log(`Viajes filtrados por fecha (${format(currentDate, 'yyyy-MM-dd')}): ${dateFilteredTrips.length}`);
+    console.log(`Viajes agrupados y filtrados por fecha (${format(currentDate, 'yyyy-MM-dd')}): ${parentTrips.length}`);
     
-    return dateFilteredTrips;
+    return parentTrips;
   }, [trips, user, currentDate]);
 
   // La lógica de procesamiento de pasajeros ya no es necesaria aquí

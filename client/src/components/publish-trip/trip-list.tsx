@@ -698,86 +698,141 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                       
                       return (
                         <div key={trip.id} className="border rounded-lg overflow-hidden bg-card">
-                          <div className="p-4 flex items-start space-x-4">
-                            {/* Logo de la empresa */}
-                            <div className="flex-shrink-0">
-                              <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-                                <img 
-                                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21l8-10-8-10v20z'/%3E%3C/svg%3E" 
-                                  alt={trip.companyId || 'Logo'}
-                                  className="w-6 h-6 text-primary"
-                                />
+                          <div className="p-4 lg:p-6 flex-1">
+                            <div className="flex justify-between items-start">
+                              <div className="flex">
+                                {/* Logo de la compañía (si existe) */}
+                                {trip.companyLogo ? (
+                                  <div className="mr-3 h-12 w-12 flex-shrink-0">
+                                    <img 
+                                      src={trip.companyLogo} 
+                                      alt={trip.companyName || "Logo de transportista"} 
+                                      className="h-full w-full object-cover rounded-full border border-gray-100"
+                                      onError={(e) => {
+                                        // Si falla la carga, ocultar la imagen
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }} 
+                                    />
+                                  </div>
+                                ) : null}
+
+                                <div>
+                                  <h4 className="text-base font-medium mb-1">
+                                    {trip.route?.name || trip.routeName || `Ruta #${trip.routeId}`}
+                                  </h4>
+                                  {trip.companyName && (
+                                    <div className="text-xs text-gray-500 mb-1">
+                                      {trip.companyName}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center text-sm text-muted-foreground">
+                                    <CalendarIcon className="h-4 w-4 mr-1" />
+                                    <span>
+                                      {format(normalizeToStartOfDay(trip.departureDate), "dd/MM/yyyy")}
+                                    </span>
+                                    <ClockIcon className="h-4 w-4 ml-4 mr-1" />
+                                    <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
-                            {/* Contenido principal */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h3 className="text-lg font-medium text-gray-900 mb-1">
-                                    {origin} - {destination}
-                                  </h3>
-                                  <div className="text-sm text-gray-600 mb-2">
-                                    {trip.companyId?.toUpperCase() || 'COMPAÑÍA'}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                              {/* Primera columna: Ruta */}
+                              <div className="bg-muted/50 p-3 rounded-md">
+                                <div className="flex items-start mb-2">
+                                  <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-medium">Ruta</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Terminal {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {getStopsCount(trip)} paradas intermedias
+                                    </p>
                                   </div>
-                                  <div className="flex items-center text-sm text-gray-500">
-                                    <CalendarIcon className="w-4 h-4 mr-1" />
-                                    <span>{departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}</span>
-                                    <ClockIcon className="w-4 h-4 ml-4 mr-1" />
-                                    <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
-                                  </div>
-                                </div>
-
-                                {/* Botones de acción */}
-                                <div className="flex space-x-2 ml-4">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onEditTrip(trip.id)}
-                                    className="p-2"
-                                  >
-                                    <PencilIcon className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setTripToDelete(trip.id);
-                                      setDeleteDialogOpen(true);
-                                    }}
-                                    className="p-2 text-red-600 hover:text-red-700"
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </Button>
                                 </div>
                               </div>
 
-                              {/* Información adicional simplificada */}
-                              <div className="mt-3 flex items-center justify-between">
-                                <div>
-                                  <div className="flex items-center text-sm text-gray-500">
-                                    <MapPinIcon className="w-4 h-4 mr-1" />
-                                    <span>{origin} → {destination}</span>
-                                  </div>
-                                  <div className="text-sm text-gray-500 mt-1">
-                                    {stopsCount} paradas intermedias
+                              {/* Segunda columna: Vehículo */}
+                              <div className="bg-muted/50 p-3 rounded-md">
+                                <div className="flex items-start">
+                                  <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-medium">Vehículo</p>
+                                    {trip.vehicleId || trip.assignedVehicle ? (
+                                      <p className="text-xs text-green-600 font-medium">
+                                        {trip.assignedVehicle ? 
+                                          `${trip.assignedVehicle.brand} ${trip.assignedVehicle.model} - ${trip.assignedVehicle.plates}` :
+                                          `${vehicles.find((v: any) => v.id === trip.vehicleId)?.brand || ''} ${vehicles.find((v: any) => v.id === trip.vehicleId)?.model || ''} - ${vehicles.find((v: any) => v.id === trip.vehicleId)?.plates || ''}`
+                                        }
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
+                                    )}
                                   </div>
                                 </div>
+                              </div>
 
-                                <div className="flex items-center space-x-2">
-                                  <Badge 
-                                    variant="default"
-                                    className="bg-green-100 text-green-800 border-green-200"
-                                  >
-                                    Publicado
-                                  </Badge>
-                                  <Badge variant="outline" className="text-xs">
-                                    Capacidad: {trip.capacity || 18}
-                                  </Badge>
-                                  <div className="flex items-center text-xs text-gray-500">
-                                    <UsersIcon className="w-3 h-3 mr-1" />
-                                    <span>{trip.reservationCount || 0} reservas</span>
+                              {/* Tercera columna: Conductor */}
+                              <div className="bg-muted/50 p-3 rounded-md">
+                                <div className="flex items-start">
+                                  <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-medium">Conductor</p>
+                                    {trip.driverId || trip.assignedDriver ? (
+                                      <p className="text-xs text-green-600 font-medium">
+                                        {trip.assignedDriver ? 
+                                          `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` :
+                                          `${drivers.find((d: any) => d.id === trip.driverId)?.firstName || ''} ${drivers.find((d: any) => d.id === trip.driverId)?.lastName || ''}`
+                                        }
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
+                                    )}
                                   </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Estados del viaje y Reservaciones para viajes archivados */}
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                              <div className="flex flex-wrap items-center justify-between">
+                                <div className="flex gap-2 mb-2">
+                                  {/* Estado de visibilidad */}
+                                  {trip.visibility && (
+                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                      trip.visibility === 'publicado' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : trip.visibility === 'oculto' 
+                                          ? 'bg-gray-100 text-gray-800' 
+                                          : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {trip.visibility === 'publicado' 
+                                        ? 'Publicado' 
+                                        : trip.visibility === 'oculto' 
+                                          ? 'Oculto' 
+                                          : 'Cancelado'}
+                                    </span>
+                                  )}
+
+                                  {/* Estado del viaje */}
+                                  {trip.tripStatus && (
+                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                      trip.tripStatus === 'aun_no_inicia' 
+                                        ? 'bg-blue-100 text-blue-800' 
+                                        : trip.tripStatus === 'en_progreso' 
+                                          ? 'bg-amber-100 text-amber-800' 
+                                          : 'bg-purple-100 text-purple-800'
+                                    }`}>
+                                      {trip.tripStatus === 'aun_no_inicia' 
+                                        ? 'Aún no inicia' 
+                                        : trip.tripStatus === 'en_progreso' 
+                                          ? 'En progreso' 
+                                          : 'Finalizado'}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -966,14 +1021,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     </span>
                                   )}
                                 </div>
-                                
-                                {/* Reservaciones */}
-                                <div className="flex items-center">
-                                  <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {trip.reservationCount || 0} reservas
-                                  </span>
-                                </div>
+                            
                               </div>
                             </div>
                           </div>
