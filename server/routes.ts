@@ -2882,7 +2882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Cancelar reservación (igual que cancelación normal)
       const updatedReservation = await storage.updateReservation(id, {
-        status: 'canceled',
+        status: 'CanceledAndRefund',
         updatedAt: new Date()
       });
 
