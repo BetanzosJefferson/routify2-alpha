@@ -1110,4 +1110,26 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+
+  async getTransaccionesByReservation(reservationId: number): Promise<schema.Transaccion[]> {
+    try {
+      console.log(`[DatabaseStorage] Buscando todas las transacciones para reservación ${reservationId}`);
+      
+      const transactions = await this.db
+        .select()
+        .from(schema.transacciones)
+        .where(
+          and(
+            eq(sql`details->>'type'`, 'reservation'),
+            eq(sql`details->'details'->>'id'`, reservationId.toString())
+          )
+        );
+      
+      console.log(`[DatabaseStorage] Encontradas ${transactions.length} transacciones para reservación ${reservationId}`);
+      return transactions;
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al buscar transacciones por reservación:", error);
+      return [];
+    }
+  }
 }

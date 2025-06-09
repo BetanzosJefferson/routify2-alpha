@@ -2857,28 +2857,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "La reservación ya está cancelada" });
       }
 
-      // 3. Buscar transacción asociada sin corte
-      const transactions = await storage.getTransacciones();
-      console.log(`[POST /reservations/${id}/cancel-refund] Buscando transacción para reservación ${id}`);
+      // 3. Buscar TODAS las transacciones asociadas a esta reservación
+      const associatedTransactions = await storage.getTransaccionesByReservation(id);
+      console.log(`[POST /reservations/${id}/cancel-refund] Encontradas ${associatedTransactions.length} transacciones para reservación ${id}`);
 
-      const associatedTransaction = transactions.find(t => {
-        if (!t.details || typeof t.details !== 'object') return false;
-        if (!('type' in t.details) || t.details.type !== 'reservation') return false;
-        if (!('details' in t.details) || !t.details.details) return false;
-        if (typeof t.details.details !== 'object') return false;
-        if (!('id' in t.details.details)) return false;
-        if (t.details.details.id !== id) return false;
-        if (t.cutoff_id !== null) return false;
-        return true;
-      });
-
-      if (!associatedTransaction) {
+      if (associatedTransactions.length === 0) {
         return res.status(400).json({ 
-          error: "No se encontró una transacción sin corte asociada a esta reservación" 
+          error: "No se encontraron transacciones asociadas a esta reservación" 
         });
       }
 
-      console.log(`[POST /reservations/${id}/cancel-refund] Transacción encontrada: ${associatedTransaction.id}`);
+      // Filtrar solo transacciones sin corte (las que pueden ser reembolsadas)
+      const refundableTransactions = associatedTransactions.filter(t => t.cutoff_id === null);
+      console.log(`[POST /reservations/${id}/cancel-refund] ${refundableTransactions.length} transacciones pueden ser reembolsadas`);
+
+      if (refundableTransactions.length === 0) {
+        return res.status(400).json({ 
+          error: "No se encontraron transacciones sin corte que puedan ser reembolsadas" 
+        });
+      }
 
       // Cancelar reservación (igual que cancelación normal)
       const updatedReservation = await storage.updateReservation(id, {
@@ -2906,21 +2903,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Eliminar la transacción
-      const transactionDeleted = await storage.deleteTransaccion(associatedTransaction.id);
-      
-      if (!transactionDeleted) {
-        console.error(`[POST /reservations/${id}/cancel-refund] Error al eliminar transacción ${associatedTransaction.id}`);
-        return res.status(500).json({ error: "Error al procesar el reembolso" });
+      // Eliminar TODAS las transacciones reembolsables
+      let totalRefundAmount = 0;
+      let deletedCount = 0;
+
+      for (const transaction of refundableTransactions) {
+        try {
+          const transactionDeleted = await storage.deleteTransaccion(transaction.id);
+          
+          if (transactionDeleted) {
+            deletedCount++;
+            // Calcular monto total del reembolso
+            const transactionAmount = (transaction.details as any)?.details?.monto || 0;
+            totalRefundAmount += transactionAmount;
+            console.log(`[POST /reservations/${id}/cancel-refund] Transacción ${transaction.id} eliminada exitosamente (${transactionAmount})`);
+          } else {
+            console.error(`[POST /reservations/${id}/cancel-refund] Error al eliminar transacción ${transaction.id}`);
+          }
+        } catch (error) {
+          console.error(`[POST /reservations/${id}/cancel-refund] Error al procesar transacción ${transaction.id}:`, error);
+        }
       }
 
-      console.log(`[POST /reservations/${id}/cancel-refund] Transacción ${associatedTransaction.id} eliminada exitosamente`);
+      if (deletedCount === 0) {
+        return res.status(500).json({ error: "Error al procesar el reembolso - no se pudo eliminar ninguna transacción" });
+      }
+
+      console.log(`[POST /reservations/${id}/cancel-refund] ${deletedCount}/${refundableTransactions.length} transacciones eliminadas exitosamente. Reembolso total: ${totalRefundAmount}`);
 
       res.json({ 
         success: true, 
         message: "Reservación cancelada con reembolso exitosamente",
         reservation: updatedReservation,
-        refundAmount: associatedTransaction.details?.details?.monto || 0
+        refundAmount: totalRefundAmount,
+        deletedTransactions: deletedCount
       });
 
     } catch (error) {
