@@ -136,12 +136,7 @@ export function setupAuthentication(app: Express) {
           // Eliminar la contraseña del objeto usuario
           const { password: _, ...userWithoutPassword } = user;
           
-          // Debug: verificar el valor del profilePicture
-          console.log("Profile picture in login:", {
-            hasProfilePicture: !!user.profilePicture,
-            profilePictureLength: user.profilePicture ? user.profilePicture.length : 0,
-            profilePictureType: typeof user.profilePicture
-          });
+
           
           // El objeto ya viene con el mapeo correcto de Drizzle
           const userForFrontend = userWithoutPassword;
@@ -257,14 +252,7 @@ export function setupAuthentication(app: Express) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
 
-      console.log("Usuario desde DB en /api/auth/user:", {
-        id: user[0].id,
-        email: user[0].email,
-        hasProfilePicture: !!user[0].profilePicture,
-        profilePictureLength: user[0].profilePicture ? user[0].profilePicture.length : 0,
-        profilePictureType: typeof user[0].profilePicture,
-        profilePictureValue: user[0].profilePicture ? "data present" : user[0].profilePicture
-      });
+
 
       // Eliminar la contraseña del objeto usuario
       const { password: _, ...userWithoutPassword } = user[0];
