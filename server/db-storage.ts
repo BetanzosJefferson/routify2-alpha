@@ -1011,31 +1011,35 @@ export class DatabaseStorage implements IStorage {
 
   async getTransacciones(filters?: any): Promise<schema.Transaccion[]> {
     try {
-      let query = db.select().from(schema.transacciones);
+      const conditions = [];
       
       if (filters?.user_id) {
-        query = query.where(eq(schema.transacciones.user_id, filters.user_id));
+        conditions.push(eq(schema.transacciones.user_id, filters.user_id));
       }
       
       if (filters?.cutoff_id !== undefined) {
         if (filters.cutoff_id === null) {
-          query = query.where(isNull(schema.transacciones.cutoff_id));
+          conditions.push(isNull(schema.transacciones.cutoff_id));
         } else {
-          query = query.where(eq(schema.transacciones.cutoff_id, filters.cutoff_id));
+          conditions.push(eq(schema.transacciones.cutoff_id, filters.cutoff_id));
         }
       }
       
       if (filters?.cutoff_id_not_null) {
-        query = query.where(isNotNull(schema.transacciones.cutoff_id));
+        conditions.push(isNotNull(schema.transacciones.cutoff_id));
       }
       
       if (filters?.companyId) {
-        query = query.where(eq(schema.transacciones.companyId, filters.companyId));
+        conditions.push(eq(schema.transacciones.companyId, filters.companyId));
       }
       
       if (filters?.startDate) {
-        query = query.where(gte(schema.transacciones.createdAt, filters.startDate));
+        conditions.push(gte(schema.transacciones.createdAt, filters.startDate));
       }
+
+      const query = conditions.length > 0 
+        ? this.db.select().from(schema.transacciones).where(and(...conditions))
+        : this.db.select().from(schema.transacciones);
       
       const transactions = await query;
       return transactions;
