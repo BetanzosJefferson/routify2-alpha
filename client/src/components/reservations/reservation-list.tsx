@@ -98,9 +98,6 @@ export function ReservationList() {
   // Estados para manejar los filtros como toggles
   const [showArchived, setShowArchived] = useState(false);
   const [showCanceled, setShowCanceled] = useState(false);
-  
-  // Por defecto mostramos las reservaciones actuales/futuras
-  const [activeTab, setActiveTab] = useState("upcoming");
 
   // Estados adicionales para mejorar la UX
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -153,65 +150,8 @@ export function ReservationList() {
     }
   }, [isLoading, reservationsError]);
 
-  // Ahora usamos funciones inline para manejar las comparaciones de fechas
-
-  // Separar reservaciones en actuales, archivadas y canceladas
-  // Primero, separamos las canceladas (tendrán su propia pestaña)
-  const canceledReservations = reservations?.filter(
-    (reservation) => reservation.status === 'canceled'
-  ) || [];
-
-  // Definir la fecha actual del sistema (20/05/2025) - Fecha fija para el sistema
-  const SYSTEM_DATE = new Date('2025-05-20T12:00:00.000Z');
-  console.log(`[SISTEMA] Fecha actual del sistema fijada en: ${SYSTEM_DATE.toISOString()}`);
-
-  // Luego filtramos las reservaciones actuales/futuras (que no estén canceladas)
-  const upcomingReservations = reservations?.filter(
-    (reservation) => {
-      // Solo incluir reservaciones confirmadas (no canceladas)
-      if (reservation.status !== 'confirmed') return false;
-
-      // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
-      // Normalizar la fecha actual del sistema para una comparación correcta
-      const today = normalizeToStartOfDay(SYSTEM_DATE);
-
-      console.log(`[Clasificación] Evaluando reservación ${reservation.id} para 'Actuales y Futuras'`);
-      console.log(`[Clasificación] Fecha viaje: ${tripDate.toISOString()}, Fecha sistema: ${today.toISOString()}`);
-      console.log(`[Clasificación] ¿Es actual o futura? ${tripDate >= today ? 'SÍ' : 'NO'}`);
-
-      // Las reservaciones con fecha igual o posterior a hoy se consideran "actuales o futuras"
-      return tripDate >= today;
-    }
-  ) || [];
-
-  const archivedReservations = reservations?.filter(
-    (reservation) => {
-      // Solo incluir reservaciones confirmadas (no canceladas)
-      if (reservation.status !== 'confirmed') return false;
-
-      // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
-      // Usar la misma fecha del sistema declarada arriba
-      const today = normalizeToStartOfDay(SYSTEM_DATE);
-
-      console.log(`[Clasificación] Evaluando reservación ${reservation.id} para 'Archivadas'`);
-      console.log(`[Clasificación] Fecha viaje: ${tripDate.toISOString()}, Fecha sistema: ${today.toISOString()}`);
-      console.log(`[Clasificación] ¿Es archivada? ${tripDate < today ? 'SÍ' : 'NO'}`);
-
-      // Cambiamos a 'estrictamente menor que' para que las reservaciones del día actual
-      // NO se consideren archivadas sino actuales
-      return tripDate < today;
-    }
-  ) || [];
-
-  // Obtener las reservaciones según la pestaña activa
-  const activeReservations = 
-    activeTab === "upcoming" 
-      ? upcomingReservations 
-      : activeTab === "archived" 
-        ? archivedReservations 
-        : canceledReservations;
+  // The reservations are now filtered by the backend based on the filter states
+  const activeReservations = reservations || [];
 
   // Function to handle sorting
   const getSortedReservations = (reservations: ReservationWithDetails[]) => {
@@ -267,7 +207,11 @@ export function ReservationList() {
     // Aplicar filtro de fecha específica
     let matchesDate = true;
     if (selectedDate) {
-      const tripDate = normalizeToStartOfDay((reservation.trip as any).tripData?.departureDate || reservation.createdAt);
+      const tripData = (reservation.trip as any).tripData;
+      const departureDate = tripData && Array.isArray(tripData) && tripData.length > 0 
+        ? tripData[0].departureDate 
+        : reservation.createdAt;
+      const tripDate = normalizeToStartOfDay(departureDate);
       const filterDate = normalizeToStartOfDay(new Date(selectedDate));
       matchesDate = isSameLocalDay(tripDate, filterDate);
     }
@@ -276,7 +220,11 @@ export function ReservationList() {
     let matchesDateFilter = true;
     if (dateFilter) {
       // Usar isSameLocalDay para comparar las fechas
-      const tripDate = normalizeToStartOfDay((reservation.trip as any).tripData?.departureDate || reservation.createdAt);
+      const tripData = (reservation.trip as any).tripData;
+      const departureDate = tripData && Array.isArray(tripData) && tripData.length > 0 
+        ? tripData[0].departureDate 
+        : reservation.createdAt;
+      const tripDate = normalizeToStartOfDay(departureDate);
       const filterDate = normalizeToStartOfDay(dateFilter);
       matchesDateFilter = isSameLocalDay(tripDate, filterDate);
     }
