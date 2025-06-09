@@ -36,6 +36,7 @@ import RoutesPageRoute from "@/pages/routes-page";
 import PublishTripPageRoute from "@/pages/publish-trip-page";
 import TripsPageRoute from "@/pages/trips-page";
 import UserCashBoxesPageRoute from "@/pages/user-cash-boxes-page";
+import ProfilePageRoute from "@/pages/profile-page";
 
 function Router() {
   return (
@@ -63,6 +64,7 @@ function Router() {
       <ProtectedRoute path="/publish-trip" component={PublishTripPageRoute} />
       <ProtectedRoute path="/trips" component={TripsPageRoute} />
       <ProtectedRoute path="/user-cash-boxes" component={UserCashBoxesPageRoute} />
+      <ProtectedRoute path="/profile" component={ProfilePageRoute} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/register/:token" component={RegisterPage} />
       <Route path="/reservation-details" component={ReservationDetails} />
