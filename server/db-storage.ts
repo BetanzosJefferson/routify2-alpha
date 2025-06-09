@@ -22,6 +22,8 @@ import { db } from "./db";
 import { eq, and, gte, lt, like, or, sql, isNotNull, isNull } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
+  private db = db;
+
   async getRoutes(companyId?: string): Promise<Route[]> {
     console.log(companyId ? `DB Storage: Consultando rutas para la compañía: ${companyId}` : "DB Storage: Consultando todas las rutas");
     
