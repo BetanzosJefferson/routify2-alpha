@@ -2417,23 +2417,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[POST /reservations] DEPURACIÓN - Usuario creador:`, createdByUserId || (user ? user.id : null));
           console.log(`[POST /reservations] Creando transacción para anticipo de $${reservationData.advanceAmount}`);
           
-          // Obtener información del viaje para los detalles de la transacción
-          const tripWithRouteInfo = await storage.getTripWithRouteInfo(trip.id);
+          // Obtener información del viaje usando el recordId y tripId específicos
+          const { recordId, tripId } = reservationData.tripDetails as { recordId: number, tripId: string };
+          console.log(`[POST /reservations] DEPURACIÓN - Obteniendo información para recordId=${recordId}, tripId=${tripId}`);
+          
+          // Obtener la información específica del segmento del viaje
+          const tripWithRouteInfo = await storage.getTripWithRouteInfo(recordId);
           console.log(`[POST /reservations] DEPURACIÓN - Información del viaje obtenida:`, JSON.stringify(tripWithRouteInfo, null, 2));
           
-          // Verificar si el viaje es un sub-viaje para determinar origen y destino correctos
+          // Extraer origen y destino del segmento específico usando tripId
           let origen = "";
           let destino = "";
           
-          // Verificar si el viaje es un sub-viaje
-          if (tripWithRouteInfo.isSubTrip && tripWithRouteInfo.segmentOrigin && tripWithRouteInfo.segmentDestination) {
-            console.log(`[POST /reservations] El viaje ${trip.id} es un sub-viaje, usando segmentOrigin y segmentDestination`);
-            origen = tripWithRouteInfo.segmentOrigin;
-            destino = tripWithRouteInfo.segmentDestination;
+          // Parsear tripData para obtener información del segmento específico
+          if (tripWithRouteInfo && tripWithRouteInfo.tripData) {
+            try {
+              const tripDataArray = Array.isArray(tripWithRouteInfo.tripData) 
+                ? tripWithRouteInfo.tripData 
+                : JSON.parse(tripWithRouteInfo.tripData as string);
+              
+              console.log(`[POST /reservations] DEPURACIÓN - tripData parseado:`, JSON.stringify(tripDataArray, null, 2));
+              
+              // Buscar el segmento específico que corresponde al tripId
+              const targetSegment = tripDataArray.find((segment: any) => segment.id === tripId);
+              
+              if (targetSegment) {
+                console.log(`[POST /reservations] DEPURACIÓN - Segmento encontrado:`, JSON.stringify(targetSegment, null, 2));
+                origen = targetSegment.origin || "";
+                destino = targetSegment.destination || "";
+                console.log(`[POST /reservations] Usando origen="${origen}" y destino="${destino}" del segmento ${tripId}`);
+              } else {
+                console.log(`[POST /reservations] ADVERTENCIA - No se encontró el segmento ${tripId} en tripData`);
+                // Fallback a la información de la ruta si no se encuentra el segmento
+                if (tripWithRouteInfo.route) {
+                  origen = tripWithRouteInfo.route.origin;
+                  destino = tripWithRouteInfo.route.destination;
+                  console.log(`[POST /reservations] Usando fallback de ruta: origen="${origen}", destino="${destino}"`);
+                }
+              }
+            } catch (parseError) {
+              console.error(`[POST /reservations] Error al parsear tripData:`, parseError);
+              // Fallback a la información de la ruta
+              if (tripWithRouteInfo.route) {
+                origen = tripWithRouteInfo.route.origin;
+                destino = tripWithRouteInfo.route.destination;
+                console.log(`[POST /reservations] Usando fallback de ruta por error de parseo: origen="${origen}", destino="${destino}"`);
+              }
+            }
           } else if (tripWithRouteInfo && tripWithRouteInfo.route) {
-            console.log(`[POST /reservations] El viaje ${trip.id} es un viaje normal, usando route.origin y route.destination`);
+            // Fallback directo a información de ruta si no hay tripData
             origen = tripWithRouteInfo.route.origin;
             destino = tripWithRouteInfo.route.destination;
+            console.log(`[POST /reservations] Usando información de ruta directa: origen="${origen}", destino="${destino}"`);
           }
           
           if ((tripWithRouteInfo && tripWithRouteInfo.route) || (tripWithRouteInfo.isSubTrip && origen && destino)) {
@@ -2549,25 +2584,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log(`[PUT /reservations/${id}] No se encontró el viaje ${recordId}`);
                   // Continuamos con la actualización aunque no se pueda crear la transacción
                 } else {
-                const tripWithRouteInfo = await storage.getTripWithRouteInfo(trip.id);
+                const tripWithRouteInfo = await storage.getTripWithRouteInfo(recordId);
+                console.log(`[PUT /reservations/${id}] DEPURACIÓN - Información del viaje obtenida:`, JSON.stringify(tripWithRouteInfo, null, 2));
                 
-                // Obtener los pasajeros de la reservación
-                const passengers = await storage.getPassengers(id);
-                
-                // Verificar si el viaje es un sub-viaje para determinar origen y destino correctos
+                // Extraer origen y destino del segmento específico usando tripId
                 let origen = "";
                 let destino = "";
                 
-                // Verificar si el viaje es un sub-viaje
-                if (tripWithRouteInfo.isSubTrip && tripWithRouteInfo.segmentOrigin && tripWithRouteInfo.segmentDestination) {
-                  console.log(`[PUT /reservations/${id}] El viaje ${trip.id} es un sub-viaje, usando segmentOrigin y segmentDestination`);
-                  origen = tripWithRouteInfo.segmentOrigin;
-                  destino = tripWithRouteInfo.segmentDestination;
+                // Parsear tripData para obtener información del segmento específico
+                if (tripWithRouteInfo && tripWithRouteInfo.tripData) {
+                  try {
+                    const tripDataArray = Array.isArray(tripWithRouteInfo.tripData) 
+                      ? tripWithRouteInfo.tripData 
+                      : JSON.parse(tripWithRouteInfo.tripData as string);
+                    
+                    console.log(`[PUT /reservations/${id}] DEPURACIÓN - tripData parseado:`, JSON.stringify(tripDataArray, null, 2));
+                    
+                    // Buscar el segmento específico que corresponde al tripId
+                    const targetSegment = tripDataArray.find((segment: any) => segment.id === tripId);
+                    
+                    if (targetSegment) {
+                      console.log(`[PUT /reservations/${id}] DEPURACIÓN - Segmento encontrado:`, JSON.stringify(targetSegment, null, 2));
+                      origen = targetSegment.origin || "";
+                      destino = targetSegment.destination || "";
+                      console.log(`[PUT /reservations/${id}] Usando origen="${origen}" y destino="${destino}" del segmento ${tripId}`);
+                    } else {
+                      console.log(`[PUT /reservations/${id}] ADVERTENCIA - No se encontró el segmento ${tripId} en tripData`);
+                      // Fallback a la información de la ruta
+                      if (tripWithRouteInfo.route) {
+                        origen = tripWithRouteInfo.route.origin;
+                        destino = tripWithRouteInfo.route.destination;
+                        console.log(`[PUT /reservations/${id}] Usando fallback de ruta: origen="${origen}", destino="${destino}"`);
+                      }
+                    }
+                  } catch (parseError) {
+                    console.error(`[PUT /reservations/${id}] Error al parsear tripData:`, parseError);
+                    // Fallback a la información de la ruta
+                    if (tripWithRouteInfo.route) {
+                      origen = tripWithRouteInfo.route.origin;
+                      destino = tripWithRouteInfo.route.destination;
+                      console.log(`[PUT /reservations/${id}] Usando fallback de ruta por error de parseo: origen="${origen}", destino="${destino}"`);
+                    }
+                  }
                 } else if (tripWithRouteInfo && tripWithRouteInfo.route) {
-                  console.log(`[PUT /reservations/${id}] El viaje ${trip.id} es un viaje normal, usando route.origin y route.destination`);
+                  // Fallback directo a información de ruta si no hay tripData
                   origen = tripWithRouteInfo.route.origin;
                   destino = tripWithRouteInfo.route.destination;
+                  console.log(`[PUT /reservations/${id}] Usando información de ruta directa: origen="${origen}", destino="${destino}"`);
                 }
+                
+                // Obtener los pasajeros de la reservación
+                const passengers = await storage.getPassengers(id);
                 
                 if ((tripWithRouteInfo && tripWithRouteInfo.route) || (tripWithRouteInfo.isSubTrip && origen && destino)) {
                   // Obtener el companyId del viaje
