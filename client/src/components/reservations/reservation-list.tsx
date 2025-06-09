@@ -142,7 +142,7 @@ export function ReservationList() {
   // Separar reservaciones en actuales, archivadas y canceladas
   // Primero, separamos las canceladas (tendrán su propia pestaña)
   const canceledReservations = reservations?.filter(
-    (reservation) => reservation.status === 'canceled'
+    (reservation) => reservation.status === 'cancelled'
   ) || [];
 
   // Usar la fecha actual real del sistema
