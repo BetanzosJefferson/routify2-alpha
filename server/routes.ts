@@ -2853,7 +2853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 2. Verificar que la reservación no esté ya cancelada
-      if (reservation.status === 'cancelled') {
+      if (reservation.status === 'canceled') {
         return res.status(400).json({ error: "La reservación ya está cancelada" });
       }
 
@@ -2882,7 +2882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Cancelar reservación (igual que cancelación normal)
       const updatedReservation = await storage.updateReservation(id, {
-        status: 'cancelled',
+        status: 'canceled',
         updatedAt: new Date()
       });
 
