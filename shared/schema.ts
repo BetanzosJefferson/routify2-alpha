@@ -831,11 +831,11 @@ export type TransactionSourceType = typeof TransactionSource[keyof typeof Transa
 // Las tablas y funcionalidades de caja registradora han sido completamente eliminadas del sistema
 
 // TABLA DE TRANSACCIONES
-export const transacciones = pgTable("transactions", { // Cambiado de "transacciones" a "transactions"
+export const transacciones = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  detalles: jsonb("details").notNull(), // Cambiado de "detalles" a "details"
-  user_id: integer("user_id").notNull().references(() => users.id), // Nombre correcto en la BD
-  cutoff_id: integer("cutoff_id").references(() => boxCutoff.id), // Referencia a la tabla box_cutoff
+  details: jsonb("details").notNull(), // Campo details que coincide con la BD
+  user_id: integer("user_id").notNull().references(() => users.id),
+  cutoff_id: integer("cutoff_id").references(() => boxCutoff.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   companyId: text("company_id"), // Campo para aislamiento de datos por compañía
@@ -845,10 +845,10 @@ export const insertTransaccionSchema = createInsertSchema(transacciones, {
   id: z.number().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
-  cutoff_id: z.number().optional().nullable(), // Usamos el nombre correcto
-  detalles: z.any().optional(), // Campo para mapear a "details"
-  user_id: z.number().optional(), // Campo para mapear a "user_id" en la base de datos
-  companyId: z.string().optional().nullable() // Campo de compañía
+  cutoff_id: z.number().optional().nullable(),
+  details: z.any(), // Campo details que coincide con la BD
+  user_id: z.number(), // Campo user_id que coincide con la BD
+  companyId: z.string().optional().nullable()
 });
 
 export type Transaccion = typeof transacciones.$inferSelect;
