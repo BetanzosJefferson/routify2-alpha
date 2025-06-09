@@ -399,7 +399,7 @@ const TransactionHistoryBox: React.FC = () => {
         data.forEach((transaction: any) => {
           try {
             // Verificar que la transacción y sus datos son válidos
-            if (transaction && typeof transaction === 'object' && transaction.detalles && typeof transaction.detalles === 'object') {
+            if (transaction && typeof transaction === 'object' && transaction.details && typeof transaction.details === 'object') {
               // VERIFICACIÓN CRÍTICA: Filtrar por user_id para seguridad
               const transactionUserId = transaction.user_id || transaction.usuario_id;
               
@@ -409,11 +409,11 @@ const TransactionHistoryBox: React.FC = () => {
                 return;
               }
               
-              const transactionType = transaction.detalles.type;
+              const transactionType = transaction.details.type;
               
-              // Verificar que detalles.details existe
-              if (!transaction.detalles.details) {
-                console.warn("La transacción no tiene detalles.details:", transaction);
+              // Verificar que details.details existe
+              if (!transaction.details.details) {
+                console.warn("La transacción no tiene details.details:", transaction);
                 return;
               }
               
@@ -446,12 +446,12 @@ const TransactionHistoryBox: React.FC = () => {
               groups[cutoffId].transactions.push(transaction);
               
               // Actualizar montos
-              const amount = transaction.detalles.details.monto || 0;
+              const amount = transaction.details.details.monto || 0;
               groups[cutoffId].totalAmount += amount;
               
-              if (transaction.detalles.details.metodoPago === "efectivo") {
+              if (transaction.details.details.metodoPago === "efectivo") {
                 groups[cutoffId].cashAmount += amount;
-              } else if (transaction.detalles.details.metodoPago === "transferencia") {
+              } else if (transaction.details.details.metodoPago === "transferencia") {
                 groups[cutoffId].transferAmount += amount;
               }
               
