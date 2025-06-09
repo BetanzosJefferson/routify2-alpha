@@ -608,10 +608,12 @@ export class DatabaseStorage implements IStorage {
           ? JSON.parse(reservation.tripDetails) 
           : reservation.tripDetails;
         specificTripId = tripDetails?.tripId;
+        console.log(`[getReservations] Reservación ${reservation.id}: tripDetails =`, tripDetails, `specificTripId = ${specificTripId}`);
       } catch (error) {
         console.warn(`Error al procesar tripDetails para reservación ${reservation.id}:`, error);
       }
 
+      console.log(`[getReservations] Llamando getTripWithRouteInfo(${reservation.tripId}, "${specificTripId}")`);
       const trip = await this.getTripWithRouteInfo(reservation.tripId, specificTripId);
       if (!trip) continue;
       
