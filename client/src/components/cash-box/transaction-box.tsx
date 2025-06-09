@@ -270,7 +270,7 @@ const TransactionBox: React.FC = () => {
         data.forEach((transaction: any) => {
           try {
             // Verificar que la transacción y sus datos son válidos
-            if (transaction && typeof transaction === 'object' && transaction.detalles && typeof transaction.detalles === 'object') {
+            if (transaction && typeof transaction === 'object' && transaction.details && typeof transaction.details === 'object') {
               // Verificación CRÍTICA: Filtrar por user_id (nombre en inglés que usa la BD)
               // O usuario_id (nombre en español que podría estar en los datos)
               const transactionUserId = transaction.user_id || transaction.usuario_id;
@@ -290,11 +290,11 @@ const TransactionBox: React.FC = () => {
                 }
               }
               
-              const transactionType = transaction.detalles.type;
+              const transactionType = transaction.details.type;
               
-              // Verificar que detalles.details existe
-              if (!transaction.detalles.details) {
-                console.warn("La transacción no tiene detalles.details:", transaction);
+              // Verificar que details.details existe
+              if (!transaction.details.details) {
+                console.warn("La transacción no tiene details.details:", transaction);
                 return;
               }
               
@@ -573,7 +573,7 @@ const TransactionBox: React.FC = () => {
                 <TableBody>
                   {reservationTransactions.map((transaction) => {
                     try {
-                      const details = transaction.detalles?.details || {};
+                      const details = transaction.details?.details || {};
                       return (
                         <TableRow key={transaction.id}>
                           <TableCell>{transaction.id}</TableCell>
@@ -708,7 +708,7 @@ const TransactionBox: React.FC = () => {
                 <TableBody>
                   {packageTransactions.map((transaction) => {
                     try {
-                      const details = transaction.detalles?.details || {};
+                      const details = transaction.details?.details || {};
                       return (
                         <TableRow key={transaction.id}>
                           <TableCell>{transaction.id}</TableCell>
