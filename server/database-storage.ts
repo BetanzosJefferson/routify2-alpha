@@ -603,8 +603,9 @@ export class DatabaseStorage implements IStorage {
     for (const reservation of reservations) {
       // Extraer tripId específico del tripDetails JSON para obtener el segmento correcto
       let specificTripId = null;
+      let tripDetails = null;
       try {
-        const tripDetails = typeof reservation.tripDetails === 'string' 
+        tripDetails = typeof reservation.tripDetails === 'string' 
           ? JSON.parse(reservation.tripDetails) 
           : reservation.tripDetails;
         specificTripId = tripDetails?.tripId;
