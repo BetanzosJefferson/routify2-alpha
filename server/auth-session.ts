@@ -133,14 +133,18 @@ export function setupAuthentication(app: Express) {
             return done(null, false, { message: "Credenciales inválidas" });
           }
 
-          // Eliminar la contraseña del objeto usuario y mapear campos
-          const { password: _, profile_picture, ...userWithoutPassword } = user;
+          // Eliminar la contraseña del objeto usuario
+          const { password: _, ...userWithoutPassword } = user;
           
-          // Mapear campos de snake_case a camelCase para compatibilidad con frontend
-          const userForFrontend = {
-            ...userWithoutPassword,
-            profilePicture: profile_picture || null
-          };
+          // Debug: verificar el valor del profilePicture
+          console.log("Profile picture in login:", {
+            hasProfilePicture: !!user.profilePicture,
+            profilePictureLength: user.profilePicture ? user.profilePicture.length : 0,
+            profilePictureType: typeof user.profilePicture
+          });
+          
+          // El objeto ya viene con el mapeo correcto de Drizzle
+          const userForFrontend = userWithoutPassword;
           
           return done(null, userForFrontend);
         } catch (error) {
