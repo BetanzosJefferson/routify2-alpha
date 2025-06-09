@@ -5,14 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatPrice, generateReservationId, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
 import { formatTripTime } from "@/lib/trip-utils";
 import { useLocation } from "wouter";
-import { 
-  UserIcon, 
-  SearchIcon, 
-  Loader2Icon, 
-  XIcon, 
-  PhoneIcon, 
-  MailIcon, 
-  CalendarIcon, 
+import {
+  UserIcon,
+  SearchIcon,
+  Loader2Icon,
+  XIcon,
+  PhoneIcon,
+  MailIcon,
+  CalendarIcon,
   ArchiveIcon,
   FilterIcon,
   QrCode,
@@ -117,11 +117,11 @@ export function ReservationList() {
   const { user } = useAuth();
 
   // Utilizar el nuevo hook especializado para cargar reservaciones
-  const { 
-    data: reservations, 
+  const {
+    data: reservations,
     isLoading,
     error: reservationsError
-  } = useReservations({ 
+  } = useReservations({
     date: dateFilter || undefined, // Solo usar filtro de fecha si el usuario lo especifica
     archived: activeTab === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
   });
@@ -156,6 +156,7 @@ export function ReservationList() {
       if (reservation.status !== 'confirmed') return false;
 
       // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
+      // CORRECTED: Access reservation.trip.departureDate directly
       const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
       // Normalizar la fecha actual del sistema para una comparación correcta
       const today = normalizeToStartOfDay(SYSTEM_DATE);
@@ -175,6 +176,7 @@ export function ReservationList() {
       if (reservation.status !== 'confirmed') return false;
 
       // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
+      // CORRECTED: Access reservation.trip.departureDate directly
       const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
       // Usar la misma fecha del sistema declarada arriba
       const today = normalizeToStartOfDay(SYSTEM_DATE);
@@ -190,22 +192,24 @@ export function ReservationList() {
   ) || [];
 
   // Obtener las reservaciones según la pestaña activa
-  const activeReservations = 
-    activeTab === "upcoming" 
-      ? upcomingReservations 
-      : activeTab === "archived" 
-        ? archivedReservations 
+  const activeReservations =
+    activeTab === "upcoming"
+      ? upcomingReservations
+      : activeTab === "archived"
+        ? archivedReservations
         : canceledReservations;
 
   // Function to handle sorting
   const getSortedReservations = (reservations: ReservationWithDetails[]) => {
     return [...reservations].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case "date": {
-          const dateA = new Date((a.trip as any).tripData?.departureDate || a.createdAt);
-          const dateB = new Date((b.trip as any).tripData?.departureDate || b.createdAt);
+          // CORRECTED: Access a.trip.departureDate directly
+          const dateA = new Date(a.trip.departureDate || a.createdAt);
+          // CORRECTED: Access b.trip.departureDate directly
+          const dateB = new Date(b.trip.departureDate || b.createdAt);
           comparison = dateA.getTime() - dateB.getTime();
           break;
         }
@@ -216,13 +220,15 @@ export function ReservationList() {
           break;
         }
         case "time": {
-          const timeA = (a.trip as any).tripData?.departureTime || "00:00";
-          const timeB = (b.trip as any).tripData?.departureTime || "00:00";
+          // CORRECTED: Access a.trip.departureTime directly
+          const timeA = a.trip.departureTime || "00:00";
+          // CORRECTED: Access b.trip.departureTime directly
+          const timeB = b.trip.departureTime || "00:00";
           comparison = timeA.localeCompare(timeB);
           break;
         }
       }
-      
+
       return sortOrder === "asc" ? comparison : -comparison;
     });
   };
@@ -251,7 +257,8 @@ export function ReservationList() {
     // Aplicar filtro de fecha específica
     let matchesDate = true;
     if (selectedDate) {
-      const tripDate = normalizeToStartOfDay((reservation.trip as any).tripData?.departureDate || reservation.createdAt);
+      // CORRECTED: Access reservation.trip.departureDate directly
+      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
       const filterDate = normalizeToStartOfDay(new Date(selectedDate));
       matchesDate = isSameLocalDay(tripDate, filterDate);
     }
@@ -260,7 +267,8 @@ export function ReservationList() {
     let matchesDateFilter = true;
     if (dateFilter) {
       // Usar isSameLocalDay para comparar las fechas
-      const tripDate = normalizeToStartOfDay((reservation.trip as any).tripData?.departureDate || reservation.createdAt);
+      // CORRECTED: Access reservation.trip.departureDate directly
+      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
       const filterDate = normalizeToStartOfDay(dateFilter);
       matchesDateFilter = isSameLocalDay(tripDate, filterDate);
     }
@@ -270,8 +278,8 @@ export function ReservationList() {
 
   // Functions for handling checkbox selections
   const handleSelectReservation = (reservationId: number, checked: boolean) => {
-    setSelectedReservations(prev => 
-      checked 
+    setSelectedReservations(prev =>
+      checked
         ? [...prev, reservationId]
         : prev.filter(id => id !== reservationId)
     );
@@ -388,8 +396,8 @@ export function ReservationList() {
   const editReservationMutation = useMutation({
     mutationFn: async (data: { id: number, updates: Partial<Reservation> }) => {
       const response = await apiRequest(
-        "PUT", 
-        `/api/reservations/${data.id}`, 
+        "PUT",
+        `/api/reservations/${data.id}`,
         data.updates
       );
       if (!response.ok) {
@@ -454,7 +462,7 @@ export function ReservationList() {
     // Agregar los montos editables
     const advanceAmountNum = parseFloat(advanceAmount) || 0;
     const remainingAmountNum = parseFloat(remainingAmount) || 0;
-    
+
     // Validar que el anticipo no sea mayor al total original
     if (advanceAmountNum > editingReservation.totalAmount) {
       toast({
@@ -536,13 +544,20 @@ export function ReservationList() {
                 </>
               )}
             </div>
-            
+
             {/* Botones de categoría */}
             <div className="flex gap-2">
               <Button
                 variant={activeTab === "archived" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveTab("archived")}
+                onClick={() => {
+                  // Si ya está activo el filtro "archived", quitarlo (volver a "upcoming")
+                  if (activeTab === "archived") {
+                    setActiveTab("upcoming");
+                  } else {
+                    setActiveTab("archived");
+                  }
+                }}
                 className="gap-1"
               >
                 <ArchiveIcon className="h-4 w-4" />
@@ -552,7 +567,14 @@ export function ReservationList() {
               <Button
                 variant={activeTab === "canceled" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveTab("canceled")}
+                onClick={() => {
+                  // Si ya está activo el filtro "canceled", quitarlo (volver a "upcoming")
+                  if (activeTab === "canceled") {
+                    setActiveTab("upcoming");
+                  } else {
+                    setActiveTab("canceled");
+                  }
+                }}
                 className="gap-1"
               >
                 <XIcon className="h-4 w-4" />
@@ -691,16 +713,16 @@ export function ReservationList() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedReservations.map((reservation) => (
-                  <tr 
-                    key={reservation.id} 
+                  <tr
+                    key={reservation.id}
                     className={`hover:bg-gray-50 ${
                       reservation.status === 'canceled' ? 'bg-gray-50' : ''
                     } ${
                       selectedReservations.includes(reservation.id) ? 'bg-blue-50' : ''
                     }`}
                   >
-                    
-                    <td 
+
+                    <td
                       className="px-6 py-4 whitespace-nowrap text-sm cursor-pointer"
                       onClick={() => {
                         setSelectedReservationId(reservation.id);
@@ -735,13 +757,16 @@ export function ReservationList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{reservation.trip.route.name}</div>
+                      {/* CORRECTED: Access reservation.trip.origin and reservation.trip.destination directly */}
                       <div className="text-sm text-gray-500">
-                        {(reservation.trip as any).tripData?.origin || (reservation.trip as any).route?.origin} → {(reservation.trip as any).tripData?.destination || (reservation.trip as any).route?.destination}
+                        {reservation.trip.origin} → {reservation.trip.destination}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDate((reservation.trip as any).tripData?.departureDate || reservation.createdAt)}</div>
-                      <div className="text-sm text-gray-500">{formatTripTime((reservation.trip as any).tripData?.departureTime || "00:00", true, 'pretty')}</div>
+                      {/* CORRECTED: Access reservation.trip.departureDate directly */}
+                      <div className="text-sm text-gray-900">{formatDate(reservation.trip.departureDate)}</div>
+                      {/* CORRECTED: Access reservation.trip.departureTime directly */}
+                      <div className="text-sm text-gray-500">{formatTripTime(reservation.trip.departureTime, true, 'pretty')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {reservation.passengers.length}
@@ -772,10 +797,10 @@ export function ReservationList() {
                           ) : (
                             <span className="text-sm font-medium">{formatPrice(reservation.totalAmount)}</span>
                           )}
-                          <Badge 
+                          <Badge
                             variant={reservation.paymentStatus === 'pagado' ? "outline" : "secondary"}
-                            className={reservation.paymentStatus === 'pagado' 
-                              ? "bg-green-100 text-green-800 border-green-200" 
+                            className={reservation.paymentStatus === 'pagado'
+                              ? "bg-green-100 text-green-800 border-green-200"
                               : "bg-amber-100 text-amber-800 border-amber-200"}
                           >
                             {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
@@ -834,7 +859,7 @@ export function ReservationList() {
                     </td>
                     {activeTab === "canceled" && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge 
+                        <Badge
                           variant="outline"
                           className="bg-red-100 text-red-800 border-red-200"
                         >
@@ -953,7 +978,7 @@ export function ReservationList() {
             </table>
           ) : (
             <div className="text-center p-8 text-gray-500">
-              {activeTab === "upcoming" 
+              {activeTab === "upcoming"
                 ? "No hay reservaciones actuales o futuras disponibles."
                 : "No hay reservaciones archivadas disponibles."}
             </div>
@@ -974,8 +999,8 @@ export function ReservationList() {
           ) : paginatedReservations && paginatedReservations.length > 0 ? (
             <div className="space-y-3">
               {paginatedReservations.map((reservation) => (
-                <div 
-                  key={reservation.id} 
+                <div
+                  key={reservation.id}
                   className={`bg-white rounded-lg border shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 ${
                     reservation.status === 'canceled' ? 'border-red-200 bg-red-50' : 'border-gray-200'
                   }`}
@@ -992,8 +1017,8 @@ export function ReservationList() {
                       </span>
                       <div className="flex space-x-1">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          reservation.paymentStatus === 'pagado' 
-                            ? 'bg-green-100 text-green-800' 
+                          reservation.paymentStatus === 'pagado'
+                            ? 'bg-green-100 text-green-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
                           {reservation.paymentStatus === 'pagado' ? 'Pagado' : 'Pendiente'}
@@ -1008,9 +1033,9 @@ export function ReservationList() {
 
                     {user?.role !== "taquilla" && (
                       <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
-                        <Button 
+                        <Button
                           size="sm"
-                          variant="ghost" 
+                          variant="ghost"
                           className="h-8 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1020,9 +1045,9 @@ export function ReservationList() {
                           Editar
                         </Button>
                         {reservation.status === 'canceled' ? (
-                          <Button 
+                          <Button
                             size="sm"
-                            variant="ghost" 
+                            variant="ghost"
                             className="h-8 px-2 text-xs text-red-600 hover:text-red-800 hover:bg-red-50"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1032,9 +1057,9 @@ export function ReservationList() {
                             Eliminar
                           </Button>
                         ) : (
-                          <Button 
+                          <Button
                             size="sm"
-                            variant="ghost" 
+                            variant="ghost"
                             className="h-8 px-2 text-xs text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1066,6 +1091,7 @@ export function ReservationList() {
                     <div className="text-sm font-medium text-gray-900 mb-1">
                       {reservation.trip.route.name}
                     </div>
+                    {/* CORRECTED: Access reservation.trip.origin and reservation.trip.destination directly */}
                     <div className="text-xs text-gray-600 truncate">
                       {reservation.trip.origin} → {reservation.trip.destination}
                     </div>
@@ -1074,8 +1100,10 @@ export function ReservationList() {
                   {/* Footer con fecha y precio */}
                   <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                     <div className="text-xs text-gray-500">
+                      {/* CORRECTED: Access reservation.trip.departureDate directly */}
                       <span>{formatDate(reservation.trip.departureDate)}</span>
                       <span className="mx-1">•</span>
+                      {/* CORRECTED: Access reservation.trip.departureTime directly */}
                       <span>{formatTripTime(reservation.trip.departureTime)}</span>
                     </div>
                     <div className="text-sm font-bold text-gray-900">
@@ -1087,7 +1115,7 @@ export function ReservationList() {
             </div>
           ) : (
             <div className="text-center p-8 text-gray-500 text-sm">
-              {activeTab === "upcoming" 
+              {activeTab === "upcoming"
                 ? "No hay reservaciones actuales o futuras disponibles."
                 : "No hay reservaciones archivadas disponibles."}
             </div>
@@ -1151,7 +1179,7 @@ export function ReservationList() {
               {confirmationType === 'cancel' ? 'Cancelar Reservación' : 'Eliminar Reservación'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmationType === 'cancel' 
+              {confirmationType === 'cancel'
                 ? "¿Estás seguro que deseas cancelar esta reservación? La reservación quedará registrada en el sistema pero los asientos serán liberados para que otros pasajeros puedan reservarlos."
                 : "¿Estás seguro que deseas eliminar completamente esta reservación? Esta acción no se puede deshacer y la reservación será eliminada de la base de datos."
               }
@@ -1160,8 +1188,8 @@ export function ReservationList() {
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
-              className={confirmationType === 'cancel' 
-                ? "bg-amber-600 hover:bg-amber-700" 
+              className={confirmationType === 'cancel'
+                ? "bg-amber-600 hover:bg-amber-700"
                 : "bg-red-600 hover:bg-red-700"
               }
               onClick={handleDeleteConfirm}
@@ -1263,11 +1291,12 @@ export function ReservationList() {
                   <div id="route-info" className="text-sm">
                     {editingReservation.trip.route.name}
                   </div>
+                  {/* CORRECTED: Access editingReservation.trip.origin and editingReservation.trip.destination directly */}
                   <div className="text-sm">
-                    <span className="text-gray-500">Origen:</span> {editingReservation.trip.segmentOrigin || editingReservation.trip.route.origin}
+                    <span className="text-gray-500">Origen:</span> {editingReservation.trip.origin}
                   </div>
                   <div className="text-sm">
-                    <span className="text-gray-500">Destino:</span> {editingReservation.trip.segmentDestination || editingReservation.trip.route.destination}
+                    <span className="text-gray-500">Destino:</span> {editingReservation.trip.destination}
                   </div>
                   <div className="text-sm">
                     <span className="text-gray-500">Fecha:</span> {formatDate(editingReservation.trip.departureDate)}
@@ -1295,15 +1324,15 @@ export function ReservationList() {
                           onChange={(e) => {
                             const value = e.target.value;
                             const advance = parseFloat(value) || 0;
-                            
+
                             // Validar que el anticipo no sea mayor al total original
                             if (advance > editingReservation.totalAmount) {
                               // No permitir anticipo mayor al total
                               return;
                             }
-                            
+
                             setAdvanceAmount(value);
-                            
+
                             // Si el anticipo cubre el monto original, poner restante en 0
                             if (advance >= editingReservation.totalAmount) {
                               setRemainingAmount("0");
@@ -1406,7 +1435,7 @@ export function ReservationList() {
 
           <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
             <Button className="w-full sm:w-auto order-2 sm:order-1" variant="outline" onClick={closeEditModal}>Cancelar</Button>
-            <Button 
+            <Button
               className="w-full sm:w-auto order-1 sm:order-2"
               onClick={handleSaveEdit}
               disabled={editReservationMutation.isPending}
