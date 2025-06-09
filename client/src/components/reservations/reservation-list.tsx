@@ -116,13 +116,14 @@ export function ReservationList() {
   // Obtener información del usuario actual
   const { user } = useAuth();
 
-  // Utilizar el nuevo hook especializado para cargar reservaciones SIN filtro de fecha por defecto
+  // Utilizar el nuevo hook especializado para cargar reservaciones
   const { 
     data: reservations, 
     isLoading,
     error: reservationsError
   } = useReservations({ 
-    date: dateFilter || undefined // Solo usar filtro de fecha si el usuario lo especifica
+    date: dateFilter || undefined, // Solo usar filtro de fecha si el usuario lo especifica
+    archived: activeFilter === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
   });
 
   // Actualizar estados de UI basados en el estado de carga

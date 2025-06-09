@@ -7,6 +7,7 @@ type UseReservationsOptions = {
   tripId?: number;
   includeRelated?: boolean;
   date?: string; // Formato YYYY-MM-DD
+  archived?: boolean; // Para obtener reservaciones archivadas
 };
 
 /**
@@ -14,20 +15,20 @@ type UseReservationsOptions = {
  */
 export function useReservations(options: UseReservationsOptions = {}) {
   const { user } = useAuth();
-  const { tripId, includeRelated = false, enabled = true, date } = options;
+  const { tripId, includeRelated = false, enabled = true, date, archived = false } = options;
   
   // Solo usar filtro de fecha si se proporciona explícitamente
   const dateFilter = date;
   
   return useQuery<ReservationWithDetails[]>({
-    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter }],
+    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived }],
     enabled: !!user && enabled,
     staleTime: 5000,
     refetchInterval: 15000,
     queryFn: async () => {
       try {
         // Construir la URL base
-        let url = "/api/reservations";
+        let url = archived ? "/api/reservations/archived" : "/api/reservations";
         
         // Añadir parámetros según sea necesario
         const params = new URLSearchParams();
