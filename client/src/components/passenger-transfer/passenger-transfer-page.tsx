@@ -208,9 +208,8 @@ function ReservationSelectionModal({
   const groupedReservations = React.useMemo(() => {
     if (!reservations) return {};
     
-    // IMPORTANTE: Usar la misma fecha de sistema que usamos para clasificar reservaciones (20/05/2025)
-    // en lugar de la fecha real del sistema (21/05/2025)
-    const SYSTEM_DATE = new Date('2025-05-20T12:00:00.000Z');
+    // Usar la fecha actual real del sistema
+    const SYSTEM_DATE = new Date();
     console.log(`[TransferModal] Usando fecha del sistema: ${SYSTEM_DATE.toISOString()}`);
     const today = normalizeToStartOfDay(SYSTEM_DATE);
     

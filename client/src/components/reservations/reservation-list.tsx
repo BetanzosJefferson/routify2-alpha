@@ -144,9 +144,9 @@ export function ReservationList() {
     (reservation) => reservation.status === 'canceled'
   ) || [];
 
-  // Definir la fecha actual del sistema (20/05/2025) - Fecha fija para el sistema
-  const SYSTEM_DATE = new Date('2025-05-20T12:00:00.000Z');
-  console.log(`[SISTEMA] Fecha actual del sistema fijada en: ${SYSTEM_DATE.toISOString()}`);
+  // Usar la fecha actual real del sistema
+  const SYSTEM_DATE = new Date();
+  console.log(`[SISTEMA] Fecha actual del sistema: ${SYSTEM_DATE.toISOString()}`);
 
   // Luego filtramos las reservaciones actuales/futuras (que no estén canceladas)
   const upcomingReservations = reservations?.filter(
@@ -513,89 +513,6 @@ export function ReservationList() {
 
   return (
     <div className="py-6">
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Label htmlFor="searchInput" className="mb-2 block text-sm font-medium">
-                  Buscar por nombre, teléfono o correo
-                </Label>
-                <div className="relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    id="searchInput"
-                    className="pl-10"
-                    placeholder="Nombre, teléfono o correo electrónico..."
-                    value={searchTerm}
-                    onChange={handleSearch}
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1">
-                <Label htmlFor="dateFilter" className="mb-2 block text-sm font-medium">
-                  Filtrar por fecha
-                </Label>
-                <div className="relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <CalendarIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    id="dateFilter"
-                    className="pl-10"
-                    type="date"
-                    value={dateFilter}
-                    onChange={(e) => {
-                      setDateFilter(e.target.value);
-                      setCurrentPage(1); // Reset to first page on date filter change
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-b border-gray-200 mb-3">
-              <div className="text-lg font-semibold mb-2">Ver reservaciones:</div>
-              <Tabs value={activeTab} onValueChange={(value) => {
-                setActiveTab(value);
-                setCurrentPage(1); // Reset to first page on tab change
-              }} className="w-full">
-                <TabsList className="w-full bg-transparent border-b border-gray-100 p-0 mb-0">
-                  <TabsTrigger 
-                    value="upcoming" 
-                    className="flex-1 items-center justify-center gap-1 px-1 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm"
-                  >
-                    <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-1" />
-                    <span className="font-medium hidden xs:inline">Actuales</span>
-                    <span className="font-medium hidden sm:inline"> y Futuras</span>
-                    <Badge className="ml-1 bg-primary text-white text-xs px-1 py-0">{upcomingReservations.length}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="archived" 
-                    className="flex-1 items-center justify-center gap-1 px-1 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm"
-                  >
-                    <ArchiveIcon className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-1" />
-                    <span className="font-medium">Archivadas</span>
-                    <Badge className="ml-1 bg-muted text-muted-foreground text-xs px-1 py-0">{archivedReservations.length}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="canceled" 
-                    className="flex-1 items-center justify-center gap-1 px-1 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm"
-                  >
-                    <XIcon className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-1" />
-                    <span className="font-medium">Canceladas</span>
-                    <Badge className="ml-1 bg-red-100 text-red-800 border-red-200 text-xs px-1 py-0">{canceledReservations.length}</Badge>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader className="pb-4 pt-4 px-4">
           {/* Título y botones de categoría */}
@@ -748,13 +665,6 @@ export function ReservationList() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={handleSelectAll}
-                      className="data-[state=indeterminate]:bg-primary data-[state=indeterminate]:border-primary"
-                    />
-                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pasajero</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruta</th>
@@ -788,15 +698,7 @@ export function ReservationList() {
                       selectedReservations.includes(reservation.id) ? 'bg-blue-50' : ''
                     }`}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Checkbox
-                        checked={selectedReservations.includes(reservation.id)}
-                        onCheckedChange={(checked) => 
-                          handleSelectReservation(reservation.id, checked as boolean)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </td>
+                    
                     <td 
                       className="px-6 py-4 whitespace-nowrap text-sm cursor-pointer"
                       onClick={() => {
