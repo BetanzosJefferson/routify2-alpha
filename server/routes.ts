@@ -1996,6 +1996,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint for archived reservations (past dates only)
+  app.get(apiRouter("/reservations/archived"), async (req: Request, res: Response) => {
+    try {
+      const user = req.user as User;
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /reservations/archived] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar filtros básicos
+      let companyId: string | null = null;
+      let tripId: number | null = null;
+      let companyIds: string[] | undefined = undefined;
+      let dateFilter: string | null = null;
+      
+      // Verificar si se solicita filtrar por viaje específico
+      if (req.query.tripId) {
+        tripId = parseInt(req.query.tripId as string, 10);
+        console.log(`[GET /reservations/archived] Filtrando por viaje ID: ${tripId}`);
+      }
+      
+      // Verificar si se solicita filtrar por fecha específica
+      if (req.query.date) {
+        dateFilter = req.query.date as string;
+        console.log(`[GET /reservations/archived] Filtrando por fecha: ${dateFilter}`);
+      }
+      
+      // Determinar filtros de seguridad según el rol
+      if (user.role === UserRole.TICKET_OFFICE) {
+        // Taquilleros: obtener sus compañías asignadas
+        const userCompanyAssociations = await db
+          .select()
+          .from(userCompanies)
+          .where(eq(userCompanies.userId, user.id));
+        
+        if (userCompanyAssociations.length === 0) {
+          return res.json([]);
+        }
+        
+        companyIds = userCompanyAssociations.map(assoc => assoc.companyId);
+        console.log(`[GET /reservations/archived] Taquillero con ${companyIds.length} empresas asignadas`);
+      } 
+      else if (user.role === UserRole.DRIVER && tripId) {
+        // Conductores: verificar que el viaje esté asignado a ellos
+        const trip = await storage.getTrip(tripId);
+        if (!trip || trip.driverId !== user.id) {
+          return res.status(403).json({ error: "Acceso denegado a este viaje" });
+        }
+      }
+      else if (user.role !== UserRole.SUPER_ADMIN && 
+               user.role !== UserRole.ADMIN && 
+               user.role !== UserRole.CHECKER) {
+        // Otros roles: filtrar por su compañía
+        companyId = user.companyId || user.company;
+        if (!companyId) {
+          return res.json([]);
+        }
+      }
+      
+      // Use the updated DatabaseStorage method with tripDetails JSON support
+      console.log(`[GET /reservations/archived] Using DatabaseStorage with tripDetails JSON support`);
+      
+      try {
+        // Get reservations using the updated storage method
+        const reservations = await storage.getReservations(companyId);
+        
+        // Apply additional filtering if needed
+        let filteredReservations = reservations;
+        
+        // Filter by date if provided
+        if (dateFilter) {
+          console.log(`[GET /reservations/archived] Filtering by date: ${dateFilter}`);
+          filteredReservations = reservations.filter(reservation => {
+            if (!reservation.trip?.departureDate) return false;
+            const reservationDate = new Date(reservation.trip.departureDate);
+            const targetDate = new Date(dateFilter);
+            return reservationDate.toDateString() === targetDate.toDateString();
+          });
+        } else {
+          // Show only archived reservations (past dates)
+          console.log(`[GET /reservations/archived] Showing only archived reservations`);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          filteredReservations = reservations.filter(reservation => {
+            if (!reservation.trip?.departureDate) return false;
+            const reservationDate = new Date(reservation.trip.departureDate);
+            reservationDate.setHours(0, 0, 0, 0);
+            return reservationDate < today;
+          });
+        }
+        
+        console.log(`[GET /reservations/archived] Returning ${filteredReservations.length} archived reservations`);
+        res.json(filteredReservations);
+      } catch (error) {
+        console.error(`[GET /reservations/archived] Error:`, error);
+        return res.status(500).json({ error: "Error interno al obtener reservaciones archivadas" });
+      }
+    } catch (error: any) {
+      console.error("[GET /reservations/archived] Error:", error);
+      res.status(500).json({ error: "Error al obtener reservaciones archivadas" });
+    }
+  });
+
   app.get(apiRouter("/reservations/:id"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
