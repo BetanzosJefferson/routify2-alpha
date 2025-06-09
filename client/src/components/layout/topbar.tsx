@@ -418,6 +418,14 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
       {/* Modal de perfil */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent className="max-w-4xl p-0">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setProfileOpen(false)}
+            className="absolute right-4 top-4"
+          >
+            <X className="h-4 w-4" />
+          </Button>
           <div className="px-6 pb-6 pt-6">
             <ProfilePage standalone={true} />
           </div>

@@ -167,7 +167,7 @@ export function setupAuthentication(app: Express) {
       // Mapear campos de snake_case a camelCase para compatibilidad con frontend
       const userForFrontend = {
         ...userWithoutPassword,
-        profilePicture: profile_picture || null
+        profilePicture: profile_picture
       };
       
       done(null, userForFrontend as any);
@@ -262,7 +262,7 @@ export function setupAuthentication(app: Express) {
       const { password: _, profile_picture, ...userWithoutPassword } = updatedUser;
       const userForFrontend = {
         ...userWithoutPassword,
-        profilePicture: profile_picture || null
+        profilePicture: profile_picture
       };
       
       req.login(userForFrontend as any, (err) => {
