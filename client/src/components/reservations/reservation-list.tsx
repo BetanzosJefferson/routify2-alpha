@@ -20,8 +20,15 @@ import {
   Building2,
   ArrowRightLeft,
   Check as CheckIcon,
-  ChevronLeft, // Import for pagination
-  ChevronRight, // Import for pagination
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Edit,
+  X,
+  MoreHorizontal,
+  Eye,
 } from "lucide-react";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,6 +60,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -90,6 +105,12 @@ export function ReservationList() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // New states for filtering and sorting
+  const [sortBy, setSortBy] = useState<"date" | "name" | "time">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedReservations, setSelectedReservations] = useState<number[]>([]);
 
   // Obtener información del usuario actual
   const { user } = useAuth();
@@ -174,8 +195,38 @@ export function ReservationList() {
         ? archivedReservations 
         : canceledReservations;
 
+  // Function to handle sorting
+  const getSortedReservations = (reservations: ReservationWithDetails[]) => {
+    return [...reservations].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case "date": {
+          const dateA = new Date(a.trip.tripData?.departureDate || a.createdAt);
+          const dateB = new Date(b.trip.tripData?.departureDate || b.createdAt);
+          comparison = dateA.getTime() - dateB.getTime();
+          break;
+        }
+        case "name": {
+          const nameA = a.passengers[0] ? `${a.passengers[0].firstName} ${a.passengers[0].lastName}` : "";
+          const nameB = b.passengers[0] ? `${b.passengers[0].firstName} ${b.passengers[0].lastName}` : "";
+          comparison = nameA.localeCompare(nameB);
+          break;
+        }
+        case "time": {
+          const timeA = a.trip.tripData?.departureTime || "00:00";
+          const timeB = b.trip.tripData?.departureTime || "00:00";
+          comparison = timeA.localeCompare(timeB);
+          break;
+        }
+      }
+      
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+  };
+
   // Filter reservations based on search term and date filter
-  const filteredReservations = activeReservations.filter((reservation) => {
+  const filteredReservations = getSortedReservations(activeReservations.filter((reservation) => {
     // Aplicar filtro de búsqueda
     let matchesSearch = true;
     if (searchTerm) {
@@ -195,17 +246,41 @@ export function ReservationList() {
       );
     }
 
-    // Aplicar filtro de fecha usando nuestras utilidades de normalización
+    // Aplicar filtro de fecha específica
     let matchesDate = true;
-    if (dateFilter) {
-      // Usar isSameLocalDay para comparar las fechas
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
-      const filterDate = normalizeToStartOfDay(dateFilter);
+    if (selectedDate) {
+      const tripDate = normalizeToStartOfDay(reservation.trip.tripData?.departureDate || reservation.createdAt);
+      const filterDate = normalizeToStartOfDay(new Date(selectedDate));
       matchesDate = isSameLocalDay(tripDate, filterDate);
     }
 
-    return matchesSearch && matchesDate;
-  });
+    // Aplicar filtro de fecha usando nuestras utilidades de normalización
+    let matchesDateFilter = true;
+    if (dateFilter) {
+      // Usar isSameLocalDay para comparar las fechas
+      const tripDate = normalizeToStartOfDay(reservation.trip.tripData?.departureDate || reservation.createdAt);
+      const filterDate = normalizeToStartOfDay(dateFilter);
+      matchesDateFilter = isSameLocalDay(tripDate, filterDate);
+    }
+
+    return matchesSearch && matchesDate && matchesDateFilter;
+  }));
+
+  // Functions for handling checkbox selections
+  const handleSelectReservation = (reservationId: number, checked: boolean) => {
+    setSelectedReservations(prev => 
+      checked 
+        ? [...prev, reservationId]
+        : prev.filter(id => id !== reservationId)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedReservations(checked ? filteredReservations.map(r => r.id) : []);
+  };
+
+  const isAllSelected = selectedReservations.length === filteredReservations.length && filteredReservations.length > 0;
+  const isIndeterminate = selectedReservations.length > 0 && selectedReservations.length < filteredReservations.length;
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
