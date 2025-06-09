@@ -110,18 +110,17 @@ export function setupAuthentication(app: Express) {
       },
       async (email, password, done) => {
         try {
-          // Buscar el usuario por email usando SQL directo
-          const result = await db.execute(sql`
-            SELECT id, email, password, first_name, last_name, role, company, company_id, profile_picture, created_at, updated_at, invited_by_id, commission_percentage
-            FROM users 
-            WHERE email = ${email}
-          `);
+          // Buscar el usuario por email usando Drizzle ORM
+          const userResults = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email));
 
-          if (result.rowCount === 0) {
+          if (userResults.length === 0) {
             return done(null, false, { message: "Credenciales inválidas" });
           }
 
-          const user = result.rows[0] as any;
+          const user = userResults[0];
           
           console.log("Stored password hash:", user.password);
           console.log("Supplied password:", password);
@@ -134,9 +133,16 @@ export function setupAuthentication(app: Express) {
             return done(null, false, { message: "Credenciales inválidas" });
           }
 
-          // Eliminar la contraseña del objeto usuario
-          const { password: _, ...userWithoutPassword } = user;
-          return done(null, userWithoutPassword);
+          // Eliminar la contraseña del objeto usuario y mapear campos
+          const { password: _, profile_picture, ...userWithoutPassword } = user;
+          
+          // Mapear campos de snake_case a camelCase para compatibilidad con frontend
+          const userForFrontend = {
+            ...userWithoutPassword,
+            profilePicture: profile_picture || null
+          };
+          
+          return done(null, userForFrontend);
         } catch (error) {
           return done(error);
         }
