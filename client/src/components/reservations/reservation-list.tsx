@@ -29,6 +29,7 @@ import {
   X,
   MoreHorizontal,
   Eye,
+  Trash as TrashIcon,
 } from "lucide-react";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
@@ -596,32 +597,140 @@ export function ReservationList() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-0 pt-4 px-4">
-          <div className="flex items-center gap-2">
-            {activeTab === "upcoming" ? (
-              <>
-                <CalendarIcon className="h-5 w-5 text-primary" />
-                <CardTitle className="text-md">Reservaciones actuales y futuras</CardTitle>
-              </>
-            ) : activeTab === "archived" ? (
-              <>
-                <ArchiveIcon className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-md">Reservaciones archivadas</CardTitle>
-              </>
-            ) : (
-              <>
-                <XIcon className="h-5 w-5 text-red-600" />
-                <CardTitle className="text-md">Reservaciones canceladas</CardTitle>
-              </>
-            )}
+        <CardHeader className="pb-4 pt-4 px-4">
+          {/* Título y botones de categoría */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              {activeTab === "upcoming" ? (
+                <>
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">Reservaciones</CardTitle>
+                </>
+              ) : activeTab === "archived" ? (
+                <>
+                  <ArchiveIcon className="h-5 w-5 text-muted-foreground" />
+                  <CardTitle className="text-lg">Archivadas</CardTitle>
+                </>
+              ) : (
+                <>
+                  <XIcon className="h-5 w-5 text-red-600" />
+                  <CardTitle className="text-lg">Canceladas</CardTitle>
+                </>
+              )}
+            </div>
+            
+            {/* Botones de categoría */}
+            <div className="flex gap-2">
+              <Button
+                variant={activeTab === "archived" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("archived")}
+                className="gap-1"
+              >
+                <ArchiveIcon className="h-4 w-4" />
+                Archivadas
+                <Badge variant="secondary" className="ml-1">{archivedReservations.length}</Badge>
+              </Button>
+              <Button
+                variant={activeTab === "canceled" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("canceled")}
+                className="gap-1"
+              >
+                <XIcon className="h-4 w-4" />
+                Canceladas
+                <Badge variant="secondary" className="ml-1">{canceledReservations.length}</Badge>
+              </Button>
+            </div>
           </div>
-          <CardDescription className="mt-1">
-            {activeTab === "upcoming" 
-              ? "Mostrando reservaciones a partir de hoy" 
-              : activeTab === "archived"
-                ? "Mostrando reservaciones anteriores a hoy"
-                : "Mostrando reservaciones que han sido canceladas"}
-          </CardDescription>
+
+          {/* Controles de filtrado y búsqueda */}
+          <div className="flex flex-col lg:flex-row gap-4 justify-between">
+            {/* Barra de búsqueda */}
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por nombre, correo o teléfono..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Controles de filtrado y ordenamiento */}
+            <div className="flex gap-2 flex-wrap">
+              {/* Filtro por fecha específica */}
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-gray-500" />
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-auto"
+                />
+              </div>
+
+              {/* Ordenamiento por fecha */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (sortBy === "date") {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  } else {
+                    setSortBy("date");
+                    setSortOrder("desc");
+                  }
+                }}
+                className="gap-1"
+              >
+                {sortBy === "date" && sortOrder === "asc" ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : sortBy === "date" && sortOrder === "desc" ? (
+                  <ArrowDown className="h-4 w-4" />
+                ) : (
+                  <ArrowUpDown className="h-4 w-4" />
+                )}
+                Fecha
+              </Button>
+
+              {/* Ordenamiento por hora */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (sortBy === "time") {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                  } else {
+                    setSortBy("time");
+                    setSortOrder("desc");
+                  }
+                }}
+                className="gap-1"
+              >
+                {sortBy === "time" && sortOrder === "asc" ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : sortBy === "time" && sortOrder === "desc" ? (
+                  <ArrowDown className="h-4 w-4" />
+                ) : (
+                  <ArrowUpDown className="h-4 w-4" />
+                )}
+                Hora
+              </Button>
+
+              {/* Filtro general */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+              >
+                <FilterIcon className="h-4 w-4" />
+                Filtros
+              </Button>
+            </div>
+          </div>
         </CardHeader>
 
         {/* Vista para Desktop: Tabla tradicional */}
@@ -639,14 +748,26 @@ export function ReservationList() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Passenger</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seats</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      className="data-[state=indeterminate]:bg-primary data-[state=indeterminate]:border-primary"
+                      ref={(ref) => {
+                        if (ref) {
+                          ref.indeterminate = isIndeterminate;
+                        }
+                      }}
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pasajero</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruta</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asientos</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pago</th>
                   {activeTab === "canceled" && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   )}
                   {user?.role !== "taquilla" && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creado por</th>
@@ -657,24 +778,37 @@ export function ReservationList() {
                       Empresa
                     </th>
                   )}
-                  {user?.role !== "taquilla" && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  )}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    Acciones
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedReservations.map((reservation) => (
                   <tr 
                     key={reservation.id} 
-                    className={`cursor-pointer hover:bg-gray-50 ${
+                    className={`hover:bg-gray-50 ${
                       reservation.status === 'canceled' ? 'bg-gray-50' : ''
+                    } ${
+                      selectedReservations.includes(reservation.id) ? 'bg-blue-50' : ''
                     }`}
-                    onClick={() => {
-                      setSelectedReservationId(reservation.id);
-                      setIsDetailsModalOpen(true);
-                    }}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Checkbox
+                        checked={selectedReservations.includes(reservation.id)}
+                        onCheckedChange={(checked) => 
+                          handleSelectReservation(reservation.id, checked as boolean)
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </td>
+                    <td 
+                      className="px-6 py-4 whitespace-nowrap text-sm cursor-pointer"
+                      onClick={() => {
+                        setSelectedReservationId(reservation.id);
+                        setIsDetailsModalOpen(true);
+                      }}
+                    >
                       <div className="text-gray-500">
                         #{generateReservationId(reservation.id)}
                       </div>
@@ -853,45 +987,68 @@ export function ReservationList() {
                         )}
                       </td>
                     )}
-                    {user?.role !== "taquilla" && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            variant="link" 
-                            className="text-blue-600 hover:text-blue-800 p-0"
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
-                              openEditModal(reservation);
+                              setSelectedReservationId(reservation.id);
+                              setIsDetailsModalOpen(true);
                             }}
                           >
-                            Editar
-                          </Button>
-                          {reservation.status === 'canceled' ? (
-                            <Button 
-                              variant="link" 
-                              className="text-red-800 hover:text-red-900 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDeleteConfirm(reservation.id, 'delete');
-                              }}
-                            >
-                              Eliminar
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="link" 
-                              className="text-amber-600 hover:text-amber-800 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openDeleteConfirm(reservation.id, 'cancel');
-                              }}
-                            >
-                              Cancelar
-                            </Button>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver detalles
+                          </DropdownMenuItem>
+                          {user?.role !== "taquilla" && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditModal(reservation);
+                                }}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {reservation.status === 'canceled' ? (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openDeleteConfirm(reservation.id, 'delete');
+                                  }}
+                                  className="text-red-600"
+                                >
+                                  <TrashIcon className="mr-2 h-4 w-4" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openDeleteConfirm(reservation.id, 'cancel');
+                                  }}
+                                  className="text-amber-600"
+                                >
+                                  <X className="mr-2 h-4 w-4" />
+                                  Cancelar
+                                </DropdownMenuItem>
+                              )}
+                            </>
                           )}
-                        </div>
-                      </td>
-                    )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
                   </tr>
                 ))}
               </tbody>
