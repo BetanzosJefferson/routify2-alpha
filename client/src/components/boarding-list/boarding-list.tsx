@@ -129,74 +129,40 @@ export function BoardingList() {
     return format(date, "yyyy-MM-dd");
   };
 
-  // Función para obtener conteo de pasajeros por viaje, incluyendo subviajes si aplica
-  const getPassengerCount = (tripId: number) => {
+  // Función para obtener conteo de pasajeros por viaje padre usando tripDetails.id
+  const getPassengerCount = (tripId: string | number) => {
     if (!trips || !reservations) return 0;
     
-    // Obtener el viaje para determinar si es principal o sub-viaje
-    const trip = trips.find(t => t.id === tripId);
-    if (!trip) return 0;
+    const tripIdStr = tripId.toString();
     
-    // Si este viaje es un subviaje, solo contamos sus pasajeros directos
-    if (trip.isSubTrip) {
-      const directReservations = reservations.filter(r => r.tripId === tripId);
-      let directCount = 0;
+    // Extraer recordId del tripId (formato: recordId_segmentIndex)
+    const recordId = tripIdStr.split('_')[0];
+    
+    // Buscar todas las reservaciones que pertenecen a cualquier segmento de este record
+    // Las reservaciones tienen tripDetails.id que puede ser "recordId_X" donde X es cualquier índice
+    const relatedReservations = reservations.filter(reservation => {
+      if (!reservation.tripDetails?.id) return false;
       
-      for (const reservation of directReservations) {
-        if (reservation.passengers && Array.isArray(reservation.passengers)) {
-          directCount += reservation.passengers.length;
-        }
-      }
+      const reservationTripId = reservation.tripDetails.id.toString();
+      const reservationRecordId = reservationTripId.split('_')[0];
       
-      console.log(`[BoardingList] Conteo para sub-viaje ${tripId}: ${directCount} pasajeros en ${directReservations.length} reservaciones`);
-      return directCount;
-    }
+      // Incluir si pertenece al mismo record (independientemente del segmento)
+      return reservationRecordId === recordId;
+    });
     
-    // Para viaje principal, vamos a buscar explícitamente todas las reservaciones:
-    // 1. Reservaciones directamente asociadas al viaje principal
-    // 2. Reservaciones de subviajes relacionados con este viaje principal
-    
-    // Paso 1: Identificar todos los subviajes relacionados con este viaje principal
-    // Verificación especial para el viaje 3162 que sabemos que tiene los subviajes 3163 y 3164
-    let allRelatedTripIds = [tripId];
-    if (tripId === 3162) {
-      // Forzar inclusión de los subviajes conocidos
-      allRelatedTripIds = [3162, 3163, 3164];
-      console.log(`[BoardingList] CASO ESPECIAL: Viaje 3162 con subviajes 3163 y 3164 forzados manualmente`);
-    } else {
-      // Búsqueda normal para otros viajes
-      const subTrips = trips.filter(t => t.isSubTrip && t.parentTripId === tripId);
-      allRelatedTripIds = [tripId, ...subTrips.map(t => t.id)];
-      
-      console.log(`[BoardingList] ANÁLISIS COMPLETO para viaje ${tripId} - con ${subTrips.length} subviajes relacionados`);
-      if (subTrips.length > 0) {
-        console.log(`[BoardingList] Subviajes encontrados: ${subTrips.map(t => t.id).join(', ')}`);
-      }
-    }
-    
-    // Paso 2: Obtener todas las reservaciones para todos los viajes relacionados
-    // Esta parte es clave: buscamos explícitamente en el arreglo de reservaciones
-    let allReservations = [];
-    
-    // Primero buscamos en las reservaciones que ya tenemos cargadas
-    const localReservations = reservations.filter(r => allRelatedTripIds.includes(r.tripId));
-    allReservations = [...localReservations];
-    
-    console.log(`[BoardingList] Encontradas localmente ${localReservations.length} reservaciones para viaje ${tripId} y sus subviajes`);
-    
-    // Paso 3: Contar pasajeros en todas las reservaciones encontradas
-    let totalPassengerCount = 0;
-    
-    for (const reservation of allReservations) {
+    // Contar todos los pasajeros de las reservaciones relacionadas
+    let totalPassengers = 0;
+    for (const reservation of relatedReservations) {
       if (reservation.passengers && Array.isArray(reservation.passengers)) {
-        totalPassengerCount += reservation.passengers.length;
-        console.log(`[BoardingList] Reserva ${reservation.id} (Viaje ${reservation.tripId}): ${reservation.passengers.length} pasajeros`);
+        totalPassengers += reservation.passengers.length;
       }
     }
     
-    console.log(`[BoardingList] TOTAL FINAL para viaje ${tripId}: ${totalPassengerCount} pasajeros en ${allReservations.length} reservaciones`);
+    console.log(`[BoardingList] ANÁLISIS COMPLETO para viaje ${tripIdStr} - con ${relatedReservations.length - 1} subviajes relacionados`);
+    console.log(`[BoardingList] Encontradas localmente ${relatedReservations.length} reservaciones para viaje ${tripIdStr} y sus subviajes`);
+    console.log(`[BoardingList] TOTAL FINAL para viaje ${tripIdStr}: ${totalPassengers} pasajeros en ${relatedReservations.length} reservaciones`);
     
-    return totalPassengerCount;
+    return totalPassengers;
   };
 
   return (
