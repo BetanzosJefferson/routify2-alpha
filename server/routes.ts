@@ -6544,9 +6544,9 @@ function setupPackageRoutes(app: Express) {
       
       // Preparar filtros
       const filters: any = {
-        usuario_id: user.id,
+        user_id: user.id,
         // Solo queremos transacciones que YA están asociadas a un corte (cutoff_id NO es NULL)
-        id_corte_not_null: true
+        cutoff_id_not_null: true
       };
       
       // Aplicar filtro de período si se especifica
@@ -6627,8 +6627,8 @@ function setupPackageRoutes(app: Express) {
 
       // Obtener transacciones sin corte (cutoff_id es NULL)
       const filters: any = { 
-        usuario_id: user.id,
-        id_corte: null
+        user_id: user.id,
+        cutoff_id: null
       };
 
       // Si es un usuario taquilla y especifica un filtro de empresa, aplicarlo
@@ -6659,7 +6659,7 @@ function setupPackageRoutes(app: Express) {
           fechaInicio = createdAt;
         }
         
-        const details = transaction.detalles?.details || {};
+        const details = transaction.details?.details || {};
         const amount = details.monto || 0;
         totalIngresos += amount;
         

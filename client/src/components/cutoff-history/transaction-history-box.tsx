@@ -130,10 +130,10 @@ async function generateCutoffTicketPDF(
     
     // Calcular altura adicional según el tipo de transacciones
     cutoffGroup.transactions.forEach(transaction => {
-      if (transaction.detalles.type.includes("package")) {
+      if (transaction.details.type.includes("package")) {
         // Paquetes tienen más detalles: origen-destino, remitente, destinatario, descripción
         extraHeight += 25; // 25mm adicionales por paquete
-      } else if (transaction.detalles.type.includes("reservation")) {
+      } else if (transaction.details.type.includes("reservation")) {
         // Reservas tienen: origen-destino, pasajeros
         extraHeight += 18; // 18mm adicionales por reserva
       } else {
@@ -289,7 +289,7 @@ async function generateCutoffTicketPDF(
           doc.text(`Desc: ${descripcionCorta}`, 5, y);
         }
         
-      } else if (transaction.detalles.type.includes("reservation")) {
+      } else if (transaction.details.type.includes("reservation")) {
         // Para reservas: origen-destino, pasajeros
         if (details.origen && details.destino) {
           y += 3;
