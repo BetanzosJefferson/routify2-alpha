@@ -2625,76 +2625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para cancelar reservación (sin eliminarla)
-  app.post(apiRouter("/reservations/:id/cancel"), async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      
-      // Primero obtenemos los datos de la reservación básica
-      const reservation = await storage.getReservation(id);
-      
-      if (!reservation) {
-        return res.status(404).json({ error: "Reservation not found" });
-      }
-      
-      // Verificar si la reservación ya está cancelada
-      if (reservation.status === "canceled") {
-        return res.status(400).json({ error: "Esta reservación ya ha sido cancelada" });
-      }
-      
-      // Obtener el viaje asociado a la reservación usando tripDetails
-      const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
-      const trip = await storage.getTrip(recordId);
-      
-      if (!trip) {
-        console.error(`Error al cancelar reservación: No se encontró el viaje ${recordId}`);
-        return res.status(500).json({ error: "Failed to find associated trip" });
-      }
-      
-      // Obtener los pasajeros para contar cuántos son
-      const passengers = await storage.getPassengers(id);
-      const passengerCount = passengers.length;
-      console.log(`Liberando ${passengerCount} asientos del viaje ${trip.id}`);
-      
-      // Actualizar la reservación para marcarla como cancelada
-      const updatedReservation = await storage.updateReservation(id, {
-        status: "canceled"
-      });
-      
-      if (!updatedReservation) {
-        return res.status(404).json({ error: "Failed to update reservation status" });
-      }
-      
-      // Actualizar asientos disponibles en el viaje y en viajes relacionados
-      if (passengerCount > 0) {
-        // Obtener información detallada del viaje para conocer su capacidad original
-        const tripDetails = await storage.getTripWithRouteInfo(trip.id);
-        const capacityLimit = tripDetails?.capacity || trip.capacity;
-        
-        console.log(`[POST /reservations/${id}/cancel] Capacidad máxima del viaje: ${capacityLimit}, asientos a liberar: ${passengerCount}`);
-        
-        try {
-          // Actualizar todos los viajes afectados usando la nueva función con tripDetails
-          await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
-          
-          console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
-        } catch (e) {
-          console.error("Error al actualizar viajes relacionados:", e);
-          // No fallamos si esto falla, podemos seguir con la operación principal
-        }
-      }
-      
-      // Enviar respuesta
-      res.json({ 
-        success: true, 
-        message: "Reservación cancelada exitosamente",
-        reservation: updatedReservation
-      });
-    } catch (error) {
-      console.error("Error al cancelar reservación:", error);
-      res.status(500).json({ error: "Failed to cancel reservation" });
-    }
-  });
+
 
   // Endpoint para eliminar reservaciones completamente
   app.delete(apiRouter("/reservations/:id"), async (req: Request, res: Response) => {
