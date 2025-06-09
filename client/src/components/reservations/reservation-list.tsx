@@ -123,7 +123,7 @@ export function ReservationList() {
     error: reservationsError
   } = useReservations({ 
     date: dateFilter || undefined, // Solo usar filtro de fecha si el usuario lo especifica
-    archived: activeFilter === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
+    archived: activeTab === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
   });
 
   // Actualizar estados de UI basados en el estado de carga
