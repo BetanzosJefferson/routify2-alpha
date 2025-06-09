@@ -204,7 +204,7 @@ export class DatabaseStorage implements IStorage {
     return trip;
   }
   
-  async getTripWithRouteInfo(id: number): Promise<TripWithRouteInfo | undefined> {
+  async getTripWithRouteInfo(id: number, tripId?: string): Promise<TripWithRouteInfo | undefined> {
     const trip = await this.getTrip(id);
     if (!trip) return undefined;
     
@@ -235,14 +235,52 @@ export class DatabaseStorage implements IStorage {
         companyLogo = owner.profilePicture;
       }
     }
+
+    // Si se proporciona tripId, extraer datos del segmento específico del tripData JSON
+    let segmentData = null;
+    if (tripId && trip.tripData) {
+      try {
+        const tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+        
+        // El tripId viene en formato "recordId_segmentIndex"
+        const segmentIndex = parseInt(tripId.split('_')[1]);
+        if (segmentIndex >= 0 && segmentIndex < tripDataArray.length) {
+          segmentData = tripDataArray[segmentIndex];
+          console.log(`[getTripWithRouteInfo] Extraído segmento ${segmentIndex} para tripId ${tripId}:`, segmentData);
+        }
+      } catch (error) {
+        console.warn(`[getTripWithRouteInfo] Error al procesar tripData para trip ${id}:`, error);
+      }
+    }
     
-    return {
+    // Si tenemos datos del segmento específico, usarlos; sino, usar datos de la ruta general
+    const finalTripData = {
       ...trip,
       route,
       numStops: route.stops.length,
       companyName,
-      companyLogo
+      companyLogo,
+      // Datos específicos del segmento si están disponibles
+      origin: segmentData?.origin || route.origin,
+      destination: segmentData?.destination || route.destination,
+      departureDate: segmentData?.departureDate,
+      departureTime: segmentData?.departureTime,
+      arrivalTime: segmentData?.arrivalTime,
+      price: segmentData?.price,
+      isSubTrip: segmentData ? !segmentData.isMainTrip : false,
+      segmentOrigin: segmentData?.origin,
+      segmentDestination: segmentData?.destination
     };
+
+    console.log(`[getTripWithRouteInfo] Resultado final:`, {
+      id: finalTripData.id,
+      origin: finalTripData.origin,
+      destination: finalTripData.destination,
+      departureTime: finalTripData.departureTime,
+      isSubTrip: finalTripData.isSubTrip
+    });
+
+    return finalTripData;
   }
   
   async createTrip(trip: InsertTrip): Promise<Trip> {
@@ -563,7 +601,18 @@ export class DatabaseStorage implements IStorage {
     
     // Para cada reservación, obtenemos el viaje relacionado
     for (const reservation of reservations) {
-      const trip = await this.getTripWithRouteInfo(reservation.tripId);
+      // Extraer tripId específico del tripDetails JSON para obtener el segmento correcto
+      let specificTripId = null;
+      try {
+        const tripDetails = typeof reservation.tripDetails === 'string' 
+          ? JSON.parse(reservation.tripDetails) 
+          : reservation.tripDetails;
+        specificTripId = tripDetails?.tripId;
+      } catch (error) {
+        console.warn(`Error al procesar tripDetails para reservación ${reservation.id}:`, error);
+      }
+
+      const trip = await this.getTripWithRouteInfo(reservation.tripId, specificTripId);
       if (!trip) continue;
       
       const passengers = await this.getPassengers(reservation.id);

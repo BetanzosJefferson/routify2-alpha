@@ -180,6 +180,16 @@ export type TripWithRouteInfo = Trip & {
   destinationTerminal?: string;
   // Nombre completo de la ruta
   routeName?: string;
+  // Datos específicos del segmento extraídos del tripData JSON
+  origin?: string;
+  destination?: string;
+  departureDate?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  price?: number;
+  isSubTrip?: boolean;
+  segmentOrigin?: string;
+  segmentDestination?: string;
 };
 
 export type ReservationWithDetails = Reservation & {
