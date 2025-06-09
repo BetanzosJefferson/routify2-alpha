@@ -240,11 +240,40 @@ export function setupAuthentication(app: Express) {
   });
 
   // Obtener usuario actual
-  app.get("/api/auth/user", (req, res) => {
+  app.get("/api/auth/user", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
-    res.json(req.user);
+    
+    try {
+      // Obtener datos actualizados del usuario desde la base de datos
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.user!.id))
+        .limit(1);
+
+      if (!user.length) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      console.log("Usuario desde DB en /api/auth/user:", {
+        id: user[0].id,
+        email: user[0].email,
+        hasProfilePicture: !!user[0].profilePicture,
+        profilePictureLength: user[0].profilePicture ? user[0].profilePicture.length : 0,
+        profilePictureType: typeof user[0].profilePicture,
+        profilePictureValue: user[0].profilePicture ? "data present" : user[0].profilePicture
+      });
+
+      // Eliminar la contraseña del objeto usuario
+      const { password: _, ...userWithoutPassword } = user[0];
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error al obtener datos del usuario:", error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
   });
 
   // Actualizar foto de perfil
