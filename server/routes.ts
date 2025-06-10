@@ -2051,17 +2051,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return reservationDate.toDateString() === targetDate.toDateString();
           });
         } else {
-          // Without date filter: show current and future reservations
-          console.log(`[GET /reservations] Showing current and future reservations`);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          filteredReservations = reservations.filter(reservation => {
-            if (!reservation.trip?.departureDate) return false;
-            const reservationDate = new Date(reservation.trip.departureDate);
-            reservationDate.setHours(0, 0, 0, 0);
-            return reservationDate >= today;
-          });
+          // Without date filter: return ALL reservations to let frontend handle filtering
+          console.log(`[GET /reservations] Returning ALL reservations for frontend filtering`);
+          filteredReservations = reservations;
         }
         
         console.log(`[GET /reservations] Returning ${filteredReservations.length} reservations`);
