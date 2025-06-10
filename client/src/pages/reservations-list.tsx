@@ -34,15 +34,34 @@ function ReservationsListContent() {
     );
   });
 
-  // Agrupar reservaciones por viaje
+  // Agrupar reservaciones por viaje padre (recordId)
   const groupedReservations = filteredReservations.reduce((groups, reservation) => {
-    const tripKey = `${reservation.trip?.origin || 'Sin origen'} → ${reservation.trip?.destination || 'Sin destino'} - ${reservation.trip?.departureDate || 'Sin fecha'}`;
-    if (!groups[tripKey]) {
-      groups[tripKey] = [];
+    // Extraer el recordId del tripId (formato: "recordId_segmentIndex")
+    const tripDetails = reservation.tripDetails as any;
+    const tripId = tripDetails?.tripId || '';
+    const recordId = tripId.split('_')[0] || 'sin-viaje';
+    
+    if (!groups[recordId]) {
+      groups[recordId] = {
+        reservations: [],
+        tripInfo: null
+      };
     }
-    groups[tripKey].push(reservation);
+    
+    groups[recordId].reservations.push(reservation);
+    
+    // Guardar información del viaje para mostrar en el header
+    if (!groups[recordId].tripInfo && reservation.trip) {
+      groups[recordId].tripInfo = {
+        origin: reservation.trip.origin,
+        destination: reservation.trip.destination,
+        departureDate: reservation.trip.departureDate,
+        recordId: recordId
+      };
+    }
+    
     return groups;
-  }, {} as Record<string, ReservationWithDetails[]>);
+  }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any }>);
 
   // Paginación aplicada a los grupos
   const totalGroups = Object.keys(groupedReservations).length;
@@ -103,7 +122,7 @@ function ReservationsListContent() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Reservaciones en Lista</h1>
         <div className="text-sm text-gray-600">
-          Total: {filteredReservations.length} reservaciones
+          Total: {filteredReservations.length} reservaciones en {Object.keys(groupedReservations).length} viajes
         </div>
       </div>
 
@@ -125,22 +144,25 @@ function ReservationsListContent() {
 
       {/* Lista de reservaciones agrupadas por viaje */}
       <div className="space-y-6">
-        {paginatedGroups.map(([tripKey, reservationsGroup]) => (
-          <Card key={tripKey} className="border-2 border-gray-200">
+        {paginatedGroups.map(([recordId, groupData]) => (
+          <Card key={recordId} className="border-2 border-gray-200">
             <CardHeader className="bg-gray-50 pb-3">
               <CardTitle className="text-lg font-semibold text-gray-800">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-blue-600" />
-                  {tripKey}
+                  {groupData.tripInfo ? 
+                    `${groupData.tripInfo.origin} → ${groupData.tripInfo.destination} - ${formatDate(groupData.tripInfo.departureDate)}` :
+                    `Viaje ${recordId}`
+                  }
                 </div>
                 <div className="text-sm font-normal text-gray-600 mt-1">
-                  {reservationsGroup.length} reservación{reservationsGroup.length !== 1 ? 'es' : ''}
+                  {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
               <div className="space-y-3">
-                {reservationsGroup.map((reservation) => (
+                {groupData.reservations.map((reservation) => (
                   <div key={reservation.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                       {/* Columna 1: Información básica */}
