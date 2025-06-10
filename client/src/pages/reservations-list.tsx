@@ -7,8 +7,9 @@ import { useReservations } from "@/hooks/use-reservations";
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { Search, Calendar, MapPin, Users, CreditCard, Building2, User } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
+import DefaultLayout from "@/components/layout/default-layout";
 
-export function ReservationsListPage() {
+function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
@@ -245,5 +246,13 @@ export function ReservationsListPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export function ReservationsListPage() {
+  return (
+    <DefaultLayout activeTab="reservations">
+      <ReservationsListContent />
+    </DefaultLayout>
   );
 }

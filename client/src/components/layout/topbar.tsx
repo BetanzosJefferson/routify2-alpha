@@ -171,6 +171,19 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </NavLink>
                   )}
                   
+                  {/* Reservaciones en lista */}
+                  {canAccess("reservations") && (
+                    <NavLink 
+                      active={window.location.pathname === "/reservations-list"}
+                      onClick={() => {
+                        setLocation("/reservations-list");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Reservaciones en lista
+                    </NavLink>
+                  )}
+                  
                   {/* Solicitud de reservaciones */}
                   {canAccess("reservation-requests") && (
                     <NavLink 
