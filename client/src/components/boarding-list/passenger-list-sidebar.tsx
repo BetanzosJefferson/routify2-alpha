@@ -183,15 +183,13 @@ export function PassengerListSidebar({ tripId, onClose }: PassengerListSidebarPr
         }
       });
       
-      // Filtrar solo reservaciones confirmadas y que tienen pasajeros
-      const relevantReservations = reservations
-        .filter(res => res.status === 'confirmed')
-        .map(res => {
-          if (!res.passengers || !Array.isArray(res.passengers)) {
-            return {...res, passengers: []};
-          }
-          return res;
-        });
+      // Filtrar solo reservaciones que tienen pasajeros
+      const relevantReservations = reservations.map(res => {
+        if (!res.passengers || !Array.isArray(res.passengers)) {
+          return {...res, passengers: []};
+        }
+        return res;
+      });
       
       if (relevantReservations.length === 0) {
         return [];
@@ -232,36 +230,22 @@ export function PassengerListSidebar({ tripId, onClose }: PassengerListSidebarPr
         // La etiqueta que indica si es viaje completo o subviaje
         const tripSegmentLabel = isFromSubTrip ? 'Subviaje' : 'Viaje completo';
         
-        // Determinar origen y destino específicos usando tripDetails.id y tripData
+        // Determinar origen y destino específicos para este viaje/subviaje
         let tripOrigin = "";
         let tripDestination = "";
         
-        // Extraer información específica del segmento desde tripDetails
-        if (reservation.tripDetails?.id && tripInfo) {
-          const tripDetailsId = reservation.tripDetails.id.toString();
-          
-          // Extraer el índice del segmento del tripId (formato: recordId_segmentIndex)
-          const segmentIndex = parseInt(tripDetailsId.split('_')[1] || '0');
-          
-          console.log(`[PassengerSidebar] Reserva ${reservation.id}: tripDetailsId=${tripDetailsId}, segmentIndex=${segmentIndex}`);
-          
-          // Buscar en tripData el segmento específico
-          if (tripInfo.tripData && Array.isArray(tripInfo.tripData) && tripInfo.tripData[segmentIndex]) {
-            const segmentData = tripInfo.tripData[segmentIndex];
-            tripOrigin = segmentData.origin || "";
-            tripDestination = segmentData.destination || "";
-            console.log(`[PassengerSidebar] Datos del segmento ${segmentIndex}: origen=${tripOrigin}, destino=${tripDestination}`);
-          } else {
-            console.log(`[PassengerSidebar] No se encontró segmento ${segmentIndex} en tripData:`, tripInfo.tripData);
+        if (tripInfo) {
+          // Para subviajes, usar segmentOrigin y segmentDestination
+          if (isFromSubTrip && tripInfo.segmentOrigin) {
+            tripOrigin = tripInfo.segmentOrigin;
+          } else if (tripInfo.route && tripInfo.route.origin) {
+            tripOrigin = tripInfo.route.origin;
           }
           
-          // Si no se encuentra en tripData, usar información general de la ruta como fallback
-          if (!tripOrigin || !tripDestination) {
-            if (tripInfo.route) {
-              tripOrigin = tripOrigin || tripInfo.route.origin || "";
-              tripDestination = tripDestination || tripInfo.route.destination || "";
-              console.log(`[PassengerSidebar] Usando fallback de ruta: origen=${tripOrigin}, destino=${tripDestination}`);
-            }
+          if (isFromSubTrip && tripInfo.segmentDestination) {
+            tripDestination = tripInfo.segmentDestination;
+          } else if (tripInfo.route && tripInfo.route.destination) {
+            tripDestination = tripInfo.route.destination;
           }
         }
         

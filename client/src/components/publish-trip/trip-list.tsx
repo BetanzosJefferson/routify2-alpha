@@ -355,96 +355,55 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
     setShowFilter(false);
   };
 
-  // Filtrar los viajes - Mostrar solo viajes padre (no subviajes)
-  const filteredTrips = useMemo(() => {
-    // DEBUG: Log para ver la estructura completa de los primeros viajes
-    if (process.env.NODE_ENV === 'development' && trips.length > 0) {
-      console.log(`[TripList] Estructura del primer viaje:`, trips[0]);
-      console.log(`[TripList] Total de viajes recibidos: ${trips.length}`);
+  // Filtrar los viajes
+  const filteredTrips = trips.filter((trip: Trip) => {
+    let matchesSearch = true;
+    let matchesDate = true;
+    let matchesRoute = true;
+
+    // Filtrar por búsqueda en origen, destino o nombre de ruta
+    if (searchQuery.trim()) {
+      const search = searchQuery.toLowerCase();
+      matchesSearch = 
+        (trip.origin?.toLowerCase().includes(search) ?? false) ||
+        (trip.destination?.toLowerCase().includes(search) ?? false) ||
+        (trip.routeName?.toLowerCase().includes(search) ?? false);
     }
 
-    // Crear un mapa para agrupar viajes por fecha y ruta
-    const tripsByDateAndRoute = new Map();
-    
-    trips.forEach((trip: Trip) => {
-      // Extraer fecha de departure desde tripData
-      let tripDate = '';
-      if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
-        tripDate = trip.tripData[0]?.departureDate || '';
-      }
-      
-      // Crear clave única por fecha y ruta
-      const key = `${tripDate}_${trip.routeId}`;
-      
-      if (!tripsByDateAndRoute.has(key)) {
-        tripsByDateAndRoute.set(key, []);
-      }
-      tripsByDateAndRoute.get(key).push(trip);
-    });
-
-    // Seleccionar solo el primer viaje de cada grupo (viaje padre)
-    const parentTrips: Trip[] = [];
-    tripsByDateAndRoute.forEach((tripsGroup, key) => {
-      // Ordenar por ID para tomar el más bajo (que normalmente es el padre)
-      tripsGroup.sort((a: Trip, b: Trip) => a.id - b.id);
-      const parentTrip = tripsGroup[0];
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[TripList] Grupo ${key}: ${tripsGroup.length} viajes, seleccionando viaje padre ID ${parentTrip.id}`);
-      }
-      
-      parentTrips.push(parentTrip);
-    });
-
-    return parentTrips.filter((trip: Trip) => {
-      let matchesSearch = true;
-      let matchesDate = true;
-      let matchesRoute = true;
-
-      // Filtrar por búsqueda en origen, destino o nombre de ruta
-      if (searchQuery.trim()) {
-        const search = searchQuery.toLowerCase();
-        matchesSearch = 
-          (trip.origin?.toLowerCase().includes(search) ?? false) ||
-          (trip.destination?.toLowerCase().includes(search) ?? false) ||
-          (trip.routeName?.toLowerCase().includes(search) ?? false);
-      }
-
-      // Filtrar por fecha usando nuestras utilidades de normalización
-      if (dateFilter) {
-        // Con la nueva estructura, necesitamos revisar el tripData
-        try {
-          if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
-            // Verificar si alguna fecha en tripData coincide con el filtro
-            matchesDate = trip.tripData.some((tripSegment: any) => {
-              if (tripSegment.departureDate) {
-                return isSameLocalDay(tripSegment.departureDate, dateFilter);
-              }
-              return false;
-            });
-          } else {
-            // Fallback para estructura antigua si existe
-            matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
-          }
-          
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`Filtro de fecha aplicado: ${matchesDate}`);
-          }
-        } catch (error) {
-          console.error(`Error al comparar fechas: ${error}`);
-          matchesDate = false;
+    // Filtrar por fecha usando nuestras utilidades de normalización
+    if (dateFilter) {
+      // Con la nueva estructura, necesitamos revisar el tripData
+      try {
+        if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
+          // Verificar si alguna fecha en tripData coincide con el filtro
+          matchesDate = trip.tripData.some((tripSegment: any) => {
+            if (tripSegment.departureDate) {
+              return isSameLocalDay(tripSegment.departureDate, dateFilter);
+            }
+            return false;
+          });
+        } else {
+          // Fallback para estructura antigua si existe
+          matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
         }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Filtro de fecha aplicado: ${matchesDate}`);
+        }
+      } catch (error) {
+        console.error(`Error al comparar fechas: ${error}`);
+        matchesDate = false;
       }
-      
-      // Filtrar por ruta
-      if (routeFilter !== "all") {
-        const routeId = parseInt(routeFilter, 10);
-        matchesRoute = trip.routeId === routeId;
-      }
+    }
+    
+    // Filtrar por ruta
+    if (routeFilter !== "all") {
+      const routeId = parseInt(routeFilter, 10);
+      matchesRoute = trip.routeId === routeId;
+    }
 
-      return matchesSearch && matchesDate && matchesRoute;
-    });
-  }, [trips, searchQuery, dateFilter, routeFilter]);
+    return matchesSearch && matchesDate && matchesRoute;
+  });
 
   // Obtener y organizar viajes, separando actuales y archivados
   const { currentTrips, archivedTrips } = useMemo(() => {
@@ -546,100 +505,119 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   };
 
   return (
-    <div className="space-y-4">
-      {/* Tabs simplificados */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg max-w-sm">
-        <button
-          onClick={() => setShowArchived(false)}
-          className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-            !showArchived 
-              ? "bg-white text-blue-600 shadow-sm" 
-              : "text-gray-600 hover:text-gray-900"
-          }`}
-        >
-          <span>Activos</span>
-          <span className="bg-blue-100 text-blue-600 rounded-full h-5 w-5 flex items-center justify-center text-xs">
-            {Object.values(currentTrips).reduce((sum, trips) => sum + trips.length, 0)}
-          </span>
-        </button>
-        
-        <button
-          onClick={() => setShowArchived(true)}
-          className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-            showArchived 
-              ? "bg-white text-blue-600 shadow-sm" 
-              : "text-gray-600 hover:text-gray-900"
-          }`}
-        >
-          <span>Archivados</span>
-          <span className="bg-gray-100 text-gray-600 rounded-full h-5 w-5 flex items-center justify-center text-xs">
-            {archivedTrips.length}
-          </span>
-        </button>
-      </div>
-
-      {/* Filtros simplificados */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center space-x-2 min-w-[250px]">
-          <SearchIcon className="h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar por origen o destino"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
+    <Card>
+      <CardHeader className="bg-primary/5">
+        <div className="flex flex-wrap items-center justify-between">
+          <CardTitle className="text-xl">{title}</CardTitle>
         </div>
+      </CardHeader>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="justify-start text-left font-normal"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateFilter ? (
-                format(dateFilter, "dd/MM/yyyy")
-              ) : (
-                <span>Filtrar por fecha</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={dateFilter}
-              onSelect={setDateFilter}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Select
-          value={routeFilter}
-          onValueChange={setRouteFilter}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Todas las rutas" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las rutas</SelectItem>
-            {routes.map((route: any) => (
-              <SelectItem key={route.id} value={route.id.toString()}>
-                {route.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="secondary"
-          onClick={clearFilters}
-        >
-          Limpiar filtros
-        </Button>
+      {/* Tabs para Actuales y Archivados */}
+      <div className="flex justify-center border-b">
+        <div className="w-full max-w-2xl flex">
+          <button
+            onClick={() => setShowArchived(false)}
+            className={`flex items-center justify-center py-2 px-4 flex-1 text-sm font-medium border-b-2 transition-colors relative ${
+              !showArchived 
+                ? "border-primary text-primary" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>Actuales y Futuros</span>
+            <span className="ml-1 bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
+              {Object.values(currentTrips).reduce((sum, trips) => sum + trips.length, 0)}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setShowArchived(true)}
+            className={`flex items-center justify-center py-2 px-4 flex-1 text-sm font-medium border-b-2 transition-colors ${
+              showArchived 
+                ? "border-primary text-primary" 
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>Archivados</span>
+            <span className="ml-1 bg-muted text-muted-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
+              {archivedTrips.length}
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      {/* Filtros siempre visibles */}
+      <div className="p-4 border-b">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <div className="flex w-full items-center space-x-2">
+              <SearchIcon className="h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por origen o destino"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFilter ? (
+                    format(dateFilter, "dd/MM/yyyy")
+                  ) : (
+                    <span>Seleccionar fecha</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={dateFilter}
+                  onSelect={setDateFilter}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Select
+              value={routeFilter}
+              onValueChange={setRouteFilter}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todas las rutas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las rutas</SelectItem>
+                {routes.map((route: any) => (
+                  <SelectItem key={route.id} value={route.id.toString()}>
+                    {route.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={clearFilters}
+            >
+              Limpiar filtros
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <CardContent className="p-4">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-10">
             <RefreshCcwIcon className="h-10 w-10 animate-spin text-primary mb-4" />
@@ -652,12 +630,19 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
             </div>
           </div>
         ) : !showArchived ? (
-          // Contenido de viajes actuales
-          <div className="space-y-4">
+          // Contenido de viajes actuales (pestaña 1)
+          <div className="space-y-6 mb-10">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium">Viajes actuales y futuros</h3>
+              <p className="text-sm text-muted-foreground">
+                Gestiona los viajes programados, asigna vehículos y conductores.
+              </p>
+            </div>
+
             {Object.entries(currentTrips).length === 0 ? (
               <div className="text-center py-10">
                 <div className="text-muted-foreground">
-                  No hay viajes activos disponibles.
+                  No hay viajes actuales o futuros disponibles.
                 </div>
               </div>
             ) : (
@@ -669,14 +654,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                   return dateA.getTime() - dateB.getTime();
                 })
                 .map(([dateKey, trips]) => (
-                <div key={dateKey} className="space-y-3">
-                  {/* Encabezado de fecha simplificado */}
-                  <div className="flex items-center gap-2 py-2">
-                    <div className="h-px bg-border flex-1"></div>
-                    <span className="text-sm font-medium text-muted-foreground px-3">
-                      {format(normalizeToStartOfDay(dateKey), "EEEE, d 'de' MMMM", { locale: es })}
-                    </span>
-                    <div className="h-px bg-border flex-1"></div>
+                <div key={dateKey} className="space-y-4 border-b pb-6 mb-6 last:border-0">
+                  <div>
+                    <h4 className="text-base font-medium">{formatDateHeader(dateKey)}</h4>
                   </div>
                   
                   <div className="space-y-4">
@@ -698,143 +678,141 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                       
                       return (
                         <div key={trip.id} className="border rounded-lg overflow-hidden bg-card">
-                          <div className="p-4 lg:p-6 flex-1">
-                            <div className="flex justify-between items-start">
-                              <div className="flex">
-                                {/* Logo de la compañía (si existe) */}
-                                {trip.companyLogo ? (
-                                  <div className="mr-3 h-12 w-12 flex-shrink-0">
-                                    <img 
-                                      src={trip.companyLogo} 
-                                      alt={trip.companyName || "Logo de transportista"} 
-                                      className="h-full w-full object-cover rounded-full border border-gray-100"
-                                      onError={(e) => {
-                                        // Si falla la carga, ocultar la imagen
-                                        const target = e.currentTarget as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }} 
-                                    />
-                                  </div>
-                                ) : null}
-
-                                <div>
-                                  <h4 className="text-base font-medium mb-1">
-                                    {trip.route?.name || trip.routeName || `Ruta #${trip.routeId}`}
-                                  </h4>
-                                  {trip.companyName && (
+                          <div className="flex flex-col lg:flex-row">
+                            <div className="p-4 lg:p-6 flex-1">
+                              <div className="flex justify-between items-start">
+                                <div className="flex">
+                                  <div>
+                                    <h4 className="text-base font-medium mb-1">
+                                      Ruta #{trip.routeId}
+                                    </h4>
                                     <div className="text-xs text-gray-500 mb-1">
-                                      {trip.companyName}
+                                      Compañía: {trip.companyId}
                                     </div>
-                                  )}
-                                  <div className="flex items-center text-sm text-muted-foreground">
-                                    <CalendarIcon className="h-4 w-4 mr-1" />
-                                    <span>
-                                      {format(normalizeToStartOfDay(trip.departureDate), "dd/MM/yyyy")}
+                                    <div className="flex items-center text-sm text-muted-foreground">
+                                      <CalendarIcon className="h-4 w-4 mr-1" />
+                                      <span>
+                                        {departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}
+                                      </span>
+                                      <ClockIcon className="h-4 w-4 ml-4 mr-1" />
+                                      <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                {/* Primera columna: Ruta */}
+                                <div className="bg-muted/50 p-3 rounded-md">
+                                  <div className="flex items-start mb-2">
+                                    <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-sm font-medium">Ruta</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {origin} → {destination}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {stopsCount} paradas intermedias
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Segunda columna: Vehículo */}
+                                <div className="bg-muted/50 p-3 rounded-md">
+                                  <div className="flex items-start">
+                                    <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-sm font-medium">Vehículo</p>
+                                      {trip.vehicleId ? (
+                                        <p className="text-xs text-green-600 font-medium">
+                                          Vehículo #{trip.vehicleId}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-red-500 font-medium">No asignado</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Tercera columna: Conductor */}
+                                <div className="bg-muted/50 p-3 rounded-md">
+                                  <div className="flex items-start">
+                                    <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="text-sm font-medium">Conductor</p>
+                                      {trip.driverId ? (
+                                        <p className="text-xs text-green-600 font-medium">
+                                          Conductor #{trip.driverId}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-red-500 font-medium">No asignado</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Estados del viaje */}
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex flex-wrap items-center justify-between">
+                                  <div className="flex gap-2 mb-2">
+                                    {/* Estado de visibilidad */}
+                                    {trip.visibility && (
+                                      <span className={`text-xs px-2 py-1 rounded-full ${
+                                        trip.visibility === 'publicado' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : trip.visibility === 'oculto' 
+                                            ? 'bg-gray-100 text-gray-800' 
+                                            : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {trip.visibility === 'publicado' 
+                                          ? 'Publicado' 
+                                          : trip.visibility === 'oculto' 
+                                            ? 'Oculto' 
+                                            : 'Cancelado'}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Capacidad */}
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                      Capacidad: {trip.capacity || 0}
                                     </span>
-                                    <ClockIcon className="h-4 w-4 ml-4 mr-1" />
-                                    <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
+                                  </div>
+                                  
+                                  {/* Información adicional */}
+                                  <div className="flex items-center">
+                                    <span className="text-xs text-muted-foreground">
+                                      ID: {trip.id}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                              {/* Primera columna: Ruta */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start mb-2">
-                                  <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Ruta</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Terminal {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {getStopsCount(trip)} paradas intermedias
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Segunda columna: Vehículo */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start">
-                                  <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Vehículo</p>
-                                    {trip.vehicleId || trip.assignedVehicle ? (
-                                      <p className="text-xs text-green-600 font-medium">
-                                        {trip.assignedVehicle ? 
-                                          `${trip.assignedVehicle.brand} ${trip.assignedVehicle.model} - ${trip.assignedVehicle.plates}` :
-                                          `${vehicles.find((v: any) => v.id === trip.vehicleId)?.brand || ''} ${vehicles.find((v: any) => v.id === trip.vehicleId)?.model || ''} - ${vehicles.find((v: any) => v.id === trip.vehicleId)?.plates || ''}`
-                                        }
-                                      </p>
-                                    ) : (
-                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Tercera columna: Conductor */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start">
-                                  <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Conductor</p>
-                                    {trip.driverId || trip.assignedDriver ? (
-                                      <p className="text-xs text-green-600 font-medium">
-                                        {trip.assignedDriver ? 
-                                          `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` :
-                                          `${drivers.find((d: any) => d.id === trip.driverId)?.firstName || ''} ${drivers.find((d: any) => d.id === trip.driverId)?.lastName || ''}`
-                                        }
-                                      </p>
-                                    ) : (
-                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Estados del viaje y Reservaciones para viajes archivados */}
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                              <div className="flex flex-wrap items-center justify-between">
-                                <div className="flex gap-2 mb-2">
-                                  {/* Estado de visibilidad */}
-                                  {trip.visibility && (
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.visibility === 'publicado' 
-                                        ? 'bg-green-100 text-green-800' 
-                                        : trip.visibility === 'oculto' 
-                                          ? 'bg-gray-100 text-gray-800' 
-                                          : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {trip.visibility === 'publicado' 
-                                        ? 'Publicado' 
-                                        : trip.visibility === 'oculto' 
-                                          ? 'Oculto' 
-                                          : 'Cancelado'}
-                                    </span>
-                                  )}
-
-                                  {/* Estado del viaje */}
-                                  {trip.tripStatus && (
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.tripStatus === 'aun_no_inicia' 
-                                        ? 'bg-blue-100 text-blue-800' 
-                                        : trip.tripStatus === 'en_progreso' 
-                                          ? 'bg-amber-100 text-amber-800' 
-                                          : 'bg-purple-100 text-purple-800'
-                                    }`}>
-                                      {trip.tripStatus === 'aun_no_inicia' 
-                                        ? 'Aún no inicia' 
-                                        : trip.tripStatus === 'en_progreso' 
-                                          ? 'En progreso' 
-                                          : 'Finalizado'}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                          </div>
+                          
+                          <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
+                            <div className="flex gap-2 mt-0 lg:mt-4">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  window.location.href = `/edit-trip/${trip.id}`;
+                                }}
+                                className="h-8 w-8"
+                                title="Editar viaje"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(trip.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                title="Eliminar viaje"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -1021,7 +999,14 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     </span>
                                   )}
                                 </div>
-                            
+                                
+                                {/* Reservaciones */}
+                                <div className="flex items-center">
+                                  <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">
+                                    {trip.reservationCount || 0} reservas
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1050,7 +1035,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
             )}
           </div>
         )}
-      </div>
+      </CardContent>
 
       {/* Dialog de confirmación para eliminar viaje */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1243,6 +1228,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       </AlertDialog>
 
       {/* Utilizamos la navegación para ir a la página de edición en lugar de un dialog */}
-    </div>
+    </Card>
   );
 }
