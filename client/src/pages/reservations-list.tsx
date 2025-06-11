@@ -29,15 +29,10 @@ function ReservationsListContent() {
     error 
   } = useReservations({});
 
-  // Filtrar reservaciones por término de búsqueda y fecha
-  const filteredReservations = reservations.filter((reservation) => {
-    // Filtrar por fecha si hay una seleccionada
-    if (selectedDate && reservation.trip && reservation.trip.departureDate) {
-      const tripDate = new Date(reservation.trip.departureDate);
-      if (!isSameLocalDay(tripDate, selectedDate)) {
-        return false;
-      }
-    }
+  // Filtrar reservaciones solo por término de búsqueda (no por fecha aún)
+  const searchFilteredReservations = reservations.filter((reservation) => {
+    if (!searchTerm) return true;
+    
     const searchLower = searchTerm.toLowerCase();
     return (
       reservation.id.toString().includes(searchLower) ||
@@ -51,7 +46,7 @@ function ReservationsListContent() {
   });
 
   // Agrupar reservaciones por viaje padre (recordId)
-  const groupedReservations = filteredReservations.reduce((groups, reservation) => {
+  const allGroupedReservations = searchFilteredReservations.reduce((groups, reservation) => {
     // Extraer el recordId del tripId (formato: "recordId_segmentIndex")
     const tripDetails = reservation.tripDetails as any;
     const tripId = tripDetails?.tripId || '';
@@ -83,11 +78,29 @@ function ReservationsListContent() {
     return groups;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any }>);
 
+  // Filtrar grupos por fecha seleccionada
+  const finalGroupedReservations = selectedDate 
+    ? Object.fromEntries(
+        Object.entries(allGroupedReservations).filter(([recordId, groupData]) => {
+          if (!groupData.tripInfo || !groupData.tripInfo.departureDate) return false;
+          
+          // Comparación simple de fechas usando formato YYYY-MM-DD
+          const tripDateStr = new Date(groupData.tripInfo.departureDate).toLocaleDateString('sv-SE');
+          const selectedDateStr = selectedDate.toLocaleDateString('sv-SE');
+          
+          return tripDateStr === selectedDateStr;
+        })
+      )
+    : allGroupedReservations;
+
+  // Calcular las reservaciones filtradas para el conteo
+  const finalFilteredReservations = Object.values(finalGroupedReservations).flatMap(group => group.reservations);
+
   // Paginación aplicada a los grupos
-  const totalGroups = Object.keys(groupedReservations).length;
+  const totalGroups = Object.keys(finalGroupedReservations).length;
   const totalPages = Math.ceil(totalGroups / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedGroups = Object.entries(groupedReservations).slice(startIndex, startIndex + itemsPerPage);
+  const paginatedGroups = Object.entries(finalGroupedReservations).slice(startIndex, startIndex + itemsPerPage);
 
   const handleTripClick = (recordId: string, tripInfo: any, reservations: ReservationWithDetails[]) => {
     setSelectedTrip({
@@ -150,7 +163,7 @@ function ReservationsListContent() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Reservaciones en Lista</h1>
         <div className="text-sm text-gray-600">
-          Total: {filteredReservations.length} reservaciones en {Object.keys(groupedReservations).length} viajes
+          Total: {finalFilteredReservations.length} reservaciones en {Object.keys(finalGroupedReservations).length} viajes
         </div>
       </div>
 
@@ -214,7 +227,7 @@ function ReservationsListContent() {
 
       {/* Lista de reservaciones agrupadas por viaje */}
       <div className="space-y-6">
-        {paginatedGroups.map(([recordId, groupData]) => (
+        {paginatedGroups.map(([recordId, groupData]: [string, { reservations: ReservationWithDetails[], tripInfo: any }]) => (
           <Card key={recordId} className="border-2 border-gray-200">
             <CardHeader 
               className="bg-gray-50 pb-3 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -301,10 +314,10 @@ function ReservationsListContent() {
         </div>
       )}
 
-      {filteredReservations.length === 0 && (
+      {finalFilteredReservations.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500">
-            {searchTerm ? 'No se encontraron reservaciones que coincidan con la búsqueda.' : 'No hay reservaciones disponibles.'}
+            {searchTerm || selectedDate ? 'No hay viajes que coincidan con tu búsqueda.' : 'No hay reservaciones disponibles.'}
           </div>
         </div>
       )}
