@@ -8,11 +8,16 @@ import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
+import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
 
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [expandedTrips, setExpandedTrips] = useState<Set<string>>(new Set());
+  const [selectedTrip, setSelectedTrip] = useState<{
+    recordId: string;
+    tripInfo: any;
+    reservations: ReservationWithDetails[];
+  } | null>(null);
   const itemsPerPage = 50;
 
   const { 
@@ -70,14 +75,12 @@ function ReservationsListContent() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedGroups = Object.entries(groupedReservations).slice(startIndex, startIndex + itemsPerPage);
 
-  const toggleTripExpansion = (recordId: string) => {
-    const newExpanded = new Set(expandedTrips);
-    if (newExpanded.has(recordId)) {
-      newExpanded.delete(recordId);
-    } else {
-      newExpanded.add(recordId);
-    }
-    setExpandedTrips(newExpanded);
+  const handleTripClick = (recordId: string, tripInfo: any, reservations: ReservationWithDetails[]) => {
+    setSelectedTrip({
+      recordId,
+      tripInfo,
+      reservations
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -159,7 +162,7 @@ function ReservationsListContent() {
           <Card key={recordId} className="border-2 border-gray-200">
             <CardHeader 
               className="bg-gray-50 pb-3 cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={() => toggleTripExpansion(recordId)}
+              onClick={() => handleTripClick(recordId, groupData.tripInfo, groupData.reservations)}
             >
               <CardTitle className="text-lg font-semibold text-gray-800">
                 <div className="flex items-center justify-between">
@@ -170,116 +173,14 @@ function ReservationsListContent() {
                       `Viaje ${recordId}`
                     }
                   </div>
-                  {expandedTrips.has(recordId) ? (
-                    <ChevronUp className="h-5 w-5 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-500" />
-                  )}
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
                 </div>
                 <div className="text-sm font-normal text-gray-600 mt-1">
                   {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
                 </div>
               </CardTitle>
             </CardHeader>
-            {expandedTrips.has(recordId) && (
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {groupData.reservations.map((reservation) => (
-                  <div key={reservation.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                      {/* Columna 1: Información básica */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className="font-semibold text-lg">#{reservation.id}</div>
-                          {getStatusBadge(reservation.status)}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(reservation.trip?.departureDate)}
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Users className="h-3 w-3" />
-                            {reservation.passengers?.length || 0} pasajeros
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Columna 2: Ruta */}
-                      <div className="space-y-2">
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <div className="text-sm">
-                            <div className="font-medium">{reservation.trip?.origin}</div>
-                            <div className="text-gray-500 text-xs">
-                              {reservation.trip?.departureTime ? formatTime(reservation.trip.departureTime) : '-'}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                          <div className="text-sm">
-                            <div className="font-medium">{reservation.trip?.destination}</div>
-                            <div className="text-gray-500 text-xs">
-                              {reservation.trip?.arrivalTime ? formatTime(reservation.trip.arrivalTime) : '-'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Columna 3: Contacto y pago */}
-                      <div className="space-y-2">
-                        <div className="text-sm">
-                          <div className="font-medium">{reservation.phone}</div>
-                          <div className="text-gray-500 text-xs">{reservation.email}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-3 w-3" />
-                          {getPaymentBadge(reservation.paymentStatus)}
-                        </div>
-                        <div className="text-lg font-bold text-green-600">
-                          {formatPrice(reservation.totalAmount)}
-                        </div>
-                        {reservation.advanceAmount && (
-                          <div className="text-xs text-gray-500">
-                            Anticipo: {formatPrice(reservation.advanceAmount)}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Columna 4: Información adicional */}
-                      <div className="space-y-2">
-                        {reservation.createdByUser && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <User className="h-3 w-3" />
-                            <div>
-                              <div className="font-medium">
-                                {reservation.createdByUser.firstName} {reservation.createdByUser.lastName}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {reservation.createdByUser.role}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {reservation.companyId && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Building2 className="h-3 w-3" />
-                            <div className="text-xs text-gray-500">
-                              {reservation.companyId}
-                            </div>
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-400">
-                          Creada: {formatDate(reservation.createdAt)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                </div>
-              </CardContent>
-            )}
           </Card>
         ))}
       </div>
