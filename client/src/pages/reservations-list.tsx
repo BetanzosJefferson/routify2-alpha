@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
-import { Search, Calendar, MapPin, Users, CreditCard, Building2, User } from "lucide-react";
+import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedTrips, setExpandedTrips] = useState<Set<string>>(new Set());
   const itemsPerPage = 50;
 
   const { 
@@ -68,6 +69,16 @@ function ReservationsListContent() {
   const totalPages = Math.ceil(totalGroups / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedGroups = Object.entries(groupedReservations).slice(startIndex, startIndex + itemsPerPage);
+
+  const toggleTripExpansion = (recordId: string) => {
+    const newExpanded = new Set(expandedTrips);
+    if (newExpanded.has(recordId)) {
+      newExpanded.delete(recordId);
+    } else {
+      newExpanded.add(recordId);
+    }
+    setExpandedTrips(newExpanded);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -146,23 +157,34 @@ function ReservationsListContent() {
       <div className="space-y-6">
         {paginatedGroups.map(([recordId, groupData]) => (
           <Card key={recordId} className="border-2 border-gray-200">
-            <CardHeader className="bg-gray-50 pb-3">
+            <CardHeader 
+              className="bg-gray-50 pb-3 cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => toggleTripExpansion(recordId)}
+            >
               <CardTitle className="text-lg font-semibold text-gray-800">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-blue-600" />
-                  {groupData.tripInfo ? 
-                    `${groupData.tripInfo.origin} → ${groupData.tripInfo.destination} - ${formatDate(groupData.tripInfo.departureDate)}` :
-                    `Viaje ${recordId}`
-                  }
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-600" />
+                    {groupData.tripInfo ? 
+                      `${groupData.tripInfo.origin} → ${groupData.tripInfo.destination} - ${formatDate(groupData.tripInfo.departureDate)}` :
+                      `Viaje ${recordId}`
+                    }
+                  </div>
+                  {expandedTrips.has(recordId) ? (
+                    <ChevronUp className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                  )}
                 </div>
                 <div className="text-sm font-normal text-gray-600 mt-1">
                   {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {groupData.reservations.map((reservation) => (
+            {expandedTrips.has(recordId) && (
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {groupData.reservations.map((reservation) => (
                   <div key={reservation.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                       {/* Columna 1: Información básica */}
@@ -255,8 +277,9 @@ function ReservationsListContent() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
+                </div>
+              </CardContent>
+            )}
           </Card>
         ))}
       </div>
