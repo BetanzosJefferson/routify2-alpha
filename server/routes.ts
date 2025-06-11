@@ -4450,23 +4450,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Obtener los detalles del viaje asociado a la reservación
-      const trip = await storage.getTrip(reservation.tripId);
-      if (!trip) {
-        console.log(`[CHECK TICKET] DENEGADO: No se encontró el viaje ${reservation.tripId} asociado a la reservación ${id}`);
-        return res.status(404).json({ 
-          success: false, 
-          message: 'No se encontró el viaje asociado a esta reservación' 
-        });
-      }
-      
       // Obtener la compañía del usuario
       const userCompanyId = req.user.company || (req.user as any).companyId;
       
-      // Obtener la compañía del viaje
-      const tripCompanyId = trip.companyId;
+      // Obtener la compañía de la reservación (que es donde está almacenada)
+      const reservationCompanyId = reservation.companyId;
       
-      console.log(`[CHECK TICKET] Verificando compañías - Usuario: ${userCompanyId || 'ninguna'}, Viaje: ${tripCompanyId || 'ninguna'}`);
+      console.log(`[CHECK TICKET] Verificando compañías - Usuario: ${userCompanyId || 'ninguna'}, Reservación: ${reservationCompanyId || 'ninguna'}`);
       
       // Verificar si ambas compañías coinciden (solo si el usuario no es superAdmin)
       if (req.user.role !== UserRole.SUPER_ADMIN) {
@@ -4479,12 +4469,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Si el viaje no tiene compañía asignada, aplicamos una restricción similar
-        if (!tripCompanyId) {
-          console.log(`[CHECK TICKET] DENEGADO: El viaje no tiene compañía asignada`);
+        // Si la reservación no tiene compañía asignada, aplicamos una restricción similar
+        if (!reservationCompanyId) {
+          console.log(`[CHECK TICKET] DENEGADO: La reservación no tiene compañía asignada`);
           return res.status(403).json({ 
             success: false, 
-            message: 'El viaje asociado no tiene compañía asignada' 
+            message: 'La reservación no tiene compañía asignada' 
           });
         }
         
@@ -4498,16 +4488,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         
         const normalizedUserCompany = normalizeCompanyId(userCompanyId);
-        const normalizedTripCompany = normalizeCompanyId(tripCompanyId);
+        const normalizedReservationCompany = normalizeCompanyId(reservationCompanyId);
         
-        console.log(`[CHECK TICKET] Compañías normalizadas - Usuario: ${normalizedUserCompany}, Viaje: ${normalizedTripCompany}`);
+        console.log(`[CHECK TICKET] Compañías normalizadas - Usuario: ${normalizedUserCompany}, Reservación: ${normalizedReservationCompany}`);
         
         // Verificar que las compañías coincidan después de normalizarlas
-        if (normalizedUserCompany !== normalizedTripCompany) {
-          console.log(`[CHECK TICKET] DENEGADO: Las compañías no coinciden después de normalizar - Usuario: ${normalizedUserCompany}, Viaje: ${normalizedTripCompany}`);
+        if (normalizedUserCompany !== normalizedReservationCompany) {
+          console.log(`[CHECK TICKET] DENEGADO: Las compañías no coinciden después de normalizar - Usuario: ${normalizedUserCompany}, Reservación: ${normalizedReservationCompany}`);
           return res.status(403).json({ 
             success: false, 
-            message: 'No puedes escanear tickets de viajes que no pertenecen a tu compañía' 
+            message: 'No puedes escanear tickets de reservaciones que no pertenecen a tu compañía' 
           });
         }
       }
