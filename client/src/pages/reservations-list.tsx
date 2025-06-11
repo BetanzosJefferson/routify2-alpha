@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
-import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
@@ -175,7 +175,40 @@ function ReservationsListContent() {
                   </div>
                   <ChevronDown className="h-5 w-5 text-gray-500" />
                 </div>
-                <div className="text-sm font-normal text-gray-600 mt-1">
+                
+                {/* Información adicional del viaje */}
+                {groupData.tripInfo && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm font-normal text-gray-600">
+                    {/* Horarios */}
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-green-600" />
+                      <span>
+                        {groupData.tripInfo.departureTime || 'Sin horario'} - {groupData.tripInfo.arrivalTime || 'Sin horario'}
+                      </span>
+                    </div>
+                    
+                    {/* Unidad */}
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-orange-600" />
+                      <span>
+                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
+                      </span>
+                    </div>
+                    
+                    {/* Operador */}
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-purple-600" />
+                      <span>
+                        {groupData.tripInfo.driver ? 
+                          `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` : 
+                          'Sin asignar'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="text-sm font-normal text-gray-600 mt-2">
                   {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
                 </div>
               </CardTitle>
