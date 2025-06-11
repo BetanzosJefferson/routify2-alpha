@@ -3,15 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useReservations } from "@/hooks/use-reservations";
-import { formatDate, formatPrice, formatTime } from "@/lib/utils";
-import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck } from "lucide-react";
+import { formatDate, formatPrice, formatTime, formatDateForInput, isSameLocalDay } from "@/lib/utils";
+import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck, CalendarIcon, X } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
 
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
@@ -26,8 +29,15 @@ function ReservationsListContent() {
     error 
   } = useReservations({});
 
-  // Filtrar reservaciones por término de búsqueda
+  // Filtrar reservaciones por término de búsqueda y fecha
   const filteredReservations = reservations.filter((reservation) => {
+    // Filtrar por fecha si hay una seleccionada
+    if (selectedDate && reservation.trip && reservation.trip.departureDate) {
+      const tripDate = new Date(reservation.trip.departureDate);
+      if (!isSameLocalDay(tripDate, selectedDate)) {
+        return false;
+      }
+    }
     const searchLower = searchTerm.toLowerCase();
     return (
       reservation.id.toString().includes(searchLower) ||
@@ -64,8 +74,8 @@ function ReservationsListContent() {
         departureDate: reservation.trip.departureDate,
         departureTime: reservation.trip.departureTime,
         arrivalTime: reservation.trip.arrivalTime,
-        vehicle: reservation.trip.vehicle,
-        driver: reservation.trip.driver,
+        assignedVehicle: reservation.trip.assignedVehicle,
+        assignedDriver: reservation.trip.assignedDriver,
         recordId: recordId
       };
     }
@@ -144,19 +154,61 @@ function ReservationsListContent() {
         </div>
       </div>
 
-      {/* Barra de búsqueda */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="pl-10"
-          />
+      {/* Barra de búsqueda y filtros */}
+      <div className="mb-6 space-y-4">
+        <div className="flex gap-4">
+          {/* Campo de búsqueda */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Filtro de fecha */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-[280px] justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? formatDate(selectedDate) : "Filtrar por fecha"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  setCurrentPage(1);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          
+          {/* Botón para limpiar filtro de fecha */}
+          {selectedDate && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setSelectedDate(undefined);
+                setCurrentPage(1);
+              }}
+              title="Limpiar filtro de fecha"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -195,7 +247,7 @@ function ReservationsListContent() {
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4 text-orange-600" />
                       <span>
-                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
+                        {groupData.tripInfo.assignedVehicle?.licensePlate || 'Sin asignar'}
                       </span>
                     </div>
                     
@@ -203,8 +255,8 @@ function ReservationsListContent() {
                     <div className="flex items-center gap-2">
                       <UserCheck className="h-4 w-4 text-purple-600" />
                       <span>
-                        {groupData.tripInfo.driver ? 
-                          `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` : 
+                        {groupData.tripInfo.assignedDriver ? 
+                          `${groupData.tripInfo.assignedDriver.firstName} ${groupData.tripInfo.assignedDriver.lastName}` : 
                           'Sin asignar'
                         }
                       </span>
