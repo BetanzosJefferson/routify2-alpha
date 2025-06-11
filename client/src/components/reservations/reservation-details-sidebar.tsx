@@ -12,7 +12,11 @@ import {
   Search,
   Phone,
   DollarSign,
-  MapPin
+  MapPin,
+  CheckIcon,
+  ClipboardCopy, 
+  LockIcon
+  
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +25,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input"; 
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { ReservationWithDetails } from "@shared/schema";
+
+// Helper function (asegúrate de que esté definida en algún lugar accesible)
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};
 
 interface ReservationDetailsSidebarProps {
   recordId: string;
@@ -171,77 +185,151 @@ export function ReservationDetailsSidebar({
               const passengerCount = tripDetails?.seats || 1;
               
               return (
-                <Card key={reservation.id} className="border border-gray-200 hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-sm font-medium">
+                <Card key={reservation.id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white hover:shadow-md transition-shadow">
+                  {/* Equivalente a CardHeader con las clases del diseño original */}
+                  <CardHeader className="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
+                    <div className="flex justify-between items-center mb-1.5"> {/* Este div es clave para el layout superior */}
+                      <div className="flex items-center"> {/* Agrupamiento para cantidad de asientos y datos del pasajero principal */}
+                        <div className="bg-primary/10 text-primary font-medium px-3 py-1 rounded-md mr-3">
                           {passengerCount} asiento{passengerCount !== 1 ? 's' : ''}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-semibold text-gray-800">
-                              {reservation.passengers && reservation.passengers.length > 0 ? 
-                                reservation.passengers.map(p => `${p.firstName} ${p.lastName}`).join(', ') :
-                                'Sin pasajeros'
-                              }
-                            </p>
+                        <div> {/* Contenedor para el nombre del pasajero principal y código */}
+                          <div className="font-medium">
+                            {reservation.passengers && reservation.passengers.length === 1
+                              ? reservation.passengers[0]?.firstName + ' ' + reservation.passengers[0]?.lastName
+                              : `${reservation.passengers[0]?.firstName || 'nombre'} ${reservation.passengers[0]?.lastName || 'del pasajero'}`}
                           </div>
-                          <p className="text-sm text-gray-500 mb-2">R-{reservation.id.toString().padStart(6, '0')}</p>
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-sm ${reservation.status === 'confirmed' ? 'text-green-600' : 'text-red-600'}`}>
-                              {reservation.status === 'confirmed' ? '✓' : '✗'}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              {reservation.status === 'confirmed' ? 'Check' : 'No check'}
-                            </span>
+                          <div className="text-xs text-gray-500">{reservation.code}</div> {/* Usa reservation.code como en el diseño original */}
+                          {/* Indicador de Check basado en checkCount */}
+                          <div className="mt-1">
+                            {reservation.checkCount && reservation.checkCount > 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                <CheckIcon className="h-3 w-3 mr-1" />
+                                Check
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                <X className="h-3 w-3 mr-1" />
+                                No check
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">
-                          Anticipo: {formatPrice(reservation.advanceAmount || 0)} 
-                          {reservation.advancePaymentMethod === 'transferencia' ? ' (Transferencia)' : ' (Efectivo)'}
-                        </p>
-                        <p className="font-semibold text-blue-600">Por cobrar: {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}</p>
+                      <div className="text-right flex flex-col items-end"> {/* Sección de precios y por cobrar */}
+                        <div className="text-xs text-gray-700 mb-1">
+                          Anticipo: {formatPrice(reservation.advanceAmount || 0)} ({reservation.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                        </div>
+
+                        {/* Mostrar "Pagó" solamente si está marcado como pagado */}
+                        {reservation.paymentStatus === 'pagado' && reservation.advanceAmount < reservation.amount && (
+                          <div className="text-xs text-gray-700 mb-1">
+                            Pagó: {formatPrice(reservation.amount - (reservation.advanceAmount || 0))} ({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                          </div>
+                        )}
+
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium mr-2">Por cobrar</span>
+                          <span className="text-lg font-bold text-primary">
+                            {reservation.paymentStatus === 'pagado'
+                              ? '$ 0'
+                              : `$ ${(reservation.amount - (reservation.advanceAmount || 0)).toFixed(0)}`
+                            }
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
-                  
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {/* Información de ruta */}
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-500">Origen</p>
-                            <p className="font-medium">{tripDetails?.origin || reservation.trip?.origin || 'N/A'}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Destino</p>
-                            <p className="font-medium">{tripDetails?.destination || reservation.trip?.destination || 'N/A'}</p>
-                          </div>
+
+                  {/* Equivalente a CardContent con las clases del diseño original */}
+                  <CardContent className="p-4"> {/* Aseguramos el padding adecuado */}
+                    {/* Datos de pasajeros (si hay más de uno) */}
+                    <div className="mb-3">
+                      <div className="text-sm font-medium text-gray-800">
+                        {reservation.passengers.length > 1
+                          ? (
+                            <>
+                              <div className="mb-1">
+                                {reservation.passengers.map((passenger, idx) => (
+                                  <div key={idx}>
+                                    {passenger.firstName} {passenger.lastName}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )
+                          : null}
+                      </div>
+                    </div>
+
+                    {/* Origen y destino completos (incluyendo punto de abordaje) */}
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <div>
+                        <div className="text-xs text-gray-500">Origen</div>
+                        <div className="font-medium">
+                          {reservation.origin || tripDetails?.route?.origin || 'Origen'}
                         </div>
                       </div>
-                      
-                      {/* Información de contacto */}
-                      <div className="flex items-center space-x-4 text-sm">
-                        <div className="flex items-center space-x-1">
-                          <Phone className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium">{reservation.phone}</span>
+                      <div>
+                        <div className="text-xs text-gray-500">Destino</div>
+                        <div className="font-medium">
+                          {reservation.destination || tripDetails?.route?.destination || 'Destino'}
                         </div>
                       </div>
-                      
-                      {/* Badge de estado de pago */}
-                      <div className="flex justify-start">
-                        <span className={`px-3 py-1 rounded text-xs font-medium ${
-                          reservation.paymentStatus === 'paid' || reservation.paymentStatus === 'completed'
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {reservation.paymentStatus === 'paid' || reservation.paymentStatus === 'completed' ? 'PAGADO' : 'PENDIENTE'}
-                        </span>
+                    </div>
+
+                    {/* Teléfono de contacto con botón para copiar */}
+                    {reservation.phone && (
+                      <div className="text-sm mb-3">
+                        <div className="text-xs text-gray-500">Contacto</div>
+                        <div className="font-medium flex items-center">
+                          {canViewPhoneNumbers() ? (
+                            <>
+                              <Phone className="h-3 w-3 mr-1 text-gray-500" />
+                              <a href={`tel:${reservation.phone}`} className="text-primary hover:underline">
+                                {reservation.phone}
+                              </a>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(reservation.phone || '');
+                                  // Podríamos añadir una notificación de éxito aquí
+                                }}
+                                className="ml-2 p-1 rounded-sm hover:bg-gray-100"
+                                title="Copiar al portapapeles"
+                              >
+                                <ClipboardCopy className="h-3.5 w-3.5 text-gray-500" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <LockIcon className="h-3 w-3 mr-1 text-gray-500" />
+                              <span className="text-gray-500 italic">Información restringida</span>
+                            </>
+                          )}
+                        </div>
                       </div>
+                    )}
+
+                    {/* Notas de la reservación */}
+                    {reservation.notes && (
+                      <div className="text-sm mb-3">
+                        <div className="text-xs text-gray-500">Notas</div>
+                        <div className="font-medium p-1.5 bg-gray-50 rounded-sm border border-gray-100 text-gray-700 text-xs">
+                          {reservation.notes}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Información de pago simplificada */}
+                    <div className="mt-3">
+                      <Badge
+                        variant="outline"
+                        className={reservation.paymentStatus === 'pagado'
+                          ? 'bg-green-100 text-green-800 border-green-200'
+                          : 'bg-yellow-100 text-yellow-800 border-yellow-200'}
+                      >
+                        {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
