@@ -84,11 +84,11 @@ function ReservationsListContent() {
         Object.entries(allGroupedReservations).filter(([recordId, groupData]) => {
           if (!groupData.tripInfo || !groupData.tripInfo.departureDate) return false;
           
-          // Comparación simple de fechas usando formato YYYY-MM-DD
-          const tripDateStr = new Date(groupData.tripInfo.departureDate).toLocaleDateString('sv-SE');
-          const selectedDateStr = selectedDate.toLocaleDateString('sv-SE');
+          // Normalizar ambas fechas usando la función existente
+          const tripDateNormalized = normalizeToStartOfDay(groupData.tripInfo.departureDate);
+          const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
           
-          return tripDateStr === selectedDateStr;
+          return tripDateNormalized.getTime() === selectedDateNormalized.getTime();
         })
       )
     : allGroupedReservations;
