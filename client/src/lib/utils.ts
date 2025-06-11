@@ -57,8 +57,8 @@ export function normalizeToStartOfDay(date: Date | string): Date {
     
     console.log(`[normalizeToStartOfDay] Fecha sistema en México: ${mexicoDateString}`);
     
-    // Crear fecha con hora 18:00 para zona horaria de México
-    dateObj = new Date(year, month, day, 18, 0, 0);
+    // Crear fecha con hora 12:00 para mantener consistencia
+    dateObj = new Date(year, month, day, 12, 0, 0);
   }
   
   return dateObj;
