@@ -3,18 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useReservations } from "@/hooks/use-reservations";
-import { formatDate, formatPrice, formatTime, formatDateForInput, isSameLocalDay, normalizeToStartOfDay } from "@/lib/utils";
-import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck, CalendarIcon, X } from "lucide-react";
+import { formatDate, formatPrice, formatTime } from "@/lib/utils";
+import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
 
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
@@ -29,10 +26,8 @@ function ReservationsListContent() {
     error 
   } = useReservations({});
 
-  // Filtrar reservaciones solo por término de búsqueda (no por fecha aún)
-  const searchFilteredReservations = reservations.filter((reservation) => {
-    if (!searchTerm) return true;
-    
+  // Filtrar reservaciones por término de búsqueda
+  const filteredReservations = reservations.filter((reservation) => {
     const searchLower = searchTerm.toLowerCase();
     return (
       reservation.id.toString().includes(searchLower) ||
@@ -46,7 +41,7 @@ function ReservationsListContent() {
   });
 
   // Agrupar reservaciones por viaje padre (recordId)
-  const allGroupedReservations = searchFilteredReservations.reduce((groups, reservation) => {
+  const groupedReservations = filteredReservations.reduce((groups, reservation) => {
     // Extraer el recordId del tripId (formato: "recordId_segmentIndex")
     const tripDetails = reservation.tripDetails as any;
     const tripId = tripDetails?.tripId || '';
@@ -69,8 +64,8 @@ function ReservationsListContent() {
         departureDate: reservation.trip.departureDate,
         departureTime: reservation.trip.departureTime,
         arrivalTime: reservation.trip.arrivalTime,
-        assignedVehicle: reservation.trip.assignedVehicle,
-        assignedDriver: reservation.trip.assignedDriver,
+        vehicle: reservation.trip.vehicle,
+        driver: reservation.trip.driver,
         recordId: recordId
       };
     }
@@ -78,29 +73,11 @@ function ReservationsListContent() {
     return groups;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any }>);
 
-  // Filtrar grupos por fecha seleccionada
-  const finalGroupedReservations = selectedDate 
-    ? Object.fromEntries(
-        Object.entries(allGroupedReservations).filter(([recordId, groupData]) => {
-          if (!groupData.tripInfo || !groupData.tripInfo.departureDate) return false;
-          
-          // Normalizar ambas fechas usando la función existente
-          const tripDateNormalized = normalizeToStartOfDay(groupData.tripInfo.departureDate);
-          const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
-          
-          return tripDateNormalized.getTime() === selectedDateNormalized.getTime();
-        })
-      )
-    : allGroupedReservations;
-
-  // Calcular las reservaciones filtradas para el conteo
-  const finalFilteredReservations = Object.values(finalGroupedReservations).flatMap(group => group.reservations);
-
   // Paginación aplicada a los grupos
-  const totalGroups = Object.keys(finalGroupedReservations).length;
+  const totalGroups = Object.keys(groupedReservations).length;
   const totalPages = Math.ceil(totalGroups / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedGroups = Object.entries(finalGroupedReservations).slice(startIndex, startIndex + itemsPerPage);
+  const paginatedGroups = Object.entries(groupedReservations).slice(startIndex, startIndex + itemsPerPage);
 
   const handleTripClick = (recordId: string, tripInfo: any, reservations: ReservationWithDetails[]) => {
     setSelectedTrip({
@@ -163,71 +140,29 @@ function ReservationsListContent() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Reservaciones en Lista</h1>
         <div className="text-sm text-gray-600">
-          Total: {finalFilteredReservations.length} reservaciones en {Object.keys(finalGroupedReservations).length} viajes
+          Total: {filteredReservations.length} reservaciones en {Object.keys(groupedReservations).length} viajes
         </div>
       </div>
 
-      {/* Barra de búsqueda y filtros */}
-      <div className="mb-6 space-y-4">
-        <div className="flex gap-4">
-          {/* Campo de búsqueda */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-10"
-            />
-          </div>
-          
-          {/* Filtro de fecha */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-[280px] justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? formatDate(selectedDate) : "Filtrar por fecha"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  setSelectedDate(date);
-                  setCurrentPage(1);
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          
-          {/* Botón para limpiar filtro de fecha */}
-          {selectedDate && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setSelectedDate(undefined);
-                setCurrentPage(1);
-              }}
-              title="Limpiar filtro de fecha"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+      {/* Barra de búsqueda */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="pl-10"
+          />
         </div>
       </div>
 
       {/* Lista de reservaciones agrupadas por viaje */}
       <div className="space-y-6">
-        {paginatedGroups.map(([recordId, groupData]: [string, { reservations: ReservationWithDetails[], tripInfo: any }]) => (
+        {paginatedGroups.map(([recordId, groupData]) => (
           <Card key={recordId} className="border-2 border-gray-200">
             <CardHeader 
               className="bg-gray-50 pb-3 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -260,7 +195,7 @@ function ReservationsListContent() {
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4 text-orange-600" />
                       <span>
-                        {groupData.tripInfo.assignedVehicle?.licensePlate || 'Sin asignar'}
+                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
                       </span>
                     </div>
                     
@@ -268,8 +203,8 @@ function ReservationsListContent() {
                     <div className="flex items-center gap-2">
                       <UserCheck className="h-4 w-4 text-purple-600" />
                       <span>
-                        {groupData.tripInfo.assignedDriver ? 
-                          `${groupData.tripInfo.assignedDriver.firstName} ${groupData.tripInfo.assignedDriver.lastName}` : 
+                        {groupData.tripInfo.driver ? 
+                          `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` : 
                           'Sin asignar'
                         }
                       </span>
@@ -314,10 +249,10 @@ function ReservationsListContent() {
         </div>
       )}
 
-      {finalFilteredReservations.length === 0 && (
+      {filteredReservations.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500">
-            {searchTerm || selectedDate ? 'No hay viajes que coincidan con tu búsqueda.' : 'No hay reservaciones disponibles.'}
+            {searchTerm ? 'No se encontraron reservaciones que coincidan con la búsqueda.' : 'No hay reservaciones disponibles.'}
           </div>
         </div>
       )}
