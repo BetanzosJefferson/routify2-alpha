@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useReservations } from "@/hooks/use-reservations";
-import { formatDate, formatPrice, formatTime, formatDateForInput, isSameLocalDay } from "@/lib/utils";
+import { formatDate, formatPrice, formatTime, formatDateForInput, isSameLocalDay, normalizeToStartOfDay } from "@/lib/utils";
 import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck, CalendarIcon, X } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
