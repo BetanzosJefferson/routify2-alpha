@@ -64,31 +64,7 @@ export function ReservationDetailsSidebar({
     );
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Confirmada</Badge>;
-      case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendiente</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive" className="bg-red-100 text-red-800">Cancelada</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
 
-  const getPaymentStatusBadge = (paymentStatus: string) => {
-    switch (paymentStatus) {
-      case 'paid':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Pagado</Badge>;
-      case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendiente</Badge>;
-      case 'partial':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Parcial</Badge>;
-      default:
-        return <Badge variant="outline">{paymentStatus}</Badge>;
-    }
-  };
 
   const totalPassengers = reservations.reduce((total, reservation) => {
     const tripDetails = reservation.tripDetails as any;
@@ -197,26 +173,37 @@ export function ReservationDetailsSidebar({
               return (
                 <Card key={reservation.id} className="border border-gray-200 hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
-                            {passengerCount}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {reservation.passengers && reservation.passengers.length > 0 ? 
-                              reservation.passengers.map(p => `${p.firstName} ${p.lastName}`).join(', ') :
-                              'Sin pasajeros'
-                            }
-                          </p>
-                          <p className="text-sm text-gray-500">R-{reservation.id.toString().padStart(6, '0')}</p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <div className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-sm font-medium">
+                          {passengerCount} asiento{passengerCount !== 1 ? 's' : ''}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-semibold text-gray-800">
+                              {reservation.passengers && reservation.passengers.length > 0 ? 
+                                reservation.passengers.map(p => `${p.firstName} ${p.lastName}`).join(', ') :
+                                'Sin pasajeros'
+                              }
+                            </p>
+                          </div>
+                          <p className="text-sm text-gray-500 mb-2">R-{reservation.id.toString().padStart(6, '0')}</p>
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-sm ${reservation.status === 'confirmed' ? 'text-green-600' : 'text-red-600'}`}>
+                              {reservation.status === 'confirmed' ? '✓' : '✗'}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {reservation.status === 'confirmed' ? 'Check' : 'No check'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-500">Anticipo: {formatPrice(reservation.advanceAmount || 0)} (Efectivo)</p>
-                        <p className="font-semibold text-green-600">Por cobrar: {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}</p>
+                        <p className="text-sm text-gray-500">
+                          Anticipo: {formatPrice(reservation.advanceAmount || 0)} 
+                          {reservation.advancePaymentMethod === 'transferencia' ? ' (Transferencia)' : ' (Efectivo)'}
+                        </p>
+                        <p className="font-semibold text-blue-600">Por cobrar: {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}</p>
                       </div>
                     </div>
                   </CardHeader>
@@ -245,15 +232,15 @@ export function ReservationDetailsSidebar({
                         </div>
                       </div>
                       
-                      {/* Estados */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex space-x-2">
-                          {getStatusBadge(reservation.status)}
-                          {getPaymentStatusBadge(reservation.paymentStatus)}
-                        </div>
-                        <p className="text-xs text-gray-400">
-                          Creada: {formatDate(reservation.createdAt)}
-                        </p>
+                      {/* Badge de estado de pago */}
+                      <div className="flex justify-start">
+                        <span className={`px-3 py-1 rounded text-xs font-medium ${
+                          reservation.paymentStatus === 'paid' || reservation.paymentStatus === 'completed'
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {reservation.paymentStatus === 'paid' || reservation.paymentStatus === 'completed' ? 'PAGADO' : 'PENDIENTE'}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
