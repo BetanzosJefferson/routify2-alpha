@@ -695,6 +695,31 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: schema.reservations.id });
     return result.length > 0;
   }
+
+  async checkTicket(reservationId: number, userId: number): Promise<Reservation | undefined> {
+    console.log(`[DB Storage] Marcando ticket ${reservationId} como escaneado por usuario ${userId}`);
+    
+    try {
+      const now = new Date();
+      
+      const [updatedReservation] = await db
+        .update(schema.reservations)
+        .set({
+          checkedBy: userId,
+          checkedAt: now,
+          checkCount: sql`COALESCE(${schema.reservations.checkCount}, 0) + 1`,
+          updatedAt: now
+        })
+        .where(eq(schema.reservations.id, reservationId))
+        .returning();
+      
+      console.log(`[DB Storage] Ticket ${reservationId} marcado como escaneado exitosamente`);
+      return updatedReservation;
+    } catch (error) {
+      console.error(`[DB Storage] Error al marcar ticket ${reservationId} como escaneado:`, error);
+      throw error;
+    }
+  }
   
   async getPassengers(reservationId: number): Promise<Passenger[]> {
     return await db
