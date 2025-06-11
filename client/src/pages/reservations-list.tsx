@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
-import { formatDate, formatPrice, formatTime } from "@/lib/utils";
+import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
 import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
@@ -13,6 +13,7 @@ import { ReservationDetailsSidebar } from "@/components/reservations/reservation
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
     tripInfo: any;
@@ -26,8 +27,19 @@ function ReservationsListContent() {
     error 
   } = useReservations({});
 
-  // Filtrar reservaciones por término de búsqueda
+  // Filtrar reservaciones por fecha seleccionada y término de búsqueda
   const filteredReservations = reservations.filter((reservation) => {
+    // Filtrar por fecha
+    const reservationDate = reservation.trip?.departureDate;
+    if (reservationDate) {
+      const tripDateNormalized = normalizeToStartOfDay(reservationDate);
+      const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
+      if (!isSameLocalDay(tripDateNormalized, selectedDateNormalized)) {
+        return false;
+      }
+    }
+    
+    // Filtrar por término de búsqueda
     const searchLower = searchTerm.toLowerCase();
     return (
       reservation.id.toString().includes(searchLower) ||
@@ -144,19 +156,36 @@ function ReservationsListContent() {
         </div>
       </div>
 
-      {/* Barra de búsqueda */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="pl-10"
-          />
+      {/* Filtros de búsqueda y fecha */}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Selector de fecha */}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-48"
+            />
+          </div>
+          
+          {/* Barra de búsqueda */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10"
+            />
+          </div>
         </div>
       </div>
 
