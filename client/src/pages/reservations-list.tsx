@@ -77,8 +77,8 @@ function ReservationsListContent() {
         departureDate: reservation.trip.departureDate,
         departureTime: reservation.trip.departureTime,
         arrivalTime: reservation.trip.arrivalTime,
-        vehicle: reservation.trip.vehicle,
-        driver: reservation.trip.driver,
+        vehicle: reservation.trip.vehicleId || "Sin asignar",
+        driver: reservation.trip.driverId || "Sin asignar",
         recordId: recordId
       };
     }
