@@ -206,9 +206,9 @@ export function ReservationDetailsSidebar({
                         </Avatar>
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {reservation.createdByUser ? 
-                              `${reservation.createdByUser.firstName} ${reservation.createdByUser.lastName}` :
-                              'Usuario'
+                            {reservation.passengers && reservation.passengers.length > 0 ? 
+                              reservation.passengers.map(p => p.name).join(', ') :
+                              'Sin pasajeros'
                             }
                           </p>
                           <p className="text-sm text-gray-500">R-{reservation.id.toString().padStart(6, '0')}</p>
