@@ -80,9 +80,24 @@ export function normalizeToEndOfDay(date: Date | string): Date {
  * @returns true si ambas fechas representan el mismo día
  */
 export function isSameLocalDay(dateA: Date | string, dateB: Date | string): boolean {
-  const normalizedA = normalizeToStartOfDay(dateA);
-  const normalizedB = normalizeToStartOfDay(dateB);
-  return isEqual(normalizedA, normalizedB);
+  // Extract date components directly for comparison
+  let dateStringA: string;
+  let dateStringB: string;
+  
+  // Convert to YYYY-MM-DD format for comparison
+  if (typeof dateA === 'string') {
+    dateStringA = dateA.includes('T') ? dateA.split('T')[0] : dateA;
+  } else {
+    dateStringA = dateA.toISOString().split('T')[0];
+  }
+  
+  if (typeof dateB === 'string') {
+    dateStringB = dateB.includes('T') ? dateB.split('T')[0] : dateB;
+  } else {
+    dateStringB = dateB.toISOString().split('T')[0];
+  }
+  
+  return dateStringA === dateStringB;
 }
 
 /**

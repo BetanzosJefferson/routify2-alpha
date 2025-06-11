@@ -35,13 +35,7 @@ function ReservationsListContent() {
       const tripDateNormalized = normalizeToStartOfDay(reservationDate);
       const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
       
-      console.log(`[DateFilter] Reservation ${reservation.id}:`);
-      console.log(`[DateFilter] Trip date: ${reservationDate} -> ${tripDateNormalized.toISOString()}`);
-      console.log(`[DateFilter] Selected date: ${selectedDate} -> ${selectedDateNormalized.toISOString()}`);
-      console.log(`[DateFilter] Same day? ${isSameLocalDay(tripDateNormalized, selectedDateNormalized)}`);
-      
       if (!isSameLocalDay(tripDateNormalized, selectedDateNormalized)) {
-        console.log(`[DateFilter] Filtering out reservation ${reservation.id}`);
         return false;
       }
     }
