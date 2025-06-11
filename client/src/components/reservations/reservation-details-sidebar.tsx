@@ -212,9 +212,9 @@ export function ReservationDetailsSidebar({
                         </div>
 
                         {/* Mostrar "Pagó" solamente si está marcado como pagado */}
-                        {reservation.paymentStatus === 'pagado' && reservation.advanceAmount < reservation.amount && (
+                        {reservation.paymentStatus === 'pagado' && (reservation.advanceAmount || 0) < reservation.totalAmount && (
                           <div className="text-xs text-gray-700 mb-1">
-                            Pagó: {formatPrice(reservation.amount - (reservation.advanceAmount || 0))} ({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                            Pagó: {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))} ({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
                           </div>
                         )}
 
@@ -223,7 +223,7 @@ export function ReservationDetailsSidebar({
                           <span className="text-lg font-bold text-primary">
                             {reservation.paymentStatus === 'pagado'
                               ? '$ 0'
-                              : `$ ${(reservation.amount - (reservation.advanceAmount || 0)).toFixed(0)}`
+                              : `$ ${(reservation.totalAmount - (reservation.advanceAmount || 0)).toFixed(0)}`
                             }
                           </span>
                         </div>
@@ -257,13 +257,13 @@ export function ReservationDetailsSidebar({
                       <div>
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
-                          {reservation.origin || tripDetails?.route?.origin || 'Origen'}
+                          {reservation.trip?.route?.origin || 'Origen'}
                         </div>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500">Destino</div>
                         <div className="font-medium">
-                          {reservation.destination || tripDetails?.route?.destination || 'Destino'}
+                          {reservation.trip?.route?.destination || 'Destino'}
                         </div>
                       </div>
                     </div>
@@ -273,29 +273,19 @@ export function ReservationDetailsSidebar({
                       <div className="text-sm mb-3">
                         <div className="text-xs text-gray-500">Contacto</div>
                         <div className="font-medium flex items-center">
-                          {canViewPhoneNumbers() ? (
-                            <>
-                              <Phone className="h-3 w-3 mr-1 text-gray-500" />
-                              <a href={`tel:${reservation.phone}`} className="text-primary hover:underline">
-                                {reservation.phone}
-                              </a>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(reservation.phone || '');
-                                  // Podríamos añadir una notificación de éxito aquí
-                                }}
-                                className="ml-2 p-1 rounded-sm hover:bg-gray-100"
-                                title="Copiar al portapapeles"
-                              >
-                                <ClipboardCopy className="h-3.5 w-3.5 text-gray-500" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <LockIcon className="h-3 w-3 mr-1 text-gray-500" />
-                              <span className="text-gray-500 italic">Información restringida</span>
-                            </>
-                          )}
+                          <Phone className="h-3 w-3 mr-1 text-gray-500" />
+                          <a href={`tel:${reservation.phone}`} className="text-primary hover:underline">
+                            {reservation.phone}
+                          </a>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(reservation.phone || '');
+                            }}
+                            className="ml-2 p-1 rounded-sm hover:bg-gray-100"
+                            title="Copiar al portapapeles"
+                          >
+                            <ClipboardCopy className="h-3.5 w-3.5 text-gray-500" />
+                          </button>
                         </div>
                       </div>
                     )}
