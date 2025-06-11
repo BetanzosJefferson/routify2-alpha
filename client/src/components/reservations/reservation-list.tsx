@@ -30,6 +30,9 @@ import {
   MoreHorizontal,
   Eye,
   Trash as TrashIcon,
+  Clock,
+  Car,
+  Users,
 } from "lucide-react";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
@@ -157,7 +160,7 @@ export function ReservationList() {
 
       // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
       // CORRECTED: Access reservation.trip.departureDate directly
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
+      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
       // Normalizar la fecha actual del sistema para una comparación correcta
       const today = normalizeToStartOfDay(SYSTEM_DATE);
 
@@ -177,7 +180,7 @@ export function ReservationList() {
 
       // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
       // CORRECTED: Access reservation.trip.departureDate directly
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate);
+      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
       // Usar la misma fecha del sistema declarada arriba
       const today = normalizeToStartOfDay(SYSTEM_DATE);
 
@@ -1065,129 +1068,58 @@ export function ReservationList() {
               Error al cargar las reservaciones.
             </div>
           ) : paginatedReservations && paginatedReservations.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {paginatedReservations.map((reservation) => (
                 <div
                   key={reservation.id}
-                  className={`bg-white rounded-lg border shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 ${
-                    reservation.status === 'canceled' ? 'border-red-200 bg-red-50' : 'border-gray-200'
-                  }`}
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200"
                   onClick={() => {
                     setSelectedReservationId(reservation.id);
                     setIsDetailsModalOpen(true);
                   }}
                 >
-                  {/* Header con ID y estado */}
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-bold text-gray-900">
-                        #{generateReservationId(reservation.id)}
-                      </span>
-                      <div className="flex space-x-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          reservation.status === 'canceledAndRefund'
-                            ? 'bg-blue-100 text-blue-800'
-                            : reservation.paymentStatus === 'pagado'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {reservation.status === 'canceledAndRefund' 
-                            ? 'Reembolsado' 
-                            : reservation.paymentStatus === 'pagado' 
-                            ? 'Pagado' 
-                            : 'Pendiente'}
-                        </span>
-                        {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') && (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                            reservation.status === 'canceledAndRefund'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {reservation.status === 'canceledAndRefund' 
-                              ? 'Cancelada y reembolsada' 
-                              : 'Cancelada'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {user?.role !== "taquilla" && (
-                      <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditModal(reservation);
-                          }}
-                        >
-                          Editar
-                        </Button>
-                        {reservation.status === 'canceled' ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs text-red-600 hover:text-red-800 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDeleteConfirm(reservation.id, 'delete');
-                            }}
-                          >
-                            Eliminar
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 text-xs text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDeleteConfirm(reservation.id, 'cancel');
-                            }}
-                          >
-                            Cancelar
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Información del pasajero */}
-                  <div className="mb-3">
-                    <div className="font-medium text-gray-900 text-sm">
-                      {reservation.passengers[0]?.firstName} {reservation.passengers[0]?.lastName}
-                      {reservation.passengers.length > 1 && (
-                        <span className="text-gray-500"> +{reservation.passengers.length - 1}</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {reservation.phone}
-                    </div>
-                  </div>
-
-                  {/* Información del viaje */}
-                  <div className="mb-3">
-                    <div className="text-sm font-medium text-gray-900 mb-1">
+                  {/* Header principal con el nombre de la ruta */}
+                  <div className="p-4 pb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       {reservation.trip.route.name}
-                    </div>
-                    {/* CORRECTED: Access reservation.trip.origin and reservation.trip.destination directly */}
-                    <div className="text-xs text-gray-600 truncate">
+                    </h3>
+                    <div className="text-sm text-gray-600 mb-3">
                       {reservation.trip.origin} → {reservation.trip.destination}
                     </div>
-                  </div>
-
-                  {/* Footer con fecha y precio */}
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                    <div className="text-xs text-gray-500">
-                      {/* CORRECTED: Access reservation.trip.departureDate directly */}
-                      <span>{formatDate(reservation.trip.departureDate)}</span>
-                      <span className="mx-1">•</span>
-                      {/* CORRECTED: Access reservation.trip.departureTime directly */}
-                      <span>{formatTripTime(reservation.trip.departureTime)}</span>
-                    </div>
-                    <div className="text-sm font-bold text-gray-900">
-                      {formatPrice(reservation.totalAmount)}
+                    
+                    {/* Información con iconos en filas */}
+                    <div className="space-y-2">
+                      {/* Fecha */}
+                      <div className="flex items-center text-sm text-gray-700">
+                        <CalendarIcon className="h-4 w-4 mr-3 text-gray-500" />
+                        <span>{formatDate(reservation.trip.departureDate)}</span>
+                      </div>
+                      
+                      {/* Horario */}
+                      <div className="flex items-center text-sm text-gray-700">
+                        <Clock className="h-4 w-4 mr-3 text-gray-500" />
+                        <span>{formatTripTime(reservation.trip.departureTime)} - {formatTripTime(reservation.trip.arrivalTime || "00:00")}</span>
+                      </div>
+                      
+                      {/* Vehículo */}
+                      <div className="flex items-center text-sm text-gray-700">
+                        <Car className="h-4 w-4 mr-3 text-gray-500" />
+                        <span>Sin Unidad Asignada</span>
+                      </div>
+                      
+                      {/* Pasajeros */}
+                      <div className="flex items-center text-sm text-gray-700">
+                        <Users className="h-4 w-4 mr-3 text-gray-500" />
+                        <span>
+                          {reservation.passengers.length} pasajero{reservation.passengers.length !== 1 ? 's' : ''}
+                          {reservation.passengers[0] && (
+                            <span className="ml-1 text-gray-600">
+                              ({reservation.passengers[0].firstName} {reservation.passengers[0].lastName}
+                              {reservation.passengers.length > 1 && ` +${reservation.passengers.length - 1}`})
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

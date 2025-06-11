@@ -174,19 +174,6 @@ function ReservationsListContent() {
             />
           </div>
           
-          {/* Barra de búsqueda */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar por ID, teléfono, email, origen, destino o usuario..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-10"
-            />
-          </div>
         </div>
       </div>
 
