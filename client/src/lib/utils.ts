@@ -31,17 +31,10 @@ export function normalizeToStartOfDay(date: Date | string): Date {
         const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
         const day = parseInt(parts[2], 10);
         
-        // IMPORTANTE: Usar Date.UTC para crear fecha consistente
-        // y luego convertirla a fecha local para evitar errores de zona horaria
-        const utcDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-        dateObj = new Date(utcDate);
-        
-        // Asegurarse de que se mantenga el día correcto independientemente de la zona horaria
-        // Forzar el día que se especificó en el string original
-        if (dateObj.getDate() !== day) {
-          console.log(`[normalizeToStartOfDay] Corrigiendo día de ${dateObj.getDate()} a ${day}`);
-          dateObj.setDate(day);
-        }
+        // IMPORTANTE: Usar zona horaria de México para crear fecha consistente
+        const mexicoTimeString = new Date().toLocaleString("en-CA", {timeZone: "America/Mexico_City"});
+        const mexicoDate = new Date(mexicoTimeString);
+        dateObj = new Date(mexicoDate.getFullYear(), mexicoDate.getMonth(), mexicoDate.getDate(), 12, 0, 0);
         
         console.log(`[normalizeToStartOfDay] Fecha ISO procesada: ${dateObj.toISOString()}`);
       } else {
@@ -58,15 +51,8 @@ export function normalizeToStartOfDay(date: Date | string): Date {
         const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
         const day = parseInt(parts[2], 10);
         
-        // Usar fecha UTC para mantener consistencia, luego convertir a local
-        const utcDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-        dateObj = new Date(utcDate);
-        
-        // Forzar el día que se especificó en el string original
-        if (dateObj.getDate() !== day) {
-          console.log(`[normalizeToStartOfDay] Corrigiendo día de ${dateObj.getDate()} a ${day}`);
-          dateObj.setDate(day);
-        }
+        // Usar zona horaria de México para mantener consistencia
+        dateObj = new Date(year, month, day, 12, 0, 0);
       } else {
         // Para otros formatos, asumimos que está en zona horaria local
         const tempDate = new Date(date);
@@ -79,29 +65,17 @@ export function normalizeToStartOfDay(date: Date | string): Date {
       }
     }
   } else {
-    // Si ya es un objeto Date, vamos a usar directamente la fecha UTC sin manipulación 
-    // para evitar problemas con getDate() que modifica la fecha en función de la zona horaria
+    // Si ya es un objeto Date, usar zona horaria de México para la fecha actual del sistema
+    const mexicoTimeString = new Date().toLocaleString("en-CA", {timeZone: "America/Mexico_City"});
+    const mexicoDate = new Date(mexicoTimeString);
     
-    // Extraer directamente de la representación ISO para preservar la fecha exacta
-    const isoDate = date.toISOString();
-    const parts = isoDate.split('T')[0].split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // Meses en JS son 0-11
-    const day = parseInt(parts[2], 10);
+    console.log(`[normalizeToStartOfDay] Fecha sistema en México: ${mexicoDate.toISOString()}`);
     
-    console.log(`[normalizeToStartOfDay] Fecha objeto original: ${date.toISOString()}`);
-    console.log(`[normalizeToStartOfDay] Componentes ISO extraídos: año=${year}, mes=${month}, día=${day}`);
-    
-    // Crear fecha directamente sin offset de zona horaria
-    dateObj = new Date(Date.UTC(year, month, day, 12, 0, 0));
+    // Crear fecha directamente en zona horaria de México
+    dateObj = new Date(mexicoDate.getFullYear(), mexicoDate.getMonth(), mexicoDate.getDate(), 18, 0, 0);
   }
   
-  // Asegurarnos que la fecha tenga 12:00:00 para evitar problemas de DST
-  if (dateObj.getHours() !== 12) {
-    dateObj.setHours(12, 0, 0, 0);
-  }
-  
-  // Retornar fecha normalizada sin aplicar startOfDay que podría cambiar la fecha
+  // Retornar fecha normalizada
   return dateObj;
 }
 
