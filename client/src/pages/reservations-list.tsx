@@ -62,6 +62,10 @@ function ReservationsListContent() {
         origin: reservation.trip.origin,
         destination: reservation.trip.destination,
         departureDate: reservation.trip.departureDate,
+        departureTime: reservation.trip.departureTime,
+        arrivalTime: reservation.trip.arrivalTime,
+        vehicle: reservation.trip.vehicle,
+        driver: reservation.trip.driver,
         recordId: recordId
       };
     }
