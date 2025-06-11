@@ -219,6 +219,16 @@ function ReservationsListContent() {
           </div>
         </div>
       )}
+
+      {/* Sidebar de detalles de reservaciones */}
+      {selectedTrip && (
+        <ReservationDetailsSidebar
+          recordId={selectedTrip.recordId}
+          tripInfo={selectedTrip.tripInfo}
+          reservations={selectedTrip.reservations}
+          onClose={() => setSelectedTrip(null)}
+        />
+      )}
     </div>
   );
 }
