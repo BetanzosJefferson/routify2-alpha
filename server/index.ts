@@ -4,6 +4,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 // Referencia a rutas de cortes de caja eliminada
 
+// Set timezone to Mexico City
+process.env.TZ = 'America/Mexico_City';
+
 const app = express();
 // Aumentar el límite para permitir imágenes más grandes (50MB)
 app.use(express.json({ limit: '50mb' }));
