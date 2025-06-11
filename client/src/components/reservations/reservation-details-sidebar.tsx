@@ -26,16 +26,6 @@ import { Input } from "@/components/ui/input";
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { ReservationWithDetails } from "@shared/schema";
 
-// Helper function (asegúrate de que esté definida en algún lugar accesible)
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price);
-};
-
 interface ReservationDetailsSidebarProps {
   recordId: string;
   tripInfo: any;

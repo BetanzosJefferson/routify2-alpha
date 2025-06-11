@@ -860,4 +860,62 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Notification methods
+  async createNotification(notificationData: any): Promise<any> {
+    try {
+      const [notification] = await db
+        .insert(schema.notifications)
+        .values(notificationData)
+        .returning();
+      return notification;
+    } catch (error) {
+      console.error('Error al crear notificación:', error);
+      throw error;
+    }
+  }
+
+  async getNotifications(userId: number): Promise<any[]> {
+    try {
+      const notifications = await db
+        .select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, userId))
+        .orderBy(sql`${schema.notifications.createdAt} DESC`);
+      return notifications;
+    } catch (error) {
+      console.error('Error al obtener notificaciones:', error);
+      return [];
+    }
+  }
+
+  async markNotificationAsRead(id: number): Promise<any> {
+    try {
+      const [notification] = await db
+        .update(schema.notifications)
+        .set({ read: true })
+        .where(eq(schema.notifications.id, id))
+        .returning();
+      return notification;
+    } catch (error) {
+      console.error('Error al marcar notificación como leída:', error);
+      throw error;
+    }
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    try {
+      const [result] = await db
+        .select({ count: sql`count(*)` })
+        .from(schema.notifications)
+        .where(and(
+          eq(schema.notifications.userId, userId),
+          eq(schema.notifications.read, false)
+        ));
+      return parseInt(result.count.toString());
+    } catch (error) {
+      console.error('Error al obtener conteo de notificaciones no leídas:', error);
+      return 0;
+    }
+  }
 }
