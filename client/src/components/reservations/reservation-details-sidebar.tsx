@@ -206,9 +206,8 @@ export function ReservationDetailsSidebar({
                         </Avatar>
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {console.log('Estructura de passengers:', reservation.passengers)}
                             {reservation.passengers && reservation.passengers.length > 0 ? 
-                              reservation.passengers.map(p => p.name).join(', ') :
+                              reservation.passengers.map(p => `${p.firstName} ${p.lastName}`).join(', ') :
                               'Sin pasajeros'
                             }
                           </p>
