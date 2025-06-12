@@ -4398,6 +4398,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  // POST /api/reservations/:id/check - Verificar ticket
+  app.post(apiRouter('/reservations/:id/check'), isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`[CHECK TICKET] Solicitud de verificación de ticket ${id} por usuario ${req.user.firstName} ${req.user.lastName} (ID: ${req.user.id})`);
+      
+      // Obtener la reservación
+      const reservation = await storage.getReservation(id);
+      if (!reservation) {
+        console.log(`[CHECK TICKET] DENEGADO: Reservación ${id} no encontrada`);
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Reservación no encontrada' 
+        });
+      }
+      
+      // Verificar si el ticket ya ha sido verificado
+      if (reservation.checkedBy !== null && reservation.checkedBy !== undefined) {
+        console.log(`[CHECK TICKET] DENEGADO: El ticket ${id} ya ha sido verificado previamente por usuario ${reservation.checkedBy}`);
+        return res.status(400).json({
+          success: false,
+          isAlreadyChecked: true,
+          reservation: reservation,
+          message: 'Este ticket ya ha sido verificado y no puede verificarse nuevamente'
+        });
+      }
+      
+      // Verificar permisos de rol
+      const allowedRoles = ['superAdmin', 'admin', 'dueño', 'checador', 'chofer', 'taquilla'];
+      if (!allowedRoles.includes(req.user.role)) {
+        console.log(`[CHECK TICKET] DENEGADO: Rol ${req.user.role} no autorizado para verificar tickets`);
+        return res.status(403).json({ 
+          success: false, 
+          message: 'No tienes permiso para verificar tickets' 
+        });
+      }
+      
+      // Verificar permisos de compañía (excepto superAdmin)
+      if (req.user.role !== 'superAdmin') {
+        const userCompanyId = req.user.company || req.user.companyId;
+        const reservationCompanyId = reservation.companyId;
+        
+        console.log(`[CHECK TICKET] Verificando compañías - Usuario: ${userCompanyId || 'ninguna'}, Reservación: ${reservationCompanyId || 'ninguna'}`);
+        
+        if (!userCompanyId) {
+          console.log(`[CHECK TICKET] DENEGADO: Usuario sin compañía asignada`);
+          return res.status(403).json({ 
+            success: false, 
+            message: 'No tienes una compañía asignada para verificar tickets' 
+          });
+        }
+        
+        if (!reservationCompanyId) {
+          console.log(`[CHECK TICKET] DENEGADO: La reservación no tiene compañía asignada`);
+          return res.status(403).json({ 
+            success: false, 
+            message: 'La reservación no tiene compañía asignada' 
+          });
+        }
+        
+        // Normalizar IDs de compañía para comparación
+        const normalizeCompanyId = (companyId: string) => {
+          const companyIdLower = companyId.toLowerCase();
+          const match = companyIdLower.match(/^([a-z]+)(?:-\d+)?$/);
+          return match ? match[1] : companyIdLower;
+        };
+        
+        const normalizedUserCompany = normalizeCompanyId(userCompanyId);
+        const normalizedReservationCompany = normalizeCompanyId(reservationCompanyId);
+        
+        console.log(`[CHECK TICKET] Compañías normalizadas - Usuario: ${normalizedUserCompany}, Reservación: ${normalizedReservationCompany}`);
+        
+        if (normalizedUserCompany !== normalizedReservationCompany) {
+          console.log(`[CHECK TICKET] DENEGADO: Las compañías no coinciden - Usuario: ${normalizedUserCompany}, Reservación: ${normalizedReservationCompany}`);
+          return res.status(403).json({ 
+            success: false, 
+            message: 'No puedes verificar tickets de reservaciones que no pertenecen a tu compañía' 
+          });
+        }
+      }
+      
+      // Marcar el ticket como verificado
+      const updatedReservation = await storage.checkTicket(id, req.user.id);
+      
+      if (!updatedReservation) {
+        console.log(`[CHECK TICKET] ERROR: No se pudo actualizar la reservación ${id}`);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Error al marcar el ticket como verificado' 
+        });
+      }
+      
+      console.log(`[CHECK TICKET] ÉXITO: Ticket ${id} verificado por usuario ${req.user.id}`);
+      
+      res.json({ 
+        success: true, 
+        isFirstScan: true,
+        reservation: updatedReservation,
+        message: 'Ticket verificado correctamente'
+      });
+      
+    } catch (error) {
+      console.error(`[CHECK TICKET] ERROR: ${error}`);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al procesar la verificación del ticket' 
+      });
+    }
+  });
 
   // POST /api/reservations/:id/pay - Marcar un ticket como pagado
   app.post(apiRouter('/reservations/:id/pay'), isAuthenticated, async (req, res) => {
