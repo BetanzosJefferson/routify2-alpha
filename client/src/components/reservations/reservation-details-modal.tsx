@@ -1191,7 +1191,17 @@ export default function ReservationDetailsModal({
               <DialogFooter className="mt-2 sm:mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                 <Button className="w-full sm:w-auto text-sm" onClick={handleClose}>Cerrar</Button>
 
-                {user && hasRequiredRole(user, ["checker", "driver", "owner", "admin"]) && reservation.status !== 'canceled' && (
+                {user && (() => {
+                  // Lista ampliada de roles que pueden verificar tickets
+                  const hasRole = hasRequiredRole(user, ["checker", "checador", "driver", "chofer", "owner", "dueño", "admin", "superAdmin"]);
+                  console.log('[FRONTEND] Verificación de rol:', { 
+                    userRole: user.role, 
+                    hasRole, 
+                    reservationStatus: reservation.status,
+                    checkedBy: reservation.checkedBy
+                  });
+                  return hasRole;
+                })() && reservation.status !== 'canceled' && (
                   <Button
                     className={`w-full sm:w-auto text-sm ${reservation.checkedBy ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
                     onClick={handleCheckTicket}
