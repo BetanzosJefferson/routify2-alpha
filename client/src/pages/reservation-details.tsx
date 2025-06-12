@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import TicketCheckedModal from "@/components/reservations/ticket-checked-modal";
+
 import ReservationCanceledModal from "@/components/reservations/reservation-canceled-modal";
 
 export default function ReservationDetails({ params }: { params?: { id?: string } }) {
@@ -19,12 +19,7 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
   const { user } = useAuth();
   const [reservationId, setReservationId] = useState<number | null>(null);
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
-  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [isCanceledModalOpen, setIsCanceledModalOpen] = useState(false);
-  const [ticketCheckResult, setTicketCheckResult] = useState<{
-    isFirstScan: boolean;
-    reservation?: any;
-  } | null>(null);
 
   // Extraer el ID de la reservación de los parámetros de ruta
   useEffect(() => {
@@ -55,87 +50,7 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     enabled: !!reservationId,
   });
 
-  // Auto verificación del ticket cuando se carga por primera vez
-  const checkTicketMutation = useMutation({
-    mutationFn: async () => {
-      if (!reservationId || !user) return null;
-      
-      // Primero verificamos si la reservación está cancelada o ya ha sido escaneada
-      const reservationResponse = await fetch(`/api/public/reservations/${reservationId}`);
-      if (!reservationResponse.ok) return null;
-      const reservationData = await reservationResponse.json();
-      
-      if (reservationData.status === 'canceled') {
-        return { isCanceled: true, reservation: reservationData };
-      }
-      
-      // Verificar si el ticket ya ha sido escaneado
-      if (reservationData.checkedBy !== null && reservationData.checkedBy !== undefined) {
-        return { 
-          isAlreadyChecked: true, 
-          reservation: reservationData,
-          success: false,
-          message: 'Este ticket ya ha sido verificado y no puede verificarse nuevamente'
-        };
-      }
-      
-      const response = await apiRequest("POST", `/api/reservations/${reservationId}/check`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        // Si el error es porque el ticket ya fue verificado, manejamos de forma especial
-        if (errorData.isAlreadyChecked) {
-          return { 
-            isAlreadyChecked: true, 
-            reservation: errorData.reservation,
-            success: false,
-            message: errorData.message
-          };
-        }
-        return null;
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (!data) return;
-      
-      // Si la reservación está cancelada, mostramos el modal de cancelación
-      if (data.isCanceled) {
-        setIsCanceledModalOpen(true);
-        return;
-      }
-      
-      // Si el ticket ya está verificado, no mostramos el modal de éxito
-      if (data.isAlreadyChecked) {
-        toast({
-          title: "Ticket Ya Verificado",
-          description: "Este ticket ya ha sido verificado anteriormente y no puede escanearse nuevamente.",
-          variant: "default",
-        });
-        return;
-      }
-      
-      setTicketCheckResult({
-        isFirstScan: data.isFirstScan,
-        reservation: data.reservation
-      });
-      
-      setIsTicketModalOpen(true);
-      toast({
-        title: "Ticket Verificado",
-        description: "El ticket ha sido marcado como verificado correctamente.",
-        variant: "default",
-      });
-      
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error al verificar ticket",
-        description: error instanceof Error ? error.message : "No se pudo verificar el ticket",
-        variant: "destructive",
-      });
-    }
-  });
+
 
   // Función para marcar como pagado
   const markAsPaid = async () => {
@@ -189,12 +104,7 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     }
   };
 
-  // Intentar verificar automáticamente al cargar la página si el usuario está autenticado
-  useEffect(() => {
-    if (user && reservation && !reservation.checkedBy) {
-      checkTicketMutation.mutate();
-    }
-  }, [user, reservation]);
+
 
   if (isLoading) {
     return (
@@ -497,15 +407,7 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
         )}
       </Card>
       
-      {/* Modal de confirmación de ticket escaneado */}
-      {ticketCheckResult && (
-        <TicketCheckedModal
-          isOpen={isTicketModalOpen}
-          onClose={() => setIsTicketModalOpen(false)}
-          reservation={ticketCheckResult.reservation}
-          isFirstScan={ticketCheckResult.isFirstScan}
-        />
-      )}
+
       
       {/* Modal de reservación cancelada */}
       {reservation && (
