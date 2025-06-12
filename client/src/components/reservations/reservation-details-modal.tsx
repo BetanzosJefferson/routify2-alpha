@@ -17,7 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { hasRequiredRole } from "@/lib/role-based-permissions";
 import { formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
-import TicketCheckedModal from "@/components/reservations/ticket-checked-modal";
+
 
 interface ReservationDetailsModalProps {
   reservationId: number | null;
@@ -34,12 +34,7 @@ export default function ReservationDetailsModal({
   const { user } = useAuth();
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
-  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
-  const [ticketCheckResult, setTicketCheckResult] = useState<{
-    isFirstScan: boolean;
-    reservation?: any;
-  } | null>(null);
+
 
   // Cargar los detalles de la reservación usando el endpoint principal
   const { data: reservation, isLoading, error, refetch } = useQuery({
@@ -55,64 +50,7 @@ export default function ReservationDetailsModal({
     enabled: !!reservationId && isOpen,
   });
 
-  // Verificar ticket
-  const handleCheckTicket = async () => {
-    if (!reservationId || !user) {
-      toast({
-        title: "Autenticación requerida",
-        description: "Para verificar un ticket necesita iniciar sesión con una cuenta autorizada.",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    // Verificar si la reservación está cancelada
-    if (reservation?.status === 'canceled' || reservation?.status === 'canceledAndRefund') {
-      toast({
-        title: "Reservación cancelada",
-        description: "Las reservaciones canceladas no pueden ser verificadas.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsChecking(true);
-    try {
-      const response = await apiRequest("POST", `/api/reservations/${reservationId}/check`);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Error al verificar el ticket");
-      }
-
-      const data = await response.json();
-      setTicketCheckResult({
-        isFirstScan: data.isFirstScan,
-        reservation: data.reservation
-      });
-      setIsTicketModalOpen(true);
-
-      // Refrescar los datos
-      refetch();
-
-      toast({
-        title: data.isFirstScan ? "Ticket Verificado" : "Ticket Re-escaneado",
-        description: data.isFirstScan
-          ? "El ticket ha sido marcado como verificado correctamente."
-          : "Este ticket ya había sido verificado anteriormente.",
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        title: "Error al verificar ticket",
-        description: error instanceof Error
-          ? error.message
-          : "No se pudo verificar el ticket. Verifica que estés autenticado con los permisos correctos.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsChecking(false);
-    }
-  };
 
   // Marcar como pagado
   const markAsPaid = async () => {
@@ -1184,31 +1122,7 @@ export default function ReservationDetailsModal({
               <DialogFooter className="mt-2 sm:mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                 <Button className="w-full sm:w-auto text-sm" onClick={handleClose}>Cerrar</Button>
 
-                {user && hasRequiredRole(user, ["checker", "driver", "owner", "admin"]) && reservation.status !== 'canceled' && (
-                  <Button
-                    className={`w-full sm:w-auto text-sm ${reservation.checkedBy ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                    onClick={handleCheckTicket}
-                    disabled={isChecking || reservation.checkedBy !== null}
-                    title={reservation.checkedBy ? "Este ticket ya ha sido verificado" : "Verificar ticket"}
-                  >
-                    {isChecking ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Procesando...
-                      </>
-                    ) : reservation.checkedBy ? (
-                      <>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Ya Verificado
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Verificar Ticket
-                      </>
-                    )}
-                  </Button>
-                )}
+
 
                 {user && reservation.status !== 'canceled' && (
                   <Button
@@ -1234,15 +1148,7 @@ export default function ReservationDetailsModal({
           )}
         </DialogContent>
 
-        {/* Modal de verificación de ticket */}
-        {ticketCheckResult && (
-          <TicketCheckedModal
-            isOpen={isTicketModalOpen}
-            onClose={() => setIsTicketModalOpen(false)}
-            reservation={ticketCheckResult.reservation}
-            isFirstScan={ticketCheckResult.isFirstScan}
-          />
-        )}
+
       </Dialog>
     </>
   );
