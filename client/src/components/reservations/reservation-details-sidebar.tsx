@@ -257,13 +257,13 @@ export function ReservationDetailsSidebar({
                       <div>
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
-                          {reservation.origin || tripDetails?.route?.origin || 'Origen'}
+                          {reservation.trip?.route?.origin || 'Origen'}
                         </div>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500">Destino</div>
                         <div className="font-medium">
-                          {reservation.destination || tripDetails?.route?.destination || 'Destino'}
+                          {reservation.trip?.route?.destination || 'Destino'}
                         </div>
                       </div>
                     </div>

@@ -57,11 +57,7 @@ export default function ReservationDetailsModal({
 
   // Verificar ticket
   const handleCheckTicket = async () => {
-    console.log('[FRONTEND] ===== BOTÓN VERIFICAR TICKET PRESIONADO =====');
-    console.log('[FRONTEND] handleCheckTicket ejecutado', { reservationId, user: user?.id });
-    
     if (!reservationId || !user) {
-      console.log('[FRONTEND] Falta autenticación', { reservationId: !!reservationId, user: !!user });
       toast({
         title: "Autenticación requerida",
         description: "Para verificar un ticket necesita iniciar sesión con una cuenta autorizada.",
@@ -82,13 +78,9 @@ export default function ReservationDetailsModal({
 
     setIsChecking(true);
     try {
-      console.log('[FRONTEND] Llamando API:', `/api/reservations/${reservationId}/check`);
       const response = await apiRequest("POST", `/api/reservations/${reservationId}/check`);
-      console.log('[FRONTEND] Respuesta API:', response.status, response.ok);
-      
       if (!response.ok) {
         const error = await response.json();
-        console.log('[FRONTEND] Error en respuesta:', error);
         throw new Error(error.message || "Error al verificar el ticket");
       }
 
@@ -110,10 +102,6 @@ export default function ReservationDetailsModal({
         variant: "default",
       });
     } catch (error) {
-      console.error('[FRONTEND] Error completo capturado:', error);
-      console.error('[FRONTEND] Tipo de error:', typeof error);
-      console.error('[FRONTEND] Stack trace:', error instanceof Error ? error.stack : 'No stack available');
-      
       toast({
         title: "Error al verificar ticket",
         description: error instanceof Error
@@ -1196,28 +1184,12 @@ export default function ReservationDetailsModal({
               <DialogFooter className="mt-2 sm:mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                 <Button className="w-full sm:w-auto text-sm" onClick={handleClose}>Cerrar</Button>
 
-                {user && (() => {
-                  // Lista ampliada de roles que pueden verificar tickets
-                  const hasRole = hasRequiredRole(user, ["checker", "checador", "driver", "chofer", "owner", "dueño", "admin", "superAdmin"]);
-                  console.log('[FRONTEND] Verificación de rol:', { 
-                    userRole: user.role, 
-                    hasRole, 
-                    reservationStatus: reservation.status,
-                    checkedBy: reservation.checkedBy
-                  });
-                  return hasRole;
-                })() && reservation.status !== 'canceled' && (
+                {user && hasRequiredRole(user, ["checker", "driver", "owner", "admin"]) && reservation.status !== 'canceled' && (
                   <Button
                     className={`w-full sm:w-auto text-sm ${reservation.checkedBy ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                    onClick={(e) => {
-                      console.log('[FRONTEND] Click directo en botón detectado');
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleCheckTicket();
-                    }}
+                    onClick={handleCheckTicket}
                     disabled={isChecking || reservation.checkedBy !== null}
                     title={reservation.checkedBy ? "Este ticket ya ha sido verificado" : "Verificar ticket"}
-                    type="button"
                   >
                     {isChecking ? (
                       <>

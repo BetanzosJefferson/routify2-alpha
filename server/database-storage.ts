@@ -695,31 +695,6 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: schema.reservations.id });
     return result.length > 0;
   }
-
-  async checkTicket(reservationId: number, userId: number): Promise<Reservation | undefined> {
-    console.log(`[DB Storage] Marcando ticket ${reservationId} como escaneado por usuario ${userId}`);
-    
-    try {
-      const now = new Date();
-      
-      const [updatedReservation] = await db
-        .update(schema.reservations)
-        .set({
-          checkedBy: userId,
-          checkedAt: now,
-          checkCount: sql`COALESCE(${schema.reservations.checkCount}, 0) + 1`,
-          updatedAt: now
-        })
-        .where(eq(schema.reservations.id, reservationId))
-        .returning();
-      
-      console.log(`[DB Storage] Ticket ${reservationId} marcado como escaneado exitosamente`);
-      return updatedReservation;
-    } catch (error) {
-      console.error(`[DB Storage] Error al marcar ticket ${reservationId} como escaneado:`, error);
-      throw error;
-    }
-  }
   
   async getPassengers(reservationId: number): Promise<Passenger[]> {
     return await db
@@ -941,58 +916,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error al obtener conteo de notificaciones no leídas:', error);
       return 0;
-    }
-  }
-
-  async checkTicket(reservationId: number, checkedBy: number): Promise<{ success: boolean; wasAlreadyChecked: boolean; message: string }> {
-    try {
-      console.log(`[DatabaseStorage] Verificando ticket para reservación ${reservationId} por usuario ${checkedBy}`);
-      
-      // Obtener la reservación actual
-      const [reservation] = await db
-        .select()
-        .from(schema.reservations)
-        .where(eq(schema.reservations.id, reservationId));
-
-      if (!reservation) {
-        return {
-          success: false,
-          wasAlreadyChecked: false,
-          message: "Reservación no encontrada"
-        };
-      }
-
-      console.log(`[DatabaseStorage] Reservación encontrada. Estado actual checkedBy: ${reservation.checkedBy}`);
-
-      // Verificar si ya fue verificado
-      const wasAlreadyChecked = reservation.checkedBy !== null;
-
-      // Actualizar el estado de verificación
-      const [updatedReservation] = await db
-        .update(schema.reservations)
-        .set({ 
-          checkedBy: checkedBy,
-          updatedAt: new Date()
-        })
-        .where(eq(schema.reservations.id, reservationId))
-        .returning();
-
-      console.log(`[DatabaseStorage] Reservación actualizada exitosamente. checkedBy: ${updatedReservation.checkedBy}`);
-
-      return {
-        success: true,
-        wasAlreadyChecked,
-        message: wasAlreadyChecked 
-          ? "Ticket ya había sido verificado anteriormente"
-          : "Ticket verificado exitosamente"
-      };
-    } catch (error) {
-      console.error(`[DatabaseStorage] Error al verificar ticket:`, error);
-      return {
-        success: false,
-        wasAlreadyChecked: false,
-        message: "Error interno al verificar el ticket"
-      };
     }
   }
 }

@@ -77,8 +77,8 @@ function ReservationsListContent() {
         departureDate: reservation.trip.departureDate,
         departureTime: reservation.trip.departureTime,
         arrivalTime: reservation.trip.arrivalTime,
-        vehicle: reservation.trip.vehicle,
-        driver: reservation.trip.driver,
+        vehicle: reservation.trip.vehicleId || "Sin asignar",
+        driver: reservation.trip.driverId || "Sin asignar",
         recordId: recordId
       };
     }
@@ -180,71 +180,62 @@ function ReservationsListContent() {
       {/* Lista de reservaciones agrupadas por viaje */}
       <div className="space-y-6">
         {paginatedGroups.map(([recordId, groupData]) => (
-         <Card key={recordId} className="border-2 border-gray-200 shadow-sm rounded-lg overflow-hidden">
-           <CardHeader
-             className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors flex items-center justify-between"
-             onClick={() => handleTripClick(recordId, groupData.tripInfo, groupData.reservations)}
-           >
-             <div className="flex flex-col flex-grow">
-               {/* Sección principal del viaje: Origen, Destino y Fecha */}
-               <div className="flex items-center gap-2 mb-1">
-                 <MapPin className="h-5 w-5 text-blue-600" />
-                 <CardTitle className="text-lg font-bold text-gray-800">
-                   {groupData.tripInfo ?
-                     `${groupData.tripInfo.origin} → ${groupData.tripInfo.destination}` :
-                     `Viaje ${recordId}`
-                   }
-                 </CardTitle>
-               </div>
-               <div className="text-sm text-gray-600 ml-7"> {/* Alineado con el texto de la tarjeta */}
-                 {groupData.tripInfo ? formatDate(groupData.tripInfo.departureDate) : 'Fecha no disponible'}
-               </div>
-             </div>
-             <div className="flex items-center gap-2">
-               {/* Indicador de número de reservaciones */}
-               <span className="text-sm font-medium text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-                 {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
-               </span>
-               {/* Icono de expansión/colapso */}
-               <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200" /> {/* Añadir rotación con el estado */}
-             </div>
-           </CardHeader>
+          <Card key={recordId} className="border-2 border-gray-200">
+            <CardHeader 
+              className="bg-gray-50 pb-3 cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => handleTripClick(recordId, groupData.tripInfo, groupData.reservations)}
+            >
+              <CardTitle className="text-lg font-semibold text-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-blue-600" />
+                    {groupData.tripInfo ? 
+                      `${groupData.tripInfo.origin} → ${groupData.tripInfo.destination} - ${formatDate(groupData.tripInfo.departureDate)}` :
+                      `Viaje ${recordId}`
+                    }
+                  </div>
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                </div>
+                
+                {/* Información adicional del viaje */}
+                {groupData.tripInfo && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm font-normal text-gray-600">
+                    {/* Horarios */}
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-green-600" />
+                      <span>
+                        {groupData.tripInfo.departureTime || 'Sin horario'} - {groupData.tripInfo.arrivalTime || 'Sin horario'}
+                      </span>
+                    </div>
+                    
+                    {/* Unidad */}
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-orange-600" />
+                      <span>
+                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
+                      </span>
+                    </div>
+                    
+                    {/* Operador */}
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-purple-600" />
+                      <span>
+                        {groupData.tripInfo.driver ? 
+                          `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` : 
+                          'Sin asignar'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="text-sm font-normal text-gray-600 mt-2">
+                  {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
+                </div>
+              </CardTitle>
+            </CardHeader>
 
-           {/* Contenido expandible: Información detallada del viaje */}
-           {/* Aquí podrías añadir una lógica para mostrar/ocultar esta sección */}
-           {groupData.tripInfo && (
-             <CardContent className="p-4 pt-3 border-t border-gray-200 bg-white">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-4 text-sm text-gray-700">
-                 {/* Horarios */}
-                 <div className="flex items-center gap-2">
-                   <Clock className="h-4 w-4 text-green-600" />
-                   <span>
-                     <span className="font-semibold">Horario:</span> {groupData.tripInfo.departureTime || 'N/A'} - {groupData.tripInfo.arrivalTime || 'N/A'}
-                   </span>
-                 </div>
-
-                 {/* Unidad */}
-                 <div className="flex items-center gap-2">
-                   <Truck className="h-4 w-4 text-orange-600" />
-                   <span>
-                     <span className="font-semibold">Unidad:</span> {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
-                   </span>
-                 </div>
-
-                 {/* Operador */}
-                 <div className="flex items-center gap-2">
-                   <UserCheck className="h-4 w-4 text-purple-600" />
-                   <span>
-                     <span className="font-semibold">Operador:</span> {groupData.tripInfo.driver ?
-                       `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` :
-                       'Sin asignar'
-                     }
-                   </span>
-                 </div>
-               </div>
-             </CardContent>
-           )}
-         </Card>
+          </Card>
         ))}
       </div>
 

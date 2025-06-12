@@ -704,6 +704,16 @@ export function ReservationList() {
                 )}
                 Hora
               </Button>
+
+              {/* Filtro general */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+              >
+                <FilterIcon className="h-4 w-4" />
+                Filtros
+              </Button>
             </div>
           </div>
         </CardHeader>

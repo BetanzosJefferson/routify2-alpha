@@ -76,7 +76,6 @@ export interface IStorage {
   createReservation(reservation: InsertReservation): Promise<Reservation>;
   updateReservation(id: number, reservation: Partial<Reservation>): Promise<Reservation | undefined>;
   deleteReservation(id: number): Promise<boolean>;
-  checkTicket(reservationId: number, userId: number): Promise<Reservation | undefined>;
   getPaidReservationsByUser(userId: number): Promise<ReservationWithDetails[]>;
   getPaidReservationsByCompany(companyId: string): Promise<ReservationWithDetails[]>;
   
@@ -180,9 +179,6 @@ export interface IStorage {
   
   // Box cutoff methods
   createBoxCutoff(cutoffData: schema.InsertBoxCutoff): Promise<schema.BoxCutoff>;
-  
-  // Ticket verification methods
-  checkTicket(reservationId: number, checkedBy: number): Promise<{ success: boolean; wasAlreadyChecked: boolean; message: string }>;
 }
 
 export class MemStorage implements IStorage {
@@ -851,205 +847,10 @@ export class MemStorage implements IStorage {
   async deleteUser(id: number): Promise<boolean> {
     return this.users.delete(id);
   }
-
-  // Ticket verification methods - stub implementation for MemStorage
-  async checkTicket(reservationId: number, checkedBy: number): Promise<{ success: boolean; wasAlreadyChecked: boolean; message: string }> {
-    const reservation = this.reservations.get(reservationId);
-    if (!reservation) {
-      return {
-        success: false,
-        wasAlreadyChecked: false,
-        message: "Reservación no encontrada"
-      };
-    }
-
-    const wasAlreadyChecked = reservation.checkedBy !== null && reservation.checkedBy !== undefined;
-    
-    // Update the reservation
-    const updatedReservation = {
-      ...reservation,
-      checkedBy: checkedBy,
-      updatedAt: new Date()
-    };
-    this.reservations.set(reservationId, updatedReservation);
-
-    return {
-      success: true,
-      wasAlreadyChecked,
-      message: wasAlreadyChecked 
-        ? "Ticket ya había sido verificado anteriormente"
-        : "Ticket verificado exitosamente"
-    };
-  }
-
-  // Stub implementations for other missing methods to satisfy interface
-  async getUsersByRole(role: string): Promise<User[]> {
-    return Array.from(this.users.values()).filter(user => user.role === role);
-  }
-
-  async createReservationRequest(requestData: any): Promise<ReservationRequest> {
-    throw new Error("createReservationRequest not implemented in MemStorage");
-  }
-
-  async getReservationRequests(filters?: any): Promise<any[]> {
-    return [];
-  }
-
-  async getReservationRequest(id: number): Promise<any> {
-    return null;
-  }
-
-  async updateReservationRequestStatus(id: number, status: string, reviewedBy: number, reviewNotes?: string): Promise<ReservationRequest> {
-    throw new Error("updateReservationRequestStatus not implemented in MemStorage");
-  }
-
-  async createNotification(notificationData: InsertNotification): Promise<Notification> {
-    throw new Error("createNotification not implemented in MemStorage");
-  }
-
-  async getNotifications(userId: number): Promise<Notification[]> {
-    return [];
-  }
-
-  async markNotificationAsRead(id: number): Promise<Notification> {
-    throw new Error("markNotificationAsRead not implemented in MemStorage");
-  }
-
-  async getUnreadNotificationsCount(userId: number): Promise<number> {
-    return 0;
-  }
-
-  async checkReservationTransferPermission(reservationId: number, userId: number): Promise<boolean> {
-    return false;
-  }
-
-  async markCommissionsAsPaid(reservationIds: number[]): Promise<{ success: boolean; message: string; affectedCount: number }> {
-    return { success: false, message: "Not implemented in MemStorage", affectedCount: 0 };
-  }
-
-  async getCoupons(companyId?: string): Promise<Coupon[]> {
-    return [];
-  }
-
-  async getCoupon(id: number): Promise<Coupon | undefined> {
-    return undefined;
-  }
-
-  async getCouponByCode(code: string): Promise<Coupon | undefined> {
-    return undefined;
-  }
-
-  async createCoupon(coupon: InsertCoupon): Promise<Coupon> {
-    throw new Error("createCoupon not implemented in MemStorage");
-  }
-
-  async updateCoupon(id: number, coupon: Partial<Coupon>): Promise<Coupon | undefined> {
-    return undefined;
-  }
-
-  async deleteCoupon(id: number): Promise<boolean> {
-    return false;
-  }
-
-  async incrementCouponUsage(id: number): Promise<Coupon | undefined> {
-    return undefined;
-  }
-
-  async verifyCouponValidity(code: string): Promise<{ valid: boolean; coupon?: Coupon; message?: string }> {
-    return { valid: false, message: "Not implemented in MemStorage" };
-  }
-
-  async getPackages(filters?: any): Promise<schema.Package[]> {
-    return [];
-  }
-
-  async getPackage(id: number): Promise<schema.Package | undefined> {
-    return undefined;
-  }
-
-  async getPackageWithTripInfo(id: number): Promise<schema.Package & { trip?: TripWithRouteInfo } | undefined> {
-    return undefined;
-  }
-
-  async createPackage(packageData: schema.InsertPackage): Promise<schema.Package> {
-    throw new Error("createPackage not implemented in MemStorage");
-  }
-
-  async updatePackage(id: number, packageData: Partial<schema.Package>): Promise<schema.Package | undefined> {
-    return undefined;
-  }
-
-  async deletePackage(id: number): Promise<boolean> {
-    return false;
-  }
-
-  async getCompanyById(companyId: string): Promise<{id: string, name: string} | null> {
-    return null;
-  }
-
-  async createTransaccion(transaccionData: schema.InsertTransaccion): Promise<schema.Transaccion> {
-    throw new Error("createTransaccion not implemented in MemStorage");
-  }
-
-  async getTransacciones(filters?: any): Promise<schema.Transaccion[]> {
-    return [];
-  }
-
-  async getTransactionsByCompanyExcludingUser(companyId: string, excludeUserId: number): Promise<schema.Transaccion[]> {
-    return [];
-  }
-
-  async updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined> {
-    return undefined;
-  }
-
-  async deleteTransaccion(id: number): Promise<boolean> {
-    return false;
-  }
-
-  async getTransaccionesByReservation(reservationId: number): Promise<schema.Transaccion[]> {
-    return [];
-  }
-
-  async getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]> {
-    return [];
-  }
-
-  async createBoxCutoff(cutoffData: schema.InsertBoxCutoff): Promise<schema.BoxCutoff> {
-    throw new Error("createBoxCutoff not implemented in MemStorage");
-  }
-
-  async getTripBudget(tripId: number): Promise<TripBudget | undefined> {
-    return undefined;
-  }
-
-  async createTripBudget(budget: InsertTripBudget): Promise<TripBudget> {
-    throw new Error("createTripBudget not implemented in MemStorage");
-  }
-
-  async updateTripBudget(tripId: number, amount: number): Promise<TripBudget | undefined> {
-    return undefined;
-  }
-
-  async getTripExpenses(tripId: number): Promise<TripExpense[]> {
-    return [];
-  }
-
-  async createTripExpense(expense: InsertTripExpense): Promise<TripExpense> {
-    throw new Error("createTripExpense not implemented in MemStorage");
-  }
-
-  async updateTripExpense(id: number, expense: Partial<TripExpense>): Promise<TripExpense | undefined> {
-    return undefined;
-  }
-
-  async deleteTripExpense(id: number): Promise<boolean> {
-    return false;
-  }
 }
 
 // Importamos la clase DatabaseStorage desde el archivo separado
-import { DatabaseStorage } from "./database-storage";
+import { DatabaseStorage } from "./db-storage";
 
 // Usamos la versión de almacenamiento en base de datos para implementar la funcionalidad
 export const storage = new DatabaseStorage();
