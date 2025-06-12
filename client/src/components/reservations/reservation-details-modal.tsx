@@ -57,6 +57,7 @@ export default function ReservationDetailsModal({
 
   // Verificar ticket
   const handleCheckTicket = async () => {
+    console.log('[FRONTEND] ===== BOTÓN VERIFICAR TICKET PRESIONADO =====');
     console.log('[FRONTEND] handleCheckTicket ejecutado', { reservationId, user: user?.id });
     
     if (!reservationId || !user) {
@@ -1204,9 +1205,15 @@ export default function ReservationDetailsModal({
                 })() && reservation.status !== 'canceled' && (
                   <Button
                     className={`w-full sm:w-auto text-sm ${reservation.checkedBy ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                    onClick={handleCheckTicket}
+                    onClick={(e) => {
+                      console.log('[FRONTEND] Click directo en botón detectado');
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCheckTicket();
+                    }}
                     disabled={isChecking || reservation.checkedBy !== null}
                     title={reservation.checkedBy ? "Este ticket ya ha sido verificado" : "Verificar ticket"}
+                    type="button"
                   >
                     {isChecking ? (
                       <>
