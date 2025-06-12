@@ -110,6 +110,10 @@ export default function ReservationDetailsModal({
         variant: "default",
       });
     } catch (error) {
+      console.error('[FRONTEND] Error completo capturado:', error);
+      console.error('[FRONTEND] Tipo de error:', typeof error);
+      console.error('[FRONTEND] Stack trace:', error instanceof Error ? error.stack : 'No stack available');
+      
       toast({
         title: "Error al verificar ticket",
         description: error instanceof Error
