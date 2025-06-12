@@ -57,7 +57,10 @@ export default function ReservationDetailsModal({
 
   // Verificar ticket
   const handleCheckTicket = async () => {
+    console.log('[FRONTEND] handleCheckTicket ejecutado', { reservationId, user: user?.id });
+    
     if (!reservationId || !user) {
+      console.log('[FRONTEND] Falta autenticación', { reservationId: !!reservationId, user: !!user });
       toast({
         title: "Autenticación requerida",
         description: "Para verificar un ticket necesita iniciar sesión con una cuenta autorizada.",
@@ -78,9 +81,13 @@ export default function ReservationDetailsModal({
 
     setIsChecking(true);
     try {
+      console.log('[FRONTEND] Llamando API:', `/api/reservations/${reservationId}/check`);
       const response = await apiRequest("POST", `/api/reservations/${reservationId}/check`);
+      console.log('[FRONTEND] Respuesta API:', response.status, response.ok);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.log('[FRONTEND] Error en respuesta:', error);
         throw new Error(error.message || "Error al verificar el ticket");
       }
 
