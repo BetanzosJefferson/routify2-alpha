@@ -4421,13 +4421,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Debug: Verificar datos de compañía
+      console.log(`[CHECK TICKET DEBUG] Usuario ID: ${user.id}, Nombre: ${user.firstName} ${user.lastName}`);
+      console.log(`[CHECK TICKET DEBUG] Compañía del usuario: "${user.company}"`);
+      console.log(`[CHECK TICKET DEBUG] Compañía de la reservación: "${reservation.companyId}"`);
+      console.log(`[CHECK TICKET DEBUG] Tipos: user.company=${typeof user.company}, reservation.companyId=${typeof reservation.companyId}`);
+      
       // Verificar que la compañía del usuario coincida con la de la reservación
       if (user.company !== reservation.companyId) {
+        console.log(`[CHECK TICKET DEBUG] Las compañías NO coinciden: "${user.company}" !== "${reservation.companyId}"`);
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para verificar tickets de esta compañía'
         });
       }
+      
+      console.log(`[CHECK TICKET DEBUG] Las compañías SÍ coinciden, procediendo con el escaneo`);
+      console.log(`[CHECK TICKET DEBUG] Estado actual del ticket: checkedBy=${reservation.checkedBy}, checkedAt=${reservation.checkedAt}, checkCount=${reservation.checkCount}`);
 
       // Verificar si el ticket ya fue escaneado
       if (reservation.checkedBy !== null) {
