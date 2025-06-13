@@ -2253,9 +2253,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (reservation.checkedBy) {
         try {
+          console.log(`[GET /reservations/${id}] Consultando usuario ID: ${reservation.checkedBy}`);
           const checkedByUser = await storage.getUserById(reservation.checkedBy);
+          console.log(`[GET /reservations/${id}] Usuario obtenido:`, checkedByUser);
           if (checkedByUser) {
             checkedByName = `${checkedByUser.firstName || ''} ${checkedByUser.lastName || ''}`.trim();
+            console.log(`[GET /reservations/${id}] Nombre formateado: ${checkedByName}`);
           }
         } catch (error) {
           console.log(`[GET /reservations/${id}] Error al obtener usuario que checkeó:`, error);
