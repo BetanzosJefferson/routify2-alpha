@@ -925,7 +925,8 @@ export class DatabaseStorage implements IStorage {
         .update(schema.reservations)
         .set({ 
           checkedBy: checkedBy,
-          checkedAt: new Date()
+          checkedAt: new Date(),
+          checkCount: sql`${schema.reservations.checkCount} + 1`
         })
         .where(eq(schema.reservations.id, reservationId))
         .returning();
@@ -939,14 +940,14 @@ export class DatabaseStorage implements IStorage {
 
   async cancelReservationWithRefund(reservationId: number, canceledBy: number): Promise<any> {
     try {
+      // Para cancelar con reembolso, simplemente usamos el status 'canceled' 
+      // y podemos agregar una nota en el campo notes para indicar que es con reembolso
       const [updatedReservation] = await db
         .update(schema.reservations)
         .set({ 
           status: 'canceled',
-          canceledBy: canceledBy,
-          canceledAt: new Date(),
-          refundRequested: true,
-          refundRequestedAt: new Date()
+          updatedAt: new Date(),
+          notes: sql`CONCAT(COALESCE(${schema.reservations.notes}, ''), ' - CANCELADO CON REEMBOLSO por usuario ID: ${canceledBy}')`
         })
         .where(eq(schema.reservations.id, reservationId))
         .returning();
