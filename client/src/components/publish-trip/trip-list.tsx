@@ -359,7 +359,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       matchesSearch = 
         (trip.origin?.toLowerCase().includes(search) ?? false) ||
         (trip.destination?.toLowerCase().includes(search) ?? false) ||
-        (trip.routeName?.toLowerCase().includes(search) ?? false);
+        (trip.route?.name?.toLowerCase().includes(search) ?? false);
     }
 
     // Filtrar por fecha usando nuestras utilidades de normalización
@@ -395,23 +395,13 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
     const current: Record<string, Trip[]> = {};
     let archived: Trip[] = [];
     
-    // PRIMER PASO: Filtrar solo viajes principales (no sub-viajes)
-    const mainTrips = filteredTrips.filter((trip: Trip) => {
-      // Solo incluir viajes que NO son sub-viajes
-      return !trip.isSubTrip;
-    });
+    // Con la estructura optimizada, todos los viajes son principales
+    const mainTrips = filteredTrips;
     
-    // Procesar solo los viajes principales
+    // Procesar viajes con estructura optimizada
     mainTrips.forEach((trip: Trip) => {
-      // Con la nueva estructura, extraer fechas del tripData
-      let tripDates: string[] = [];
-      
-      if (trip.tripData && Array.isArray(trip.tripData)) {
-        tripDates = trip.tripData.map((segment: any) => segment.departureDate).filter(Boolean);
-      } else if (trip.departureDate) {
-        // Fallback para estructura antigua
-        tripDates = [trip.departureDate];
-      }
+      // Con la estructura optimizada, usar directamente departureDate
+      const tripDates = trip.departureDate ? [trip.departureDate] : [];
       
       // Usar la primera fecha del viaje para determinar si es pasado o futuro
       if (tripDates.length > 0) {
@@ -648,20 +638,15 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                   
                   <div className="space-y-4">
                     {trips.map((trip: Trip) => {
-                      // Extraer información del tripData JSON
-                      const tripSegments = Array.isArray(trip.tripData) ? trip.tripData : [];
-                      const firstSegment = tripSegments[0] || {};
-                      const lastSegment = tripSegments[tripSegments.length - 1] || {};
+                      // Con la estructura optimizada, usar directamente los campos del viaje
+                      const departureDate = trip.departureDate || '';
+                      const departureTime = trip.departureTime || '';
+                      const arrivalTime = trip.arrivalTime || '';
+                      const origin = trip.origin || '';
+                      const destination = trip.destination || '';
                       
-                      // Obtener información básica del primer segmento
-                      const departureDate = firstSegment.departureDate || '';
-                      const departureTime = firstSegment.departureTime || '';
-                      const arrivalTime = lastSegment.arrivalTime || firstSegment.arrivalTime || '';
-                      const origin = firstSegment.origin || '';
-                      const destination = lastSegment.destination || firstSegment.destination || '';
-                      
-                      // Contar paradas intermedias
-                      const stopsCount = Math.max(0, tripSegments.length - 1);
+                      // Usar el campo optimizado numStops
+                      const stopsCount = trip.numStops || 0;
                       
                       return (
                         <div key={trip.id} className="border rounded-lg overflow-hidden bg-card">
