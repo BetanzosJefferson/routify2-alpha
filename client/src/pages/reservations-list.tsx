@@ -58,59 +58,29 @@ function ReservationsListContent() {
     // Analizar tripDetails para encontrar el viaje padre
     const tripDetails = reservation.tripDetails as any;
     
-    // Buscar en tripData el segmento principal (isMainTrip = true)
+    // Extraer recordId para agrupar por viaje padre
     let parentTripInfo = null;
     let parentTripKey = 'sin-viaje-padre';
     
-    if (tripDetails && Array.isArray(tripDetails)) {
-      // Si tripDetails es un array, buscar el elemento con isMainTrip = true
-      const mainTrip = tripDetails.find((segment: any) => segment.isMainTrip === true);
-      if (mainTrip) {
+    if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
+      // Usar el recordId como clave de agrupación
+      parentTripKey = tripDetails.recordId.toString();
+      
+      // Usar la información del trip asociado para el viaje padre
+      if (reservation.trip) {
         parentTripInfo = {
-          origin: mainTrip.origin,
-          destination: mainTrip.destination,
-          departureDate: mainTrip.departureDate,
-          departureTime: mainTrip.departureTime,
-          arrivalTime: mainTrip.arrivalTime,
-          tripId: mainTrip.tripId
+          origin: reservation.trip.origin,
+          destination: reservation.trip.destination,
+          departureDate: reservation.trip.departureDate,
+          departureTime: reservation.trip.departureTime,
+          arrivalTime: reservation.trip.arrivalTime,
+          tripId: parentTripKey,
+          recordId: tripDetails.recordId
         };
-        parentTripKey = `${mainTrip.departureDate}_${mainTrip.origin}_${mainTrip.destination}`;
       }
-    } else if (tripDetails && typeof tripDetails === 'object') {
-      // Si tripDetails es un objeto, verificar si es el viaje principal
-      if (tripDetails.isMainTrip === true) {
-        parentTripInfo = {
-          origin: tripDetails.origin,
-          destination: tripDetails.destination,
-          departureDate: tripDetails.departureDate,
-          departureTime: tripDetails.departureTime,
-          arrivalTime: tripDetails.arrivalTime,
-          tripId: tripDetails.tripId
-        };
-        parentTripKey = `${tripDetails.departureDate}_${tripDetails.origin}_${tripDetails.destination}`;
-      } else {
-        // Si no es el viaje principal, usar la información de trip como fallback
-        // pero intentar extraer el patrón del viaje padre
-        const tripId = tripDetails.tripId || '';
-        const recordId = tripId.split('_')[0] || 'sin-viaje';
-        parentTripKey = recordId;
-        
-        // Usar información de trip como fallback para el viaje padre
-        if (reservation.trip) {
-          parentTripInfo = {
-            origin: reservation.trip.origin,
-            destination: reservation.trip.destination,
-            departureDate: reservation.trip.departureDate,
-            departureTime: reservation.trip.departureTime,
-            arrivalTime: reservation.trip.arrivalTime,
-            tripId: recordId
-          };
-        }
-      }
-    }
-    
-    // Si no encontramos información del viaje padre, usar la información de trip como fallback
-    if (!parentTripInfo && reservation.trip) {
+    } else if (reservation.trip) {
+      // Fallback: usar información del trip si no hay tripDetails válidos
+      parentTripKey = `${reservation.trip.departureDate}_${reservation.trip.origin}_${reservation.trip.destination}`;
       parentTripInfo = {
         origin: reservation.trip.origin,
         destination: reservation.trip.destination,
@@ -119,7 +89,6 @@ function ReservationsListContent() {
         arrivalTime: reservation.trip.arrivalTime,
         tripId: 'fallback'
       };
-      parentTripKey = `${reservation.trip.departureDate}_${reservation.trip.origin}_${reservation.trip.destination}`;
     }
     
     if (!groups[parentTripKey]) {
