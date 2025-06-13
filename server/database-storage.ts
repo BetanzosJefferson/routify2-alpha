@@ -959,13 +959,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserById(userId: number): Promise<{ firstName: string; lastName: string } | undefined> {
+  async getUserById(userId: number): Promise<any | undefined> {
     try {
       const [user] = await db
-        .select({
-          firstName: schema.users.firstName,
-          lastName: schema.users.lastName
-        })
+        .select()
         .from(schema.users)
         .where(eq(schema.users.id, userId));
       
