@@ -456,22 +456,17 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
-    // Filtrar para devolver solo viajes principales (padre) y no expandir sub-viajes
+    // Determinar si debemos agrupar por viaje principal o expandir segmentos
+    const shouldGroupByMainTrip = params.includeAllVisibilities && !params.origin && !params.destination;
+    
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const trip of trips) {
       const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      // SOLO procesar viajes principales (padre), no sub-viajes
-      if (trip.isSubTrip) {
-        console.log(`[searchTrips] EXCLUYENDO SUB-VIAJE ${trip.id} - Solo se devuelven viajes padre`);
-        continue;
-      }
-      
       // Buscar información de la compañía si existe
       let companyData = { companyName: undefined, companyLogo: undefined };
-      
       if (trip.companyId && companyMap.has(trip.companyId)) {
         companyData = companyMap.get(trip.companyId);
       }
@@ -488,33 +483,111 @@ export class DatabaseStorage implements IStorage {
         assignedDriver = driverMap.get(trip.driverId);
       }
       
-      // Para viajes principales, verificar coincidencias de origen y destino si se especifican
-      let originMatch = !params.origin;
-      let destMatch = !params.destination;
-      
-      if (params.origin) {
-        const searchOrigin = params.origin.toLowerCase();
-        originMatch = route.origin.toLowerCase().includes(searchOrigin) || 
-                      route.stops.some(stop => stop.toLowerCase().includes(searchOrigin));
-      }
-      
-      if (params.destination) {
-        const searchDest = params.destination.toLowerCase();
-        destMatch = route.destination.toLowerCase().includes(searchDest) || 
-                    route.stops.some(stop => stop.toLowerCase().includes(searchDest));
-      }
-      
-      // Solo procesar si coinciden origen y destino (o no hay filtros de origen/destino)
-      if (originMatch && destMatch) {
-        tripsWithRouteInfo.push({
-          ...trip,
-          route,
-          numStops: route.stops.length,
-          companyName: companyData.companyName,
-          companyLogo: companyData.companyLogo,
-          assignedVehicle,
-          assignedDriver
-        });
+      if (shouldGroupByMainTrip) {
+        // PARA VISTA ADMINISTRATIVA: Mostrar solo un viaje agrupado por viaje principal
+        console.log(`[searchTrips] Modo administrativo: Agrupando viaje ${trip.id} como viaje principal`);
+        
+        // Parse tripData para obtener información del primer segmento como representativo
+        let tripDataArray = [];
+        try {
+          tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+        } catch (error) {
+          console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
+          continue;
+        }
+        
+        // Usar el primer segmento como representativo del viaje completo
+        const firstSegment = tripDataArray[0];
+        if (firstSegment) {
+          tripsWithRouteInfo.push({
+            ...trip,
+            // Mantener ID original para viaje principal
+            id: trip.id,
+            // Usar datos del primer segmento como representativos
+            origin: route.origin,
+            destination: route.destination,
+            departureDate: firstSegment.departureDate,
+            departureTime: firstSegment.departureTime,
+            arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || firstSegment.arrivalTime,
+            // Datos consolidados del viaje
+            tripData: tripDataArray,
+            route,
+            numStops: route.stops.length,
+            companyName: companyData.companyName,
+            companyLogo: companyData.companyLogo,
+            assignedVehicle,
+            assignedDriver
+          });
+        }
+      } else {
+        // PARA BÚSQUEDA ESPECÍFICA: Expandir segmentos individuales
+        console.log(`[searchTrips] Modo búsqueda: Expandiendo segmentos para viaje ${trip.id}`);
+        
+        // Parse tripData JSON array
+        let tripDataArray = [];
+        try {
+          tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+          console.log(`[searchTrips] Trip ${trip.id} has ${tripDataArray.length} segments in tripData`);
+        } catch (error) {
+          console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
+          continue;
+        }
+        
+        // Process each segment in the tripData array
+        for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
+          const segment = tripDataArray[segmentIndex];
+          
+          // Check origin and destination filters
+          let originMatch = !params.origin;
+          let destMatch = !params.destination;
+          
+          if (params.origin) {
+            const searchOrigin = params.origin.toLowerCase();
+            originMatch = segment.origin?.toLowerCase().includes(searchOrigin);
+          }
+          
+          if (params.destination) {
+            const searchDest = params.destination.toLowerCase();
+            destMatch = segment.destination?.toLowerCase().includes(searchDest);
+          }
+          
+          // Check seat availability filter
+          let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
+          
+          // Only include segment if it matches all filters
+          if (originMatch && destMatch && seatMatch) {
+            // Create a unique identifier for this segment using recordId_segmentIndex format
+            const uniqueTripId = `${trip.id}_${segmentIndex}`;
+            
+            // Create a trip object that combines the base trip with segment data
+            const expandedTrip = {
+              ...trip,
+              // Use the unique trip ID for frontend compatibility
+              id: uniqueTripId,
+              // Override with segment-specific data for frontend compatibility
+              origin: segment.origin,
+              destination: segment.destination,
+              departureDate: segment.departureDate,
+              departureTime: segment.departureTime,
+              arrivalTime: segment.arrivalTime,
+              price: segment.price,
+              availableSeats: segment.availableSeats,
+              tripId: segment.tripId,
+              isMainTrip: segment.isMainTrip,
+              // Store original record ID for reservations
+              recordId: trip.id,
+              // Add route and company info
+              route,
+              numStops: route.stops.length,
+              companyName: companyData.companyName,
+              companyLogo: companyData.companyLogo,
+              assignedVehicle,
+              assignedDriver
+            };
+            
+            tripsWithRouteInfo.push(expandedTrip as TripWithRouteInfo);
+          }
+        }
       }
     }
     
