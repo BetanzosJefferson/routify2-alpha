@@ -4108,11 +4108,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Solicitud no encontrada" });
       }
       
-      if (currentUser.role !== UserRole.SUPER_ADMIN && request.companyId !== currentUser.companyId) {
+      // Extraer companyId del JSON de la solicitud
+      const requestData = request.data as any;
+      const requestCompanyId = requestData?.company_id;
+      
+      // Obtener companyId del usuario (puede estar en companyId o company)
+      const userCompanyId = currentUser.companyId || currentUser.company;
+      
+      console.log(`[DEBUG] Validación de permisos:`);
+      console.log(`  - Usuario ID: ${currentUser.id}, Rol: ${currentUser.role}`);
+      console.log(`  - Usuario companyId: ${userCompanyId}`);
+      console.log(`  - Solicitud companyId: ${requestCompanyId}`);
+      console.log(`  - Solicitud ID: ${requestId}`);
+      
+      if (currentUser.role !== UserRole.SUPER_ADMIN && requestCompanyId !== userCompanyId) {
+        console.log(`[DEBUG] Acceso denegado: Company mismatch`);
         return res.status(403).json({ 
           message: "No tienes permiso para modificar esta solicitud" 
         });
       }
+      
+      console.log(`[DEBUG] Validación de permisos exitosa - procediendo con ${status}`);
       
       // Actualizar el estado de la solicitud
       // Este método también crea automáticamente una reservación en la tabla "reservations" si se aprueba
