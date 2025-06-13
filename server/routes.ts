@@ -6874,4 +6874,32 @@ function setupPackageRoutes(app: Express) {
       return res.status(500).json({ error: "Error al realizar corte de caja" });
     }
   });
+
+  // Test endpoint for optimization validation (temporary)
+  app.get('/api/test-optimization', async (req, res) => {
+    console.log(`[GET /api/test-optimization] ENDPOINT DE PRUEBA INICIADO`);
+    
+    try {
+      const optimizedResponse = req.query.optimizedResponse === 'true';
+      console.log(`[GET /api/test-optimization] optimizedResponse: ${optimizedResponse}`);
+      
+      const trips = await storage.searchTrips({
+        includeAllVisibilities: true,
+        optimizedResponse: optimizedResponse
+      });
+      
+      const responseSize = JSON.stringify(trips).length;
+      
+      res.json({
+        mode: optimizedResponse ? 'OPTIMIZADO' : 'EXPANDIDO',
+        tripCount: trips.length,
+        responseSize: responseSize,
+        sampleTrip: trips[0] || null,
+        sampleKeys: trips[0] ? Object.keys(trips[0]) : []
+      });
+    } catch (error) {
+      console.error(`[GET /api/test-optimization] Error:`, error);
+      res.status(500).json({ error: 'Error en prueba de optimización' });
+    }
+  });
 }
