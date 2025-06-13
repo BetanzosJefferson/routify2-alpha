@@ -891,12 +891,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Crear el array de combinaciones para trip_data
         const tripCombinations = [];
         
+        // Calcular la fecha de salida del viaje principal (puede ser el mismo día o el día siguiente para cruces de medianoche)
+        const mainSegmentTimes = segmentTimes[`${route.origin}-${route.destination}`];
+        const mainDayOffset = mainSegmentTimes?.dayOffset || (mainTripCrossesMidnight ? 1 : 0);
+        const mainTripDepartureDate = new Date(mainDepartureDate);
+        
+        if (mainDayOffset > 0) {
+          mainTripDepartureDate.setDate(mainTripDepartureDate.getDate() + mainDayOffset);
+          console.log(`Viaje principal ${route.origin} -> ${route.destination}: departureDate ajustado a ${mainTripDepartureDate.toISOString().split('T')[0]} (+${mainDayOffset} días)`);
+        }
+
         // Primero añadir el viaje principal completo (viaje de origen a destino final)
         tripCombinations.push({
           tripId: mainTripId,
           origin: route.origin,
           destination: route.destination,
-          departureDate: mainDepartureDate.toISOString().split('T')[0], // YYYY-MM-DD
+          departureDate: mainTripDepartureDate.toISOString().split('T')[0], // YYYY-MM-DD con offset correcto
           departureTime: cleanDepartureTime,
           arrivalTime: cleanArrivalTime,
           price: mainSegmentPrice?.price || 450,
@@ -919,15 +929,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let segmentDepartureTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.departureTime || cleanDepartureTime;
           let segmentArrivalTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.arrivalTime || cleanArrivalTime;
           
+          // Extraer indicadores de día antes de limpiar los tiempos
+          const segmentDepartureTimeOriginal = segmentDepartureTime;
+          const segmentDayOffset = extractDayIndicator(segmentDepartureTimeOriginal);
+          
           // Limpiar tiempos de indicadores de día
           segmentDepartureTime = segmentDepartureTime.replace(/\s*\+\d+d$/, '');
           segmentArrivalTime = segmentArrivalTime.replace(/\s*\+\d+d$/, '');
+          
+          // Calcular la fecha de salida del segmento considerando el offset de días
+          const segmentDepartureDate = new Date(mainDepartureDate);
+          if (segmentDayOffset > 0) {
+            segmentDepartureDate.setDate(segmentDepartureDate.getDate() + segmentDayOffset);
+            console.log(`Segmento ${segment.origin} -> ${segment.destination}: departureDate ajustado a ${segmentDepartureDate.toISOString().split('T')[0]} (+${segmentDayOffset} días)`);
+          }
           
           tripCombinations.push({
             tripId: Math.floor(Date.now() + Math.random() * 1000), // ID único para cada segmento
             origin: segment.origin,
             destination: segment.destination,
-            departureDate: mainDepartureDate.toISOString().split('T')[0], // YYYY-MM-DD
+            departureDate: segmentDepartureDate.toISOString().split('T')[0], // YYYY-MM-DD con offset correcto
             departureTime: segmentDepartureTime,
             arrivalTime: segmentArrivalTime,
             price: segmentPrice,
