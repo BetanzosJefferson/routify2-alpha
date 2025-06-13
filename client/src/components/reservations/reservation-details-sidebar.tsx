@@ -56,26 +56,28 @@ export function ReservationDetailsSidebar({
     };
   }, [onClose]);
 
-  // Función para obtener el índice de la parada de origen en la ruta
-  const getOriginStopIndex = (reservation: ReservationWithDetails) => {
-    const origin = reservation.trip?.origin;
-    if (!origin || !tripInfo?.route?.stops) {
-      console.log(`[DEBUG] Sin origen o stops para reservación ${reservation.id}:`, { origin, hasRoute: !!tripInfo?.route });
-      return 0;
+  // Función para obtener el índice de la parada desde el tripId
+  const getStopIndexFromTripId = (reservation: ReservationWithDetails) => {
+    const tripDetails = reservation.tripDetails;
+    if (typeof tripDetails === 'object' && tripDetails !== null && 'tripId' in tripDetails) {
+      const tripId = (tripDetails as any).tripId;
+      if (typeof tripId === 'string' && tripId.includes('_')) {
+        // Extraer el índice del tripId (formato: recordId_index)
+        const parts = tripId.split('_');
+        const index = parseInt(parts[parts.length - 1], 10);
+        
+        console.log(`[DEBUG] Reservación ${reservation.id}:`, {
+          tripId,
+          extractedIndex: index,
+          isValidIndex: !isNaN(index)
+        });
+        
+        return !isNaN(index) ? index : 0;
+      }
     }
     
-    // Buscar el índice en las paradas de la ruta
-    const allStops = [tripInfo.route.origin, ...tripInfo.route.stops, tripInfo.route.destination];
-    const index = allStops.findIndex(stop => stop === origin);
-    
-    console.log(`[DEBUG] Reservación ${reservation.id}:`, {
-      origin,
-      allStops,
-      foundIndex: index,
-      finalIndex: index >= 0 ? index : 0
-    });
-    
-    return index >= 0 ? index : 0;
+    console.log(`[DEBUG] Sin tripId válido para reservación ${reservation.id}:`, { tripDetails });
+    return 0;
   };
 
   // Filtrar y ordenar reservaciones
@@ -91,9 +93,9 @@ export function ReservationDetailsSidebar({
       );
     })
     .sort((a, b) => {
-      // Ordenar por índice de parada de origen (cronológicamente)
-      const indexA = getOriginStopIndex(a);
-      const indexB = getOriginStopIndex(b);
+      // Ordenar por índice extraído del tripId (cronológicamente)
+      const indexA = getStopIndexFromTripId(a);
+      const indexB = getStopIndexFromTripId(b);
       return indexA - indexB;
     });
 
