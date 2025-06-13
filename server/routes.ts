@@ -4059,9 +4059,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Extraer company_id del JSON data de la solicitud para validación de permisos
+      const requestData = request.data as any;
+      const requestCompanyId = requestData?.company_id;
+      const userCompanyId = currentUser.companyId || currentUser.company;
+      
       if (currentUser.role !== UserRole.SUPER_ADMIN && 
           currentUser.role !== UserRole.COMMISSIONER && 
-          request.companyId !== currentUser.companyId) {
+          requestCompanyId !== userCompanyId) {
         return res.status(403).json({ 
           message: "No tienes permiso para ver esta solicitud" 
         });
@@ -4108,7 +4113,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Solicitud no encontrada" });
       }
       
-      if (currentUser.role !== UserRole.SUPER_ADMIN && request.companyId !== currentUser.companyId) {
+      // Extraer company_id del JSON data de la solicitud
+      const requestData = request.data as any;
+      const requestCompanyId = requestData?.company_id;
+      
+      // Usar tanto companyId como company para mayor compatibilidad
+      const userCompanyId = currentUser.companyId || currentUser.company;
+      
+      // Función para normalizar company IDs y manejar diferentes formatos
+      const normalizeCompanyId = (companyId: string) => {
+        if (!companyId) return '';
+        // Convertir a minúsculas para comparación case-insensitive
+        const normalized = companyId.toLowerCase();
+        // Si contiene "bamo", considerarlo como la misma empresa
+        if (normalized.includes('bamo')) return 'bamo';
+        return normalized;
+      };
+      
+      const normalizedRequestCompany = normalizeCompanyId(requestCompanyId);
+      const normalizedUserCompany = normalizeCompanyId(userCompanyId);
+      
+      if (currentUser.role !== UserRole.SUPER_ADMIN && normalizedRequestCompany !== normalizedUserCompany) {
+        console.log(`[Permission Check] Request company: ${requestCompanyId} (normalized: ${normalizedRequestCompany}), User company: ${userCompanyId} (normalized: ${normalizedUserCompany})`);
         return res.status(403).json({ 
           message: "No tienes permiso para modificar esta solicitud" 
         });
