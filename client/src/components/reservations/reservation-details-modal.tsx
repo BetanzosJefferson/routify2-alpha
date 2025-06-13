@@ -43,13 +43,17 @@ export default function ReservationDetailsModal({
     queryKey: ["/api/reservations", reservationId],
     queryFn: async () => {
       if (!reservationId) return null;
-      const response = await fetch(`/api/reservations/${reservationId}`);
+      const response = await fetch(`/api/reservations/${reservationId}`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error("Error al cargar los detalles de la reservación");
       }
       return response.json();
     },
     enabled: !!reservationId && isOpen,
+    staleTime: 0, // Siempre hacer petición fresca
+    cacheTime: 0  // No cachear los resultados
   });
 
 
