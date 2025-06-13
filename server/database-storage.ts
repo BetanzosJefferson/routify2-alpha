@@ -958,4 +958,21 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  async getUserById(userId: number): Promise<{ firstName: string; lastName: string } | undefined> {
+    try {
+      const [user] = await db
+        .select({
+          firstName: schema.users.firstName,
+          lastName: schema.users.lastName
+        })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId));
+      
+      return user;
+    } catch (error) {
+      console.error('Error al obtener usuario por ID:', error);
+      return undefined;
+    }
+  }
 }
