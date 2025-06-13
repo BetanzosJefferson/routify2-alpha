@@ -392,89 +392,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // TRIPS ENDPOINTS
   
-  // Ruta para obtener todos los viajes (incluyendo ocultos) para la sección "Publicar viajes"
+  // Ruta optimizada para obtener todos los viajes administrativos
   app.get(apiRouter("/admin-trips"), async (req: Request, res: Response) => {
     try {
-      // Obtener el usuario autenticado
       const { user } = req as any;
       
-      // Log para depuración
-      console.log(`[GET /admin-trips] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
-      if (user) {
-        console.log(`[GET /admin-trips] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
-      }
-      
-      // Verificar que el usuario esté autenticado y tenga permisos de administrador
-      if (!user || (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER)) {
-        console.log(`[GET /admin-trips] Acceso denegado para rol: ${user?.role || 'no autenticado'}`);
-        return res.status(403).json({ error: "No autorizado para acceder a esta sección" });
-      }
-      
-      // Parámetros de búsqueda desde la query
-      const { date, driverId } = req.query;
-      const searchParams: any = {
-        // Importante: No aplicamos filtro de visibilidad para mostrar todos los viajes
-        includeAllVisibilities: true // Flag para indicar que se deben incluir todos los estados de visibilidad
-      };
-      
-      // Agregar parámetros de búsqueda si existen
-      if (date) searchParams.date = date as string;
-      
-      // Agregar filtro por conductor (driverId) si existe
-      if (driverId && !isNaN(parseInt(driverId as string, 10))) {
-        searchParams.driverId = parseInt(driverId as string, 10);
-        console.log(`[GET /admin-trips] Filtro por conductor ID: ${searchParams.driverId}`);
-      }
-      
-      // FILTRO DE COMPAÑÍA - aplicar solo para roles que no son superAdmin
-      if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company || null;
-        
-        if (userCompanyId) {
-          searchParams.companyId = userCompanyId;
-          console.log(`[GET /admin-trips] Filtro compañía aplicado: ${userCompanyId}`);
-        } else {
-          console.log(`[GET /admin-trips] Usuario sin compañía asignada, no verá ningún viaje`);
-          return res.json([]);
-        }
-      } else {
-        // Para superAdmin, permitir ver viajes de todas las compañías
-        searchParams.companyId = 'ALL';
-        console.log(`[GET /admin-trips] Usuario superAdmin - Acceso a viajes de todas las compañías`);
-      }
-      
-      // Ejecutar búsqueda con los parámetros
-      console.log(`[GET /admin-trips] Parámetros de búsqueda:`, searchParams);
-      const trips = await storage.searchTrips(searchParams);
-      
-      console.log(`[GET /admin-trips] Encontrados ${trips.length} viajes (todos los estados de visibilidad)`);
-      
-      return res.json(trips);
-    } catch (error) {
-      console.error("Error al obtener viajes para administración:", error);
-      res.status(500).json({ error: "Error al obtener viajes para administración" });
-    }
-  });
-  
-  // Ruta para acceso administrativo a todos los viajes (incluidos los ocultos y cancelados)
-  app.get(apiRouter("/admin-trips"), async (req: Request, res: Response) => {
-    try {
-      // Obtener el usuario autenticado
-      const { user } = req as any;
-      
-      // Si no hay usuario autenticado, denegar acceso
+      // Verificar autenticación
       if (!user) {
-        console.log(`[GET /admin-trips] Acceso anónimo denegado`);
         return res.status(401).json({ error: "No autenticado" });
       }
-
+      
+      // Simplificar lógica de autorización
+      const userCompanyId = user.companyId || user.company || null;
+      const hasFullAccess = user.role === UserRole.SUPER_ADMIN || user.role === UserRole.TICKET_OFFICE;
+      const isDriver = user.role === UserRole.DRIVER || user.role === 'CHOFER';
+      
       // Parámetros de búsqueda desde la query
       const { origin, destination, date, seats, driverId } = req.query;
       const searchParams: any = {
-        includeAllVisibilities: true // Esta es la clave para incluir todos los estados de visibilidad
+        includeAllVisibilities: true,
+        optimizedResponse: true, // Flag para respuesta optimizada sin duplicaciones
       };
       
-      // Agregar parámetros de búsqueda si existen
+      // Aplicar filtros de búsqueda
       if (origin) searchParams.origin = origin as string;
       if (destination) searchParams.destination = destination as string;
       if (date) searchParams.date = date as string;
@@ -482,85 +422,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         searchParams.seats = parseInt(seats as string, 10);
       }
       
-      // Agregar filtro por conductor (driverId) si existe
-      if (driverId && !isNaN(parseInt(driverId as string, 10))) {
-        searchParams.driverId = parseInt(driverId as string, 10);
-        console.log(`[GET /admin-trips] Filtro por conductor ID: ${searchParams.driverId}`);
-      }
-      
-      // APLICAR FILTRO DE COMPAÑÍA - PARTE CRÍTICA
-      // Solo superAdmin y taquilla pueden ver viajes de todas las compañías
-      // CASO ESPECIAL PARA CONDUCTORES: Filtrar por su ID de usuario cuando son role=DRIVER
-      if (user.role === UserRole.DRIVER || user.role === 'CHOFER') {
-        // Para conductores, filtrar siempre por su ID (que debería coincidir con driverId en viajes)
-        console.log(`[GET /admin-trips] Usuario es CONDUCTOR (ID: ${user.id}), filtrando viajes asignados`);
-        
-        // Si no se envió un driverId explícitamente en la URL, usar el ID del usuario conductor
-        if (!searchParams.driverId) {
-          searchParams.driverId = user.id;
-          console.log(`[GET /admin-trips] Usando ID del conductor autenticado: ${user.id}`);
-        }
-      } else if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.TICKET_OFFICE) {
-        // NO es superAdmin ni taquilla
-        // Para todos los demás roles: filtrar por compañía
-        console.log(`[GET /admin-trips] Usuario con rol ${user.role} - ACCESO FILTRADO POR COMPAÑÍA`);
-        
-        // Obtener companyId del usuario (preferimos companyId pero también aceptamos company como respaldo)
-        const userCompanyId = user.companyId || user.company || null;
-        
-        if (userCompanyId) {
-          // Aplicar filtro por compañía - OBLIGATORIO para usuarios que no son superAdmin o taquilla
-          searchParams.companyId = userCompanyId;
-          console.log(`[GET /admin-trips] Filtro compañía aplicado: ${userCompanyId}`);
-        } else {
-          console.log(`[GET /admin-trips] Usuario sin compañía asignada, no verá ningún viaje`);
-          // Si el usuario no tiene compañía asignada, devolver lista vacía
+      // Aplicar filtros de autorización consolidados
+      if (isDriver) {
+        // Para conductores: filtrar por su ID o el driverId especificado
+        searchParams.driverId = driverId ? parseInt(driverId as string, 10) : user.id;
+      } else if (!hasFullAccess) {
+        // Para usuarios sin acceso completo: filtrar por compañía
+        if (!userCompanyId) {
           return res.json([]);
         }
-      } else {
-        // Usuarios superAdmin o taquilla - ACCESO TOTAL
-        console.log(`[GET /admin-trips] Usuario ${user.firstName} con rol ${user.role} - ACCESO TOTAL (sin filtrar compañía)`);
-        
-        // SOLUCIÓN ESPECIAL: Establecer un valor especial 'ALL' para indicar acceso total
-        searchParams.companyId = 'ALL'; 
-        console.log(`[GET /admin-trips] Estableciendo acceso total para rol privilegiado`);
-      } 
+        searchParams.companyId = userCompanyId;
+      }
+      // Para usuarios con acceso completo, no aplicar filtros adicionales
       
-      // Ejecutar búsqueda con todos los parámetros
-      console.log(`[GET /admin-trips] Parámetros de búsqueda finales:`, searchParams);
+      // Ejecutar búsqueda optimizada
       const trips = await storage.searchTrips(searchParams);
       
-      console.log(`[GET /admin-trips] Encontrados ${trips.length} viajes`);
-      
-      // CAPA ADICIONAL DE SEGURIDAD - FILTRO POST-CONSULTA
-      // Si el usuario no tiene permisos para ver todos los viajes, verificar compañía nuevamente
-      let finalTrips = trips;
-      if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.TICKET_OFFICE) {
-        const userCompanyId = user.companyId || user.company || null;
-        
-        if (userCompanyId) {
-          console.log(`[GET /admin-trips] Verificación adicional de seguridad por compañía: ${userCompanyId}`);
-          finalTrips = trips.filter(trip => trip.companyId === userCompanyId);
-          
-          if (finalTrips.length !== trips.length) {
-            console.log(`[GET /admin-trips] ALERTA: Filtro adicional eliminó ${trips.length - finalTrips.length} viajes que no corresponden a la compañía ${userCompanyId}`);
-          }
-        }
-      }
-      
-      // Devolver solo las columnas de la tabla trips sin procesamiento adicional
-      const simplifiedTrips = finalTrips.map(trip => ({
+      // Respuesta optimizada sin datos redundantes
+      const optimizedTrips = trips.map(trip => ({
         id: trip.id,
-        tripData: trip.tripData,
-        capacity: trip.capacity,
-        vehicleId: trip.vehicleId,
-        driverId: trip.driverId,
-        visibility: trip.visibility,
         routeId: trip.routeId,
-        companyId: trip.companyId
+        companyId: trip.companyId,
+        departureDate: trip.departureDate,
+        departureTime: trip.departureTime,
+        arrivalTime: trip.arrivalTime,
+        origin: trip.origin,
+        destination: trip.destination,
+        price: trip.price,
+        availableSeats: trip.availableSeats,
+        capacity: trip.capacity,
+        visibility: trip.visibility,
+        driverId: trip.driverId,
+        vehicleId: trip.vehicleId,
+        // Solo metadatos esenciales
+        routeName: trip.routeName || '',
+        companyName: trip.companyName || ''
       }));
       
-      res.json(simplifiedTrips);
+      res.json(optimizedTrips);
     } catch (error: any) {
       console.error("Error al obtener viajes administrativos:", error.message);
       res.status(500).json({ error: "Error al obtener viajes" });
