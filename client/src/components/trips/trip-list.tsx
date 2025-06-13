@@ -4,7 +4,7 @@ import { Loader2Icon, MapPinIcon, CalendarIcon } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
-import { extractLocationsFromTrips, formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
+import { extractLocationsFromTrips } from "@/lib/trip-utils";
 
 // Función para abreviar ubicaciones en móvil
 function abbreviateLocation(location: string): string {

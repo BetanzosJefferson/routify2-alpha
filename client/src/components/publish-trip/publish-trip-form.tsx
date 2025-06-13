@@ -382,10 +382,6 @@ export function PublishTripForm() {
       routeSegmentsQuery.data.destination,
     ];
 
-
-      }
-    }
-
     // Para cada segmento, encontrar el tiempo de salida y llegada correspondiente
     const updatedSegmentPrices = segmentPrices.map((segment) => {
       // Encontrar índice del origen en allLocations

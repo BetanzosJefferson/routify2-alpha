@@ -12,7 +12,7 @@ import { Trip, TripWithRouteInfo, Reservation, Passenger } from "@shared/schema"
 import { useTrips } from "@/hooks/use-trips";
 import { useReservations } from "@/hooks/use-reservations";
 import { usePackages, Package } from "@/hooks/use-packages";
-import { formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
+// Removed formatTripTime import - function no longer exists
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
