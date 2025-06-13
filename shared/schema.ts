@@ -768,23 +768,7 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 
 // RELACIONES PARA SOLICITUDES DE RESERVACIÓN Y NOTIFICACIONES
-export const reservationRequestRelations = relations(reservationRequests, ({ one }) => ({
-  requester: one(users, {
-    fields: [reservationRequests.requesterId],
-    references: [users.id]
-  }),
-  reviewer: one(users, {
-    fields: [reservationRequests.reviewedBy],
-    references: [users.id]
-  })
-}));
-
-export const notificationRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id]
-  })
-}));
+// Se eliminarán las relaciones del enfoque anterior y se agregarán nuevas según sea necesario
 
 // COUPON RELATIONS
 export const couponRelations = relations(coupons, ({ one }) => ({
