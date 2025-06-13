@@ -280,6 +280,7 @@ export class DatabaseStorage implements IStorage {
     driverId?: number;
     visibility?: string;
     includeAllVisibilities?: boolean;
+    optimizedResponse?: boolean;
   }): Promise<TripWithRouteInfo[]> {
     console.log(`[searchTrips] Iniciando búsqueda con parámetros:`, params);
     
