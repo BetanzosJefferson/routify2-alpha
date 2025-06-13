@@ -745,6 +745,9 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
+      // Buscar el segmento principal (isMainTrip: true) para información del viaje padre
+      const mainTripSegment = tripDataArray.find(segment => segment.isMainTrip === true);
+      
       // Crear objeto trip compatible con el frontend usando datos del segmento específico
       const trip = {
         id: tripDetails.tripId, // Use the specific segment ID
@@ -760,7 +763,16 @@ export class DatabaseStorage implements IStorage {
         availableSeats: tripSegment.availableSeats,
         capacity: tripRecord.capacity,
         companyId: tripRecord.companyId,
-        visibility: tripRecord.visibility
+        visibility: tripRecord.visibility,
+        // Información del viaje padre para agrupación en frontend
+        parentTrip: mainTripSegment ? {
+          origin: mainTripSegment.origin,
+          destination: mainTripSegment.destination,
+          departureDate: mainTripSegment.departureDate,
+          departureTime: mainTripSegment.departureTime,
+          arrivalTime: mainTripSegment.arrivalTime,
+          isMainTrip: true
+        } : null
       };
       
       reservationsWithDetails.push({
