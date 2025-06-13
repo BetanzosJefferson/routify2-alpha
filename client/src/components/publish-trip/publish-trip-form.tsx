@@ -204,32 +204,28 @@ export function PublishTripForm() {
     if (routeSegmentsQuery.data) {
       const route = routeSegmentsQuery.data;
 
-      // Verificar que route.segments existe antes de usar filter
-      if (route.segments && Array.isArray(route.segments)) {
-        const segments = route.segments.filter(
-          (segment) =>
-            segment &&
-            segment.origin &&
-            segment.destination &&
-            !isSameCity(segment.origin, segment.destination),
-        );
+      // Generar segmentos automáticamente desde la ruta usando la función utilitaria
+      const generatedSegments = generateSegmentsFromRoute(route);
 
-        const segmentPricesWithDefaultValues = segments.map((segment) => ({
-          origin: segment.origin,
-          destination: segment.destination,
-          price: 0,
-        }));
+      // Filtrar segmentos que no sean de la misma ciudad
+      const validSegments = generatedSegments.filter(
+        (segment) =>
+          segment &&
+          segment.origin &&
+          segment.destination &&
+          !isSameCity(segment.origin, segment.destination),
+      );
 
-        setSegmentPrices(segmentPricesWithDefaultValues);
-        form.setValue("segmentPrices", segmentPricesWithDefaultValues);
-      } else {
-        console.warn(
-          "No se encontraron segmentos en la ruta seleccionada o la estructura es incorrecta",
-          route,
-        );
-        setSegmentPrices([]);
-        form.setValue("segmentPrices", []);
-      }
+      const segmentPricesWithDefaultValues = validSegments.map((segment) => ({
+        origin: segment.origin,
+        destination: segment.destination,
+        price: 0,
+      }));
+
+      console.log("Segmentos generados para nuevo viaje:", segmentPricesWithDefaultValues);
+
+      setSegmentPrices(segmentPricesWithDefaultValues);
+      form.setValue("segmentPrices", segmentPricesWithDefaultValues);
     }
   }, [routeSegmentsQuery.data, form]);
 
