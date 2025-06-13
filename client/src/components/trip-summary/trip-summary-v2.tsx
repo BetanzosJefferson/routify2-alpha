@@ -1145,13 +1145,13 @@ export default function TripSummary({ className }: TripSummaryProps) {
                             <div>
                               <Label className="text-gray-500">Salida</Label>
                               <div className="font-medium">
-                                {formatTripTime(trips.find(t => t.id === selectedTrip)?.departureTime || "", true, 'pretty')}
+                                {trips.find(t => t.id === selectedTrip)?.departureTime || ""}
                               </div>
                             </div>
                             <div>
                               <Label className="text-gray-500">Llegada</Label>
                               <div className="font-medium">
-                                {formatTripTime(trips.find(t => t.id === selectedTrip)?.arrivalTime || "", true, 'pretty')}
+                                {trips.find(t => t.id === selectedTrip)?.arrivalTime || ""}
                               </div>
                             </div>
                           </div>

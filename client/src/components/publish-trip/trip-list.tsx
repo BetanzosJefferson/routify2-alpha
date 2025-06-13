@@ -10,7 +10,7 @@ import {
   dateToLocalISOString,
   formatDateForApiQuery
 } from "@/lib/utils";
-import { formatTripTime } from "@/lib/trip-utils";
+// Removed formatTripTime import - function no longer exists
 import { 
   PencilIcon, 
   TrashIcon, 

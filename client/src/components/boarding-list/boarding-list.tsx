@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
-import { formatTripTime } from "@/lib/trip-utils";
+// Removed formatTripTime import - function no longer exists
 
 // Importamos nuestros nuevos hooks especializados para conductores
 import { useDriverTrips, Trip } from "@/hooks/use-driver-trips";
