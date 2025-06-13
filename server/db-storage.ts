@@ -1441,28 +1441,96 @@ export class DatabaseStorage implements IStorage {
     reviewedBy: number, 
     reviewNotes?: string
   ): Promise<schema.ReservationRequest | undefined> {
-    console.log(`DB Storage: Actualizando estado de solicitud ${id} a: ${status}`);
+    console.log(`DB Storage: Iniciando proceso de ${status} para solicitud ${id}`);
     
     try {
-      const [updatedRequest] = await db
-        .update(schema.reservationRequests)
-        .set({
-          status,
-          reviewedBy,
-          reviewNotes: reviewNotes || null
-        })
-        .where(eq(schema.reservationRequests.id, id))
-        .returning();
-      
-      if (updatedRequest) {
-        console.log(`DB Storage: Solicitud ${id} actualizada exitosamente`);
-      } else {
-        console.log(`DB Storage: No se pudo actualizar la solicitud ${id}`);
+      // 1. Obtener la solicitud original
+      const request = await this.getReservationRequest(id);
+      if (!request) {
+        throw new Error(`Solicitud ${id} no encontrada`);
       }
       
-      return updatedRequest;
+      // 2. Si es rechazo, solo actualizar estado
+      if (status === 'rechazada') {
+        console.log(`DB Storage: Rechazando solicitud ${id}`);
+        const [updatedRequest] = await db
+          .update(schema.reservationRequests)
+          .set({
+            status,
+            reviewedBy,
+            reviewNotes: reviewNotes || null
+          })
+          .where(eq(schema.reservationRequests.id, id))
+          .returning();
+        
+        return updatedRequest;
+      }
+      
+      // 3. Si es aprobación, procesar creación completa
+      if (status === 'aprobada') {
+        console.log(`DB Storage: Procesando aprobación de solicitud ${id}`);
+        
+        // Parsear datos de la solicitud
+        const requestData = request.data as any;
+        console.log(`DB Storage: Datos de solicitud:`, JSON.stringify(requestData, null, 2));
+        
+        // Validar estructura de datos requerida
+        if (!requestData.trip_details?.recordId || !requestData.trip_details?.tripId) {
+          throw new Error('Datos de viaje inválidos en la solicitud');
+        }
+        
+        const recordId = requestData.trip_details.recordId;
+        const tripId = requestData.trip_details.tripId;
+        const seatsRequested = requestData.trip_details.seats || 1;
+        
+        // 4. Validar disponibilidad de asientos
+        const hasAvailability = await this.validateSeatAvailability(recordId, tripId, seatsRequested);
+        if (!hasAvailability) {
+          throw new Error(`No hay suficientes asientos disponibles para el segmento ${tripId}`);
+        }
+        
+        // 5. Iniciar transacción de base de datos
+        return await db.transaction(async (tx) => {
+          console.log(`DB Storage: Iniciando transacción para solicitud ${id}`);
+          
+          // 6. Crear reservación asociada al comisionista
+          const reservationData = await this.mapReservationData(requestData);
+          const [newReservation] = await tx
+            .insert(schema.reservations)
+            .values(reservationData)
+            .returning();
+          
+          console.log(`DB Storage: Reservación ${newReservation.id} creada para comisionista ${requestData.created_by}`);
+          
+          // 7. Crear pasajeros
+          await this.createPassengersFromData(requestData.passengers || [], newReservation.id, tx);
+          
+          // 8. Crear transacción si aplica (asociada al aprobador)
+          await this.createTransactionFromReservation(requestData, reviewedBy, newReservation.id, tx);
+          
+          // 9. Actualizar disponibilidad de asientos
+          await this.updateRelatedTripsAvailability(recordId, tripId, -seatsRequested);
+          
+          // 10. Actualizar estado de la solicitud
+          const [updatedRequest] = await tx
+            .update(schema.reservationRequests)
+            .set({
+              status,
+              reviewedBy,
+              reviewNotes: reviewNotes || null
+            })
+            .where(eq(schema.reservationRequests.id, id))
+            .returning();
+          
+          console.log(`DB Storage: Solicitud ${id} aprobada exitosamente. Reservación: ${newReservation.id}`);
+          return updatedRequest;
+        });
+      }
+      
+      throw new Error(`Estado inválido: ${status}`);
+      
     } catch (error) {
-      console.error(`DB Storage: Error al actualizar solicitud ${id}:`, error);
+      console.error(`DB Storage: Error al procesar solicitud ${id}:`, error);
       throw error;
     }
   }
@@ -1586,6 +1654,124 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('DB Storage: Error al limpiar notificaciones expiradas:', error);
       throw error;
+    }
+  }
+
+  // Método temporal para validar disponibilidad de asientos (Paso 2)
+  async validateSeatAvailability(recordId: number, tripId: string, seatsRequested: number): Promise<boolean> {
+    console.log(`DB Storage: Validando disponibilidad de ${seatsRequested} asientos para ${tripId} en registro ${recordId}`);
+    
+    try {
+      const trip = await this.getTrip(recordId);
+      if (!trip || !trip.tripData || !Array.isArray(trip.tripData)) {
+        console.log(`DB Storage: Registro ${recordId} no encontrado o sin datos de segmentos`);
+        return false;
+      }
+      
+      const segmentIndex = parseInt(tripId.split('_')[1]);
+      if (isNaN(segmentIndex) || segmentIndex >= trip.tripData.length) {
+        console.log(`DB Storage: Índice de segmento ${segmentIndex} inválido para ${tripId}`);
+        return false;
+      }
+      
+      const segment = trip.tripData[segmentIndex];
+      const availableSeats = segment.availableSeats || 0;
+      
+      console.log(`DB Storage: Segmento ${tripId} tiene ${availableSeats} asientos disponibles, se solicitan ${seatsRequested}`);
+      return availableSeats >= seatsRequested;
+    } catch (error) {
+      console.error(`DB Storage: Error al validar disponibilidad de asientos:`, error);
+      return false;
+    }
+  }
+
+  // Método temporal para mapear datos de reservación (Paso 3)
+  async mapReservationData(requestData: any): Promise<any> {
+    console.log(`DB Storage: Mapeando datos de reservación para comisionista ${requestData.created_by}`);
+    
+    return {
+      companyId: requestData.company_id,
+      tripDetails: requestData.trip_details,
+      totalAmount: requestData.total_amount,
+      email: requestData.email,
+      phone: requestData.phone,
+      notes: requestData.notes,
+      paymentMethod: requestData.payment_method,
+      paymentStatus: requestData.payment_status,
+      advanceAmount: requestData.advance_amount || 0,
+      advancePaymentMethod: requestData.advance_payment_method,
+      discountAmount: requestData.discount_amount || 0,
+      originalAmount: requestData.original_amount,
+      status: 'confirmed',
+      createdBy: requestData.created_by, // Asociar al comisionista
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  // Método temporal para crear pasajeros (Paso 4)
+  async createPassengersFromData(passengers: any[], reservationId: number, tx: any): Promise<void> {
+    console.log(`DB Storage: Creando ${passengers.length} pasajeros para reservación ${reservationId}`);
+    
+    if (!passengers || passengers.length === 0) {
+      console.log(`DB Storage: No hay pasajeros para crear`);
+      return;
+    }
+    
+    for (const passenger of passengers) {
+      const passengerData = {
+        reservationId,
+        firstName: passenger.firstName || '',
+        lastName: passenger.lastName || '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await tx.insert(schema.passengers).values(passengerData);
+      console.log(`DB Storage: Pasajero ${passenger.firstName} ${passenger.lastName} creado`);
+    }
+  }
+
+  // Método temporal para crear transacción (Paso 5)
+  async createTransactionFromReservation(requestData: any, approvedBy: number, reservationId: number, tx: any): Promise<void> {
+    console.log(`DB Storage: Evaluando creación de transacción para reservación ${reservationId}`);
+    
+    const needsTransaction = requestData.payment_status === 'pagado' || (requestData.advance_amount && requestData.advance_amount > 0);
+    
+    if (!needsTransaction) {
+      console.log(`DB Storage: No se requiere transacción (estado: ${requestData.payment_status}, anticipo: ${requestData.advance_amount})`);
+      return;
+    }
+    
+    let transactionData;
+    
+    if (requestData.payment_status === 'pagado') {
+      // Transacción completa
+      transactionData = {
+        userId: approvedBy, // Asociar al aprobador
+        companyId: requestData.company_id,
+        amount: requestData.total_amount,
+        type: 'sale',
+        method: requestData.payment_method,
+        description: `Pago completo - Reservación ${reservationId}`,
+        createdAt: new Date()
+      };
+    } else if (requestData.advance_amount > 0) {
+      // Transacción de anticipo
+      transactionData = {
+        userId: approvedBy, // Asociar al aprobador
+        companyId: requestData.company_id,
+        amount: requestData.advance_amount,
+        type: 'advance',
+        method: requestData.advance_payment_method,
+        description: `Anticipo - Reservación ${reservationId}`,
+        createdAt: new Date()
+      };
+    }
+    
+    if (transactionData) {
+      await tx.insert(schema.transactions).values(transactionData);
+      console.log(`DB Storage: Transacción creada - Tipo: ${transactionData.type}, Monto: ${transactionData.amount}, Usuario: ${approvedBy}`);
     }
   }
 }
