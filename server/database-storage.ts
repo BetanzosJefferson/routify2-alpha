@@ -460,6 +460,8 @@ export class DatabaseStorage implements IStorage {
     // Determinar el modo de respuesta basado en el flag optimizedResponse
     const shouldReturnOptimized = params.optimizedResponse === true;
     
+    console.log(`[searchTrips] optimizedResponse flag: ${params.optimizedResponse}`);
+    console.log(`[searchTrips] shouldReturnOptimized: ${shouldReturnOptimized}`);
     console.log(`[searchTrips] Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
     
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];

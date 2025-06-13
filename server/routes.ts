@@ -397,6 +397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { user } = req as any;
       
+      console.log(`[GET /api/admin-trips] ENDPOINT OPTIMIZADO INICIADO - Usuario: ${user?.firstName || 'No auth'}`);
+      
       // Verificar autenticación
       if (!user) {
         return res.status(401).json({ error: "No autenticado" });
@@ -413,6 +415,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         includeAllVisibilities: true,
         optimizedResponse: true, // Flag para respuesta optimizada sin duplicaciones
       };
+      
+      console.log(`[GET /api/admin-trips] searchParams con optimizedResponse:`, searchParams);
       
       // Aplicar filtros de búsqueda
       if (origin) searchParams.origin = origin as string;
