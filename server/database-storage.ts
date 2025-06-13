@@ -456,20 +456,16 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
-    // Now filter by origin and destination if provided
+    // Filtrar para devolver solo viajes principales (padre) y no expandir sub-viajes
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const trip of trips) {
       const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      // Si se está filtrando por origen O destino específicos, excluir viajes padre
-      const hasOriginOrDestinationFilter = params.origin || params.destination;
-      const isMainTrip = !trip.isSubTrip;
-      
-      // Si hay filtro de origen/destino y es un viaje padre, saltarlo
-      if (hasOriginOrDestinationFilter && isMainTrip) {
-        console.log(`[searchTrips] EXCLUYENDO VIAJE PADRE ${trip.id} debido a filtro de origen/destino específico`);
+      // SOLO procesar viajes principales (padre), no sub-viajes
+      if (trip.isSubTrip) {
+        console.log(`[searchTrips] EXCLUYENDO SUB-VIAJE ${trip.id} - Solo se devuelven viajes padre`);
         continue;
       }
       
@@ -492,31 +488,7 @@ export class DatabaseStorage implements IStorage {
         assignedDriver = driverMap.get(trip.driverId);
       }
       
-      // For subtrips, check against segment origin and destination
-      if (trip.isSubTrip && trip.segmentOrigin && trip.segmentDestination) {
-        const originMatch = !params.origin || trip.segmentOrigin.toLowerCase().includes(params.origin.toLowerCase());
-        const destMatch = !params.destination || trip.segmentDestination.toLowerCase().includes(params.destination.toLowerCase());
-        
-        if (originMatch && destMatch) {
-          tripsWithRouteInfo.push({
-            ...trip,
-            route,
-            numStops: route.stops.length,
-            companyName: companyData.companyName,
-            companyLogo: companyData.companyLogo,
-            assignedVehicle,
-            assignedDriver
-          });
-        }
-        continue;
-      }
-      
-      // Para viajes principales: Si hay filtro de origen/destino, EXCLUIR viajes padre completamente
-      if ((params.origin || params.destination) && !trip.isSubTrip) {
-        continue;
-      }
-      
-      // For main trips, check all stops for matching origin and destination
+      // Para viajes principales, verificar coincidencias de origen y destino si se especifican
       let originMatch = !params.origin;
       let destMatch = !params.destination;
       
@@ -532,7 +504,7 @@ export class DatabaseStorage implements IStorage {
                     route.stops.some(stop => stop.toLowerCase().includes(searchDest));
       }
       
-      // Solo procesar si coinciden origen y destino
+      // Solo procesar si coinciden origen y destino (o no hay filtros de origen/destino)
       if (originMatch && destMatch) {
         tripsWithRouteInfo.push({
           ...trip,
