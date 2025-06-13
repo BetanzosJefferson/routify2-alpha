@@ -488,7 +488,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           <CardTitle className="text-xl">{title}</CardTitle>
         </div>
       </CardHeader>
-
       {/* Tabs para Actuales y Archivados */}
       <div className="flex justify-center border-b">
         <div className="w-full max-w-2xl flex">
@@ -521,7 +520,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </button>
         </div>
       </div>
-
       {/* Filtros siempre visibles */}
       <div className="p-4 border-b">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -593,7 +591,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </div>
         </div>
       </div>
-
       <CardContent className="p-4">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-10">
@@ -608,14 +605,13 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </div>
         ) : !showArchived ? (
           // Contenido de viajes actuales (pestaña 1)
-          <div className="space-y-6 mb-10">
+          (<div className="space-y-6 mb-10">
             <div className="mb-4">
               <h3 className="text-lg font-medium">Viajes actuales y futuros</h3>
               <p className="text-sm text-muted-foreground">
                 Gestiona los viajes programados, asigna vehículos y conductores.
               </p>
             </div>
-
             {Object.entries(currentTrips).length === 0 ? (
               <div className="text-center py-10">
                 <div className="text-muted-foreground">
@@ -655,19 +651,10 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                               <div className="flex justify-between items-start">
                                 <div className="flex">
                                   <div>
-                                    <h4 className="text-base font-medium mb-1">
-                                      Ruta #{trip.routeId}
-                                    </h4>
-                                    <div className="text-xs text-gray-500 mb-1">
-                                      Compañía: {trip.companyId}
-                                    </div>
                                     <div className="flex items-center text-sm text-muted-foreground">
-                                      <CalendarIcon className="h-4 w-4 mr-1" />
-                                      <span>
-                                        {departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}
-                                      </span>
+                                  
                                       <ClockIcon className="h-4 w-4 ml-4 mr-1" />
-                                      <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
+                                      <span className="font-bold text-[16px] text-[#0b0a0a]">{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -682,9 +669,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                       <p className="text-sm font-medium">Ruta</p>
                                       <p className="text-xs text-muted-foreground">
                                         {origin} → {destination}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        {stopsCount} paradas intermedias
                                       </p>
                                     </div>
                                   </div>
@@ -762,7 +746,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                               </div>
                             </div>
                           </div>
-                          
                           <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
                             <div className="flex gap-2 mt-0 lg:mt-4">
                               <Button
@@ -794,17 +777,16 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                 </div>
               ))
             )}
-          </div>
+          </div>)
         ) : (
           // Contenido de viajes archivados (pestaña 2)
-          <div className="space-y-6 mb-10">
+          (<div className="space-y-6 mb-10">
             <div className="mb-4">
               <h3 className="text-lg font-medium">Viajes archivados</h3>
               <p className="text-sm text-muted-foreground">
                 Viajes pasados que se mantienen para consulta histórica.
               </p>
             </div>
-
             {archivedTrips.length === 0 ? (
               <div className="text-center py-10">
                 <div className="text-muted-foreground">
@@ -985,10 +967,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                 })}
               </div>
             )}
-          </div>
+          </div>)
         )}
       </CardContent>
-
       {/* Dialog de confirmación para eliminar viaje */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -1010,7 +991,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
       {/* Dialog para asignar vehículo */}
       <AlertDialog 
         open={assignVehicleDialogOpen !== null} 
@@ -1079,7 +1059,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
       {/* Dialog para asignar conductor */}
       <AlertDialog 
         open={assignDriverDialogOpen !== null} 
@@ -1148,7 +1127,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* Diálogo de confirmación para eliminar viaje */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -1178,7 +1156,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* Utilizamos la navegación para ir a la página de edición en lugar de un dialog */}
     </Card>
   );
