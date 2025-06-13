@@ -248,7 +248,7 @@ function ReservationsListContent() {
                       `Viaje ${recordId}`
                     }
                   </div>
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
+
                 </div>
                 
                 {/* Información adicional del viaje */}

@@ -1196,4 +1196,164 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
+
+  // Métodos para gestión de usuarios
+  async getUsers(companyId?: string): Promise<schema.User[]> {
+    console.log("DB Storage: Consultando usuarios");
+    
+    try {
+      // Si se proporciona companyId, filtrar por esa compañía
+      if (companyId) {
+        console.log(`DB Storage: Filtrando usuarios por compañía: ${companyId}`);
+        const users = await db
+          .select()
+          .from(schema.users)
+          .where(eq(schema.users.companyId, companyId));
+        
+        console.log(`DB Storage: Usuarios encontrados para compañía ${companyId}: ${users.length}`);
+        return users;
+      }
+      
+      // Si no hay companyId, devolver todos los usuarios
+      const users = await db.select().from(schema.users);
+      console.log(`DB Storage: Total usuarios encontrados: ${users.length}`);
+      return users;
+    } catch (error) {
+      console.error("DB Storage: Error al obtener usuarios:", error);
+      throw error;
+    }
+  }
+
+  async getAllUsers(): Promise<schema.User[]> {
+    console.log("DB Storage: Consultando todos los usuarios (sin filtro de compañía)");
+    
+    try {
+      const users = await db.select().from(schema.users);
+      console.log(`DB Storage: Total usuarios encontrados: ${users.length}`);
+      return users;
+    } catch (error) {
+      console.error("DB Storage: Error al obtener todos los usuarios:", error);
+      throw error;
+    }
+  }
+
+  async getUserById(id: number): Promise<schema.User | undefined> {
+    console.log(`DB Storage: Consultando usuario por ID: ${id}`);
+    
+    try {
+      const [user] = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.id, id));
+      
+      if (user) {
+        console.log(`DB Storage: Usuario encontrado: ${user.firstName} ${user.lastName} (${user.email})`);
+      } else {
+        console.log(`DB Storage: Usuario con ID ${id} no encontrado`);
+      }
+      
+      return user;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener usuario ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async getUsersByCompany(companyId: string): Promise<schema.User[]> {
+    console.log(`DB Storage: Consultando usuarios por compañía: ${companyId}`);
+    
+    try {
+      const users = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.companyId, companyId));
+      
+      console.log(`DB Storage: Usuarios encontrados para compañía ${companyId}: ${users.length}`);
+      return users;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener usuarios por compañía ${companyId}:`, error);
+      throw error;
+    }
+  }
+
+  async getUsersByCompanyAndRole(companyId: string, role: string): Promise<schema.User[]> {
+    console.log(`DB Storage: Consultando usuarios por compañía ${companyId} y rol ${role}`);
+    
+    try {
+      const users = await db
+        .select()
+        .from(schema.users)
+        .where(
+          and(
+            eq(schema.users.companyId, companyId),
+            eq(schema.users.role, role)
+          )
+        );
+      
+      console.log(`DB Storage: Usuarios encontrados para compañía ${companyId} y rol ${role}: ${users.length}`);
+      return users;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener usuarios por compañía ${companyId} y rol ${role}:`, error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: number, userUpdate: Partial<schema.User>): Promise<schema.User | undefined> {
+    console.log(`DB Storage: Actualizando usuario ${id} con datos:`, JSON.stringify(userUpdate, null, 2));
+    
+    try {
+      // Agregar timestamp de actualización
+      const updateData = {
+        ...userUpdate,
+        updatedAt: new Date()
+      };
+      
+      const [updatedUser] = await db
+        .update(schema.users)
+        .set(updateData)
+        .where(eq(schema.users.id, id))
+        .returning();
+      
+      if (updatedUser) {
+        console.log(`DB Storage: Usuario ${id} actualizado exitosamente`);
+        // No loggear datos sensibles como password
+        const safeUserData = {
+          id: updatedUser.id,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          companyId: updatedUser.companyId,
+          commissionPercentage: updatedUser.commissionPercentage
+        };
+        console.log(`DB Storage: Datos actualizados:`, JSON.stringify(safeUserData, null, 2));
+      } else {
+        console.log(`DB Storage: No se pudo actualizar el usuario ${id}`);
+      }
+      
+      return updatedUser;
+    } catch (error) {
+      console.error(`DB Storage: Error al actualizar usuario ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    console.log(`DB Storage: Eliminando usuario ${id}`);
+    
+    try {
+      const result = await db
+        .delete(schema.users)
+        .where(eq(schema.users.id, id))
+        .returning({ id: schema.users.id });
+      
+      const wasDeleted = result.length > 0;
+      console.log(`DB Storage: Usuario ${id} ${wasDeleted ? 'eliminado exitosamente' : 'no pudo ser eliminado'}`);
+      
+      return wasDeleted;
+    } catch (error) {
+      console.error(`DB Storage: Error al eliminar usuario ${id}:`, error);
+      throw error;
+    }
+  }
 }
