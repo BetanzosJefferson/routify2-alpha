@@ -761,6 +761,7 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(), // Fecha de expiración (72 horas después de creación)
 });
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true });

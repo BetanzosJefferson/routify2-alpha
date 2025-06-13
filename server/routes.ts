@@ -3941,6 +3941,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Crear notificaciones
         const notificationPromises = usersToNotify.map(async (user) => {
+          // Calcular fecha de expiración (72 horas después)
+          const expirationDate = new Date();
+          expirationDate.setHours(expirationDate.getHours() + 72);
+
           const notificationData = {
             userId: user.id,
             type: 'reservation_request',
@@ -3954,7 +3958,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               amount: totalAmount,
               passengers: passengerData?.length || 1
             }),
-            read: false
+            read: false,
+            expiresAt: expirationDate
           };
 
           const notification = await storage.createNotification(notificationData);

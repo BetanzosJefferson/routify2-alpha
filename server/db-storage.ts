@@ -1489,13 +1489,27 @@ export class DatabaseStorage implements IStorage {
     console.log(`DB Storage: Consultando notificaciones para usuario ${userId}`);
     
     try {
+      const currentTime = new Date();
+      
+      // Obtener solo notificaciones no expiradas
       const notifications = await db
         .select()
         .from(schema.notifications)
-        .where(eq(schema.notifications.userId, userId))
+        .where(
+          and(
+            eq(schema.notifications.userId, userId),
+            sql`${schema.notifications.expiresAt} > ${currentTime}`
+          )
+        )
         .orderBy(sql`${schema.notifications.createdAt} DESC`);
       
-      console.log(`DB Storage: Encontradas ${notifications.length} notificaciones para usuario ${userId}`);
+      console.log(`DB Storage: Encontradas ${notifications.length} notificaciones válidas para usuario ${userId}`);
+      
+      // Ejecutar limpieza de notificaciones expiradas en segundo plano
+      this.cleanupExpiredNotifications().catch(error => {
+        console.error('Error en limpieza automática de notificaciones:', error);
+      });
+      
       return notifications;
     } catch (error) {
       console.error(`DB Storage: Error al obtener notificaciones para usuario ${userId}:`, error);
@@ -1530,22 +1544,47 @@ export class DatabaseStorage implements IStorage {
     console.log(`DB Storage: Consultando conteo de notificaciones no leídas para usuario ${userId}`);
     
     try {
+      const currentTime = new Date();
+      
       const result = await db
         .select({ count: sql`count(*)` })
         .from(schema.notifications)
         .where(
           and(
             eq(schema.notifications.userId, userId),
-            eq(schema.notifications.read, false)
+            eq(schema.notifications.read, false),
+            sql`${schema.notifications.expiresAt} > ${currentTime}`
           )
         );
       
       const count = parseInt(result[0].count.toString());
-      console.log(`DB Storage: Usuario ${userId} tiene ${count} notificaciones no leídas`);
+      console.log(`DB Storage: Usuario ${userId} tiene ${count} notificaciones no leídas válidas`);
       
       return count;
     } catch (error) {
       console.error(`DB Storage: Error al obtener conteo de notificaciones no leídas para usuario ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  // Método para limpiar notificaciones expiradas
+  async cleanupExpiredNotifications(): Promise<number> {
+    console.log('DB Storage: Iniciando limpieza de notificaciones expiradas');
+    
+    try {
+      const currentTime = new Date();
+      
+      const deletedResult = await db
+        .delete(schema.notifications)
+        .where(sql`${schema.notifications.expiresAt} <= ${currentTime}`)
+        .returning({ id: schema.notifications.id });
+      
+      const deletedCount = deletedResult.length;
+      console.log(`DB Storage: Eliminadas ${deletedCount} notificaciones expiradas`);
+      
+      return deletedCount;
+    } catch (error) {
+      console.error('DB Storage: Error al limpiar notificaciones expiradas:', error);
       throw error;
     }
   }
