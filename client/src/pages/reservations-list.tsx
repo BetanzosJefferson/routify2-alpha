@@ -29,8 +29,14 @@ function ReservationsListContent() {
 
   // Filtrar reservaciones por fecha seleccionada y término de búsqueda
   const filteredReservations = reservations.filter((reservation) => {
-    // Filtrar por fecha
-    const reservationDate = reservation.trip?.departureDate;
+    // Filtrar por fecha usando la fecha del viaje padre si está disponible
+    let reservationDate = reservation.trip?.departureDate;
+    
+    // Si hay información del viaje padre, usar su fecha en lugar del segmento específico
+    if (reservation.trip?.parentTrip?.departureDate) {
+      reservationDate = reservation.trip.parentTrip.departureDate;
+    }
+    
     if (reservationDate) {
       const tripDateNormalized = normalizeToStartOfDay(reservationDate);
       const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
