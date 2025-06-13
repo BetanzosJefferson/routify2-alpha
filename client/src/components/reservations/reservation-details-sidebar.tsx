@@ -252,18 +252,32 @@ export function ReservationDetailsSidebar({
                       </div>
                     </div>
 
-                    {/* Origen y destino completos (incluyendo punto de abordaje) */}
+                    {/* Origen y destino específicos del segmento */}
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
-                          {reservation.trip?.route?.origin || 'Origen'}
+                          {(() => {
+                            // Usar información específica del segmento si está disponible
+                            if (reservation.trip?.origin && reservation.trip?.destination) {
+                              return reservation.trip.origin;
+                            }
+                            // Fallback al viaje padre
+                            return reservation.trip?.route?.origin || 'Origen';
+                          })()}
                         </div>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500">Destino</div>
                         <div className="font-medium">
-                          {reservation.trip?.route?.destination || 'Destino'}
+                          {(() => {
+                            // Usar información específica del segmento si está disponible
+                            if (reservation.trip?.origin && reservation.trip?.destination) {
+                              return reservation.trip.destination;
+                            }
+                            // Fallback al viaje padre
+                            return reservation.trip?.route?.destination || 'Destino';
+                          })()}
                         </div>
                       </div>
                     </div>
