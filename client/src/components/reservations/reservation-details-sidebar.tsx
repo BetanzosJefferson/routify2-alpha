@@ -56,17 +56,35 @@ export function ReservationDetailsSidebar({
     };
   }, [onClose]);
 
-  // Filtrar reservaciones basado en la búsqueda
-  const filteredReservations = reservations.filter(reservation => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      reservation.id.toString().includes(searchLower) ||
-      reservation.phone.toLowerCase().includes(searchLower) ||
-      reservation.email?.toLowerCase().includes(searchLower) ||
-      reservation.createdByUser?.firstName?.toLowerCase().includes(searchLower) ||
-      reservation.createdByUser?.lastName?.toLowerCase().includes(searchLower)
-    );
-  });
+  // Función para obtener el índice de la parada de origen en la ruta
+  const getOriginStopIndex = (reservation: ReservationWithDetails) => {
+    const origin = reservation.trip?.origin;
+    if (!origin || !tripInfo?.route?.stops) return 0;
+    
+    // Buscar el índice en las paradas de la ruta
+    const allStops = [tripInfo.route.origin, ...tripInfo.route.stops, tripInfo.route.destination];
+    const index = allStops.findIndex(stop => stop === origin);
+    return index >= 0 ? index : 0;
+  };
+
+  // Filtrar y ordenar reservaciones
+  const filteredReservations = reservations
+    .filter(reservation => {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        reservation.id.toString().includes(searchLower) ||
+        reservation.phone.toLowerCase().includes(searchLower) ||
+        reservation.email?.toLowerCase().includes(searchLower) ||
+        reservation.createdByUser?.firstName?.toLowerCase().includes(searchLower) ||
+        reservation.createdByUser?.lastName?.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      // Ordenar por índice de parada de origen (cronológicamente)
+      const indexA = getOriginStopIndex(a);
+      const indexB = getOriginStopIndex(b);
+      return indexA - indexB;
+    });
 
 
 
