@@ -1970,7 +1970,62 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Condición de transacción no válida');
       }
       
-      // 5. Preparar datos de la transacción
+      // 5. Obtener información del viaje para completar los datos de la transacción
+      let tripInfo = null;
+      let origen = "Origen no especificado";
+      let destino = "Destino no especificado";
+      let isSubTrip = false;
+      
+      const tripId = requestData.trip_details?.tripId;
+      if (tripId) {
+        try {
+          // Extraer recordId y subTripId del tripId (formato: "recordId_subTripIndex")
+          const [recordIdStr, subTripIndex] = tripId.split('_');
+          const recordId = parseInt(recordIdStr);
+          
+          if (!isNaN(recordId)) {
+            // Buscar el viaje en la base de datos
+            const tripResult = await db
+              .select()
+              .from(schema.trips)
+              .where(eq(schema.trips.id, recordId))
+              .limit(1);
+            
+            if (tripResult.length > 0) {
+              const trip = tripResult[0];
+              const tripData = trip.tripData as any;
+              
+              if (tripData && Array.isArray(tripData)) {
+                // Si hay subTripIndex, es un sub-viaje
+                if (subTripIndex && subTripIndex !== '0') {
+                  isSubTrip = true;
+                  const subTripIdx = parseInt(subTripIndex);
+                  if (subTripIdx < tripData.length) {
+                    const subTrip = tripData[subTripIdx];
+                    origen = subTrip.origin || "Origen no especificado";
+                    destino = subTrip.destination || "Destino no especificado";
+                  }
+                } else {
+                  // Es el viaje principal
+                  const mainTrip = tripData[0];
+                  if (mainTrip) {
+                    origen = mainTrip.origin || "Origen no especificado";
+                    destino = mainTrip.destination || "Destino no especificado";
+                  }
+                }
+              }
+            }
+          }
+        } catch (tripError) {
+          console.error(`Error al obtener información del viaje ${tripId}:`, tripError);
+        }
+      }
+      
+      // Preparar nombres de pasajeros
+      const passengerNames = requestData.passengers?.map((p: any) => 
+        `${p.firstName || ''} ${p.lastName || ''}`.trim()
+      ).join(', ') || 'Sin especificar';
+      
       const transactionData: schema.InsertTransaccion = {
         reservationId: reservationId,
         companyId: requestData.company_id,
@@ -1980,11 +2035,27 @@ export class DatabaseStorage implements IStorage {
         paymentMethod: paymentMethod,
         notes: `Transacción creada automáticamente por aprobación de solicitud de comisionista`,
         details: {
+          type: "reservation",
+          id: reservationId,
+          monto: transactionAmount,
+          notas: requestData.notes || null,
+          origen: origen,
+          tripId: tripId,
+          destino: destino,
+          contacto: {
+            email: requestData.email || null,
+            telefono: requestData.phone || null
+          },
+          companyId: requestData.company_id,
+          isSubTrip: isSubTrip,
+          pasajeros: passengerNames,
+          metodoPago: paymentMethod,
+          dateCreated: new Date().toISOString(),
+          // Metadata adicional para auditoría
           originalRequestId: requestData.id || null,
           createdByApproval: true,
           comisionistaId: requestData.created_by,
-          approvedBy: approvedBy,
-          totalReservationAmount: totalAmount
+          approvedBy: approvedBy
         },
         createdAt: new Date(),
         updatedAt: new Date()
