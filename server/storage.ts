@@ -64,8 +64,14 @@ export interface IStorage {
     origin?: string;
     destination?: string;
     date?: string;
+    dateRange?: string[];
     seats?: number;
     companyId?: string | null;
+    companyIds?: string[];
+    driverId?: number;
+    visibility?: string;
+    includeAllVisibilities?: boolean;
+    optimizedResponse?: boolean;
   }): Promise<TripWithRouteInfo[]>;
   updateRelatedTripsAvailability(tripId: number, seatChange: number): Promise<void>;
   

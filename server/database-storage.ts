@@ -320,6 +320,7 @@ export class DatabaseStorage implements IStorage {
     driverId?: number;
     visibility?: string;
     includeAllVisibilities?: boolean;
+    optimizedResponse?: boolean;
   }): Promise<TripWithRouteInfo[]> {
     console.log(`[searchTrips] Iniciando búsqueda con parámetros:`, params);
     
@@ -456,8 +457,10 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
-    // Determinar si debemos agrupar por viaje principal o expandir segmentos
-    const shouldGroupByMainTrip = params.includeAllVisibilities && !params.origin && !params.destination;
+    // Determinar el modo de respuesta basado en el flag optimizedResponse
+    const shouldReturnOptimized = params.optimizedResponse === true;
+    
+    console.log(`[searchTrips] Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
     
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
@@ -483,9 +486,9 @@ export class DatabaseStorage implements IStorage {
         assignedDriver = driverMap.get(trip.driverId);
       }
       
-      if (shouldGroupByMainTrip) {
-        // PARA VISTA ADMINISTRATIVA: Mostrar solo un viaje agrupado por viaje principal
-        console.log(`[searchTrips] Modo administrativo: Agrupando viaje ${trip.id} como viaje principal`);
+      if (shouldReturnOptimized) {
+        // MODO OPTIMIZADO: Retornar un solo objeto por viaje sin expansión de segmentos
+        console.log(`[searchTrips] Modo optimizado: Procesando viaje ${trip.id} como objeto único`);
         
         // Parse tripData para obtener información del primer segmento como representativo
         let tripDataArray = [];
@@ -509,14 +512,30 @@ export class DatabaseStorage implements IStorage {
             departureDate: firstSegment.departureDate,
             departureTime: firstSegment.departureTime,
             arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || firstSegment.arrivalTime,
-            // Datos consolidados del viaje
-            tripData: tripDataArray,
-            route,
+            price: firstSegment.price,
+            availableSeats: firstSegment.availableSeats,
+            // Solo metadatos esenciales, NO incluir tripData completo ni logos
+            route: {
+              id: route.id,
+              name: route.name,
+              origin: route.origin,
+              destination: route.destination,
+              stops: route.stops,
+              companyId: route.companyId
+            },
             numStops: route.stops.length,
             companyName: companyData.companyName,
-            companyLogo: companyData.companyLogo,
-            assignedVehicle,
-            assignedDriver
+            // NO incluir companyLogo para reducir payload
+            assignedVehicle: assignedVehicle ? {
+              id: assignedVehicle.id,
+              model: assignedVehicle.model,
+              plateNumber: assignedVehicle.plateNumber
+            } : undefined,
+            assignedDriver: assignedDriver ? {
+              id: assignedDriver.id,
+              firstName: assignedDriver.firstName,
+              lastName: assignedDriver.lastName
+            } : undefined
           });
         }
       } else {
