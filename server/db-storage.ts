@@ -417,7 +417,13 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
-    // Transform trips with tripData JSON array into individual trip segments
+    // Determinar el modo de respuesta basado en el flag optimizedResponse
+    const shouldReturnOptimized = params.optimizedResponse === true;
+    
+    console.log(`[searchTrips] optimizedResponse flag: ${params.optimizedResponse}`);
+    console.log(`[searchTrips] shouldReturnOptimized: ${shouldReturnOptimized}`);
+    console.log(`[searchTrips] Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
+    
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const trip of trips) {
@@ -452,8 +458,52 @@ export class DatabaseStorage implements IStorage {
         assignedDriver = driverMap.get(trip.driverId);
       }
       
-      // Process each segment in the tripData array
-      for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
+      if (shouldReturnOptimized) {
+        // MODO OPTIMIZADO: Retornar un solo objeto por viaje sin expansión de segmentos
+        console.log(`[searchTrips] Modo optimizado: Procesando viaje ${trip.id} como objeto único`);
+        
+        // Usar el primer segmento como representativo del viaje completo
+        const firstSegment = tripDataArray[0];
+        if (firstSegment) {
+          tripsWithRouteInfo.push({
+            ...trip,
+            // Mantener ID original para viaje principal
+            id: trip.id,
+            // Usar datos del primer segmento como representativos
+            origin: route.origin,
+            destination: route.destination,
+            departureDate: firstSegment.departureDate,
+            departureTime: firstSegment.departureTime,
+            arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || firstSegment.arrivalTime,
+            price: firstSegment.price,
+            availableSeats: firstSegment.availableSeats,
+            // Solo metadatos esenciales, NO incluir tripData completo ni logos
+            route: {
+              id: route.id,
+              name: route.name,
+              origin: route.origin,
+              destination: route.destination,
+              stops: route.stops,
+              companyId: route.companyId
+            },
+            numStops: route.stops.length,
+            companyName: companyData.companyName,
+            // NO incluir companyLogo para reducir payload
+            assignedVehicle: assignedVehicle ? {
+              id: assignedVehicle.id,
+              model: assignedVehicle.model,
+              plateNumber: assignedVehicle.plateNumber
+            } : undefined,
+            assignedDriver: assignedDriver ? {
+              id: assignedDriver.id,
+              firstName: assignedDriver.firstName,
+              lastName: assignedDriver.lastName
+            } : undefined
+          });
+        }
+      } else {
+        // MODO EXPANDIDO: Process each segment in the tripData array
+        for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
         const segment = tripDataArray[segmentIndex];
         console.log(`[searchTrips] Processing segment ${segmentIndex} for trip ${trip.id}:`, {
           origin: segment.origin,
@@ -514,6 +564,7 @@ export class DatabaseStorage implements IStorage {
           
           console.log(`[searchTrips] Adding expanded trip ${uniqueTripId} with origin: ${expandedTrip.origin}, destination: ${expandedTrip.destination}`);
           tripsWithRouteInfo.push(expandedTrip as TripWithRouteInfo);
+        }
         }
       }
     }
