@@ -282,36 +282,18 @@ export function convertTo12Hour(time24: string): {
 export function generateSegmentsFromRoute(route: RouteWithSegments): SegmentPrice[] {
   const segments: SegmentPrice[] = [];
   
-  // Add origin to first stop
-  if (route.stops.length > 0) {
-    segments.push({
-      origin: route.origin,
-      destination: route.stops[0],
-      price: 0
-    });
-    
-    // Add stop to stop segments
-    for (let i = 0; i < route.stops.length - 1; i++) {
+  // Crear array con todas las ubicaciones en orden: origen, paradas, destino
+  const allLocations = [route.origin, ...route.stops, route.destination];
+  
+  // Generar todas las combinaciones posibles de origen-destino
+  for (let i = 0; i < allLocations.length; i++) {
+    for (let j = i + 1; j < allLocations.length; j++) {
       segments.push({
-        origin: route.stops[i],
-        destination: route.stops[i + 1],
+        origin: allLocations[i],
+        destination: allLocations[j],
         price: 0
       });
     }
-    
-    // Add last stop to destination
-    segments.push({
-      origin: route.stops[route.stops.length - 1],
-      destination: route.destination,
-      price: 0
-    });
-  } else {
-    // Direct route with no stops
-    segments.push({
-      origin: route.origin,
-      destination: route.destination,
-      price: 0
-    });
   }
   
   return segments;
