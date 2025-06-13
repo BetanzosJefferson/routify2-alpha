@@ -43,17 +43,13 @@ export default function ReservationDetailsModal({
     queryKey: ["/api/reservations", reservationId],
     queryFn: async () => {
       if (!reservationId) return null;
-      const response = await fetch(`/api/reservations/${reservationId}`, {
-        credentials: 'include'
-      });
+      const response = await fetch(`/api/reservations/${reservationId}`);
       if (!response.ok) {
         throw new Error("Error al cargar los detalles de la reservación");
       }
       return response.json();
     },
     enabled: !!reservationId && isOpen,
-    staleTime: 0, // Siempre hacer petición fresca
-    cacheTime: 0  // No cachear los resultados
   });
 
 
@@ -1122,53 +1118,6 @@ export default function ReservationDetailsModal({
                         <div className="text-right">{formatPrice(reservation.totalAmount)}</div>
                       </div>
 
-                      {/* Información de quién marcó como pagado */}
-                      {reservation.paidBy && (
-                        <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
-                          <div className="text-xs text-green-700">
-                            <strong>Marcado como pagado por:</strong> {reservation.paidByName || `Usuario ID ${reservation.paidBy}`}
-                            {reservation.paidAt && (
-                              <span className="block">
-                                Fecha: {new Date(reservation.paidAt).toLocaleString('es-MX', {
-                                  timeZone: 'America/Mexico_City',
-                                  day: '2-digit',
-                                  month: '2-digit', 
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Información de quién checkeó el ticket */}
-                      {reservation.checkedBy && (
-                        <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                          <div className="text-xs text-blue-700">
-                            <strong>Ticket verificado por:</strong> {reservation.checkedByName || `Usuario ID ${reservation.checkedBy}`}
-                            {reservation.checkedAt && (
-                              <span className="block">
-                                Fecha: {new Date(reservation.checkedAt).toLocaleString('es-MX', {
-                                  timeZone: 'America/Mexico_City',
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric', 
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            )}
-                            {reservation.checkCount && reservation.checkCount > 1 && (
-                              <span className="block text-amber-600">
-                                Verificado {reservation.checkCount} veces
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
                       {user && reservation.paymentStatus !== 'pagado' && reservation.status === 'confirmed' && (
                         <Button
                           onClick={markAsPaid}
@@ -1247,12 +1196,14 @@ export default function ReservationDetailsModal({
               </div>
 
               <DialogFooter className="mt-2 sm:mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+                <Button className="w-full sm:w-auto text-sm" onClick={handleClose}>Cerrar</Button>
+
                 {user && reservation.status !== 'canceled' && (
                   <>
-                    {/* Botón Checkear ticket - Verde (acción positiva) */}
+                    {/* Botón Checkear ticket */}
                     {!reservation.checkedBy && (
                       <Button
-                        className="w-full sm:w-auto text-sm bg-green-600 hover:bg-green-700 text-white"
+                        className="w-full sm:w-auto text-sm bg-blue-600 hover:bg-blue-700"
                         onClick={checkTicket}
                         disabled={isCheckingTicket}
                       >
@@ -1270,10 +1221,10 @@ export default function ReservationDetailsModal({
                       </Button>
                     )}
 
-                    {/* Botón Cancelar con reembolso - Naranja (acción de precaución) */}
+                    {/* Botón Cancelar con reembolso */}
                     {hasRequiredRole(user, ['superAdmin', 'admin', 'dueño']) && (
                       <Button
-                        className="w-full sm:w-auto text-sm bg-orange-500 hover:bg-orange-600 text-white"
+                        className="w-full sm:w-auto text-sm bg-orange-600 hover:bg-orange-700"
                         onClick={cancelWithRefund}
                         disabled={isCancelingWithRefund}
                       >
@@ -1291,9 +1242,9 @@ export default function ReservationDetailsModal({
                       </Button>
                     )}
 
-                    {/* Botón Cancelar Reservación - Rojo (acción destructiva) */}
+                    {/* Botón Cancelar Reservación */}
                     <Button
-                      className="w-full sm:w-auto text-sm bg-red-600 hover:bg-red-700 text-white"
+                      className="w-full sm:w-auto text-sm bg-red-600 hover:bg-red-700"
                       onClick={cancelReservation}
                       disabled={isCanceling}
                     >

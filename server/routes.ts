@@ -2180,7 +2180,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener el usuario autenticado
       const { user } = req as any;
       
-      console.log(`[GET /reservations/${id}] ===== INICIO SOLICITUD =====`);
       console.log(`[GET /reservations/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
         console.log(`[GET /reservations/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
@@ -2236,45 +2235,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations/${id}] No encontrada o acceso denegado`);
         return res.status(404).json({ error: "Reservación no encontrada" });
       }
-
-      // Enriquecer con nombres de usuarios si existen
-      let paidByName = null;
-      let checkedByName = null;
-
-      if (reservation.paidBy) {
-        try {
-          const paidByUser = await storage.getUserById(reservation.paidBy);
-          if (paidByUser) {
-            paidByName = `${paidByUser.firstName || ''} ${paidByUser.lastName || ''}`.trim();
-          }
-        } catch (error) {
-          console.log(`[GET /reservations/${id}] Error al obtener usuario que marcó como pagado:`, error);
-        }
-      }
-
-      if (reservation.checkedBy) {
-        try {
-          console.log(`[GET /reservations/${id}] Consultando usuario ID: ${reservation.checkedBy}`);
-          const checkedByUser = await storage.getUserById(reservation.checkedBy);
-          console.log(`[GET /reservations/${id}] Usuario obtenido:`, checkedByUser);
-          if (checkedByUser) {
-            checkedByName = `${checkedByUser.firstName || ''} ${checkedByUser.lastName || ''}`.trim();
-            console.log(`[GET /reservations/${id}] Nombre formateado: ${checkedByName}`);
-          }
-        } catch (error) {
-          console.log(`[GET /reservations/${id}] Error al obtener usuario que checkeó:`, error);
-        }
-      }
-
-      // Agregar los nombres a la respuesta
-      const enrichedReservation = {
-        ...reservation,
-        paidByName,
-        checkedByName
-      };
       
       console.log(`[GET /reservations/${id}] Acceso concedido`);
-      res.json(enrichedReservation);
+      res.json(reservation);
     } catch (error) {
       console.error(`[GET /reservations/:id] Error: ${error}`);
       res.status(500).json({ error: "Error al obtener la reservación" });
