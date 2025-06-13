@@ -83,7 +83,27 @@ export function ReservationDetailsSidebar({
   // Filtrar y ordenar reservaciones
   const filteredReservations = reservations
     .filter(reservation => {
+      if (!searchQuery) return true;
+      
       const searchLower = searchQuery.toLowerCase();
+      
+      // Filtro especial para estado de check
+      if (searchLower.includes('check')) {
+        const isCheckSearch = searchLower.match(/^check$/i);
+        const isNoCheckSearch = searchLower.match(/^(no\s*check|no-check)$/i);
+        
+        if (isCheckSearch) {
+          // Mostrar solo reservaciones con check
+          return !!reservation.checkedBy;
+        }
+        
+        if (isNoCheckSearch) {
+          // Mostrar solo reservaciones sin check
+          return !reservation.checkedBy;
+        }
+      }
+      
+      // Búsqueda normal por otros campos
       return (
         reservation.id.toString().includes(searchLower) ||
         reservation.phone.toLowerCase().includes(searchLower) ||
@@ -93,28 +113,7 @@ export function ReservationDetailsSidebar({
       );
     })
     .sort((a, b) => {
-      // Primero ordenar por estado de check: "No check" primero, "Check" al final
-      const checkA = a.trip?.boardingStatus === 'checked' ? 1 : 0;
-      const checkB = b.trip?.boardingStatus === 'checked' ? 1 : 0;
-      
-      console.log(`[DEBUG SORTING] Reservación ${a.id}:`, {
-        boardingStatus: a.trip?.boardingStatus,
-        tripData: a.trip,
-        reservationData: a,
-        checkValue: checkA
-      });
-      console.log(`[DEBUG SORTING] Reservación ${b.id}:`, {
-        boardingStatus: b.trip?.boardingStatus,
-        tripData: b.trip,
-        reservationData: b,
-        checkValue: checkB
-      });
-      
-      if (checkA !== checkB) {
-        return checkA - checkB; // No check (0) antes que check (1)
-      }
-      
-      // Si tienen el mismo estado de check, ordenar por índice cronológico
+      // Ordenar por índice cronológico (por ahora sin ordenamiento por check)
       const indexA = getStopIndexFromTripId(a);
       const indexB = getStopIndexFromTripId(b);
       return indexA - indexB;
