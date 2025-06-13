@@ -838,25 +838,11 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                           <div className="p-4 lg:p-6 flex-1">
                             <div className="flex justify-between items-start">
                               <div className="flex">
-                                {/* Logo de la compañía (si existe) */}
-                                {trip.companyLogo ? (
-                                  <div className="mr-3 h-12 w-12 flex-shrink-0">
-                                    <img 
-                                      src={trip.companyLogo} 
-                                      alt={trip.companyName || "Logo de transportista"} 
-                                      className="h-full w-full object-cover rounded-full border border-gray-100"
-                                      onError={(e) => {
-                                        // Si falla la carga, ocultar la imagen
-                                        const target = e.currentTarget as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }} 
-                                    />
-                                  </div>
-                                ) : null}
+                                {/* Logo de compañía removido para optimización de rendimiento */}
                                 
                                 <div>
                                   <h4 className="text-base font-medium mb-1">
-                                    {trip.route?.name || trip.routeName || `Ruta #${trip.routeId}`}
+                                    {trip.route?.name || `Ruta #${trip.routeId}`}
                                   </h4>
                                   {trip.companyName && (
                                     <div className="text-xs text-gray-500 mb-1">
@@ -901,7 +887,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     {trip.vehicleId || trip.assignedVehicle ? (
                                       <p className="text-xs text-green-600 font-medium">
                                         {trip.assignedVehicle ? 
-                                          `${trip.assignedVehicle.brand} ${trip.assignedVehicle.model} - ${trip.assignedVehicle.plates}` :
+                                          `${trip.assignedVehicle.model} - ${trip.assignedVehicle.plateNumber}` :
                                           `${vehicles.find((v: any) => v.id === trip.vehicleId)?.brand || ''} ${vehicles.find((v: any) => v.id === trip.vehicleId)?.model || ''} - ${vehicles.find((v: any) => v.id === trip.vehicleId)?.plates || ''}`
                                         }
                                       </p>
@@ -954,29 +940,23 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     </span>
                                   )}
                                   
-                                  {/* Estado del viaje */}
-                                  {trip.tripStatus && (
+                                  {/* Estado basado en visibilidad */}
+                                  {trip.visibility && (
                                     <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.tripStatus === 'aun_no_inicia' 
-                                        ? 'bg-blue-100 text-blue-800' 
-                                        : trip.tripStatus === 'en_progreso' 
-                                          ? 'bg-amber-100 text-amber-800' 
-                                          : 'bg-purple-100 text-purple-800'
+                                      trip.visibility === 'publicado' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                      {trip.tripStatus === 'aun_no_inicia' 
-                                        ? 'Aún no inicia' 
-                                        : trip.tripStatus === 'en_progreso' 
-                                          ? 'En progreso' 
-                                          : 'Finalizado'}
+                                      {trip.visibility === 'publicado' ? 'Publicado' : trip.visibility}
                                     </span>
                                   )}
                                 </div>
                                 
-                                {/* Reservaciones */}
+                                {/* Información de asientos */}
                                 <div className="flex items-center">
                                   <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
                                   <span className="text-xs text-muted-foreground">
-                                    {trip.reservationCount || 0} reservas
+                                    {trip.availableSeats}/{trip.capacity} asientos
                                   </span>
                                 </div>
                               </div>
