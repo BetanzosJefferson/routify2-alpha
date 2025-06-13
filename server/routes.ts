@@ -4592,6 +4592,155 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/reservations/:id/check - Verificar ticket (checkear)
+  app.post(apiRouter('/reservations/:id/check'), isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID de reservación inválido' 
+        });
+      }
+
+      // Obtener la reservación
+      const reservation = await storage.getReservation(id);
+      if (!reservation) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Reservación no encontrada' 
+        });
+      }
+
+      // Verificar que la reservación no esté cancelada
+      if (reservation.status === 'canceled') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No se puede verificar un ticket de una reservación cancelada' 
+        });
+      }
+
+      // Verificar que el ticket no haya sido verificado previamente
+      if (reservation.checkedBy) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Este ticket ya ha sido verificado previamente' 
+        });
+      }
+
+      // Obtener información del viaje
+      const trip = await storage.getTrip(reservation.trip.id);
+      if (!trip) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Viaje no encontrado' 
+        });
+      }
+
+      // Verificar permisos de compañía
+      const userCompanyId = req.user.company_id;
+      const tripCompanyId = trip.companyId;
+      
+      console.log(`[CHECK TICKET] Usuario: ${req.user.email}, Compañía del usuario: ${userCompanyId}, Compañía del viaje: ${tripCompanyId}`);
+      
+      if (userCompanyId !== tripCompanyId) {
+        console.log(`[CHECK TICKET] DENEGADO: Las compañías no coinciden - Usuario: ${userCompanyId}, Viaje: ${tripCompanyId}`);
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Solo puedes verificar tickets de viajes de tu compañía' 
+        });
+      }
+
+      // Marcar el ticket como verificado
+      const updatedReservation = await storage.checkTicket(id, req.user.id);
+      
+      console.log(`[CHECK TICKET] Ticket ${id} verificado por usuario ${req.user.id}`);
+      
+      res.json({ 
+        success: true, 
+        reservation: updatedReservation,
+        message: 'Ticket verificado correctamente'
+      });
+    } catch (error) {
+      console.error('Error al verificar ticket:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al verificar el ticket' 
+      });
+    }
+  });
+
+  // POST /api/reservations/:id/cancel-refund - Cancelar con reembolso
+  app.post(apiRouter('/reservations/:id/cancel-refund'), isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID de reservación inválido' 
+        });
+      }
+
+      // Verificar permisos - solo superAdmin, admin y dueño pueden cancelar con reembolso
+      const allowedRoles = ['superAdmin', 'admin', 'dueño'];
+      if (!allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'No tienes permisos para cancelar con reembolso' 
+        });
+      }
+
+      // Obtener la reservación
+      const reservation = await storage.getReservation(id);
+      if (!reservation) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Reservación no encontrada' 
+        });
+      }
+
+      // Verificar que la reservación no esté ya cancelada
+      if (reservation.status === 'canceled') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Esta reservación ya está cancelada' 
+        });
+      }
+
+      // Verificar permisos de compañía (excepto para superAdmin)
+      if (req.user.role !== 'superAdmin') {
+        const userCompanyId = req.user.company_id;
+        const reservationCompanyId = reservation.companyId;
+        
+        if (userCompanyId !== reservationCompanyId) {
+          return res.status(403).json({ 
+            success: false, 
+            message: 'Solo puedes cancelar reservaciones de tu compañía' 
+          });
+        }
+      }
+
+      // Cancelar la reservación con reembolso
+      const updatedReservation = await storage.cancelReservationWithRefund(id, req.user.id);
+      
+      console.log(`[CANCEL WITH REFUND] Reservación ${id} cancelada con reembolso por usuario ${req.user.id}`);
+      
+      res.json({ 
+        success: true, 
+        reservation: updatedReservation,
+        message: 'Reservación cancelada con reembolso correctamente'
+      });
+    } catch (error) {
+      console.error('Error al cancelar con reembolso:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al cancelar la reservación con reembolso' 
+      });
+    }
+  });
+
   // ======== API de Cupones ========
 
   // GET /api/coupons - Obtener todos los cupones

@@ -150,6 +150,11 @@ export const reservations = pgTable("reservations", {
   couponCode: text("coupon_code"), // Código del cupón aplicado
   discountAmount: doublePrecision("discount_amount").default(0), // Monto del descuento aplicado
   originalAmount: doublePrecision("original_amount"), // Monto original antes del descuento
+  // Campos para cancelación con reembolso
+  canceledBy: integer("canceled_by"), // ID del usuario que canceló con reembolso
+  canceledAt: timestamp("canceled_at"), // Fecha y hora de la cancelación
+  refundRequested: boolean("refund_requested").default(false), // Indicador de reembolso solicitado
+  refundRequestedAt: timestamp("refund_requested_at"), // Fecha y hora de solicitud de reembolso
 });
 
 export const insertReservationSchema = createInsertSchema(reservations);

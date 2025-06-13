@@ -918,4 +918,43 @@ export class DatabaseStorage implements IStorage {
       return 0;
     }
   }
+
+  async checkTicket(reservationId: number, checkedBy: number): Promise<any> {
+    try {
+      const [updatedReservation] = await db
+        .update(schema.reservations)
+        .set({ 
+          checkedBy: checkedBy,
+          checkedAt: new Date()
+        })
+        .where(eq(schema.reservations.id, reservationId))
+        .returning();
+      
+      return updatedReservation;
+    } catch (error) {
+      console.error('Error al verificar ticket:', error);
+      throw error;
+    }
+  }
+
+  async cancelReservationWithRefund(reservationId: number, canceledBy: number): Promise<any> {
+    try {
+      const [updatedReservation] = await db
+        .update(schema.reservations)
+        .set({ 
+          status: 'canceled',
+          canceledBy: canceledBy,
+          canceledAt: new Date(),
+          refundRequested: true,
+          refundRequestedAt: new Date()
+        })
+        .where(eq(schema.reservations.id, reservationId))
+        .returning();
+      
+      return updatedReservation;
+    } catch (error) {
+      console.error('Error al cancelar con reembolso:', error);
+      throw error;
+    }
+  }
 }
