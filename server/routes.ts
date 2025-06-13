@@ -4106,8 +4106,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DEBUG] Usuario actual: ${currentUser.id}, role: ${currentUser.role}, company_id: ${currentUser.company_id}`);
       
       // Verificar que el usuario tenga permisos para aprobar/rechazar
-      const canApprove = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER].includes(currentUser.role);
-      console.log(`[DEBUG] Puede aprobar: ${canApprove}, roles válidos: ${[UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER]}`);
+      const canApprove = ['dueño', 'admin', 'callCenter'].includes(currentUser.role);
+      console.log(`[DEBUG] Puede aprobar: ${canApprove}, role actual: ${currentUser.role}, roles válidos: ['dueño', 'admin', 'callCenter']`);
       if (!canApprove) {
         console.log(`[DEBUG] Usuario sin permisos para aprobar: role=${currentUser.role}`);
         return res.status(403).json({ 
