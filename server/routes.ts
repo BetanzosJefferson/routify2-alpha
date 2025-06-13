@@ -860,122 +860,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
         route
       );
       
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        // Create main trip (origin to destination)
-        // Buscar el precio del segmento de origen a destino final para usarlo como precio principal
-        const mainSegmentPrice = tripData.segmentPrices.find(
-          (sp: any) => sp.origin === route.origin && sp.destination === route.destination
+      // Generar segmentos completos con tiempos calculados una sola vez
+      const allSegmentsWithTimes = [];
+      
+      // Agregar el viaje principal
+      const mainSegmentPrice = tripData.segmentPrices.find(
+        (sp: any) => sp.origin === route.origin && sp.destination === route.destination
+      );
+      
+      allSegmentsWithTimes.push({
+        origin: route.origin,
+        destination: route.destination,
+        departureTime: departureTime,
+        arrivalTime: arrivalTime,
+        price: mainSegmentPrice?.price || 450,
+        isMainTrip: true
+      });
+      
+      // Agregar segmentos parciales
+      for (const segment of allSegments) {
+        // Saltar el viaje principal ya que ya lo agregamos arriba
+        if (segment.origin === route.origin && segment.destination === route.destination) {
+          continue;
+        }
+        
+        const segmentData = tripData.segmentPrices.find(
+          (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
         );
         
-        // Verificar si el viaje principal cruza la medianoche
-        const mainTripCrossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
-        console.log(`Viaje principal ${route.origin} -> ${route.destination}: ¿Cruza medianoche? ${mainTripCrossesMidnight ? 'SÍ' : 'NO'}`);
+        let segmentPrice = segmentData?.price || calculateProportionalPrice(segment, route, tripData.price || 0);
+        let segmentDepartureTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.departureTime || departureTime;
+        let segmentArrivalTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.arrivalTime || arrivalTime;
         
-        // Fecha de salida es la fecha del bucle (date)
-        const mainDepartureDate = new Date(date);
+        allSegmentsWithTimes.push({
+          origin: segment.origin,
+          destination: segment.destination,
+          departureTime: segmentDepartureTime,
+          arrivalTime: segmentArrivalTime,
+          price: segmentPrice,
+          isMainTrip: false
+        });
+      }
+      
+      console.log("DEBUG: allSegmentsWithTimes generados:", JSON.stringify(allSegmentsWithTimes, null, 2));
+      
+      // Ahora iterar por cada fecha y determinar qué segmentos pertenecen a esa fecha
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const currentDateStr = date.toISOString().split('T')[0];
+        console.log(`\n=== PROCESANDO FECHA: ${currentDateStr} ===`);
         
-        // Si el viaje cruza la medianoche, la fecha de llegada será el día siguiente
-        const mainArrivalDate = new Date(date);
-        if (mainTripCrossesMidnight) {
-          mainArrivalDate.setDate(mainArrivalDate.getDate() + 1);
-          console.log(`Fecha de llegada ajustada a ${mainArrivalDate.toISOString()} debido a cruce de medianoche`);
-        }
-        
-        // Almacenar los tiempos sin indicadores de día en la base de datos
-        const cleanDepartureTime = departureTime.replace(/\s*\+\d+d$/, '');
-        const cleanArrivalTime = arrivalTime.replace(/\s*\+\d+d$/, '');
-        
-        // Generar un ID único para el viaje principal
-        const mainTripId = Date.now();
-        
-        // Crear el array de combinaciones para trip_data
+        // Crear el array de combinaciones para trip_data de esta fecha específica
         const tripCombinations = [];
         
-        // Calcular la fecha de salida del viaje principal (puede ser el mismo día o el día siguiente para cruces de medianoche)
-        const mainSegmentTimes = segmentTimes[`${route.origin}-${route.destination}`];
-        const mainDayOffset = mainSegmentTimes?.dayOffset || (mainTripCrossesMidnight ? 1 : 0);
-        const mainTripDepartureDate = new Date(mainDepartureDate);
-        
-        if (mainDayOffset > 0) {
-          mainTripDepartureDate.setDate(mainTripDepartureDate.getDate() + mainDayOffset);
-          console.log(`Viaje principal ${route.origin} -> ${route.destination}: departureDate ajustado a ${mainTripDepartureDate.toISOString().split('T')[0]} (+${mainDayOffset} días)`);
-        }
-
-        // Primero añadir el viaje principal completo (viaje de origen a destino final)
-        tripCombinations.push({
-          tripId: mainTripId,
-          origin: route.origin,
-          destination: route.destination,
-          departureDate: mainTripDepartureDate.toISOString().split('T')[0], // YYYY-MM-DD con offset correcto
-          departureTime: cleanDepartureTime,
-          arrivalTime: cleanArrivalTime,
-          price: mainSegmentPrice?.price || 450,
-          availableSeats: tripData.capacity,
-          isMainTrip: true // VIAJE PRINCIPAL - ruta completa
-        });
-        
-        // Luego añadir solo los segmentos parciales (combinaciones) - SIN el viaje principal
-        for (const segment of allSegments) {
-          // Saltar el viaje principal ya que ya lo agregamos arriba
-          if (segment.origin === route.origin && segment.destination === route.destination) {
-            continue;
-          }
+        // Evaluar cada segmento para ver si pertenece a esta fecha
+        for (const segment of allSegmentsWithTimes) {
+          // Extraer indicadores de día del tiempo de salida del segmento
+          const segmentDayOffset = extractDayIndicator(segment.departureTime);
           
-          const segmentData = tripData.segmentPrices.find(
-            (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
-          );
-          
-          let segmentPrice = segmentData?.price || calculateProportionalPrice(segment, route, tripData.price || 0);
-          let segmentDepartureTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.departureTime || cleanDepartureTime;
-          let segmentArrivalTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.arrivalTime || cleanArrivalTime;
-          
-          // Extraer indicadores de día antes de limpiar los tiempos
-          const segmentDepartureTimeOriginal = segmentDepartureTime;
-          const segmentDayOffset = extractDayIndicator(segmentDepartureTimeOriginal);
-          
-          // Limpiar tiempos de indicadores de día
-          segmentDepartureTime = segmentDepartureTime.replace(/\s*\+\d+d$/, '');
-          segmentArrivalTime = segmentArrivalTime.replace(/\s*\+\d+d$/, '');
-          
-          // Calcular la fecha de salida del segmento considerando el offset de días
-          const segmentDepartureDate = new Date(mainDepartureDate);
+          // Calcular la fecha real de salida de este segmento
+          const segmentActualDate = new Date(startDate); // Siempre basarse en la fecha inicial del viaje
           if (segmentDayOffset > 0) {
-            segmentDepartureDate.setDate(segmentDepartureDate.getDate() + segmentDayOffset);
-            console.log(`Segmento ${segment.origin} -> ${segment.destination}: departureDate ajustado a ${segmentDepartureDate.toISOString().split('T')[0]} (+${segmentDayOffset} días)`);
+            segmentActualDate.setDate(segmentActualDate.getDate() + segmentDayOffset);
           }
+          const segmentActualDateStr = segmentActualDate.toISOString().split('T')[0];
           
-          tripCombinations.push({
-            tripId: Math.floor(Date.now() + Math.random() * 1000), // ID único para cada segmento
-            origin: segment.origin,
-            destination: segment.destination,
-            departureDate: segmentDepartureDate.toISOString().split('T')[0], // YYYY-MM-DD con offset correcto
-            departureTime: segmentDepartureTime,
-            arrivalTime: segmentArrivalTime,
-            price: segmentPrice,
-            availableSeats: tripData.capacity,
-            isMainTrip: false // COMBINACIÓN - segmento parcial
-          });
+          console.log(`Segmento ${segment.origin} -> ${segment.destination}:`);
+          console.log(`  Tiempo original: ${segment.departureTime}`);
+          console.log(`  Day offset: ${segmentDayOffset}`);
+          console.log(`  Fecha calculada: ${segmentActualDateStr}`);
+          console.log(`  ¿Pertenece a ${currentDateStr}? ${segmentActualDateStr === currentDateStr ? 'SÍ' : 'NO'}`);
+          
+          // Solo incluir este segmento si su fecha calculada coincide con la fecha actual del bucle
+          if (segmentActualDateStr === currentDateStr) {
+            // Limpiar tiempos de indicadores de día para almacenar en BD
+            const cleanDepartureTime = segment.departureTime.replace(/\s*\+\d+d$/, '');
+            const cleanArrivalTime = segment.arrivalTime.replace(/\s*\+\d+d$/, '');
+            
+            tripCombinations.push({
+              tripId: segment.isMainTrip ? Date.now() : Math.floor(Date.now() + Math.random() * 1000),
+              origin: segment.origin,
+              destination: segment.destination,
+              departureDate: currentDateStr, // La fecha actual del bucle
+              departureTime: cleanDepartureTime,
+              arrivalTime: cleanArrivalTime,
+              price: segment.price,
+              availableSeats: tripData.capacity,
+              isMainTrip: segment.isMainTrip
+            });
+            
+            console.log(`  ✅ INCLUIDO en fecha ${currentDateStr}`);
+          } else {
+            console.log(`  ❌ NO incluido en fecha ${currentDateStr}`);
+          }
         }
-
-        console.log("DEBUG: tripCombinations antes de crear el viaje:", JSON.stringify(tripCombinations, null, 2));
         
-        const mainTripToCreate = {
-          tripData: tripCombinations,
-          capacity: tripData.capacity,
-          vehicleId: null,
-          driverId: null,
-          visibility: tripData.visibility || "publicado",
-          routeId: tripData.routeId,
-          companyId: companyId
-        };
-        
-        console.log("DEBUG: mainTripToCreate antes de enviar a storage:", JSON.stringify(mainTripToCreate, null, 2));
-        
-        const mainTrip = await storage.createTrip(mainTripToCreate);
-        console.log("DEBUG: mainTrip después de crear en storage:", JSON.stringify(mainTrip, null, 2));
-        createdTrips.push(mainTrip);
-        
-        // Ya no creamos sub-trips separados, todo está en trip_data del viaje principal
+        // Solo crear un viaje si hay segmentos para esta fecha
+        if (tripCombinations.length > 0) {
+          console.log(`\nCreando viaje para ${currentDateStr} con ${tripCombinations.length} segmentos`);
+          console.log("DEBUG: tripCombinations para esta fecha:", JSON.stringify(tripCombinations, null, 2));
+          
+          const mainTripToCreate = {
+            tripData: tripCombinations,
+            capacity: tripData.capacity,
+            vehicleId: null,
+            driverId: null,
+            visibility: tripData.visibility || "publicado",
+            routeId: tripData.routeId,
+            companyId: companyId
+          };
+          
+          const mainTrip = await storage.createTrip(mainTripToCreate);
+          console.log(`✅ Viaje creado para ${currentDateStr} con ID: ${mainTrip.id}`);
+          createdTrips.push(mainTrip);
+        } else {
+          console.log(`⚠️ No hay segmentos para la fecha ${currentDateStr}, saltando creación`);
+        }
       }
       
       res.status(201).json(createdTrips);
