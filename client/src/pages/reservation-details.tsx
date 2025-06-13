@@ -98,9 +98,21 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
 
   // Efecto para intentar verificar automáticamente el ticket cuando se carga
   useEffect(() => {
+    console.log('[FRONTEND DEBUG] useEffect ejecutándose');
+    console.log('[FRONTEND DEBUG] user:', !!user, user ? `ID: ${user.id}, Company: ${user.company}` : 'null');
+    console.log('[FRONTEND DEBUG] reservation:', !!reservation, reservation ? `ID: ${reservation.id}, checkedBy: ${reservation.checkedBy}` : 'null');
+    console.log('[FRONTEND DEBUG] hasAttemptedCheck:', hasAttemptedCheck);
+    
     if (user && reservation && !reservation.checkedBy && !hasAttemptedCheck) {
+      console.log('[FRONTEND DEBUG] Todas las condiciones cumplidas, ejecutando verificación automática');
       setHasAttemptedCheck(true);
       checkTicketMutation.mutate();
+    } else {
+      console.log('[FRONTEND DEBUG] Condiciones NO cumplidas para verificación automática');
+      if (!user) console.log('[FRONTEND DEBUG] - No hay usuario');
+      if (!reservation) console.log('[FRONTEND DEBUG] - No hay reservación');
+      if (reservation && reservation.checkedBy) console.log('[FRONTEND DEBUG] - Ticket ya verificado por:', reservation.checkedBy);
+      if (hasAttemptedCheck) console.log('[FRONTEND DEBUG] - Ya se intentó verificar anteriormente');
     }
   }, [user, reservation, hasAttemptedCheck]);
 
