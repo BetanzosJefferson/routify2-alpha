@@ -414,14 +414,8 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
     const current: Record<string, Trip[]> = {};
     let archived: Trip[] = [];
     
-    // PRIMER PASO: Filtrar solo viajes principales (no sub-viajes)
-    const mainTrips = filteredTrips.filter((trip: Trip) => {
-      // Solo incluir viajes que NO son sub-viajes
-      return !trip.isSubTrip;
-    });
-    
-    // Procesar solo los viajes principales
-    mainTrips.forEach((trip: Trip) => {
+    // Procesar todos los viajes (con nueva estructura tripData)
+    filteredTrips.forEach((trip: Trip) => {
       // Con la nueva estructura, extraer fechas del tripData
       let tripDates: string[] = [];
       
@@ -432,23 +426,23 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
         tripDates = [trip.departureDate];
       }
       
-      // Usar la primera fecha del viaje para determinar si es pasado o futuro
-      if (tripDates.length > 0) {
+      // Procesar cada fecha del viaje
+      tripDates.forEach(dateStr => {
         try {
-          const firstDate = normalizeToStartOfDay(tripDates[0]);
-          const isPastTrip = firstDate.getTime() < today.getTime();
+          const localDate = normalizeToStartOfDay(dateStr);
+          const isPastTrip = localDate.getTime() < today.getTime();
           
           if (isPastTrip) {
-            // Agregar a archivados (solo una vez)
+            // Solo agregar una vez al archivo (evitar duplicados)
             if (!archived.find(t => t.id === trip.id)) {
               archived.push(trip);
             }
           } else {
-            const dateKey = format(firstDate, "yyyy-MM-dd");
+            const dateKey = format(localDate, "yyyy-MM-dd");
             if (!current[dateKey]) {
               current[dateKey] = [];
             }
-            // Agregar a actuales (solo una vez por fecha)
+            // Solo agregar una vez por fecha (evitar duplicados)
             if (!current[dateKey].find(t => t.id === trip.id)) {
               current[dateKey].push(trip);
             }
@@ -456,7 +450,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
         } catch (error) {
           console.error(`Error procesando fecha del viaje: ${error}`);
         }
-      }
+      });
     });
     
     // Ordenar viajes archivados por fecha (más reciente primero)
