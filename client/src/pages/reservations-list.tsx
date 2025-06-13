@@ -27,12 +27,20 @@ function ReservationsListContent() {
     error 
   } = useReservations({});
 
+  // Función auxiliar para encontrar el segmento principal (viaje padre)
+  const findMainTripSegment = (tripData: any) => {
+    if (!tripData || !Array.isArray(tripData)) return null;
+    return tripData.find(segment => segment.isMainTrip === true) || tripData[0];
+  };
+
   // Filtrar reservaciones por fecha seleccionada y término de búsqueda
   const filteredReservations = reservations.filter((reservation) => {
-    // Filtrar por fecha
-    const reservationDate = reservation.trip?.departureDate;
-    if (reservationDate) {
-      const tripDateNormalized = normalizeToStartOfDay(reservationDate);
+    // Filtrar por fecha del viaje padre (segmento principal)
+    const tripData = reservation.trip?.tripData;
+    const mainTripSegment = findMainTripSegment(tripData);
+    
+    if (mainTripSegment?.departureDate) {
+      const tripDateNormalized = normalizeToStartOfDay(mainTripSegment.departureDate);
       const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
       
       if (!isSameLocalDay(tripDateNormalized, selectedDateNormalized)) {
@@ -69,18 +77,23 @@ function ReservationsListContent() {
     
     groups[recordId].reservations.push(reservation);
     
-    // Guardar información del viaje para mostrar en el header
+    // Guardar información del viaje padre para mostrar en el header
     if (!groups[recordId].tripInfo && reservation.trip) {
-      groups[recordId].tripInfo = {
-        origin: reservation.trip.origin,
-        destination: reservation.trip.destination,
-        departureDate: reservation.trip.departureDate,
-        departureTime: reservation.trip.departureTime,
-        arrivalTime: reservation.trip.arrivalTime,
-        vehicle: reservation.trip.vehicleId || "Sin asignar",
-        driver: reservation.trip.driverId || "Sin asignar",
-        recordId: recordId
-      };
+      const tripData = reservation.trip.tripData;
+      const mainTripSegment = findMainTripSegment(tripData);
+      
+      if (mainTripSegment) {
+        groups[recordId].tripInfo = {
+          origin: mainTripSegment.origin,
+          destination: mainTripSegment.destination,
+          departureDate: mainTripSegment.departureDate,
+          departureTime: mainTripSegment.departureTime,
+          arrivalTime: mainTripSegment.arrivalTime,
+          vehicle: reservation.trip.vehicleId || "Sin asignar",
+          driver: reservation.trip.driverId || "Sin asignar",
+          recordId: recordId
+        };
+      }
     }
     
     return groups;
