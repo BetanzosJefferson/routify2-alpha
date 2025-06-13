@@ -4082,13 +4082,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aprobar o rechazar una solicitud de reservación
   app.post(apiRouter('/reservation-requests/:id/update-status'), isAuthenticated, async (req, res) => {
     try {
+      console.log(`[DEBUG] Iniciando aprobación de solicitud ${req.params.id}`);
       const requestId = parseInt(req.params.id);
       if (isNaN(requestId)) {
+        console.log(`[DEBUG] ID de solicitud inválido: ${req.params.id}`);
         return res.status(400).json({ message: "ID de solicitud inválido" });
       }
       
       const { status, reviewNotes } = req.body;
+      console.log(`[DEBUG] Datos recibidos: status=${status}, reviewNotes=${reviewNotes}`);
       if (!status || !['aprobada', 'rechazada'].includes(status)) {
+        console.log(`[DEBUG] Estado inválido: ${status}`);
         return res.status(400).json({ 
           message: "Estado inválido. Debe ser 'aprobada' o 'rechazada'" 
         });
@@ -4096,12 +4100,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const currentUser = req.user as any;
       if (!currentUser) {
+        console.log(`[DEBUG] Usuario no autenticado`);
         return res.status(401).json({ message: "No autenticado" });
       }
+      console.log(`[DEBUG] Usuario actual: ${currentUser.id}, role: ${currentUser.role}, company_id: ${currentUser.company_id}`);
       
       // Verificar que el usuario tenga permisos para aprobar/rechazar
       const canApprove = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER].includes(currentUser.role);
+      console.log(`[DEBUG] Puede aprobar: ${canApprove}, roles válidos: ${[UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER]}`);
       if (!canApprove) {
+        console.log(`[DEBUG] Usuario sin permisos para aprobar: role=${currentUser.role}`);
         return res.status(403).json({ 
           message: "No tienes permisos para aprobar o rechazar solicitudes" 
         });
