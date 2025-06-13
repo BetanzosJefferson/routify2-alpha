@@ -1727,28 +1727,92 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Método temporal para mapear datos de reservación (Paso 3)
-  async mapReservationData(requestData: any): Promise<any> {
-    console.log(`DB Storage: Mapeando datos de reservación para comisionista ${requestData.created_by}`);
+  // Paso 3: Mapear datos de solicitud a formato de reservación
+  async mapReservationData(requestData: any): Promise<schema.InsertReservation> {
+    console.log(`DB Storage: [mapReservationData] Iniciando mapeo para comisionista ${requestData.created_by}`);
     
-    return {
-      companyId: requestData.company_id,
-      tripDetails: requestData.trip_details,
-      totalAmount: requestData.total_amount,
-      email: requestData.email,
-      phone: requestData.phone,
-      notes: requestData.notes,
-      paymentMethod: requestData.payment_method,
-      paymentStatus: requestData.payment_status,
-      advanceAmount: requestData.advance_amount || 0,
-      advancePaymentMethod: requestData.advance_payment_method,
-      discountAmount: requestData.discount_amount || 0,
-      originalAmount: requestData.original_amount,
-      status: 'confirmed',
-      createdBy: requestData.created_by, // Asociar al comisionista
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    try {
+      // 1. Validar datos requeridos del request
+      if (!requestData.created_by) {
+        throw new Error('Campo created_by requerido para asociar reservación al comisionista');
+      }
+      
+      if (!requestData.company_id) {
+        throw new Error('Campo company_id requerido para la reservación');
+      }
+      
+      if (!requestData.trip_details) {
+        throw new Error('Campo trip_details requerido para la reservación');
+      }
+      
+      if (!requestData.total_amount || requestData.total_amount <= 0) {
+        throw new Error('Campo total_amount debe ser mayor a 0');
+      }
+      
+      if (!requestData.phone) {
+        throw new Error('Campo phone requerido para la reservación');
+      }
+      
+      // 2. Validar estructura de trip_details
+      if (!requestData.trip_details.recordId || !requestData.trip_details.tripId) {
+        throw new Error('trip_details debe contener recordId y tripId');
+      }
+      
+      if (!requestData.trip_details.seats || requestData.trip_details.seats <= 0) {
+        throw new Error('trip_details debe contener número válido de asientos');
+      }
+      
+      // 3. Crear objeto de reservación con mapeo completo
+      const reservationData: schema.InsertReservation = {
+        // Información de la compañía y asociación
+        companyId: requestData.company_id,
+        createdBy: requestData.created_by, // CRÍTICO: Asociar al comisionista, no al aprobador
+        
+        // Detalles del viaje (mantener como JSON)
+        tripDetails: requestData.trip_details,
+        
+        // Información financiera
+        totalAmount: requestData.total_amount,
+        advanceAmount: requestData.advance_amount || 0,
+        discountAmount: requestData.discount_amount || 0,
+        originalAmount: requestData.original_amount || requestData.total_amount,
+        
+        // Información de contacto
+        email: requestData.email || null,
+        phone: requestData.phone,
+        notes: requestData.notes || null,
+        
+        // Información de pago
+        paymentMethod: requestData.payment_method || 'efectivo',
+        paymentStatus: requestData.payment_status || 'pendiente',
+        advancePaymentMethod: requestData.advance_payment_method || 'efectivo',
+        
+        // Estado y metadata
+        status: 'confirmed', // Las reservaciones aprobadas siempre están confirmadas
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        
+        // Campos adicionales para compatibilidad
+        commissionPaid: requestData.commission_paid || false,
+        couponCode: requestData.coupon_code || null,
+        markedAsPaidAt: requestData.marked_as_paid_at ? new Date(requestData.marked_as_paid_at) : null,
+        paidBy: requestData.paid_by || null
+      };
+      
+      console.log(`DB Storage: [mapReservationData] Reservación mapeada exitosamente:`);
+      console.log(`  - Comisionista: ${reservationData.createdBy}`);
+      console.log(`  - Compañía: ${reservationData.companyId}`);
+      console.log(`  - Monto total: ${reservationData.totalAmount}`);
+      console.log(`  - Viaje: ${JSON.stringify(reservationData.tripDetails)}`);
+      console.log(`  - Estado pago: ${reservationData.paymentStatus}`);
+      console.log(`  - Anticipo: ${reservationData.advanceAmount}`);
+      
+      return reservationData;
+      
+    } catch (error) {
+      console.error(`DB Storage: [mapReservationData] Error al mapear datos:`, error);
+      throw error;
+    }
   }
 
   // Método temporal para crear pasajeros (Paso 4)
