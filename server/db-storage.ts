@@ -1466,4 +1466,87 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Métodos para notificaciones
+  async createNotification(notificationData: schema.InsertNotification): Promise<schema.Notification> {
+    console.log("DB Storage: Creando notificación:", JSON.stringify(notificationData, null, 2));
+    
+    try {
+      const [notification] = await db
+        .insert(schema.notifications)
+        .values(notificationData)
+        .returning();
+      
+      console.log(`DB Storage: Notificación creada con ID: ${notification.id}`);
+      return notification;
+    } catch (error) {
+      console.error("DB Storage: Error al crear notificación:", error);
+      throw error;
+    }
+  }
+
+  async getNotifications(userId: number): Promise<schema.Notification[]> {
+    console.log(`DB Storage: Consultando notificaciones para usuario ${userId}`);
+    
+    try {
+      const notifications = await db
+        .select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.userId, userId))
+        .orderBy(sql`${schema.notifications.createdAt} DESC`);
+      
+      console.log(`DB Storage: Encontradas ${notifications.length} notificaciones para usuario ${userId}`);
+      return notifications;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener notificaciones para usuario ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  async markNotificationAsRead(id: number): Promise<schema.Notification | undefined> {
+    console.log(`DB Storage: Marcando notificación ${id} como leída`);
+    
+    try {
+      const [notification] = await db
+        .update(schema.notifications)
+        .set({ read: true })
+        .where(eq(schema.notifications.id, id))
+        .returning();
+      
+      if (notification) {
+        console.log(`DB Storage: Notificación ${id} marcada como leída`);
+      } else {
+        console.log(`DB Storage: No se pudo marcar la notificación ${id} como leída`);
+      }
+      
+      return notification;
+    } catch (error) {
+      console.error(`DB Storage: Error al marcar notificación ${id} como leída:`, error);
+      throw error;
+    }
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    console.log(`DB Storage: Consultando conteo de notificaciones no leídas para usuario ${userId}`);
+    
+    try {
+      const result = await db
+        .select({ count: sql`count(*)` })
+        .from(schema.notifications)
+        .where(
+          and(
+            eq(schema.notifications.userId, userId),
+            eq(schema.notifications.read, false)
+          )
+        );
+      
+      const count = parseInt(result[0].count.toString());
+      console.log(`DB Storage: Usuario ${userId} tiene ${count} notificaciones no leídas`);
+      
+      return count;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener conteo de notificaciones no leídas para usuario ${userId}:`, error);
+      throw error;
+    }
+  }
 }

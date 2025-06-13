@@ -3922,6 +3922,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const request = await storage.createReservationRequest(requestData);
       
+      // Crear notificaciones para administradores de la compañía
+      try {
+        // Obtener usuarios con roles que pueden aprobar solicitudes
+        const approvalRoles = [UserRole.OWNER, UserRole.ADMIN, UserRole.TICKET_OFFICE];
+        const companyUsers = await storage.getUsersByCompany(currentUser.companyId);
+        const usersToNotify = companyUsers.filter(user => 
+          approvalRoles.includes(user.role as any) && user.id !== currentUser.id
+        );
+
+        console.log(`[Solicitud Reservación] Notificando a ${usersToNotify.length} usuarios de roles: ${approvalRoles.join(', ')}`);
+
+        // Obtener información del viaje para la notificación
+        const tripInfo = await storage.getTripWithRouteInfo(parseInt(tripDetails.recordId.toString()));
+        const tripDescription = tripInfo ? 
+          `${tripInfo.route?.origin} → ${tripInfo.route?.destination}` : 
+          `Viaje ID: ${tripDetails.recordId}`;
+
+        // Crear notificaciones
+        const notificationPromises = usersToNotify.map(async (user) => {
+          const notificationData = {
+            userId: user.id,
+            type: 'reservation_request',
+            title: 'Nueva solicitud de reservación',
+            message: `${currentUser.firstName} ${currentUser.lastName} envió una solicitud de reservación para ${tripDescription}`,
+            relatedId: request.id,
+            metaData: JSON.stringify({
+              requestId: request.id,
+              tripId: tripDetails.recordId,
+              requesterName: `${currentUser.firstName} ${currentUser.lastName}`,
+              amount: totalAmount,
+              passengers: passengerData?.length || 1
+            }),
+            read: false
+          };
+
+          const notification = await storage.createNotification(notificationData);
+          console.log(`[Notificación] Creada para usuario ${user.id}: ${notification.id}`);
+          return { userId: user.id, notification };
+        });
+
+        const createdNotifications = await Promise.all(notificationPromises);
+        
+        // Enviar notificaciones en tiempo real vía WebSocket
+        const userIdsForWebSocket = createdNotifications.map(cn => cn.userId);
+        if (userIdsForWebSocket.length > 0) {
+          const notificationForWebSocket = {
+            type: 'reservation_request',
+            title: 'Nueva solicitud de reservación',
+            message: `${currentUser.firstName} ${currentUser.lastName} envió una solicitud de reservación para ${tripDescription}`,
+            relatedId: request.id
+          };
+          
+          sendNotificationToUsers(userIdsForWebSocket, notificationForWebSocket);
+          console.log(`[WebSocket] Notificación enviada a ${userIdsForWebSocket.length} usuarios`);
+        }
+
+      } catch (notificationError) {
+        console.error('[Solicitud Reservación] Error al crear notificaciones:', notificationError);
+        // No fallar la creación de la solicitud por errores de notificación
+      }
+      
       res.status(201).json({
         message: "Solicitud de reservación creada con éxito. Espera la aprobación.",
         request
