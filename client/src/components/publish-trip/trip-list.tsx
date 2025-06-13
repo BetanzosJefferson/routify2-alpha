@@ -80,49 +80,41 @@ import { EditTripForm } from "./edit-trip-form";
 interface Trip {
   id: number;
   routeId: number;
-  origin?: string;
-  destination?: string;
+  companyId: string;
+  origin: string;
+  destination: string;
   departureDate: string;
   departureTime: string;
   arrivalTime: string;
   capacity: number;
   availableSeats: number;
   price: number;
-  vehicleType: string;
-  segmentPrices?: any[];
-  isSubTrip: boolean;
-  parentTripId?: number | null;
-  routeName?: string;
-  segmentOrigin?: string;
-  segmentDestination?: string;
   vehicleId?: number | null; 
   driverId?: number | null;
-  // El estado del viaje (tripStatus) ya no se utiliza
-  route?: {
+  visibility?: string;
+  // Información de ruta optimizada
+  route: {
     id: number;
     name: string;
     origin: string;
     destination: string;
     stops: string[];
+    companyId: string;
   };
-  // Propiedades adicionales para información de la compañía
-  companyId?: string;
+  numStops: number;
+  // Información de la compañía (sin logo para optimización)
   companyName?: string;
-  companyLogo?: string;
-  // Información de vehículo y conductor asignados
+  // Información de vehículo y conductor asignados (optimizada)
   assignedVehicle?: {
     id: number;
-    brand: string;
     model: string;
-    plates: string;
+    plateNumber: string;
   };
   assignedDriver?: {
     id: number;
     firstName: string;
     lastName: string;
   };
-  // Propiedades adicionales
-  reservationCount?: number;
 }
 
 type TripListProps = {
@@ -147,11 +139,11 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [tripToEdit, setTripToEdit] = useState<number | null>(null);
 
-  // Consulta para obtener todos los viajes (incluidos los ocultos) para la sección de publicación
+  // Consulta para obtener todos los viajes con respuesta optimizada
   const { data: trips = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/admin-trips'],
+    queryKey: ['/api/admin-trips', 'optimized'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/admin-trips');
+      const res = await apiRequest('GET', '/api/admin-trips?optimizedResponse=true');
       return await res.json();
     }
   });
@@ -372,20 +364,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
 
     // Filtrar por fecha usando nuestras utilidades de normalización
     if (dateFilter) {
-      // Con la nueva estructura, necesitamos revisar el tripData
       try {
-        if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 0) {
-          // Verificar si alguna fecha en tripData coincide con el filtro
-          matchesDate = trip.tripData.some((tripSegment: any) => {
-            if (tripSegment.departureDate) {
-              return isSameLocalDay(tripSegment.departureDate, dateFilter);
-            }
-            return false;
-          });
-        } else {
-          // Fallback para estructura antigua si existe
-          matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
-        }
+        // Con la estructura optimizada, usar directamente departureDate del viaje
+        matchesDate = trip.departureDate ? isSameLocalDay(trip.departureDate, dateFilter) : false;
         
         if (process.env.NODE_ENV === 'development') {
           console.log(`Filtro de fecha aplicado: ${matchesDate}`);
