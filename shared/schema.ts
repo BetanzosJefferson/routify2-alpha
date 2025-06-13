@@ -78,6 +78,13 @@ export const passengers = pgTable("passengers", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   reservationId: integer("reservation_id").notNull(),
+  // Campos opcionales adicionales
+  documentType: text("document_type"), // Tipo de documento (DNI, passport, etc.)
+  documentNumber: text("document_number"), // Número de documento
+  age: integer("age"), // Edad del pasajero
+  seat: text("seat"), // Asiento asignado
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertPassengerSchema = createInsertSchema(passengers);

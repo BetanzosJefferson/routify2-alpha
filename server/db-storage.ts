@@ -1815,69 +1815,198 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Método temporal para crear pasajeros (Paso 4)
+  // Paso 4: Crear registros de pasajeros asociados a la reservación
   async createPassengersFromData(passengers: any[], reservationId: number, tx: any): Promise<void> {
-    console.log(`DB Storage: Creando ${passengers.length} pasajeros para reservación ${reservationId}`);
+    console.log(`DB Storage: [createPassengersFromData] Iniciando creación de pasajeros para reservación ${reservationId}`);
     
-    if (!passengers || passengers.length === 0) {
-      console.log(`DB Storage: No hay pasajeros para crear`);
-      return;
+    try {
+      // 1. Validar parámetros de entrada
+      if (!reservationId || reservationId <= 0) {
+        throw new Error('ReservationId debe ser un número válido mayor a 0');
+      }
+      
+      if (!tx) {
+        throw new Error('Transacción de base de datos requerida para crear pasajeros');
+      }
+      
+      // 2. Validar array de pasajeros
+      if (!passengers || !Array.isArray(passengers)) {
+        console.log(`DB Storage: [createPassengersFromData] No se proporcionaron pasajeros válidos para reservación ${reservationId}`);
+        return;
+      }
+      
+      if (passengers.length === 0) {
+        console.log(`DB Storage: [createPassengersFromData] Array de pasajeros vacío para reservación ${reservationId}`);
+        return;
+      }
+      
+      console.log(`DB Storage: [createPassengersFromData] Procesando ${passengers.length} pasajeros`);
+      
+      // 3. Validar y crear cada pasajero
+      for (let i = 0; i < passengers.length; i++) {
+        const passenger = passengers[i];
+        
+        // Validar estructura del pasajero
+        if (!passenger || typeof passenger !== 'object') {
+          console.warn(`DB Storage: [createPassengersFromData] Pasajero ${i + 1} tiene estructura inválida, omitiendo`);
+          continue;
+        }
+        
+        // Validar campos requeridos
+        const firstName = passenger.firstName?.trim();
+        const lastName = passenger.lastName?.trim();
+        
+        if (!firstName && !lastName) {
+          console.warn(`DB Storage: [createPassengersFromData] Pasajero ${i + 1} no tiene firstName ni lastName, omitiendo`);
+          continue;
+        }
+        
+        // Preparar datos del pasajero
+        const passengerData: schema.InsertPassenger = {
+          reservationId,
+          firstName: firstName || '',
+          lastName: lastName || '',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        // Agregar campos opcionales si están presentes
+        if (passenger.documentType) {
+          passengerData.documentType = passenger.documentType.toString().trim();
+        }
+        
+        if (passenger.documentNumber) {
+          passengerData.documentNumber = passenger.documentNumber.toString().trim();
+        }
+        
+        if (passenger.age && typeof passenger.age === 'number' && passenger.age > 0) {
+          passengerData.age = passenger.age;
+        }
+        
+        if (passenger.seat) {
+          passengerData.seat = passenger.seat.toString().trim();
+        }
+        
+        // Crear el registro en la base de datos
+        const [createdPassenger] = await tx
+          .insert(schema.passengers)
+          .values(passengerData)
+          .returning();
+        
+        console.log(`DB Storage: [createPassengersFromData] ✅ Pasajero ${i + 1} creado: ${firstName} ${lastName} (ID: ${createdPassenger.id})`);
+      }
+      
+      console.log(`DB Storage: [createPassengersFromData] Proceso completado para reservación ${reservationId}`);
+      
+    } catch (error) {
+      console.error(`DB Storage: [createPassengersFromData] Error al crear pasajeros para reservación ${reservationId}:`, error);
+      throw error;
     }
+  }
+
+  // Paso 5: Crear transacción financiera asociada a la reservación
+  async createTransactionFromReservation(requestData: any, approvedBy: number, reservationId: number, tx: any): Promise<void> {
+    console.log(`DB Storage: [createTransactionFromReservation] Evaluando creación de transacción para reservación ${reservationId}`);
     
-    for (const passenger of passengers) {
-      const passengerData = {
-        reservationId,
-        firstName: passenger.firstName || '',
-        lastName: passenger.lastName || '',
+    try {
+      // 1. Validar parámetros de entrada
+      if (!requestData) {
+        throw new Error('RequestData es requerido para crear transacción');
+      }
+      
+      if (!approvedBy || approvedBy <= 0) {
+        throw new Error('ApprovedBy debe ser un ID de usuario válido');
+      }
+      
+      if (!reservationId || reservationId <= 0) {
+        throw new Error('ReservationId debe ser un número válido mayor a 0');
+      }
+      
+      if (!tx) {
+        throw new Error('Transacción de base de datos requerida');
+      }
+      
+      // 2. Validar datos financieros
+      const totalAmount = requestData.total_amount || 0;
+      const advanceAmount = requestData.advance_amount || 0;
+      const paymentStatus = requestData.payment_status || 'pendiente';
+      
+      if (totalAmount <= 0) {
+        console.log(`DB Storage: [createTransactionFromReservation] Total amount inválido (${totalAmount}), no se creará transacción`);
+        return;
+      }
+      
+      // 3. Determinar si se debe crear transacción
+      const shouldCreateTransaction = (
+        advanceAmount > 0 || 
+        paymentStatus === 'pagado' || 
+        paymentStatus === 'completado'
+      );
+      
+      if (!shouldCreateTransaction) {
+        console.log(`DB Storage: [createTransactionFromReservation] No se requiere transacción:`);
+        console.log(`  - Anticipo: ${advanceAmount}`);
+        console.log(`  - Estado pago: ${paymentStatus}`);
+        console.log(`  - Condición no cumplida para crear transacción`);
+        return;
+      }
+      
+      // 4. Calcular monto y tipo de transacción
+      let transactionAmount: number;
+      let transactionType: string;
+      let paymentMethod: string;
+      
+      if (advanceAmount > 0) {
+        // Hay anticipo - crear transacción por el monto del anticipo
+        transactionAmount = advanceAmount;
+        transactionType = 'anticipo';
+        paymentMethod = requestData.advance_payment_method || 'efectivo';
+      } else if (paymentStatus === 'pagado' || paymentStatus === 'completado') {
+        // Está marcado como pagado - crear transacción por el monto total
+        transactionAmount = totalAmount;
+        transactionType = 'pago_completo';
+        paymentMethod = requestData.payment_method || 'efectivo';
+      } else {
+        throw new Error('Condición de transacción no válida');
+      }
+      
+      // 5. Preparar datos de la transacción
+      const transactionData: schema.InsertTransaccion = {
+        reservationId: reservationId,
+        companyId: requestData.company_id,
+        user_id: approvedBy, // CRÍTICO: Asociar al aprobador, no al comisionista
+        amount: transactionAmount,
+        type: transactionType,
+        paymentMethod: paymentMethod,
+        notes: `Transacción creada automáticamente por aprobación de solicitud de comisionista`,
+        details: {
+          originalRequestId: requestData.id || null,
+          createdByApproval: true,
+          comisionistaId: requestData.created_by,
+          approvedBy: approvedBy,
+          totalReservationAmount: totalAmount
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       };
       
-      await tx.insert(schema.passengers).values(passengerData);
-      console.log(`DB Storage: Pasajero ${passenger.firstName} ${passenger.lastName} creado`);
-    }
-  }
-
-  // Método temporal para crear transacción (Paso 5)
-  async createTransactionFromReservation(requestData: any, approvedBy: number, reservationId: number, tx: any): Promise<void> {
-    console.log(`DB Storage: Evaluando creación de transacción para reservación ${reservationId}`);
-    
-    const needsTransaction = requestData.payment_status === 'pagado' || (requestData.advance_amount && requestData.advance_amount > 0);
-    
-    if (!needsTransaction) {
-      console.log(`DB Storage: No se requiere transacción (estado: ${requestData.payment_status}, anticipo: ${requestData.advance_amount})`);
-      return;
-    }
-    
-    let transactionData;
-    
-    if (requestData.payment_status === 'pagado') {
-      // Transacción completa
-      transactionData = {
-        userId: approvedBy, // Asociar al aprobador
-        companyId: requestData.company_id,
-        amount: requestData.total_amount,
-        type: 'sale',
-        method: requestData.payment_method,
-        description: `Pago completo - Reservación ${reservationId}`,
-        createdAt: new Date()
-      };
-    } else if (requestData.advance_amount > 0) {
-      // Transacción de anticipo
-      transactionData = {
-        userId: approvedBy, // Asociar al aprobador
-        companyId: requestData.company_id,
-        amount: requestData.advance_amount,
-        type: 'advance',
-        method: requestData.advance_payment_method,
-        description: `Anticipo - Reservación ${reservationId}`,
-        createdAt: new Date()
-      };
-    }
-    
-    if (transactionData) {
-      await tx.insert(schema.transactions).values(transactionData);
-      console.log(`DB Storage: Transacción creada - Tipo: ${transactionData.type}, Monto: ${transactionData.amount}, Usuario: ${approvedBy}`);
+      // 6. Crear la transacción en la base de datos
+      const [createdTransaction] = await tx
+        .insert(schema.transacciones)
+        .values(transactionData)
+        .returning();
+      
+      console.log(`DB Storage: [createTransactionFromReservation] ✅ Transacción creada exitosamente:`);
+      console.log(`  - ID: ${createdTransaction.id}`);
+      console.log(`  - Tipo: ${transactionType}`);
+      console.log(`  - Monto: ${transactionAmount}`);
+      console.log(`  - Método: ${paymentMethod}`);
+      console.log(`  - Asociada a aprobador: ${approvedBy}`);
+      console.log(`  - Reservación: ${reservationId}`);
+      
+    } catch (error) {
+      console.error(`DB Storage: [createTransactionFromReservation] Error al crear transacción:`, error);
+      throw error;
     }
   }
 }
