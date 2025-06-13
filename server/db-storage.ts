@@ -2036,26 +2036,23 @@ export class DatabaseStorage implements IStorage {
         notes: `Transacción creada automáticamente por aprobación de solicitud de comisionista`,
         details: {
           type: "reservation",
-          id: reservationId,
-          monto: transactionAmount,
-          notas: requestData.notes || null,
-          origen: origen,
-          tripId: tripId,
-          destino: destino,
-          contacto: {
-            email: requestData.email || null,
-            telefono: requestData.phone || null
-          },
-          companyId: requestData.company_id,
-          isSubTrip: isSubTrip,
-          pasajeros: passengerNames,
-          metodoPago: paymentMethod,
-          dateCreated: new Date().toISOString(),
-          // Metadata adicional para auditoría
-          originalRequestId: requestData.id || null,
-          createdByApproval: true,
-          comisionistaId: requestData.created_by,
-          approvedBy: approvedBy
+          details: {
+            id: reservationId,
+            monto: transactionAmount,
+            notas: requestData.notes || null,
+            origen: origen,
+            tripId: tripId,
+            destino: destino,
+            contacto: {
+              email: requestData.email || null,
+              telefono: requestData.phone || null
+            },
+            companyId: requestData.company_id,
+            isSubTrip: isSubTrip,
+            pasajeros: passengerNames,
+            metodoPago: paymentMethod,
+            dateCreated: new Date().toISOString()
+          }
         },
         createdAt: new Date(),
         updatedAt: new Date()
