@@ -4399,6 +4399,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // POST /api/reservations/:id/check - Escanear/verificar un ticket
+  app.post(apiRouter('/reservations/:id/check'), isAuthenticated, async (req, res) => {
+    try {
+      const reservationId = parseInt(req.params.id);
+      const user = req.user;
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      // Obtener la reservación
+      const reservation = await storage.getReservation(reservationId);
+      if (!reservation) {
+        return res.status(404).json({
+          success: false,
+          message: 'Reservación no encontrada'
+        });
+      }
+
+      // Verificar que la compañía del usuario coincida con la de la reservación
+      if (user.company !== reservation.companyId) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para verificar tickets de esta compañía'
+        });
+      }
+
+      // Verificar si el ticket ya fue escaneado
+      if (reservation.checkedBy !== null) {
+        return res.status(400).json({
+          success: false,
+          isAlreadyChecked: true,
+          message: 'Este ticket ya ha sido verificado anteriormente'
+        });
+      }
+
+      // Actualizar la reservación con la información del escaneo
+      const updatedReservation = await storage.updateReservation(reservationId, {
+        checkedBy: user.id,
+        checkedAt: new Date(),
+        checkCount: 1
+      });
+
+      if (!updatedReservation) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error al actualizar la reservación'
+        });
+      }
+
+      console.log(`[CHECK TICKET] Ticket ${reservationId} escaneado por primera vez por usuario ${user.id} (${user.firstName} ${user.lastName})`);
+
+      res.json({
+        success: true,
+        isFirstScan: true,
+        reservation: updatedReservation,
+        message: 'Ticket verificado correctamente'
+      });
+
+    } catch (error) {
+      console.error('Error al escanear ticket:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  });
+
   // POST /api/reservations/:id/pay - Marcar un ticket como pagado
   app.post(apiRouter('/reservations/:id/pay'), isAuthenticated, async (req, res) => {
     try {

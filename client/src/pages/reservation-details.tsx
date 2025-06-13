@@ -20,6 +20,7 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
   const [reservationId, setReservationId] = useState<number | null>(null);
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isCanceledModalOpen, setIsCanceledModalOpen] = useState(false);
+  const [hasAttemptedCheck, setHasAttemptedCheck] = useState(false);
 
   // Extraer el ID de la reservación de los parámetros de ruta
   useEffect(() => {
@@ -50,6 +51,58 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     enabled: !!reservationId,
   });
 
+  // Mutación para verificar automáticamente el ticket
+  const checkTicketMutation = useMutation({
+    mutationFn: async () => {
+      if (!reservationId || !user) return null;
+      
+      const response = await apiRequest("POST", `/api/reservations/${reservationId}/check`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.isAlreadyChecked) {
+          return { isAlreadyChecked: true, message: errorData.message };
+        }
+        throw new Error(errorData.message || "Error al verificar el ticket");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (!data) return;
+      
+      if (data.isAlreadyChecked) {
+        // No mostrar alerta si ya estaba verificado
+        return;
+      }
+      
+      // Mostrar alerta de éxito
+      toast({
+        title: "¡Ticket Verificado!",
+        description: "El ticket ha sido escaneado y verificado correctamente.",
+        variant: "default",
+      });
+      
+      // Refrescar los datos para mostrar el estado actualizado
+      refetch();
+    },
+    onError: (error) => {
+      // Solo mostrar error si no es porque ya está verificado
+      if (error instanceof Error && !error.message.includes('ya ha sido verificado')) {
+        toast({
+          title: "Error al verificar ticket",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  // Efecto para intentar verificar automáticamente el ticket cuando se carga
+  useEffect(() => {
+    if (user && reservation && !reservation.checkedBy && !hasAttemptedCheck) {
+      setHasAttemptedCheck(true);
+      checkTicketMutation.mutate();
+    }
+  }, [user, reservation, hasAttemptedCheck]);
 
 
   // Función para marcar como pagado
