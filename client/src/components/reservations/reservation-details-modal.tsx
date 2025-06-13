@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, User, Mail, Phone, MapPin, Calendar, Clock, CheckCircle, X, ArrowRightLeft, Eye, Download, Printer } from "lucide-react";
+import { Loader2, User, Mail, Phone, MapPin, Calendar, Clock, CheckCircle, X, ArrowRightLeft, Eye, Download, Printer, QrCode, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatPrice, generateReservationId } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -34,6 +34,8 @@ export default function ReservationDetailsModal({
   const { user } = useAuth();
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isCheckingTicket, setIsCheckingTicket] = useState(false);
+  const [isCancelingWithRefund, setIsCancelingWithRefund] = useState(false);
 
 
   // Cargar los detalles de la reservación usando el endpoint principal
@@ -143,6 +145,80 @@ export default function ReservationDetailsModal({
       // Invalidar todas las consultas de reservaciones para actualizar la lista
       queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+    }
+  };
+
+  // Función para checkear ticket
+  const checkTicket = async () => {
+    if (!reservationId || !user) return;
+    
+    setIsCheckingTicket(true);
+    
+    try {
+      const response = await apiRequest("POST", `/api/reservations/${reservationId}/check`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al verificar el ticket");
+      }
+      
+      toast({
+        title: "¡Ticket Verificado!",
+        description: "El ticket ha sido escaneado y verificado correctamente.",
+      });
+      
+      // Refrescar datos
+      await refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/reservations"] });
+      
+    } catch (error) {
+      toast({
+        title: "Error al verificar ticket",
+        description: error instanceof Error ? error.message : "Error al verificar el ticket",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingTicket(false);
+    }
+  };
+
+  // Función para cancelar con reembolso
+  const cancelWithRefund = async () => {
+    if (!reservationId || !user) return;
+    
+    setIsCancelingWithRefund(true);
+    
+    try {
+      const response = await apiRequest("POST", `/api/reservations/${reservationId}/cancel-refund`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al cancelar con reembolso");
+      }
+      
+      toast({
+        title: "Reservación cancelada con reembolso",
+        description: "La reservación ha sido cancelada y se procesará el reembolso.",
+      });
+      
+      // Refrescar datos
+      await refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reservations/archived"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/reservations"] });
+      
+      // Cerrar el modal
+      onOpenChange(false);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error al cancelar con reembolso",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelingWithRefund(false);
     }
   };
 
@@ -1122,26 +1198,69 @@ export default function ReservationDetailsModal({
               <DialogFooter className="mt-2 sm:mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
                 <Button className="w-full sm:w-auto text-sm" onClick={handleClose}>Cerrar</Button>
 
-
-
                 {user && reservation.status !== 'canceled' && (
-                  <Button
-                    className="w-full sm:w-auto text-sm bg-red-600 hover:bg-red-700"
-                    onClick={cancelReservation}
-                    disabled={isCanceling}
-                  >
-                    {isCanceling ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Procesando...
-                      </>
-                    ) : (
-                      <>
-                        <X className="mr-2 h-4 w-4" />
-                        Cancelar Reservación
-                      </>
+                  <>
+                    {/* Botón Checkear ticket */}
+                    {!reservation.checkedBy && (
+                      <Button
+                        className="w-full sm:w-auto text-sm bg-blue-600 hover:bg-blue-700"
+                        onClick={checkTicket}
+                        disabled={isCheckingTicket}
+                      >
+                        {isCheckingTicket ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Verificando...
+                          </>
+                        ) : (
+                          <>
+                            <QrCode className="mr-2 h-4 w-4" />
+                            Checkear ticket
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </Button>
+
+                    {/* Botón Cancelar con reembolso */}
+                    {hasRequiredRole(user, ['superAdmin', 'admin', 'dueño']) && (
+                      <Button
+                        className="w-full sm:w-auto text-sm bg-orange-600 hover:bg-orange-700"
+                        onClick={cancelWithRefund}
+                        disabled={isCancelingWithRefund}
+                      >
+                        {isCancelingWithRefund ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Cancelar con reembolso
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    {/* Botón Cancelar Reservación */}
+                    <Button
+                      className="w-full sm:w-auto text-sm bg-red-600 hover:bg-red-700"
+                      onClick={cancelReservation}
+                      disabled={isCanceling}
+                    >
+                      {isCanceling ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <X className="mr-2 h-4 w-4" />
+                          Cancelar Reservación
+                        </>
+                      )}
+                    </Button>
+                  </>
                 )}
               </DialogFooter>
             </>
