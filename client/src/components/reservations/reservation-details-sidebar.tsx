@@ -59,11 +59,22 @@ export function ReservationDetailsSidebar({
   // Función para obtener el índice de la parada de origen en la ruta
   const getOriginStopIndex = (reservation: ReservationWithDetails) => {
     const origin = reservation.trip?.origin;
-    if (!origin || !tripInfo?.route?.stops) return 0;
+    if (!origin || !tripInfo?.route?.stops) {
+      console.log(`[DEBUG] Sin origen o stops para reservación ${reservation.id}:`, { origin, hasRoute: !!tripInfo?.route });
+      return 0;
+    }
     
     // Buscar el índice en las paradas de la ruta
     const allStops = [tripInfo.route.origin, ...tripInfo.route.stops, tripInfo.route.destination];
     const index = allStops.findIndex(stop => stop === origin);
+    
+    console.log(`[DEBUG] Reservación ${reservation.id}:`, {
+      origin,
+      allStops,
+      foundIndex: index,
+      finalIndex: index >= 0 ? index : 0
+    });
+    
     return index >= 0 ? index : 0;
   };
 
