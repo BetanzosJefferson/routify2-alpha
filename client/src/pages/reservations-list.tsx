@@ -79,7 +79,8 @@ function ReservationsListContent() {
         departureTime: parentTrip.departureTime,
         arrivalTime: parentTrip.arrivalTime,
         recordId: reservation.trip.recordId,
-        isParentTrip: true
+        isParentTrip: true,
+        route: reservation.trip.route // Incluir información de la ruta
       };
     } else if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
       // Fallback: usar el recordId como clave de agrupación
@@ -94,7 +95,8 @@ function ReservationsListContent() {
           departureTime: reservation.trip.departureTime,
           arrivalTime: reservation.trip.arrivalTime,
           tripId: parentTripKey,
-          recordId: tripDetails.recordId
+          recordId: tripDetails.recordId,
+          route: reservation.trip.route // Incluir información de la ruta
         };
       }
     } else if (reservation.trip) {
@@ -106,7 +108,8 @@ function ReservationsListContent() {
         departureDate: reservation.trip.departureDate,
         departureTime: reservation.trip.departureTime,
         arrivalTime: reservation.trip.arrivalTime,
-        tripId: 'fallback'
+        tripId: 'fallback',
+        route: reservation.trip.route // Incluir información de la ruta
       };
     }
     
