@@ -3853,19 +3853,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Validar datos del request
-      const { tripId, passengersData, totalAmount, email, phone, 
-              paymentStatus, advanceAmount, advancePaymentMethod, 
-              paymentMethod, notes } = req.body;
+      // Validar datos del request (acepta tanto formato viejo como nuevo)
+      const { 
+        tripId, tripDetails, passengersData, passengers, totalAmount, email, phone, 
+        paymentStatus, advanceAmount, advancePaymentMethod, 
+        paymentMethod, notes, couponCode, discountAmount, originalAmount 
+      } = req.body;
       
-      if (!tripId || !passengersData || !totalAmount || !phone) {
+      // Usar passengers o passengersData según lo que venga
+      const passengerData = passengers || passengersData;
+      
+      if (!totalAmount || !phone || !passengerData) {
         return res.status(400).json({ 
           message: "Faltan datos obligatorios para la solicitud de reservación" 
         });
       }
+
+      // Validar que tripDetails contenga la información del viaje
+      if (!tripDetails || !tripDetails.tripId || !tripDetails.recordId) {
+        return res.status(400).json({ 
+          message: "tripDetails es requerido y debe contener tripId y recordId" 
+        });
+      }
       
-      // Verificar que el viaje exista y sea de la misma compañía que el comisionista
-      const trip = await storage.getTrip(tripId);
+      // Verificar que el viaje exista y sea de la misma compañía que el comisionista  
+      const trip = await storage.getTrip(tripDetails.recordId);
       if (!trip) {
         return res.status(404).json({ message: "Viaje no encontrado" });
       }
@@ -3877,20 +3889,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Crear la solicitud de reservación
+      // Crear el objeto data con estructura compatible con tabla reservations
+      const reservationData = {
+        total_amount: totalAmount,
+        email: email || null,
+        phone: phone,
+        notes: notes || null,
+        payment_method: paymentMethod || 'efectivo',
+        status: 'confirmed',
+        payment_status: paymentStatus || 'pendiente',
+        advance_amount: advanceAmount || 0,
+        advance_payment_method: advancePaymentMethod || 'efectivo',
+        created_by: currentUser.id,
+        paid_by: null,
+        marked_as_paid_at: null,
+        commission_paid: false,
+        company_id: currentUser.companyId,
+        coupon_code: couponCode || null,
+        discount_amount: discountAmount || 0,
+        original_amount: originalAmount || null,
+        trip_details: tripDetails,
+        // Información de pasajeros para crear registros separados
+        passengers: passengerData
+      };
+      
+      // Crear la solicitud de reservación con nueva estructura
       const requestData = {
-        tripId,
-        passengersData,
-        totalAmount,
-        email,
-        phone,
-        paymentStatus: paymentStatus || 'pendiente',
-        advanceAmount: advanceAmount || 0,
-        advancePaymentMethod: advancePaymentMethod || 'efectivo',
-        paymentMethod: paymentMethod || 'efectivo',
-        notes,
+        data: reservationData,
         requesterId: currentUser.id,
-        companyId: currentUser.companyId,
+        status: 'pendiente'
       };
       
       const request = await storage.createReservationRequest(requestData);

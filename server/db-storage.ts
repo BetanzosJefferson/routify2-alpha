@@ -1356,4 +1356,114 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Métodos para solicitudes de reservación (nueva estructura simplificada)
+  async createReservationRequest(requestData: schema.InsertReservationRequest): Promise<schema.ReservationRequest> {
+    console.log("DB Storage: Creando solicitud de reservación:", JSON.stringify(requestData, null, 2));
+    
+    try {
+      const [newRequest] = await db
+        .insert(schema.reservationRequests)
+        .values(requestData)
+        .returning();
+      
+      console.log(`DB Storage: Solicitud de reservación creada con ID: ${newRequest.id}`);
+      return newRequest;
+    } catch (error) {
+      console.error("DB Storage: Error al crear solicitud de reservación:", error);
+      throw error;
+    }
+  }
+
+  async getReservationRequests(filters?: { 
+    companyId?: string; 
+    status?: string; 
+    requesterId?: number; 
+  }): Promise<schema.ReservationRequest[]> {
+    console.log("DB Storage: Consultando solicitudes de reservación con filtros:", filters);
+    
+    try {
+      let query = db.select().from(schema.reservationRequests);
+      const conditions = [];
+      
+      if (filters?.status) {
+        conditions.push(eq(schema.reservationRequests.status, filters.status));
+      }
+      
+      if (filters?.requesterId) {
+        conditions.push(eq(schema.reservationRequests.requesterId, filters.requesterId));
+      }
+      
+      // Para filtrar por compañía, necesitamos extraerlo del campo data JSON
+      if (filters?.companyId) {
+        conditions.push(sql`${schema.reservationRequests.data}->>'company_id' = ${filters.companyId}`);
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      const requests = await query.orderBy(sql`${schema.reservationRequests.createdAt} DESC`);
+      
+      console.log(`DB Storage: Encontradas ${requests.length} solicitudes de reservación`);
+      return requests;
+    } catch (error) {
+      console.error("DB Storage: Error al obtener solicitudes de reservación:", error);
+      throw error;
+    }
+  }
+
+  async getReservationRequest(id: number): Promise<schema.ReservationRequest | undefined> {
+    console.log(`DB Storage: Consultando solicitud de reservación ${id}`);
+    
+    try {
+      const [request] = await db
+        .select()
+        .from(schema.reservationRequests)
+        .where(eq(schema.reservationRequests.id, id));
+      
+      if (request) {
+        console.log(`DB Storage: Solicitud de reservación ${id} encontrada`);
+      } else {
+        console.log(`DB Storage: Solicitud de reservación ${id} no encontrada`);
+      }
+      
+      return request;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener solicitud de reservación ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async updateReservationRequestStatus(
+    id: number, 
+    status: string, 
+    reviewedBy: number, 
+    reviewNotes?: string
+  ): Promise<schema.ReservationRequest | undefined> {
+    console.log(`DB Storage: Actualizando estado de solicitud ${id} a: ${status}`);
+    
+    try {
+      const [updatedRequest] = await db
+        .update(schema.reservationRequests)
+        .set({
+          status,
+          reviewedBy,
+          reviewNotes: reviewNotes || null
+        })
+        .where(eq(schema.reservationRequests.id, id))
+        .returning();
+      
+      if (updatedRequest) {
+        console.log(`DB Storage: Solicitud ${id} actualizada exitosamente`);
+      } else {
+        console.log(`DB Storage: No se pudo actualizar la solicitud ${id}`);
+      }
+      
+      return updatedRequest;
+    } catch (error) {
+      console.error(`DB Storage: Error al actualizar solicitud ${id}:`, error);
+      throw error;
+    }
+  }
 }
