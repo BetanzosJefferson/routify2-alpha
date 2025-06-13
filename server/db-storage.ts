@@ -1657,30 +1657,72 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Método temporal para validar disponibilidad de asientos (Paso 2)
+  // Paso 2: Validar disponibilidad de asientos antes de crear reservación
   async validateSeatAvailability(recordId: number, tripId: string, seatsRequested: number): Promise<boolean> {
-    console.log(`DB Storage: Validando disponibilidad de ${seatsRequested} asientos para ${tripId} en registro ${recordId}`);
+    console.log(`DB Storage: [validateSeatAvailability] Iniciando validación - Registro: ${recordId}, Segmento: ${tripId}, Asientos: ${seatsRequested}`);
     
     try {
+      // 1. Validar parámetros de entrada
+      if (!recordId || !tripId || seatsRequested <= 0) {
+        console.log(`DB Storage: [validateSeatAvailability] Parámetros inválidos - recordId: ${recordId}, tripId: ${tripId}, seats: ${seatsRequested}`);
+        return false;
+      }
+      
+      // 2. Obtener el registro del viaje
       const trip = await this.getTrip(recordId);
-      if (!trip || !trip.tripData || !Array.isArray(trip.tripData)) {
-        console.log(`DB Storage: Registro ${recordId} no encontrado o sin datos de segmentos`);
+      if (!trip) {
+        console.log(`DB Storage: [validateSeatAvailability] Registro ${recordId} no encontrado`);
         return false;
       }
       
-      const segmentIndex = parseInt(tripId.split('_')[1]);
-      if (isNaN(segmentIndex) || segmentIndex >= trip.tripData.length) {
-        console.log(`DB Storage: Índice de segmento ${segmentIndex} inválido para ${tripId}`);
+      // 3. Validar estructura de datos del viaje
+      if (!trip.tripData || !Array.isArray(trip.tripData)) {
+        console.log(`DB Storage: [validateSeatAvailability] Registro ${recordId} sin datos de segmentos válidos`);
         return false;
       }
       
+      // 4. Extraer y validar índice del segmento
+      const tripIdParts = tripId.split('_');
+      if (tripIdParts.length !== 2) {
+        console.log(`DB Storage: [validateSeatAvailability] Formato de tripId inválido: ${tripId}. Esperado: recordId_segmentIndex`);
+        return false;
+      }
+      
+      const segmentIndex = parseInt(tripIdParts[1]);
+      if (isNaN(segmentIndex) || segmentIndex < 0 || segmentIndex >= trip.tripData.length) {
+        console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} fuera de rango para ${tripId}. Segmentos disponibles: ${trip.tripData.length}`);
+        return false;
+      }
+      
+      // 5. Validar estructura del segmento específico
       const segment = trip.tripData[segmentIndex];
-      const availableSeats = segment.availableSeats || 0;
+      if (!segment || typeof segment !== 'object') {
+        console.log(`DB Storage: [validateSeatAvailability] Segmento ${segmentIndex} no válido en registro ${recordId}`);
+        return false;
+      }
       
-      console.log(`DB Storage: Segmento ${tripId} tiene ${availableSeats} asientos disponibles, se solicitan ${seatsRequested}`);
-      return availableSeats >= seatsRequested;
+      // 6. Verificar asientos disponibles
+      const availableSeats = segment.availableSeats;
+      if (typeof availableSeats !== 'number' || availableSeats < 0) {
+        console.log(`DB Storage: [validateSeatAvailability] Campo availableSeats inválido en segmento ${tripId}: ${availableSeats}`);
+        return false;
+      }
+      
+      // 7. Verificar disponibilidad suficiente
+      const hasEnoughSeats = availableSeats >= seatsRequested;
+      
+      console.log(`DB Storage: [validateSeatAvailability] Resultado - Segmento: ${tripId}, Disponibles: ${availableSeats}, Solicitados: ${seatsRequested}, Suficientes: ${hasEnoughSeats}`);
+      
+      if (!hasEnoughSeats) {
+        console.log(`DB Storage: [validateSeatAvailability] ❌ Asientos insuficientes para ${tripId} - Necesarios: ${seatsRequested}, Disponibles: ${availableSeats}`);
+      } else {
+        console.log(`DB Storage: [validateSeatAvailability] ✅ Asientos suficientes para ${tripId} - Reservando: ${seatsRequested}/${availableSeats}`);
+      }
+      
+      return hasEnoughSeats;
+      
     } catch (error) {
-      console.error(`DB Storage: Error al validar disponibilidad de asientos:`, error);
+      console.error(`DB Storage: [validateSeatAvailability] Error inesperado al validar disponibilidad:`, error);
       return false;
     }
   }
