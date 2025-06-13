@@ -71,7 +71,6 @@ function isSameCity(location1: string, location2: string): boolean {
   return city1 === city2;
 }
 import { populateLocationData } from "./populate-locations";
-import { db } from "./db";
 import { setupFinancialRoutes } from "./financial-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -867,19 +866,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (sp: any) => sp.origin === route.origin && sp.destination === route.destination
         );
         
-        // Verificar si el viaje principal cruza la medianoche
-        const mainTripCrossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
-        console.log(`Viaje principal ${route.origin} -> ${route.destination}: ¿Cruza medianoche? ${mainTripCrossesMidnight ? 'SÍ' : 'NO'}`);
+        // Midnight crossing check removed - functionality disabled
+        console.log(`Viaje principal ${route.origin} -> ${route.destination}: Sin verificación de medianoche`);
         
         // Fecha de salida es la fecha del bucle (date)
         const mainDepartureDate = new Date(date);
         
-        // Si el viaje cruza la medianoche, la fecha de llegada será el día siguiente
+        // Midnight crossing logic removed - using same day for arrival
         const mainArrivalDate = new Date(date);
-        if (mainTripCrossesMidnight) {
-          mainArrivalDate.setDate(mainArrivalDate.getDate() + 1);
-          console.log(`Fecha de llegada ajustada a ${mainArrivalDate.toISOString()} debido a cruce de medianoche`);
-        }
+        console.log(`Fecha de llegada: ${mainArrivalDate.toISOString()} (sin ajuste de medianoche)`);
         
         // Almacenar los tiempos sin indicadores de día en la base de datos
         const cleanDepartureTime = departureTime.replace(/\s*\+\d+d$/, '');

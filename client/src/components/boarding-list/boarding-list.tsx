@@ -243,7 +243,7 @@ export function BoardingList() {
                       
                       <div className="flex items-center text-gray-600">
                         <Clock className="h-4 w-4 mr-2" />
-                        {formatTripTime(trip.departureTime, true, 'standard')} - {formatTripTime(trip.arrivalTime, true, 'standard')}
+                        {trip.departureTime} - {trip.arrivalTime}
                       </div>
                       
                       <div className="flex items-center text-gray-600">
