@@ -99,10 +99,14 @@ export function ReservationDetailsSidebar({
       
       console.log(`[DEBUG SORTING] Reservación ${a.id}:`, {
         boardingStatus: a.trip?.boardingStatus,
+        tripData: a.trip,
+        reservationData: a,
         checkValue: checkA
       });
       console.log(`[DEBUG SORTING] Reservación ${b.id}:`, {
         boardingStatus: b.trip?.boardingStatus,
+        tripData: b.trip,
+        reservationData: b,
         checkValue: checkB
       });
       
