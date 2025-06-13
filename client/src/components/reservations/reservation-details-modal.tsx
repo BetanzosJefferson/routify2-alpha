@@ -1122,7 +1122,7 @@ export default function ReservationDetailsModal({
                       {reservation.paidBy && (
                         <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md">
                           <div className="text-xs text-green-700">
-                            <strong>Marcado como pagado por:</strong> Usuario ID {reservation.paidBy}
+                            <strong>Marcado como pagado por:</strong> {reservation.paidByName || `Usuario ID ${reservation.paidBy}`}
                             {reservation.paidAt && (
                               <span className="block">
                                 Fecha: {new Date(reservation.paidAt).toLocaleString('es-MX', {
@@ -1143,7 +1143,7 @@ export default function ReservationDetailsModal({
                       {reservation.checkedBy && (
                         <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
                           <div className="text-xs text-blue-700">
-                            <strong>Ticket verificado por:</strong> Usuario ID {reservation.checkedBy}
+                            <strong>Ticket verificado por:</strong> {reservation.checkedByName || `Usuario ID ${reservation.checkedBy}`}
                             {reservation.checkedAt && (
                               <span className="block">
                                 Fecha: {new Date(reservation.checkedAt).toLocaleString('es-MX', {

@@ -2235,9 +2235,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations/${id}] No encontrada o acceso denegado`);
         return res.status(404).json({ error: "Reservación no encontrada" });
       }
+
+      // Enriquecer con nombres de usuarios si existen
+      let paidByName = null;
+      let checkedByName = null;
+
+      if (reservation.paidBy) {
+        try {
+          const paidByUser = await storage.getUserById(reservation.paidBy);
+          if (paidByUser) {
+            paidByName = `${paidByUser.firstName || ''} ${paidByUser.lastName || ''}`.trim();
+          }
+        } catch (error) {
+          console.log(`[GET /reservations/${id}] Error al obtener usuario que marcó como pagado:`, error);
+        }
+      }
+
+      if (reservation.checkedBy) {
+        try {
+          const checkedByUser = await storage.getUserById(reservation.checkedBy);
+          if (checkedByUser) {
+            checkedByName = `${checkedByUser.firstName || ''} ${checkedByUser.lastName || ''}`.trim();
+          }
+        } catch (error) {
+          console.log(`[GET /reservations/${id}] Error al obtener usuario que checkeó:`, error);
+        }
+      }
+
+      // Agregar los nombres a la respuesta
+      const enrichedReservation = {
+        ...reservation,
+        paidByName,
+        checkedByName
+      };
       
       console.log(`[GET /reservations/${id}] Acceso concedido`);
-      res.json(reservation);
+      res.json(enrichedReservation);
     } catch (error) {
       console.error(`[GET /reservations/:id] Error: ${error}`);
       res.status(500).json({ error: "Error al obtener la reservación" });
