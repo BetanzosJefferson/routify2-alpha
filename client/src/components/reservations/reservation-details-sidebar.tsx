@@ -93,7 +93,24 @@ export function ReservationDetailsSidebar({
       );
     })
     .sort((a, b) => {
-      // Ordenar por índice extraído del tripId (cronológicamente)
+      // Primero ordenar por estado de check: "No check" primero, "Check" al final
+      const checkA = a.trip?.boardingStatus === 'checked' ? 1 : 0;
+      const checkB = b.trip?.boardingStatus === 'checked' ? 1 : 0;
+      
+      console.log(`[DEBUG SORTING] Reservación ${a.id}:`, {
+        boardingStatus: a.trip?.boardingStatus,
+        checkValue: checkA
+      });
+      console.log(`[DEBUG SORTING] Reservación ${b.id}:`, {
+        boardingStatus: b.trip?.boardingStatus,
+        checkValue: checkB
+      });
+      
+      if (checkA !== checkB) {
+        return checkA - checkB; // No check (0) antes que check (1)
+      }
+      
+      // Si tienen el mismo estado de check, ordenar por índice cronológico
       const indexA = getStopIndexFromTripId(a);
       const indexB = getStopIndexFromTripId(b);
       return indexA - indexB;
