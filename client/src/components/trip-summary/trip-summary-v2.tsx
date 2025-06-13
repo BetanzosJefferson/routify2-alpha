@@ -12,7 +12,7 @@ import { Trip, TripWithRouteInfo, Reservation, Passenger } from "@shared/schema"
 import { useTrips } from "@/hooks/use-trips";
 import { useReservations } from "@/hooks/use-reservations";
 import { usePackages, Package } from "@/hooks/use-packages";
-// Removed formatTripTime import - function no longer exists
+import { formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1145,13 +1145,13 @@ export default function TripSummary({ className }: TripSummaryProps) {
                             <div>
                               <Label className="text-gray-500">Salida</Label>
                               <div className="font-medium">
-                                {trips.find(t => t.id === selectedTrip)?.departureTime || ""}
+                                {formatTripTime(trips.find(t => t.id === selectedTrip)?.departureTime || "", true, 'pretty')}
                               </div>
                             </div>
                             <div>
                               <Label className="text-gray-500">Llegada</Label>
                               <div className="font-medium">
-                                {trips.find(t => t.id === selectedTrip)?.arrivalTime || ""}
+                                {formatTripTime(trips.find(t => t.id === selectedTrip)?.arrivalTime || "", true, 'pretty')}
                               </div>
                             </div>
                           </div>

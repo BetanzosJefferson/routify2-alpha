@@ -4,7 +4,7 @@ import { Loader2Icon, MapPinIcon, CalendarIcon } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
-import { extractLocationsFromTrips } from "@/lib/trip-utils";
+import { extractLocationsFromTrips, formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
 
 // Función para abreviar ubicaciones en móvil
 function abbreviateLocation(location: string): string {
@@ -463,7 +463,7 @@ export function TripList() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex flex-col">
                     <div className="text-lg font-bold">
-                      {(trip as any).departureTime}
+                      {formatTripTime((trip as any).departureTime, true, 'pretty')}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
                       {(trip as any).origin || trip.route?.origin || 'Origen no disponible'}
@@ -487,7 +487,7 @@ export function TripList() {
 
                   <div className="flex flex-col items-end">
                     <div className="text-lg font-bold">
-                      {(trip as any).arrivalTime}
+                      {formatTripTime((trip as any).arrivalTime, true, 'pretty')}
                     </div>
                     <div className="text-sm text-gray-500 mt-1 text-right">
                       {(trip as any).destination || trip.route?.destination || 'Destino no disponible'}
@@ -495,7 +495,17 @@ export function TripList() {
                   </div>
                 </div>
 
-                {/* Midnight crossing notification removed - functionality disabled */}
+                {/* Mostrar mensaje descriptivo para viajes que cruzan la medianoche */}
+                {(extractDayIndicator((trip as any).departureTime) > 0 || extractDayIndicator((trip as any).arrivalTime) > 0) ? (
+                  <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    {formatTripTime((trip as any).departureTime, true, 'descriptive', (trip as any).departureDate)}
+                  </div>
+                ) : null}
 
                 <div className="mt-4 flex items-center justify-between">
                   {(trip as any).vehicle?.name && (
