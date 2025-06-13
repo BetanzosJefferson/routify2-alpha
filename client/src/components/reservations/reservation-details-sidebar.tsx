@@ -122,7 +122,11 @@ export function ReservationDetailsSidebar({
               </div>
               <div>
                 <p className="text-xs text-gray-500">Horario</p>
-                <p className="font-semibold text-sm">10:00 AM - 03:00 PM</p>
+                <p className="font-semibold text-sm">
+                  {tripInfo?.departureTime && tripInfo?.arrivalTime 
+                    ? `${tripInfo.departureTime} - ${tripInfo.arrivalTime}` 
+                    : 'N/A'}
+                </p>
               </div>
             </div>
             
@@ -252,18 +256,18 @@ export function ReservationDetailsSidebar({
                       </div>
                     </div>
 
-                    {/* Origen y destino completos (incluyendo punto de abordaje) */}
+                    {/* Origen y destino del segmento específico de la reservación */}
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
-                          {reservation.trip?.route?.origin || 'Origen'}
+                          {tripDetails?.origin || 'Origen'}
                         </div>
                       </div>
                       <div>
                         <div className="text-xs text-gray-500">Destino</div>
                         <div className="font-medium">
-                          {reservation.trip?.route?.destination || 'Destino'}
+                          {tripDetails?.destination || 'Destino'}
                         </div>
                       </div>
                     </div>
