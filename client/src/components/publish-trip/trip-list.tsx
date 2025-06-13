@@ -651,10 +651,14 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                               <div className="flex justify-between items-start">
                                 <div className="flex">
                                   <div>
+                                
                                     <div className="flex items-center text-sm text-muted-foreground">
-                                  
+                                      <CalendarIcon className="h-4 w-4 mr-1" />
+                                      <span>
+                                        {departureDate ? format(normalizeToStartOfDay(departureDate), "dd/MM/yyyy") : 'Sin fecha'}
+                                      </span>
                                       <ClockIcon className="h-4 w-4 ml-4 mr-1" />
-                                      <span className="font-bold text-[16px] text-[#0b0a0a]">{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
+                                      <span>{formatTime(departureTime)} - {formatTime(arrivalTime)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -669,6 +673,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                       <p className="text-sm font-medium">Ruta</p>
                                       <p className="text-xs text-muted-foreground">
                                         {origin} → {destination}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {stopsCount} paradas intermedias
                                       </p>
                                     </div>
                                   </div>
@@ -746,6 +753,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                               </div>
                             </div>
                           </div>
+                          
                           <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
                             <div className="flex gap-2 mt-0 lg:mt-4">
                               <Button
@@ -813,7 +821,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                           </h4>
                         </div>
                       )}
-                      
                       {/* Tarjeta del viaje */}
                       <div className="border rounded-lg overflow-hidden bg-card mb-4">
                         <div className="flex flex-col lg:flex-row">
@@ -823,21 +830,10 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                 {/* Logo de compañía removido para optimización de rendimiento */}
                                 
                                 <div>
-                                  <h4 className="text-base font-medium mb-1">
-                                    {trip.route?.name || `Ruta #${trip.routeId}`}
-                                  </h4>
-                                  {trip.companyName && (
-                                    <div className="text-xs text-gray-500 mb-1">
-                                      {trip.companyName}
-                                    </div>
-                                  )}
                                   <div className="flex items-center text-sm text-muted-foreground">
-                                    <CalendarIcon className="h-4 w-4 mr-1" />
-                                    <span>
-                                      {format(normalizeToStartOfDay(trip.departureDate), "dd/MM/yyyy")}
-                                    </span>
+                                
                                     <ClockIcon className="h-4 w-4 ml-4 mr-1" />
-                                    <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
+                                    <span className="text-[18px] font-bold text-[#1c1a19]">{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -852,9 +848,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     <p className="text-sm font-medium">Ruta</p>
                                     <p className="text-xs text-muted-foreground">
                                       Terminal {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {getStopsCount(trip)} paradas intermedias
                                     </p>
                                   </div>
                                 </div>
@@ -922,16 +915,10 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     </span>
                                   )}
                                   
-                                  {/* Estado basado en visibilidad */}
-                                  {trip.visibility && (
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.visibility === 'publicado' 
-                                        ? 'bg-green-100 text-green-800' 
-                                        : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                      {trip.visibility === 'publicado' ? 'Publicado' : trip.visibility}
-                                    </span>
-                                  )}
+                                  {/* Capacidad */}
+                                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                    Capacidad: {trip.capacity || 0}
+                                  </span>
                                 </div>
                                 
                                 {/* Información de asientos */}
