@@ -708,32 +708,22 @@ export const commissionRelations = relations(commissions, ({ one }) => ({
   })
 }));
 
-// ESQUEMA PARA SOLICITUDES DE RESERVACIÓN
+// ESQUEMA PARA SOLICITUDES DE RESERVACIÓN - ESTRUCTURA SIMPLIFICADA
 export const reservationRequests = pgTable("reservation_requests", {
   id: serial("id").primaryKey(),
-  tripId: integer("trip_id").notNull(),
-  passengersData: jsonb("passengers_data").notNull(),
-  totalAmount: doublePrecision("total_amount").notNull(),
-  email: text("email"),
-  phone: text("phone").notNull(),
-  paymentStatus: text("payment_status").notNull().default(PaymentStatus.PENDING),
-  advanceAmount: doublePrecision("advance_amount").default(0),
-  advancePaymentMethod: text("advance_payment_method").default(PaymentMethod.CASH),
-  paymentMethod: text("payment_method").notNull().default(PaymentMethod.CASH),
-  notes: text("notes"),
+  data: jsonb("data").notNull(), // Todo el contenido de la reservación en JSON
   requesterId: integer("requester_id").notNull(), // ID del comisionista que solicita
-  companyId: text("company_id").notNull(),
   status: text("status").notNull().default("pendiente"), // pendiente, aprobada, rechazada
   reviewedBy: integer("reviewed_by"), // ID del usuario que aprobó/rechazó
   reviewNotes: text("review_notes"), // Notas de la revisión
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const insertReservationRequestSchema = createInsertSchema(reservationRequests).omit({ 
   id: true, 
   reviewedBy: true,
   reviewNotes: true,
+  createdAt: true,
 });
 export type InsertReservationRequest = z.infer<typeof insertReservationRequestSchema>;
 export type ReservationRequest = typeof reservationRequests.$inferSelect;
@@ -779,10 +769,6 @@ export type Notification = typeof notifications.$inferSelect;
 
 // RELACIONES PARA SOLICITUDES DE RESERVACIÓN Y NOTIFICACIONES
 export const reservationRequestRelations = relations(reservationRequests, ({ one }) => ({
-  trip: one(trips, {
-    fields: [reservationRequests.tripId],
-    references: [trips.id]
-  }),
   requester: one(users, {
     fields: [reservationRequests.requesterId],
     references: [users.id]
