@@ -382,28 +382,7 @@ export function PublishTripForm() {
       routeSegmentsQuery.data.destination,
     ];
 
-    // Calcular los días relativos para cada parada
-    // Inicialmente todas las paradas están en el día 0 (día de salida del viaje)
-    const stopDayOffsets = new Array(stopTimeArray.length).fill(0);
-    
-    // Recorrer las paradas en orden para detectar cuando se cruza la medianoche
-    for (let i = 1; i < stopTimeArray.length; i++) {
-      const prevStop = stopTimeArray[i-1];
-      const currStop = stopTimeArray[i];
-      
-      if (prevStop && currStop) {
-        // Convertir a valores para comparación (horas en escala de 24)
-        const prevTime = convertTo24Hour(prevStop.hour, prevStop.minute, prevStop.ampm);
-        const currTime = convertTo24Hour(currStop.hour, currStop.minute, currStop.ampm);
-        
-        // Si el tiempo actual es menor que el anterior, significa que cruzó la medianoche
-        if (currTime < prevTime) {
-          // Esta parada y todas las siguientes están en el día siguiente
-          stopDayOffsets[i] = stopDayOffsets[i-1] + 1;
-        } else {
-          // Mantiene el mismo día que la parada anterior
-          stopDayOffsets[i] = stopDayOffsets[i-1];
-        }
+
       }
     }
 
@@ -424,9 +403,9 @@ export function PublishTripForm() {
         stopTimeArray[originIndex] &&
         stopTimeArray[destinationIndex]
       ) {
-        // Formatear tiempos, añadiendo indicador de día si es necesario
-        const departureTime = `${stopTimeArray[originIndex]?.hour}:${stopTimeArray[originIndex]?.minute} ${stopTimeArray[originIndex]?.ampm}${stopDayOffsets[originIndex] > 0 ? ` +${stopDayOffsets[originIndex]}d` : ''}`;
-        const arrivalTime = `${stopTimeArray[destinationIndex]?.hour}:${stopTimeArray[destinationIndex]?.minute} ${stopTimeArray[destinationIndex]?.ampm}${stopDayOffsets[destinationIndex] > 0 ? ` +${stopDayOffsets[destinationIndex]}d` : ''}`;
+        // Formatear tiempos
+        const departureTime = `${stopTimeArray[originIndex]?.hour}:${stopTimeArray[originIndex]?.minute} ${stopTimeArray[originIndex]?.ampm}`;
+        const arrivalTime = `${stopTimeArray[destinationIndex]?.hour}:${stopTimeArray[destinationIndex]?.minute} ${stopTimeArray[destinationIndex]?.ampm}`;
 
         return {
           ...segment,
@@ -723,10 +702,7 @@ export function PublishTripForm() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold">Viajes Publicados</h2>
-          <p className="text-sm text-muted-foreground">
-            Vea y administre los viajes disponibles para reservación.
-          </p>
+          <h2 className="text-2xl font-bold">Mira tus viajes publicados o publica uno nuevo</h2>
         </div>
         <Button onClick={toggleForm} className="self-start">
           {showForm
