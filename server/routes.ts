@@ -4059,14 +4059,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Extraer company_id del JSON data de la solicitud para validación de permisos
-      const requestData = request.data as any;
-      const requestCompanyId = requestData?.company_id;
-      const userCompanyId = currentUser.company_id;
-      
       if (currentUser.role !== UserRole.SUPER_ADMIN && 
           currentUser.role !== UserRole.COMMISSIONER && 
-          requestCompanyId !== userCompanyId) {
+          request.companyId !== currentUser.companyId) {
         return res.status(403).json({ 
           message: "No tienes permiso para ver esta solicitud" 
         });
@@ -4082,17 +4077,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aprobar o rechazar una solicitud de reservación
   app.post(apiRouter('/reservation-requests/:id/update-status'), isAuthenticated, async (req, res) => {
     try {
-      console.log(`[DEBUG] Iniciando aprobación de solicitud ${req.params.id}`);
       const requestId = parseInt(req.params.id);
       if (isNaN(requestId)) {
-        console.log(`[DEBUG] ID de solicitud inválido: ${req.params.id}`);
         return res.status(400).json({ message: "ID de solicitud inválido" });
       }
       
       const { status, reviewNotes } = req.body;
-      console.log(`[DEBUG] Datos recibidos: status=${status}, reviewNotes=${reviewNotes}`);
       if (!status || !['aprobada', 'rechazada'].includes(status)) {
-        console.log(`[DEBUG] Estado inválido: ${status}`);
         return res.status(400).json({ 
           message: "Estado inválido. Debe ser 'aprobada' o 'rechazada'" 
         });
@@ -4100,16 +4091,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const currentUser = req.user as any;
       if (!currentUser) {
-        console.log(`[DEBUG] Usuario no autenticado`);
         return res.status(401).json({ message: "No autenticado" });
       }
-      console.log(`[DEBUG] Usuario actual: ${currentUser.id}, role: ${currentUser.role}, company_id: ${currentUser.company_id}`);
       
       // Verificar que el usuario tenga permisos para aprobar/rechazar
-      const canApprove = ['dueño', 'admin', 'callCenter'].includes(currentUser.role);
-      console.log(`[DEBUG] Puede aprobar: ${canApprove}, role actual: ${currentUser.role}, roles válidos: ['dueño', 'admin', 'callCenter']`);
+      const canApprove = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER].includes(currentUser.role);
       if (!canApprove) {
-        console.log(`[DEBUG] Usuario sin permisos para aprobar: role=${currentUser.role}`);
         return res.status(403).json({ 
           message: "No tienes permisos para aprobar o rechazar solicitudes" 
         });
@@ -4121,14 +4108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Solicitud no encontrada" });
       }
       
-      // Extraer company_id del JSON data de la solicitud
-      const requestData = request.data as any;
-      const requestCompanyId = requestData?.company_id;
-      
-      // Usar company_id del usuario (campo correcto en la tabla users)
-      const userCompanyId = currentUser.company_id;
-      
-      if (currentUser.role !== UserRole.SUPER_ADMIN && requestCompanyId !== userCompanyId) {
+      if (currentUser.role !== UserRole.SUPER_ADMIN && request.companyId !== currentUser.companyId) {
         return res.status(403).json({ 
           message: "No tienes permiso para modificar esta solicitud" 
         });
