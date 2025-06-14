@@ -5116,7 +5116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener paqueterías con información del viaje de todas las empresas del taquillero
-      const packages = await storage.getPackagesWithTripInfo({ companyIds: companyIds });
+      // TODO: Implementar getPackagesWithTripInfo con nuevo formato JSON de viajes
+      // const packages = await storage.getPackagesWithTripInfo({ companyIds: companyIds });
+      const packages = []; // Temporal: retornar array vacío hasta implementar nuevo método
       
       console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para las empresas del taquillero`);
       
@@ -5184,7 +5186,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[GET /packages] Buscando paqueterías con filtros:`, filters);
       
       // Obtener paqueterías con los filtros aplicados incluyendo información de viaje
-      let packages = await storage.getPackagesWithTripInfo(filters);
+      // TODO: Implementar getPackagesWithTripInfo con nuevo formato JSON de viajes
+      // let packages = await storage.getPackagesWithTripInfo(filters);
+      let packages = []; // Temporal: retornar array vacío hasta implementar nuevo método
       
       // Responder con las paqueterías encontradas (ahora incluyen origen y destino)
       res.json(packages);
