@@ -31,20 +31,10 @@ function extractCityName(fullAddress?: string): string {
 // Interfaz para el tipo de solicitud de reservación
 interface ReservationRequest {
   id: number;
-  tripId: number;
-  passengersData: any[]; // Detalles de los pasajeros
-  passengerNames?: string[]; // Nombres formateados de los pasajeros
+  data: any; // JSON con todos los datos de la solicitud
   requesterId: number;
   requesterName?: string;
   companyId: string | null;
-  totalAmount: number;
-  email: string;
-  phone: string;
-  paymentStatus: string;
-  advanceAmount: number;
-  advancePaymentMethod: string;
-  paymentMethod: string;
-  notes: string | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -270,192 +260,183 @@ export default function ReservationRequestsPage() {
               </DialogDescription>
             </DialogHeader>
 
-            {selectedRequest && (
-              <div className="space-y-6 py-4">
-                {/* Resumen del viaje */}
-                <div className="bg-muted/40 p-4 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-base">Detalles del Viaje</h3>
+            {selectedRequest && (() => {
+              const requestData = selectedRequest.data || {};
+              const tripDetails = requestData.trip_details || {};
+              const passengers = requestData.passengers || [];
+              const passengerNames = passengers.map((p: any) => 
+                `${p.firstName || ''} ${p.lastName || ''}`.trim()
+              ).filter(Boolean);
+              
+              return (
+                <div className="space-y-6 py-4">
+                  {/* Resumen del viaje */}
+                  <div className="bg-muted/40 p-4 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-base">Detalles del Viaje</h3>
 
-                  <div className="grid grid-cols-1 gap-2 text-sm">
-                    <div className="flex items-center">
-                      <MapPin className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">Ruta:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {/* Lógica para mostrar la ruta basada en isSubTrip */}
-                          {selectedRequest.isSubTrip
-                            ? `${
-                                extractCityName(selectedRequest.segmentOrigin) ||
-                                "Origen no especificado"
-                              } - ${
-                                extractCityName(selectedRequest.segmentDestination) ||
-                                "Destino no especificado"
-                              }`
-                            : `${
-                                extractCityName(selectedRequest.tripOrigin) ||
-                                "Origen no especificado"
-                              } - ${
-                                extractCityName(selectedRequest.tripDestination) ||
-                                "Destino no especificado"
-                              }`}
-                        </span>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div className="flex items-center">
+                        <MapPin className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium">Ruta:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {tripDetails.origin || "Origen no especificado"} - {tripDetails.destination || "Destino no especificado"}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center">
-                      <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">Fecha y hora:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {selectedRequest.tripDate || "Fecha no especificada"} •{" "}
-                          {selectedRequest.tripDepartureTime || "Hora no especificada"}
-                        </span>
+                      <div className="flex items-center">
+                        <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium">Fecha y hora:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {tripDetails.departureDate || "Fecha no especificada"} • {tripDetails.departureTime || "Hora no especificada"}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-start">
-                      <User className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground mt-0.5" />
-                      <div>
-                        <span className="font-medium">Pasajeros:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {selectedRequest.passengersData?.length || 0}
-                        </span>
-                        {selectedRequest.passengerNames &&
-                          selectedRequest.passengerNames.length > 0 && (
+                      <div className="flex items-start">
+                        <User className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground mt-0.5" />
+                        <div>
+                          <span className="font-medium">Asientos:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {passengers.length}
+                          </span>
+                          {passengerNames.length > 0 && (
                             <div className="mt-1 text-xs text-muted-foreground">
-                              {selectedRequest.passengerNames.map((name, index) => (
+                              {passengerNames.map((name, index) => (
                                 <div key={index} className="mb-0.5">
                                   • {name}
                                 </div>
                               ))}
                             </div>
                           )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Información de pagos */}
-                <div className="bg-muted/40 p-4 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-base">Información de Pago</h3>
+                  {/* Información de pagos */}
+                  <div className="bg-muted/40 p-4 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-base">Información de Pago</h3>
 
-                  <div className="grid grid-cols-1 gap-2 text-sm">
-                    <div className="flex items-center">
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">Total:</span>{" "}
-                        <span className="text-muted-foreground font-semibold">
-                          {formatPrice(selectedRequest.totalAmount)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center">
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">Método de pago:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {selectedRequest.paymentMethod === "efectivo"
-                            ? "Efectivo"
-                            : "Transferencia"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {selectedRequest.advanceAmount > 0 && (
+                    <div className="grid grid-cols-1 gap-2 text-sm">
                       <div className="flex items-center">
-                        <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-green-500" />
+                        <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                         <div>
-                          <span className="font-medium">Anticipo:</span>{" "}
+                          <span className="font-medium">Total:</span>{" "}
+                          <span className="text-muted-foreground font-semibold">
+                            {formatPrice(requestData.total_amount || 0)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium">Método de pago:</span>{" "}
                           <span className="text-muted-foreground">
-                            {formatPrice(selectedRequest.advanceAmount)} (
-                            {selectedRequest.advancePaymentMethod === "efectivo"
+                            {requestData.payment_method === "efectivo"
                               ? "Efectivo"
                               : "Transferencia"}
-                            )
                           </span>
                         </div>
                       </div>
-                    )}
 
-                    <div className="flex items-center">
-                      <div
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          selectedRequest.paymentStatus === "pagado"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {selectedRequest.paymentStatus === "pagado"
-                          ? "PAGADO"
-                          : "PENDIENTE"}
-                      </div>
+                      {(requestData.advance_amount || 0) > 0 && (
+                        <>
+                          <div className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-green-500" />
+                            <div>
+                              <span className="font-medium">Anticipo:</span>{" "}
+                              <span className="text-muted-foreground">
+                                {formatPrice(requestData.advance_amount || 0)} (
+                                {requestData.advance_payment_method === "efectivo"
+                                  ? "Efectivo"
+                                  : "Transferencia"}
+                                )
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-blue-500" />
+                            <div>
+                              <span className="font-medium">Restante:</span>{" "}
+                              <span className="text-muted-foreground">
+                                {formatPrice((requestData.total_amount || 0) - (requestData.advance_amount || 0))} (
+                                {requestData.payment_method === "efectivo"
+                                  ? "Efectivo"
+                                  : "Transferencia"}
+                                )
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                {/* Información del solicitante */}
-                <div className="bg-muted/40 p-4 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-base">
-                    Información del Solicitante
-                  </h3>
-
-                  <div className="grid grid-cols-1 gap-2 text-sm">
-                    <div className="flex items-center">
-                      <User className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">Agente:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {selectedRequest.requesterName ||
-                            `Agente #${selectedRequest.requesterId}`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center">
-                      <Phone className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div>
-                        <span className="font-medium">Teléfono:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {selectedRequest.phone}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center">
-                      <span className="mr-2 flex-shrink-0">📧</span>
-                      <div>
-                        <span className="font-medium">Email:</span>{" "}
-                        <span className="text-muted-foreground">
-                          {selectedRequest.email}
-                        </span>
-                      </div>
-                    </div>
-
-                    {selectedRequest.notes && (
-                      <div className="flex items-start pt-2 border-t border-border mt-2">
+                  {/* Información del solicitante */}
+                  <div className="bg-muted/40 p-4 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-base">Información del Solicitante</h3>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div className="flex items-center">
+                        <User className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                         <div>
-                          <span className="font-medium">Notas:</span>{" "}
-                          <span className="text-muted-foreground block mt-1">
-                            {selectedRequest.notes}
+                          <span className="font-medium">Solicitado por:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {selectedRequest.requesterName || `Agente #${selectedRequest.requesterId}`}
                           </span>
                         </div>
                       </div>
-                    )}
+
+                      <div className="flex items-center">
+                        <Phone className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <div>
+                          <span className="font-medium">Teléfono:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {requestData.phone || "No especificado"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center">
+                        <span className="mr-2 flex-shrink-0">📧</span>
+                        <div>
+                          <span className="font-medium">Email:</span>{" "}
+                          <span className="text-muted-foreground">
+                            {requestData.email || "No especificado"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {requestData.notes && (
+                        <div className="flex items-start">
+                          <span className="mr-2 flex-shrink-0 mt-0.5">📝</span>
+                          <div>
+                            <span className="font-medium">Notas:</span>{" "}
+                            <span className="text-muted-foreground">
+                              {requestData.notes}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+              );
+            })()}
 
-                {/* Notas de revisión */}
-                <div className="space-y-2">
-                  <Label>Notas sobre la revisión (opcional)</Label>
-                  <Textarea
-                    placeholder="Escribe algún comentario si es necesario"
-                    value={reviewNotes}
-                    onChange={(e) => setReviewNotes(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+            {/* Notas de revisión */}
+            <div className="space-y-2">
+              <Label>Notas sobre la revisión (opcional)</Label>
+              <Textarea
+                placeholder="Escribe algún comentario si es necesario"
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+              />
+            </div>
 
             <DialogFooter className="flex justify-between sm:justify-between">
               <Button
@@ -508,6 +489,11 @@ interface RequestCardProps {
 function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestCardProps) {
   const { user } = useAuth();
   
+  // Extraer datos de la solicitud desde el campo JSON
+  const requestData = request.data || {};
+  const tripDetails = requestData.trip_details || {};
+  const passengers = requestData.passengers || [];
+  
   // Formatear fechas
   const formattedCreatedAt = format(new Date(request.createdAt), "dd MMM yyyy, HH:mm", { locale: es });
   const formattedReviewedAt = request.reviewedAt 
@@ -518,24 +504,34 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
   // Un usuario no puede revisar sus propias solicitudes
   const canReview = user && user.id !== request.requesterId;
 
-  // Determinar el origen y destino basado en si es sub-viaje o viaje principal
+  // Extraer información del viaje desde los datos de la solicitud
   const getRouteInfo = () => {
-    if (request.isSubTrip) {
-      // Si es un sub-viaje, usar segmentOrigin y segmentDestination
-      return {
-        origin: request.segmentOrigin || request.tripOrigin || "Origen no especificado",
-        destination: request.segmentDestination || request.tripDestination || "Destino no especificado"
-      };
-    } else {
-      // Si es viaje principal, usar tripOrigin y tripDestination (que vienen de la ruta)
-      return {
-        origin: request.tripOrigin || "Origen no especificado",
-        destination: request.tripDestination || "Destino no especificado"
-      };
-    }
+    // Usar datos reales de la solicitud
+    return {
+      origin: tripDetails.origin || "Origen no especificado",
+      destination: tripDetails.destination || "Destino no especificado",
+      date: tripDetails.departureDate || "Fecha no especificada",
+      time: tripDetails.departureTime || "Hora no especificada"
+    };
   };
 
   const routeInfo = getRouteInfo();
+  
+  // Extraer información de pagos
+  const totalAmount = requestData.total_amount || 0;
+  const advanceAmount = requestData.advance_amount || 0;
+  const advancePaymentMethod = requestData.advance_payment_method || '';
+  const paymentMethod = requestData.payment_method || '';
+  
+  // Nombres de pasajeros
+  const passengerNames = passengers.map((p: any) => 
+    `${p.firstName || ''} ${p.lastName || ''}`.trim()
+  ).filter(Boolean);
+  
+  // Información de contacto
+  const email = requestData.email || '';
+  const phone = requestData.phone || '';
+  const notes = requestData.notes || null;
   
   // Estado con colores
   const getStatusBadge = () => {
@@ -594,7 +590,7 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
             <div className="flex items-center text-sm">
               <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
               <span>
-                {request.tripDate || "Fecha no especificada"} • {request.tripDepartureTime || "Hora no especificada"}
+                {routeInfo.date} • {routeInfo.time}
               </span>
             </div>
             <div className="flex items-center text-sm">
@@ -608,15 +604,25 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
           <div className="space-y-3">
             <div className="flex items-center text-sm">
               <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-              <span>Total: <strong>{formatPrice(request.totalAmount)}</strong></span>
+              <span>Total: <strong>{formatPrice(totalAmount)}</strong></span>
             </div>
             
             {/* Información de anticipo */}
-            {request.advanceAmount > 0 && (
+            {advanceAmount > 0 && (
               <div className="flex items-center text-sm">
                 <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground text-green-500" />
                 <span>
-                  Anticipo: <strong>{formatPrice(request.advanceAmount)}</strong> ({request.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                  Anticipo: <strong>{formatPrice(advanceAmount)}</strong> ({advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                </span>
+              </div>
+            )}
+            
+            {/* Método de pago restante */}
+            {advanceAmount > 0 && advanceAmount < totalAmount && (
+              <div className="flex items-center text-sm">
+                <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground text-blue-500" />
+                <span>
+                  Restante: <strong>{formatPrice(totalAmount - advanceAmount)}</strong> ({paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
                 </span>
               </div>
             )}
@@ -624,10 +630,10 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
             <div className="flex items-center text-sm">
               <User className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
               <div className="flex flex-col">
-                <span>{request.passengersData?.length || 0} pasajeros</span>
-                {request.passengerNames && request.passengerNames.length > 0 && (
+                <span>{passengers.length} asientos</span>
+                {passengerNames.length > 0 && (
                   <span className="text-xs text-muted-foreground mt-1">
-                    {request.passengerNames.join(', ')}
+                    {passengerNames.join(', ')}
                   </span>
                 )}
               </div>
@@ -635,20 +641,20 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
             
             <div className="flex items-center text-sm">
               <Phone className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-              <span className="truncate">{request.phone}</span>
+              <span className="truncate">{phone}</span>
             </div>
             
             <div className="flex items-center text-sm">
               <span className="mr-2 flex-shrink-0">📧</span>
-              <span className="truncate">{request.email}</span>
+              <span className="truncate">{email}</span>
             </div>
           </div>
         </div>
         
-        {request.notes && (
+        {notes && (
           <div className="text-sm mt-2">
             <p className="font-medium">Notas:</p>
-            <p className="text-muted-foreground">{request.notes}</p>
+            <p className="text-muted-foreground">{notes}</p>
           </div>
         )}
         
