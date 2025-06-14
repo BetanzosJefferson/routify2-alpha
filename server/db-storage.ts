@@ -729,7 +729,8 @@ export class DatabaseStorage implements IStorage {
               firstName: user.firstName,
               lastName: user.lastName,
               email: user.email,
-              role: user.role
+              role: user.role,
+              commissionPercentage: user.commissionPercentage
             };
           }
         } catch (error) {
