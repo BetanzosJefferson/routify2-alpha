@@ -428,15 +428,19 @@ export default function ReservationRequestsPage() {
               );
             })()}
 
-            {/* Notas de revisión */}
-            <div className="space-y-2">
-              <Label>Notas sobre la revisión (opcional)</Label>
-              <Textarea
-                placeholder="Escribe algún comentario si es necesario"
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-              />
-            </div>
+            {selectedRequest && (
+              <>
+                {/* Notas de revisión */}
+                <div className="space-y-2">
+                  <Label>Notas sobre la revisión (opcional)</Label>
+                  <Textarea
+                    placeholder="Escribe algún comentario si es necesario"
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
 
             <DialogFooter className="flex justify-between sm:justify-between">
               <Button
