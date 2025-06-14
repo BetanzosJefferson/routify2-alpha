@@ -470,21 +470,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Ruta estándar para buscar viajes (solo muestra los publicados por defecto)
+  // Ruta estándar para buscar viajes (solo muestra los publicados por defecto) - OPTIMIZADA
   app.get(apiRouter("/trips"), async (req: Request, res: Response) => {
     try {
       // Obtener el usuario autenticado
       const { user } = req as any;
       
-      // Log para depuración
-      console.log(`[GET /trips] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      console.log(`[GET /trips] ENDPOINT OPTIMIZADO INICIADO - Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
         console.log(`[GET /trips] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
       }
       
       // Parámetros de búsqueda desde la query
       const { origin, destination, date, dateRange, seats, driverId, visibility } = req.query;
-      const searchParams: any = {};
+      const searchParams: any = {
+        optimizedResponse: true, // Flag para respuesta optimizada sin duplicaciones
+      };
       
       // Agregar parámetros de búsqueda si existen
       if (origin) searchParams.origin = origin as string;
@@ -492,11 +493,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Manejar fecha o rango de fechas
       if (dateRange) {
-        // Si se especifica un rango de fechas (ayer,hoy,mañana), usar ese rango
         searchParams.dateRange = (dateRange as string).split(',');
         console.log(`[GET /trips] Usando rango de fechas optimizado:`, searchParams.dateRange);
       } else if (date) {
-        // Si solo se especifica una fecha, usar esa fecha
         searchParams.date = date as string;
       }
       
@@ -516,20 +515,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // APLICAR FILTRO DE COMPAÑÍA - PARTE CRÍTICA
-      // Solo superAdmin y taquilla pueden ver viajes de todas las compañías
       if (user) {
         // CASO ESPECIAL PARA CONDUCTORES: Filtrar por su ID de usuario cuando son role=DRIVER
         if (user.role === UserRole.DRIVER || user.role === 'CHOFER') {
-          // Para conductores, filtrar siempre por su ID (que debería coincidir con driverId en viajes)
           console.log(`[GET /trips] Usuario es CONDUCTOR (ID: ${user.id}), filtrando viajes asignados`);
           
-          // Si no se envió un driverId explícitamente en la URL, usar el ID del usuario conductor
           if (!searchParams.driverId) {
             searchParams.driverId = user.id;
             console.log(`[GET /trips] Asignando driverId=${user.id} automáticamente para conductor`);
           }
           
-          // Aplicar también el filtro de compañía normal
           const userCompanyId = user.companyId || user.company || null;
           if (userCompanyId) {
             searchParams.companyId = userCompanyId;
@@ -538,10 +533,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[GET /trips] Conductor sin compañía asignada, aplicando solo filtro por driverId`);
           }
         } else if (user.role === UserRole.TICKET_OFFICE) {
-          // CASO ESPECIAL PARA TAQUILLEROS: Obtener las compañías asociadas
           console.log(`[GET /trips] Usuario es TAQUILLERO (ID: ${user.id}), obteniendo empresas asociadas`);
           
-          // Obtener las asociaciones del usuario con empresas
           const userCompanyAssociations = await db
             .select()
             .from(userCompanies)
@@ -549,136 +542,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (userCompanyAssociations.length === 0) {
             console.log(`[GET /trips] Taquillero sin empresas asociadas, no verá ningún viaje`);
-            return res.json([]);
+            return res.json({ trips: [], companies: {} });
           }
           
-          // Obtener los IDs de las empresas asociadas
           const companyIds = userCompanyAssociations.map(assoc => assoc.companyId);
           console.log(`[GET /trips] Taquillero con ${companyIds.length} empresas asociadas: ${companyIds.join(', ')}`);
           
-          // Establecer un parámetro especial para manejar múltiples compañías
           searchParams.companyIds = companyIds;
           
         } else if (user.role !== UserRole.SUPER_ADMIN) {
-          // Usuarios normales - SIEMPRE FILTRAR POR SU COMPAÑÍA
-          // Obtener companyId del usuario (preferimos companyId pero también aceptamos company como respaldo)
           const userCompanyId = user.companyId || user.company || null;
           
           if (userCompanyId) {
-            // Aplicar filtro por compañía - OBLIGATORIO para usuarios que no son superAdmin
             searchParams.companyId = userCompanyId;
             console.log(`[GET /trips] Filtro compañía aplicado: ${userCompanyId}`);
           } else {
             console.log(`[GET /trips] Usuario sin compañía asignada, no verá ningún viaje`);
-            // Si el usuario no tiene compañía asignada, devolver lista vacía
-            return res.json([]);
+            return res.json({ trips: [], companies: {} });
           }
         } else {
-          // Solo superAdmin tiene ACCESO TOTAL
           console.log(`[GET /trips] Usuario ${user.firstName} con rol ${user.role} - ACCESO TOTAL (sin filtrar compañía)`);
-          
-          // SOLUCIÓN ESPECIAL: Establecer un valor especial 'ALL' para indicar acceso total
-          // Esto es mejor que eliminar el parámetro porque evita que la lógica predeterminada
-          // de filtrado por compañía se active en capas inferiores
           searchParams.companyId = 'ALL'; 
-          console.log(`[GET /trips] Estableciendo acceso total para rol privilegiado`);
         } 
       } else {
-        // Usuario no autenticado - permitir acceso a viajes públicos
         console.log(`[GET /trips] Usuario no autenticado - mostrando solo viajes públicos`);
         searchParams.visibility = 'publicado';
-        searchParams.companyId = 'ALL'; // Permitir ver de todas las compañías pero solo públicos
+        searchParams.companyId = 'ALL';
       }
       
-      // Ejecutar búsqueda con todos los parámetros
-      console.log(`[GET /trips] Parámetros de búsqueda finales:`, searchParams);
+      console.log(`[GET /trips] Parámetros de búsqueda finales con optimizedResponse:`, searchParams);
       const trips = await storage.searchTrips(searchParams);
       
       console.log(`[GET /trips] Encontrados ${trips.length} viajes`);
       
+      // APLICAR OPTIMIZACIÓN: Eliminar duplicaciones y estructurar respuesta
+      const tripsMap = new Map();
+      const companiesMap = new Map();
+      
+      for (const trip of trips) {
+        const recordId = trip.recordId || trip.id;
+        
+        // Si ya procesamos este recordId, saltar
+        if (tripsMap.has(recordId)) {
+          continue;
+        }
+        
+        // Agregar viaje al mapa
+        tripsMap.set(recordId, {
+          id: recordId,
+          recordId: recordId,
+          capacity: trip.capacity,
+          vehicleId: trip.vehicleId,
+          driverId: trip.driverId,
+          visibility: trip.visibility,
+          routeId: trip.routeId,
+          companyId: trip.companyId,
+          tripData: trip.tripData,
+          route: trip.route,
+          numStops: trip.numStops
+        });
+        
+        // Agregar información de compañía si existe
+        if (trip.companyId && trip.companyName) {
+          companiesMap.set(trip.companyId, {
+            name: trip.companyName,
+            logo: trip.companyLogo
+          });
+        }
+      }
+      
+      // Convertir mapas a arrays y objeto
+      const optimizedTrips = Array.from(tripsMap.values());
+      const companies = Object.fromEntries(companiesMap);
+      
+      console.log(`[GET /trips] OPTIMIZACIÓN COMPLETADA: ${trips.length} elementos -> ${optimizedTrips.length} viajes únicos`);
+      console.log(`[GET /trips] Información de ${Object.keys(companies).length} compañías incluida`);
+      
       // CAPA ADICIONAL DE SEGURIDAD - FILTRO POST-CONSULTA
-      // Si el usuario no tiene permisos para ver todos los viajes,
-      // realizamos una verificación adicional de seguridad y FILTRAMOS los resultados
       if (user && user.role !== UserRole.SUPER_ADMIN) {
-        // Caso especial para conductores - verificar que solo vean sus viajes asignados
         if (user.role === UserRole.DRIVER || user.role === 'CHOFER') {
-          console.log(`[GET /trips] VERIFICACIÓN CONDUCTOR: Asegurando que el chofer solo vea sus viajes`);
-          
-          // Verificar que todos los viajes tengan el driverId correcto
-          const viajesNoAsignados = trips.filter(t => t.driverId !== user.id);
+          const viajesNoAsignados = optimizedTrips.filter(t => t.driverId !== user.id);
           
           if (viajesNoAsignados.length > 0) {
             console.log(`[ALERTA DE SEGURIDAD] Se intentaron mostrar ${viajesNoAsignados.length} viajes no asignados al conductor!`);
-            console.log(`IDs bloqueados: ${viajesNoAsignados.map(t => t.id).join(', ')}`);
+            const viajesFiltrados = optimizedTrips.filter(t => t.driverId === user.id);
+            console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes asignados al conductor ${user.id}`);
             
-            // CRÍTICO: Filtrar y devolver SOLO los viajes asignados al conductor
-            const viajesFiltradosConductor = trips.filter(t => t.driverId === user.id);
-            console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltradosConductor.length} viajes asignados al conductor ${user.id}`);
-            
-            // Reemplazar los resultados con solo los viajes asignados
-            return res.json(viajesFiltradosConductor);
+            return res.json({ trips: viajesFiltrados, companies });
           }
         } else if (user.role === UserRole.TICKET_OFFICE) {
-          // VERIFICACIÓN ESPECIAL PARA TAQUILLEROS: asegurar que solo vean viajes de sus compañías asociadas
-          console.log(`[GET /trips] VERIFICACIÓN TAQUILLERO: Asegurando que solo vea viajes de sus compañías asociadas`);
-          
-          // Obtener las compañías asociadas al taquillero
           const userCompanyAssociations = await db
             .select()
             .from(userCompanies)
             .where(eq(userCompanies.userId, user.id));
           
           if (userCompanyAssociations.length === 0) {
-            console.log(`[GET /trips] Taquillero sin empresas asociadas, no debería ver ningún viaje`);
-            return res.json([]);
+            return res.json({ trips: [], companies: {} });
           }
           
-          // Obtener los IDs de las compañías
           const companyIds = userCompanyAssociations.map(assoc => assoc.companyId);
-          console.log(`[GET /trips] Taquillero tiene acceso a las empresas: [${companyIds.join(', ')}]`);
-          
-          // Verificar que todos los viajes pertenezcan a las compañías asignadas
-          const viajesDeOtrasCompanias = trips.filter(t => 
+          const viajesDeOtrasCompanias = optimizedTrips.filter(t => 
             t.companyId && !companyIds.includes(t.companyId)
           );
           
           if (viajesDeOtrasCompanias.length > 0) {
             console.log(`[ALERTA DE SEGURIDAD] Se intentaron mostrar ${viajesDeOtrasCompanias.length} viajes de compañías no asignadas al taquillero!`);
-            console.log(`IDs bloqueados: ${viajesDeOtrasCompanias.map(t => t.id).join(', ')}`);
-            
-            // CRÍTICO: Filtrar y devolver SOLO los viajes de las compañías asignadas
-            const viajesFiltrados = trips.filter(t => 
+            const viajesFiltrados = optimizedTrips.filter(t => 
               t.companyId && companyIds.includes(t.companyId)
             );
             console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes de las compañías asignadas`);
             
-            // Reemplazar los resultados
-            return res.json(viajesFiltrados);
+            return res.json({ trips: viajesFiltrados, companies });
           }
         } else {
-          // Verificación de compañía para usuarios normales
           const userCompany = user.companyId || user.company || null;
           
           if (userCompany) {
-            // Filtrar para asegurarnos que solo devolvemos viajes de su compañía
-            const viajesDeOtrasCompanias = trips.filter(t => t.companyId && t.companyId !== userCompany);
+            const viajesDeOtrasCompanias = optimizedTrips.filter(t => t.companyId && t.companyId !== userCompany);
             
             if (viajesDeOtrasCompanias.length > 0) {
               console.log(`[ALERTA DE SEGURIDAD] Se intentaron mostrar ${viajesDeOtrasCompanias.length} viajes de otras compañías!`);
-              console.log(`IDs bloqueados: ${viajesDeOtrasCompanias.map(t => t.id).join(', ')}`);
-              
-              // CRÍTICO: Filtrar y devolver SOLO los viajes de la compañía del usuario
-              const viajesFiltrados = trips.filter(t => t.companyId === userCompany);
+              const viajesFiltrados = optimizedTrips.filter(t => t.companyId === userCompany);
               console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes de compañía ${userCompany}`);
               
-              // Reemplazar los resultados con solo los viajes de su compañía
-              return res.json(viajesFiltrados);
+              return res.json({ trips: viajesFiltrados, companies });
             }
           }
         }
       }
       
-      return res.json(trips);
+      return res.json({ trips: optimizedTrips, companies });
     } catch (error: any) {
       console.error("[GET /trips] Error al obtener viajes:", error);
       console.error("[GET /trips] Stack trace:", error.stack);
