@@ -481,7 +481,7 @@ export const passengerRelations = relations(passengers, ({ one }) => ({
 // ESQUEMA DE PAQUETERÍAS
 export const packages = pgTable("packages", {
   id: serial("id").primaryKey(),
-  tripId: integer("trip_id").references(() => trips.id),
+  tripDetails: jsonb("trip_details").notNull(), // Contiene tripId, recordId y otros detalles del viaje
   
   // Datos del remitente
   senderName: text("sender_name").notNull(),
@@ -529,10 +529,6 @@ export type Package = typeof packages.$inferSelect;
 
 // Relaciones para paqueterías
 export const packageRelations = relations(packages, ({ one }) => ({
-  trip: one(trips, {
-    fields: [packages.tripId],
-    references: [trips.id]
-  }),
   createdByUser: one(users, {
     fields: [packages.createdBy],
     references: [users.id]
