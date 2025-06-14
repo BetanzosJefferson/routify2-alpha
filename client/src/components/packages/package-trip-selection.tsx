@@ -16,12 +16,7 @@ import { LocationAdapter } from "@/components/ui/location-adapter";
 // Utilities
 import { TripWithRouteInfo } from "@shared/schema";
 
-// Extendemos la interfaz TripWithRouteInfo para incluir los campos específicos que necesitamos
-interface ExtendedTripInfo extends TripWithRouteInfo {
-  originTerminal?: string;
-  destinationTerminal?: string;
-  routeName?: string;
-}
+// Los campos que necesitamos ya están incluidos en TripWithRouteInfo
 import { normalizeToStartOfDay, formatDateForInput, formatDateForApiQuery } from "@/lib/utils";
 
 interface SearchParams {
@@ -32,7 +27,7 @@ interface SearchParams {
 }
 
 interface PackageTripSelectionProps {
-  onTripSelect: (tripId: number) => void;
+  onTripSelect: (tripId: string | number) => void;
   onBack: () => void;
 }
 
@@ -95,7 +90,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     queryFn: async () => {
       const response = await fetch("/api/trips");
       if (!response.ok) throw new Error("Failed to fetch trips");
-      return await response.json() as ExtendedTripInfo[];
+      return await response.json() as TripWithRouteInfo[];
     },
   });
   
@@ -109,19 +104,10 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       
       const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
       if (!response.ok) throw new Error("Failed to fetch trips");
-      const fetchedTrips = await response.json() as ExtendedTripInfo[];
+      const fetchedTrips = await response.json() as TripWithRouteInfo[];
       console.log("Trips with route info:", fetchedTrips);
       
-      // Obtenemos datos completos, pues ahora TripWithRouteInfo incluye los campos que necesitamos
-      const processedTrips = fetchedTrips.map(trip => ({
-        ...trip,
-        // Fallbacks por si acaso algún dato no viene completo
-        originTerminal: trip.originTerminal || (trip.route?.stops?.length ? trip.route.stops[0] : "Terminal principal"),
-        destinationTerminal: trip.destinationTerminal || (trip.route?.stops?.length ? trip.route.stops[trip.route.stops.length - 1] : "Terminal principal"),
-        routeName: trip.routeName || trip.route?.name || `${trip.route?.origin || ""} - ${trip.route?.destination || ""}`
-      }));
-      
-      return processedTrips;
+      return fetchedTrips;
     },
     enabled: Object.keys(searchParams).length > 0 // Only run if there are search params
   });
@@ -155,6 +141,8 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     if (!trips) return [];
     
     return [...trips].sort((a, b) => {
+      if (!a.departureTime || !b.departureTime) return 0;
+      
       // Ordenar por hora de salida (más temprano primero)
       const getTimeValue = (timeStr: string) => {
         const [time, period] = timeStr.split(' ');
@@ -330,7 +318,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                   <div>
                     <div className="font-medium text-sm">{trip.companyName || "Transportista"}</div>
                     <div className="text-xs text-gray-500">
-                      Directo • {trip.availableSeats} asientos disponibles
+                      Directo • {trip.capacity || 0} capacidad
                     </div>
                   </div>
                 </div>
@@ -341,16 +329,25 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
               <div className="p-4">
                 {/* Horarios */}
                 <div className="flex justify-between items-center mb-4">
-                  <div className="text-lg font-bold">{formatTripTime(trip.departureTime, true, "pretty")}</div>
+                  <div className="text-lg font-bold">
+                    {trip.departureTime ? formatTripTime(trip.departureTime, true, "pretty") : "No definido"}
+                  </div>
                   <div className="flex flex-col items-center text-xs text-gray-500">
-                    <div>{calculateDuration(trip.departureTime, trip.arrivalTime)}</div>
+                    <div>
+                      {trip.departureTime && trip.arrivalTime 
+                        ? calculateDuration(trip.departureTime, trip.arrivalTime) 
+                        : "N/A"
+                      }
+                    </div>
                     <div>→</div>
                   </div>
-                  <div className="text-lg font-bold text-right">{formatTripTime(trip.arrivalTime, true, "pretty")}</div>
+                  <div className="text-lg font-bold text-right">
+                    {trip.arrivalTime ? formatTripTime(trip.arrivalTime, true, "pretty") : "No definido"}
+                  </div>
                 </div>
 
                 {/* Mensaje descriptivo para viajes que cruzan la medianoche */}
-                {(extractDayIndicator(trip.departureTime) > 0 || extractDayIndicator(trip.arrivalTime) > 0) && (
+                {trip.departureTime && trip.arrivalTime && (extractDayIndicator(trip.departureTime) > 0 || extractDayIndicator(trip.arrivalTime) > 0) && (
                   <div className="mb-3">
                     <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -358,7 +355,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
-                      {formatTripTime(trip.departureTime, true, 'descriptive', trip.departureDate)}
+                      {trip.departureTime && formatTripTime(trip.departureTime, true, 'descriptive', trip.departureDate)}
                     </div>
                   </div>
                 )}
@@ -366,18 +363,21 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                 {/* Origen y destino */}
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
                   <div className="flex-1 truncate">
-                    {trip.isSubTrip 
-                      ? (trip.segmentOrigin || trip.route?.origin || "Origen no especificado")
-                      : (trip.route?.origin || "Origen no especificado")
-                    }
+                    {trip.origin || trip.route?.origin || "Origen no especificado"}
                   </div>
                   <div className="flex-1 text-right truncate">
-                    {trip.isSubTrip 
-                      ? (trip.segmentDestination || trip.route?.destination || "Destino no especificado")
-                      : (trip.route?.destination || "Destino no especificado")
-                    }
+                    {trip.destination || trip.route?.destination || "Destino no especificado"}
                   </div>
                 </div>
+
+                {/* Información de precio */}
+                {trip.price && (
+                  <div className="mb-3">
+                    <div className="text-sm font-medium text-green-600">
+                      ${trip.price.toFixed(2)}
+                    </div>
+                  </div>
+                )}
 
                 {/* Botón de selección */}
                 <div className="flex justify-between items-center">
@@ -404,7 +404,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                   </div>
                 )}
 
-                {!trip.isSubTrip && trip.numStops > 0 && (
+                {!trip.isSubTrip && trip.numStops && trip.numStops > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-500">
                       {trip.numStops} paradas en ruta
