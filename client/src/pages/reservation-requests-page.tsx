@@ -515,6 +515,10 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
   const tripDetails = requestData.trip_details || {};
   const passengers = requestData.passengers || [];
   
+  // Obtener información real del viaje
+  const tripId = tripDetails.tripId;
+  const { data: tripInfo, isLoading: tripInfoLoading } = useTripInfo(tripId);
+  
   // Formatear fechas
   const formattedCreatedAt = format(new Date(request.createdAt), "dd MMM yyyy, HH:mm", { locale: es });
   const formattedReviewedAt = request.reviewedAt 
@@ -524,19 +528,6 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
   // Verificar si el usuario actual puede revisar esta solicitud
   // Un usuario no puede revisar sus propias solicitudes
   const canReview = user && user.id !== request.requesterId;
-
-  // Extraer información del viaje desde los datos de la solicitud
-  const getRouteInfo = () => {
-    // Usar datos reales de la solicitud
-    return {
-      origin: tripDetails.origin || "Origen no especificado",
-      destination: tripDetails.destination || "Destino no especificado",
-      date: tripDetails.departureDate || "Fecha no especificada",
-      time: tripDetails.departureTime || "Hora no especificada"
-    };
-  };
-
-  const routeInfo = getRouteInfo();
   
   // Extraer información de pagos
   const totalAmount = requestData.total_amount || 0;
@@ -599,19 +590,41 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
             <div className="flex items-start text-sm">
               <MapPin className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <div className="break-words">
-                  {extractCityName(routeInfo.origin)}
-                </div>
-                <div className="text-xs text-muted-foreground">↓</div>
-                <div className="break-words">
-                  {extractCityName(routeInfo.destination)}
-                </div>
+                {tripInfoLoading ? (
+                  <div className="text-muted-foreground">Cargando información...</div>
+                ) : tripInfo ? (
+                  <>
+                    <div className="break-words">
+                      {extractCityName(tripInfo.origin)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">↓</div>
+                    <div className="break-words">
+                      {extractCityName(tripInfo.destination)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="break-words text-muted-foreground">
+                      Origen no especificado
+                    </div>
+                    <div className="text-xs text-muted-foreground">↓</div>
+                    <div className="break-words text-muted-foreground">
+                      Destino no especificado
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex items-center text-sm">
               <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
               <span>
-                {routeInfo.date} • {routeInfo.time}
+                {tripInfoLoading ? (
+                  "Cargando información..."
+                ) : tripInfo ? (
+                  `${tripInfo.departureDate} • ${tripInfo.departureTime}`
+                ) : (
+                  "Fecha no especificada • Hora no especificada"
+                )}
               </span>
             </div>
             <div className="flex items-center text-sm">
