@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useTripInfo } from "@/hooks/use-trip-info";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -268,6 +269,10 @@ export default function ReservationRequestsPage() {
                 `${p.firstName || ''} ${p.lastName || ''}`.trim()
               ).filter(Boolean);
               
+              // Extraer información del viaje usando tripId
+              const tripId = tripDetails.tripId; // Formato: "recordId_índice"
+              const { data: tripInfo, isLoading: tripInfoLoading } = useTripInfo(tripId);
+              
               return (
                 <div className="space-y-6 py-4">
                   {/* Resumen del viaje */}
@@ -280,7 +285,13 @@ export default function ReservationRequestsPage() {
                         <div>
                           <span className="font-medium">Ruta:</span>{" "}
                           <span className="text-muted-foreground">
-                            {tripDetails.origin || "Origen no especificado"} - {tripDetails.destination || "Destino no especificado"}
+                            {tripInfoLoading ? (
+                              "Cargando información..."
+                            ) : tripInfo ? (
+                              `${extractCityName(tripInfo.origin)} - ${extractCityName(tripInfo.destination)}`
+                            ) : (
+                              "Información no disponible"
+                            )}
                           </span>
                         </div>
                       </div>
@@ -290,7 +301,13 @@ export default function ReservationRequestsPage() {
                         <div>
                           <span className="font-medium">Fecha y hora:</span>{" "}
                           <span className="text-muted-foreground">
-                            {tripDetails.departureDate || "Fecha no especificada"} • {tripDetails.departureTime || "Hora no especificada"}
+                            {tripInfoLoading ? (
+                              "Cargando información..."
+                            ) : tripInfo ? (
+                              `${tripInfo.departureDate} • ${tripInfo.departureTime}`
+                            ) : (
+                              "Información no disponible"
+                            )}
                           </span>
                         </div>
                       </div>
