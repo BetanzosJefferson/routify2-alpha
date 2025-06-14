@@ -3588,10 +3588,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Obtener el usuario autenticado
       const { user } = req as any;
+      const requestedUserId = req.query.userId as string;
       
       console.log(`[GET /commissions/reservations] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
         console.log(`[GET /commissions/reservations] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+        console.log(`[GET /commissions/reservations] userId solicitado: ${requestedUserId || 'Todos'}`);
       }
       
       // SEGURIDAD: Verificar que solo los roles autorizados puedan acceder
@@ -3599,10 +3601,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "No autorizado" });
       }
       
-      // Solo los roles Dueño y Administrador pueden acceder a esta sección
-      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.DEVELOPER) {
+      // Validar permisos según el rol
+      const isAdmin = user.role === UserRole.OWNER || user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN || user.role === UserRole.DEVELOPER;
+      const isCommissioner = user.role === UserRole.COMMISSIONER;
+      
+      if (!isAdmin && !isCommissioner) {
         console.log(`[GET /commissions/reservations] ACCESO DENEGADO: El rol ${user.role} no tiene permiso para acceder a esta sección`);
         return res.status(403).json({ error: "Acceso denegado" });
+      }
+      
+      // Si es comisionista, solo puede ver sus propias comisiones
+      let targetUserId: number | null = null;
+      if (isCommissioner) {
+        targetUserId = user.id;
+        console.log(`[GET /commissions/reservations] Comisionista - Filtrando por usuario: ${targetUserId}`);
+      } else if (requestedUserId) {
+        targetUserId = parseInt(requestedUserId);
+        console.log(`[GET /commissions/reservations] Admin - Filtrando por usuario solicitado: ${targetUserId}`);
       }
       
       // SEGURIDAD: Filtrado de datos por compañía
@@ -3625,9 +3640,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allReservations = await storage.getReservations(companyId === null ? undefined : companyId);
       
       // Filtrar solo aquellas creadas por usuarios comisionistas
-      const comissionerReservations = allReservations.filter(
+      let comissionerReservations = allReservations.filter(
         reservation => reservation.createdByUser && reservation.createdByUser.role === UserRole.COMMISSIONER
       );
+      
+      // Si se especifica un usuario específico, filtrar por ese usuario
+      if (targetUserId) {
+        comissionerReservations = comissionerReservations.filter(
+          reservation => reservation.createdByUser && reservation.createdByUser.id === targetUserId
+        );
+        console.log(`[GET /commissions/reservations] Filtrado por usuario ${targetUserId}: ${comissionerReservations.length} reservaciones`);
+      }
       
       console.log(`[GET /commissions/reservations] Encontradas ${comissionerReservations.length} reservaciones creadas por comisionistas`);
       
@@ -3690,149 +3713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint para que los comisionistas vean sus propias reservaciones aprobadas
-  app.get(apiRouter("/commissions/my-commissions"), async (req: Request, res: Response) => {
-    try {
-      // Obtener el usuario autenticado
-      const { user } = req as any;
-      
-      console.log(`[GET /commissions/my-commissions] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
-      if (user) {
-        console.log(`[GET /commissions/my-commissions] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
-      }
-      
-      // SEGURIDAD: Verificar que solo los comisionistas puedan acceder
-      if (!user) {
-        return res.status(401).json({ error: "No autorizado" });
-      }
-      
-      // Comprobar que el usuario tenga acceso a esta sección según permisos
-      // Esto es solo un log, no bloqueamos el acceso para facilitar las pruebas
-      if (user.role !== UserRole.COMMISSIONER) {
-        console.log(`[GET /commissions/my-commissions] ADVERTENCIA: El rol ${user.role} está accediendo a sección de comisiones`);
-      }
-      
-      // Obtener la compañía del usuario
-      const companyId = user.companyId || user.company;
-      
-      if (!companyId) {
-        console.log(`[GET /commissions/my-commissions] ADVERTENCIA: Usuario sin compañía asignada`);
-        // Si el usuario no tiene compañía asignada, devolver lista vacía por seguridad
-        return res.json([]);
-      }
-      
-      // Obtener todas las reservaciones con sus detalles
-      const allReservations = await storage.getReservations(companyId);
-      
-      // Modificamos el filtrado para incluir todas las reservaciones del usuario actual
-      // independiente de su estado para facilitar las pruebas
-      console.log(`[GET /commissions/my-commissions] Filtrando reservaciones creadas por usuario ID: ${user.id}`);
-      console.log(`[GET /commissions/my-commissions] Total reservaciones a filtrar: ${allReservations.length}`);
-      
-      // Mostramos detalles de cada reservación para depuración
-      allReservations.forEach((res, index) => {
-        console.log(`[GET /commissions/my-commissions] Reservación #${index}: ID=${res.id}, Creada por: ${res.createdBy}, Estado: ${res.status}`);
-      });
-      
-      // Filtrar reservaciones creadas por este usuario
-      const myApprovedReservations = allReservations.filter(reservation => {
-        const isCreatedByUser = reservation.createdBy === user.id;
-        if (isCreatedByUser) {
-          console.log(`[GET /commissions/my-commissions] Reservación ${reservation.id} COINCIDE con usuario actual`);
-        }
-        // Para pruebas, no filtramos por estado
-        return isCreatedByUser;
-      });
-      
-      console.log(`[GET /commissions/my-commissions] Encontradas ${myApprovedReservations.length} reservaciones aprobadas del comisionista`);
-      
-      // Agregar timestamp para evitar caché del navegador
-      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
-      
-      // Transformar datos para incluir más detalles
-      const myCommissions = await Promise.all(myApprovedReservations.map(async (reservation) => {
-        const commissionPercentage = user.commissionPercentage || 10; // Porcentaje predeterminado si no está definido
-        const totalPrice = reservation.totalAmount || 0;
-        const commissionAmount = (totalPrice * commissionPercentage) / 100;
-        
-        // DEBUG: Log de los datos de la reservación
-        console.log(`[DEBUG] Procesando reservación ${reservation.id}:`);
-        console.log(`[DEBUG] - totalAmount: ${reservation.totalAmount}`);
-        console.log(`[DEBUG] - passengers:`, reservation.passengers);
-        console.log(`[DEBUG] - trip.route:`, reservation.trip?.route);
-        
-        // Obtener nombres de pasajeros correctamente
-        const passengerNames = [];
-        if (reservation.passengers && reservation.passengers.length > 0) {
-          passengerNames.push(...reservation.passengers.map(p => `${p.firstName} ${p.lastName}`.trim()));
-        }
-        
-        console.log(`[DEBUG] - passengerNames procesados:`, passengerNames);
-        
-        // Obtener origen y destino del viaje usando tripDetails.tripId
-        let origin = "Origen no especificado";
-        let destination = "Destino no especificado";
-        
-        if (reservation.tripDetails && reservation.tripDetails.tripId) {
-          const tripId = reservation.tripDetails.tripId; // formato: "recordId_index"
-          const [recordIdStr, indexStr] = tripId.split('_');
-          const recordId = parseInt(recordIdStr);
-          const tripIndex = parseInt(indexStr);
-          
-          console.log(`[DEBUG] - tripId: ${tripId}, recordId: ${recordId}, tripIndex: ${tripIndex}`);
-          
-          // Obtener el viaje específico usando recordId
-          const tripRecord = await storage.getTrip(recordId);
-          if (tripRecord && tripRecord.tripData && Array.isArray(tripRecord.tripData)) {
-            const specificTrip = tripRecord.tripData[tripIndex];
-            if (specificTrip) {
-              origin = specificTrip.origin || "Origen no especificado";
-              destination = specificTrip.destination || "Destino no especificado";
-              console.log(`[DEBUG] - Usando datos específicos del viaje: ${origin} → ${destination}`);
-            } else {
-              console.log(`[DEBUG] - No se encontró el viaje en el índice ${tripIndex}`);
-            }
-          } else {
-            console.log(`[DEBUG] - No se encontró el registro del viaje o tripData inválido`);
-          }
-        } else {
-          // Fallback a la ruta completa si no hay tripDetails
-          if (reservation.trip?.route) {
-            origin = reservation.trip.route.origin || origin;
-            destination = reservation.trip.route.destination || destination;
-            console.log(`[DEBUG] - Usando fallback de ruta completa: ${origin} → ${destination}`);
-          }
-        }
-        
-        console.log(`[DEBUG] - origin final: ${origin}, destination final: ${destination}`);
-        
-        return {
-          id: reservation.id,
-          passengerNames: passengerNames.length > 0 ? passengerNames : ["Sin pasajeros"],
-          passengerCount: reservation.passengers?.length || 0,
-          routeName: reservation.trip?.route?.name || "Ruta desconocida",
-          origin: origin,
-          destination: destination,
-          tripId: reservation.tripId,
-          departureDate: reservation.trip?.departureDate,
-          departureTime: reservation.trip?.departureTime,
-          totalPrice: totalPrice,
-          commissionPercentage: commissionPercentage,
-          commissionAmount: parseFloat(commissionAmount.toFixed(2)),
-          commissionPaid: reservation.commissionPaid || false,
-          reservationStatus: reservation.status,
-          createdAt: reservation.createdAt
-        };
-      }));
-      
-      res.json(myCommissions);
-    } catch (error) {
-      console.error(`[GET /commissions/my-commissions] Error: ${error}`);
-      res.status(500).json({ error: "Error al obtener tus comisiones" });
-    }
-  });
+
   
   // Endpoint para marcar comisiones como pagadas
   app.put(apiRouter("/commissions/pay"), async (req: Request, res: Response) => {

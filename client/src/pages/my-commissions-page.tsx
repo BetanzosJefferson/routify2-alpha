@@ -30,13 +30,14 @@ export default function MyCommissionsPage() {
     return hasAccessToSection(user.role, section);
   };
 
-  // Consulta para obtener las comisiones del comisionista actual
+  // Consulta para obtener las comisiones del comisionista actual usando el endpoint unificado
   const { data: myCommissions, isLoading, error } = useQuery({
-    queryKey: ['/api/commissions/my-commissions'],
+    queryKey: ['/api/commissions/reservations', 'my-commissions'],
     queryFn: async () => {
       try {
         console.log('Consultando mis comisiones...');
-        const response = await fetch('/api/commissions/my-commissions');
+        // Para comisionistas, el endpoint automáticamente filtra por su usuario
+        const response = await fetch('/api/commissions/reservations');
         console.log('Respuesta recibida:', response.status);
         if (!response.ok) {
           const errorText = await response.text();
