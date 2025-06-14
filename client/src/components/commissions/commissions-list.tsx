@@ -55,11 +55,15 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
   // Mutación para marcar comisiones como pagadas (solo para admins)
   const markAsPaidMutation = useMutation({
     mutationFn: async (reservationIds: number[]) => {
-      return apiRequest("/commissions/pay", {
+      const response = await fetch("/api/commissions/pay", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reservationIds })
       });
+      if (!response.ok) {
+        throw new Error("Error al marcar comisiones como pagadas");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/commissions/reservations'] });
