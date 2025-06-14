@@ -124,14 +124,34 @@ export function TripList() {
   const [date, setDate] = useState(today);
   const [seats, setSeats] = useState("");
 
-  // Query para traer TODOS los viajes de la base de datos sin filtros
+  // Query para traer TODOS los viajes de la base de datos sin filtros - OPTIMIZADO
   const { data: trips, isLoading, isError } = useQuery<TripWithRouteInfo[]>({
     queryKey: ["/api/trips", "all"],
     queryFn: async () => {
       // Fetch ALL trips without any filters
       const response = await fetch(`/api/trips`);
       if (!response.ok) throw new Error("Failed to fetch trips");
-      return await response.json();
+      
+      const data = await response.json();
+      
+      // COMPATIBILIDAD: Manejar respuesta optimizada
+      if (data.trips && Array.isArray(data.trips)) {
+        // Nueva estructura optimizada: { trips: [], companies: {} }
+        const enrichedTrips = data.trips.map((trip: any) => ({
+          ...trip,
+          companyName: data.companies[trip.companyId]?.name || trip.companyName,
+          companyLogo: data.companies[trip.companyId]?.logo || trip.companyLogo
+        }));
+        console.log(`[TripList] OPTIMIZADO: Obtenidos ${enrichedTrips.length} viajes únicos (información de ${Object.keys(data.companies).length} compañías)`);
+        return enrichedTrips;
+      } else if (Array.isArray(data)) {
+        // Estructura anterior: array directo (fallback)
+        console.log(`[TripList] FALLBACK: Usando estructura anterior`);
+        return data;
+      } else {
+        console.error('[TripList] Estructura de respuesta no reconocida:', data);
+        return [];
+      }
     },
   });
 

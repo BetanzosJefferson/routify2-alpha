@@ -89,17 +89,37 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState(today);
   
-  // Query for all trips to build autocomplete options
+  // Query for all trips to build autocomplete options - OPTIMIZADO
   const { data: allTrips, isLoading: isLoadingAll } = useQuery({
     queryKey: ["/api/trips"],
     queryFn: async () => {
       const response = await fetch("/api/trips");
       if (!response.ok) throw new Error("Failed to fetch trips");
-      return await response.json() as ExtendedTripInfo[];
+      
+      const data = await response.json();
+      
+      // COMPATIBILIDAD: Manejar respuesta optimizada
+      if (data.trips && Array.isArray(data.trips)) {
+        // Nueva estructura optimizada: { trips: [], companies: {} }
+        const enrichedTrips = data.trips.map((trip: any) => ({
+          ...trip,
+          companyName: data.companies[trip.companyId]?.name || trip.companyName,
+          companyLogo: data.companies[trip.companyId]?.logo || trip.companyLogo
+        }));
+        console.log(`[PackageTripSelection] OPTIMIZADO: Obtenidos ${enrichedTrips.length} viajes únicos para autocompletar`);
+        return enrichedTrips as ExtendedTripInfo[];
+      } else if (Array.isArray(data)) {
+        // Estructura anterior: array directo (fallback)
+        console.log(`[PackageTripSelection] FALLBACK: Usando estructura anterior para autocompletar`);
+        return data as ExtendedTripInfo[];
+      } else {
+        console.error('[PackageTripSelection] Estructura de respuesta no reconocida:', data);
+        return [];
+      }
     },
   });
   
-  // Filter trips based on search parameters
+  // Filter trips based on search parameters - OPTIMIZADO
   const { data: trips, isLoading, isError } = useQuery({
     queryKey: ["/api/trips", searchParams],
     queryFn: async () => {
@@ -109,7 +129,29 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       
       const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
       if (!response.ok) throw new Error("Failed to fetch trips");
-      const fetchedTrips = await response.json() as ExtendedTripInfo[];
+      
+      const data = await response.json();
+      
+      // COMPATIBILIDAD: Manejar respuesta optimizada
+      let fetchedTrips: ExtendedTripInfo[] = [];
+      
+      if (data.trips && Array.isArray(data.trips)) {
+        // Nueva estructura optimizada: { trips: [], companies: {} }
+        fetchedTrips = data.trips.map((trip: any) => ({
+          ...trip,
+          companyName: data.companies[trip.companyId]?.name || trip.companyName,
+          companyLogo: data.companies[trip.companyId]?.logo || trip.companyLogo
+        }));
+        console.log(`[PackageTripSelection] OPTIMIZADO: Obtenidos ${fetchedTrips.length} viajes filtrados`);
+      } else if (Array.isArray(data)) {
+        // Estructura anterior: array directo (fallback)
+        fetchedTrips = data;
+        console.log(`[PackageTripSelection] FALLBACK: Usando estructura anterior para filtros`);
+      } else {
+        console.error('[PackageTripSelection] Estructura de respuesta no reconocida:', data);
+        fetchedTrips = [];
+      }
+      
       console.log("Trips with route info:", fetchedTrips);
       
       // Obtenemos datos completos, pues ahora TripWithRouteInfo incluye los campos que necesitamos
