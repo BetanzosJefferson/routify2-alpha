@@ -3661,6 +3661,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // DEBUG: Log de la información del usuario
+        console.log(`[GET /commissions/reservations] DEBUG - Reservación ${reservation.id}:`);
+        console.log(`[GET /commissions/reservations] DEBUG - createdByUser:`, reservation.createdByUser);
+        console.log(`[GET /commissions/reservations] DEBUG - commissionPercentage:`, reservation.createdByUser?.commissionPercentage);
+        
         // Retornar la reservación con datos modificados, preservando createdByUser completo
         return {
           ...reservation,
