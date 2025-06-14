@@ -247,10 +247,6 @@ function CommissionItems({
                 />
               )}
               <div>
-                <div className="font-medium flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  {commission.createdByUser?.firstName} {commission.createdByUser?.lastName}
-                </div>
                 <div className="text-sm text-gray-500">
                   Comisión: {commission.createdByUser?.commissionPercentage || 0}%
                 </div>
