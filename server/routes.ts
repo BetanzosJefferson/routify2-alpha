@@ -3631,7 +3631,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /commissions/reservations] Encontradas ${comissionerReservations.length} reservaciones creadas por comisionistas`);
       
-      res.json(comissionerReservations);
+      // Transformar los datos para incluir origen/destino específicos y comisiones
+      const transformedReservations = await Promise.all(comissionerReservations.map(async (reservation) => {
+        // Obtener origen y destino específicos usando tripDetails.tripId
+        let specificOrigin = reservation.trip?.route?.origin || "Origen no especificado";
+        let specificDestination = reservation.trip?.route?.destination || "Destino no especificado";
+        
+        if (reservation.tripDetails && reservation.tripDetails.tripId) {
+          const tripId = reservation.tripDetails.tripId; // formato: "recordId_index"
+          const [recordIdStr, indexStr] = tripId.split('_');
+          const recordId = parseInt(recordIdStr);
+          const tripIndex = parseInt(indexStr);
+          
+          console.log(`[GET /commissions/reservations] Procesando tripId: ${tripId}, recordId: ${recordId}, tripIndex: ${tripIndex}`);
+          
+          try {
+            // Obtener el viaje específico usando recordId
+            const tripRecord = await storage.getTrip(recordId);
+            if (tripRecord && tripRecord.tripData && Array.isArray(tripRecord.tripData)) {
+              const specificTrip = tripRecord.tripData[tripIndex];
+              if (specificTrip) {
+                specificOrigin = specificTrip.origin || specificOrigin;
+                specificDestination = specificTrip.destination || specificDestination;
+                console.log(`[GET /commissions/reservations] Usando datos específicos: ${specificOrigin} → ${specificDestination}`);
+              }
+            }
+          } catch (error) {
+            console.error(`[GET /commissions/reservations] Error obteniendo datos específicos del viaje:`, error);
+          }
+        }
+        
+        // Retornar la reservación con datos modificados
+        return {
+          ...reservation,
+          // Sobrescribir datos de trip con información específica
+          trip: {
+            ...reservation.trip,
+            route: {
+              ...reservation.trip?.route,
+              origin: specificOrigin,
+              destination: specificDestination
+            }
+          }
+        };
+      }));
+      
+      res.json(transformedReservations);
     } catch (error) {
       console.error(`[GET /commissions/reservations] Error: ${error}`);
       res.status(500).json({ error: "Error al obtener las reservaciones de comisionistas" });
@@ -3700,7 +3745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.set('Expires', '0');
       
       // Transformar datos para incluir más detalles
-      const myCommissions = myApprovedReservations.map(reservation => {
+      const myCommissions = await Promise.all(myApprovedReservations.map(async (reservation) => {
         const commissionPercentage = user.commissionPercentage || 10; // Porcentaje predeterminado si no está definido
         const totalPrice = reservation.totalAmount || 0;
         const commissionAmount = (totalPrice * commissionPercentage) / 100;
@@ -3719,16 +3764,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`[DEBUG] - passengerNames procesados:`, passengerNames);
         
-        // Obtener origen y destino del viaje
+        // Obtener origen y destino del viaje usando tripDetails.tripId
         let origin = "Origen no especificado";
         let destination = "Destino no especificado";
         
-        if (reservation.trip?.route) {
-          origin = reservation.trip.route.origin || origin;
-          destination = reservation.trip.route.destination || destination;
+        if (reservation.tripDetails && reservation.tripDetails.tripId) {
+          const tripId = reservation.tripDetails.tripId; // formato: "recordId_index"
+          const [recordIdStr, indexStr] = tripId.split('_');
+          const recordId = parseInt(recordIdStr);
+          const tripIndex = parseInt(indexStr);
+          
+          console.log(`[DEBUG] - tripId: ${tripId}, recordId: ${recordId}, tripIndex: ${tripIndex}`);
+          
+          // Obtener el viaje específico usando recordId
+          const tripRecord = await storage.getTrip(recordId);
+          if (tripRecord && tripRecord.tripData && Array.isArray(tripRecord.tripData)) {
+            const specificTrip = tripRecord.tripData[tripIndex];
+            if (specificTrip) {
+              origin = specificTrip.origin || "Origen no especificado";
+              destination = specificTrip.destination || "Destino no especificado";
+              console.log(`[DEBUG] - Usando datos específicos del viaje: ${origin} → ${destination}`);
+            } else {
+              console.log(`[DEBUG] - No se encontró el viaje en el índice ${tripIndex}`);
+            }
+          } else {
+            console.log(`[DEBUG] - No se encontró el registro del viaje o tripData inválido`);
+          }
+        } else {
+          // Fallback a la ruta completa si no hay tripDetails
+          if (reservation.trip?.route) {
+            origin = reservation.trip.route.origin || origin;
+            destination = reservation.trip.route.destination || destination;
+            console.log(`[DEBUG] - Usando fallback de ruta completa: ${origin} → ${destination}`);
+          }
         }
         
-        console.log(`[DEBUG] - origin: ${origin}, destination: ${destination}`);
+        console.log(`[DEBUG] - origin final: ${origin}, destination final: ${destination}`);
         
         return {
           id: reservation.id,
@@ -3747,7 +3818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reservationStatus: reservation.status,
           createdAt: reservation.createdAt
         };
-      });
+      }));
       
       res.json(myCommissions);
     } catch (error) {
