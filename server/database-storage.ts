@@ -565,25 +565,15 @@ export class DatabaseStorage implements IStorage {
           if (params.origin) {
             const searchOrigin = params.origin.toLowerCase();
             originMatch = segment.origin?.toLowerCase().includes(searchOrigin);
-            console.log(`[searchTrips] Origin filter: "${params.origin}" vs "${segment.origin}" => ${originMatch}`);
           }
           
           if (params.destination) {
             const searchDest = params.destination.toLowerCase();
             destMatch = segment.destination?.toLowerCase().includes(searchDest);
-            console.log(`[searchTrips] Destination filter: "${params.destination}" vs "${segment.destination}" => ${destMatch}`);
           }
           
           // Check seat availability filter
           let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
-          
-          console.log(`[searchTrips] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
-          console.log(`[searchTrips] Segment ${segmentIndex} data:`, {
-            origin: segment.origin,
-            destination: segment.destination,
-            departureDate: segment.departureDate,
-            availableSeats: segment.availableSeats
-          });
           
           // Only include segment if it matches all filters
           if (originMatch && destMatch && seatMatch) {
