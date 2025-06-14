@@ -369,7 +369,11 @@ export class DatabaseStorage implements IStorage {
       }
     } else if (params.date) {
       console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
-      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
+      // Buscar la fecha en cualquier segmento del array tripData
+      condiciones.push(sql`EXISTS (
+        SELECT 1 FROM json_array_elements(${schema.trips.tripData}) AS segment
+        WHERE DATE(segment->>'departureDate') = ${params.date}
+      )`);
     }
     
     // Aplicar filtro por conductor (driverId)
