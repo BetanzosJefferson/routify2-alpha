@@ -1,32 +1,12 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Loader2, AlertCircle, CalendarIcon, CheckCircle } from 'lucide-react';
-import { format, parseISO, isAfter, isBefore, startOfDay } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { formatPrice } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Sidebar } from '@/components/layout/sidebar';
-import { Topbar } from '@/components/layout/topbar';
-import { useAuth } from '@/hooks/use-auth';
-import { TabType } from '@/hooks/use-active-tab';
-import { hasAccessToSection } from '@/lib/role-based-permissions';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { Sidebar } from "@/components/layout/sidebar";
+import { Topbar } from "@/components/layout/topbar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { hasAccessToSection } from "@/lib/role-based-permissions";
+import { TabType } from "@/hooks/use-active-tab";
+import { CommissionsList } from "@/components/commissions/commissions-list";
 import { 
   Popover,
   PopoverContent,
