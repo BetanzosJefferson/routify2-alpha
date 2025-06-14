@@ -371,7 +371,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
       // Buscar la fecha en cualquier segmento del array tripData
       condiciones.push(sql`EXISTS (
-        SELECT 1 FROM json_array_elements(${schema.trips.tripData}) AS segment
+        SELECT 1 FROM jsonb_array_elements(${schema.trips.tripData}) AS segment
         WHERE DATE(segment->>'departureDate') = ${params.date}
       )`);
     }
