@@ -382,11 +382,8 @@ export class DatabaseStorage implements IStorage {
       condiciones.push(eq(schema.trips.driverId, params.driverId));
     }
     
-    // Aplicar filtro de asientos
-    if (params.seats) {
-      console.log(`[searchTrips] Filtro: Mínimo ${params.seats} asientos disponibles`);
-      condiciones.push(gte(schema.trips.availableSeats, params.seats));
-    }
+    // Aplicar filtro de asientos - removido porque availableSeats no está en el esquema trips
+    // El filtro de asientos se aplicará después en el procesamiento de los resultados
     
     // Ejecutar consulta con todas las condiciones
     let trips;
@@ -394,7 +391,11 @@ export class DatabaseStorage implements IStorage {
     if (condiciones.length > 0) {
       const whereClause = condiciones.length === 1 ? condiciones[0] : and(...condiciones);
       console.log(`[searchTrips] Ejecutando consulta con ${condiciones.length} filtros`);
-      trips = await db.select().from(schema.trips).where(whereClause);
+      
+      const query = db.select().from(schema.trips).where(whereClause);
+      console.log(`[searchTrips] SQL Query:`, query.toSQL());
+      
+      trips = await query;
     } else {
       console.log(`[searchTrips] Ejecutando consulta SIN FILTROS`);
       trips = await db.select().from(schema.trips);
