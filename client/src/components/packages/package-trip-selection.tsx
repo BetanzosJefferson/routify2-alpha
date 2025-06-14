@@ -77,12 +77,17 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   // Obtener la fecha actual formateada como YYYY-MM-DD en hora local
   const today = formatDateForInput(new Date());
   
-  const [searchParams, setSearchParams] = useState<SearchParams>({ date: today });
+  const [searchParams, setSearchParams] = useState<SearchParams>({ 
+    date: today,
+    visibility: 'publicado'
+  });
   
   // Form state
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState(today);
+  
+  console.log("[PackageTripSelection] Component mounted with searchParams:", searchParams);
   
   // Query for all trips to build autocomplete options
   const { data: allTrips, isLoading: isLoadingAll } = useQuery({
@@ -99,17 +104,20 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     queryKey: ["/api/trips", searchParams],
     queryFn: async () => {
       const queryString = new URLSearchParams(
-        Object.entries(searchParams).filter(([_, v]) => v !== undefined) as [string, string][]
+        Object.entries(searchParams).filter(([_, v]) => v !== undefined && v !== '') as [string, string][]
       ).toString();
+      
+      console.log("[PackageTripSelection] Fetching trips with params:", searchParams);
+      console.log("[PackageTripSelection] Query string:", queryString);
       
       const response = await fetch(`/api/trips${queryString ? `?${queryString}` : ''}`);
       if (!response.ok) throw new Error("Failed to fetch trips");
       const fetchedTrips = await response.json() as TripWithRouteInfo[];
-      console.log("Trips with route info:", fetchedTrips);
+      console.log("[PackageTripSelection] Fetched trips:", fetchedTrips.length, "trips");
       
       return fetchedTrips;
     },
-    enabled: Object.keys(searchParams).length > 0 // Only run if there are search params
+    enabled: true // Always enabled to show trips
   });
   
   // Extract unique locations for autocomplete
@@ -138,9 +146,14 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   
   // Obtener los viajes ordenados por hora de salida 
   const sortedTrips = useMemo(() => {
-    if (!trips) return [];
+    console.log("[PackageTripSelection] Processing trips for sorting:", trips);
+    if (!trips) {
+      console.log("[PackageTripSelection] No trips available");
+      return [];
+    }
     
-    return [...trips].sort((a, b) => {
+    console.log("[PackageTripSelection] Sorting", trips.length, "trips");
+    const sorted = [...trips].sort((a, b) => {
       if (!a.departureTime || !b.departureTime) return 0;
       
       // Ordenar por hora de salida (más temprano primero)
@@ -155,6 +168,9 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       
       return getTimeValue(a.departureTime) - getTimeValue(b.departureTime);
     });
+    
+    console.log("[PackageTripSelection] Sorted trips:", sorted.length);
+    return sorted;
   }, [trips]);
   
   return (
