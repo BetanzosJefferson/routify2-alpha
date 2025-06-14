@@ -631,7 +631,7 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
               <User className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
               <span>
                 Solicitado por{" "}
-                <span className="font-medium">{request.requesterName || `Agente #${request.requesterId}`}</span>
+                <span className="font-medium">{request.requesterName || `Usuario #${request.requesterId}`}</span>
               </span>
             </div>
           </div>

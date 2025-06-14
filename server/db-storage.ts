@@ -1379,11 +1379,26 @@ export class DatabaseStorage implements IStorage {
     companyId?: string; 
     status?: string; 
     requesterId?: number; 
-  }): Promise<schema.ReservationRequest[]> {
+  }): Promise<any[]> {
     console.log("DB Storage: Consultando solicitudes de reservación con filtros:", filters);
     
     try {
-      let query = db.select().from(schema.reservationRequests);
+      let query = db.select({
+        id: schema.reservationRequests.id,
+        data: schema.reservationRequests.data,
+        requesterId: schema.reservationRequests.requesterId,
+        status: schema.reservationRequests.status,
+        createdAt: schema.reservationRequests.createdAt,
+        reviewedBy: schema.reservationRequests.reviewedBy,
+        reviewNotes: schema.reservationRequests.reviewNotes,
+        // Información del usuario solicitante
+        requesterName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
+        requesterEmail: schema.users.email,
+        requesterRole: schema.users.role,
+      })
+      .from(schema.reservationRequests)
+      .leftJoin(schema.users, eq(schema.reservationRequests.requesterId, schema.users.id));
+      
       const conditions = [];
       
       if (filters?.status) {
