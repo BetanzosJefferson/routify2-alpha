@@ -108,45 +108,29 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     staleTime: 30000, // 30 segundos
   });
 
-  // Procesar los viajes para agrupar por ID base y crear estructura compatible
-  const processedTrips = rawTrips.reduce((acc: Trip[], trip: any) => {
-    // Extraer el ID base del trip (formato: "28_0" -> "28")
-    const baseId = trip.id.toString().split('_')[0];
-    
-    // Buscar si ya existe un trip con este ID base
-    let existingTrip = acc.find(t => t.id === baseId);
-    
-    if (!existingTrip) {
-      // Crear nuevo trip agrupado
-      existingTrip = {
-        id: baseId,
-        tripData: [],
-        capacity: trip.capacity || 0,
-        vehicleId: trip.vehicleId,
-        driverId: trip.driverId,
-        visibility: trip.visibility || 'publicado',
-        routeId: trip.routeId,
-        companyId: trip.companyId,
-        route: trip.route
-      };
-      acc.push(existingTrip);
-    }
-    
-    // Agregar este segmento al tripData
-    existingTrip.tripData.push({
+  // Procesar los viajes para crear segmentos individuales seleccionables
+  const availableSegments = rawTrips.map((trip: any) => {
+    return {
+      id: trip.id, // Mantener el ID completo (ej: "28_1")
+      baseId: trip.id.toString().split('_')[0], // ID base del viaje (ej: "28")
+      segmentIndex: parseInt(trip.id.toString().split('_')[1]) || 0,
       origin: trip.origin,
       destination: trip.destination,
       departureDate: trip.departureDate,
       departureTime: trip.departureTime,
       arrivalTime: trip.arrivalTime,
-      price: trip.price,
       availableSeats: trip.availableSeats,
-      tripId: trip.tripId || parseInt(trip.id.split('_')[1]) || 0,
-      isMainTrip: trip.isMainTrip || false
-    });
-    
-    return acc;
-  }, []);
+      tripId: trip.tripId || 0,
+      isMainTrip: trip.isMainTrip || false,
+      capacity: trip.capacity || 0,
+      vehicleId: trip.vehicleId,
+      driverId: trip.driverId,
+      visibility: trip.visibility || 'publicado',
+      routeId: trip.routeId,
+      companyId: trip.companyId,
+      route: trip.route
+    };
+  });
 
   // Formatear fecha para mostrar
   const formatDate = (dateString: string) => {
@@ -164,10 +148,32 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     return timeString;
   };
 
-  // Manejar selección de trip
-  const handleTripSelect = (trip: Trip) => {
-    console.log(`[PackageTripSelection] Trip selected:`, trip);
-    onTripSelect(trip);
+  // Manejar selección de segmento individual
+  const handleSegmentSelect = (segment: any) => {
+    console.log(`[PackageTripSelection] Segment selected:`, segment);
+    // Crear un objeto Trip compatible con el resto del sistema
+    const tripForPackage: Trip = {
+      id: segment.id,
+      tripData: [{
+        origin: segment.origin,
+        destination: segment.destination,
+        departureDate: segment.departureDate,
+        departureTime: segment.departureTime,
+        arrivalTime: segment.arrivalTime,
+        price: 0, // No relevante para paqueterías
+        availableSeats: segment.availableSeats,
+        tripId: segment.tripId,
+        isMainTrip: segment.isMainTrip
+      }],
+      capacity: segment.capacity,
+      vehicleId: segment.vehicleId,
+      driverId: segment.driverId,
+      visibility: segment.visibility,
+      routeId: segment.routeId,
+      companyId: segment.companyId,
+      route: segment.route
+    };
+    onTripSelect(tripForPackage);
   };
 
   // Manejar búsqueda
@@ -286,10 +292,10 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
         </Card>
       )}
 
-      {/* Trips List */}
+      {/* Segments List */}
       {!isLoading && !error && (
         <div className="space-y-4">
-          {processedTrips.length === 0 ? (
+          {availableSegments.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
@@ -304,75 +310,57 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
           ) : (
             <div className="grid gap-4">
               <h3 className="text-lg font-semibold">
-                {processedTrips.length} viaje{processedTrips.length !== 1 ? 's' : ''} disponible{processedTrips.length !== 1 ? 's' : ''}
+                {availableSegments.length} combinación{availableSegments.length !== 1 ? 'es' : ''} de viaje disponible{availableSegments.length !== 1 ? 's' : ''}
               </h3>
-              {processedTrips.map((trip) => (
-                <Card key={trip.id} className="hover:shadow-md transition-shadow">
+              {availableSegments.map((segment) => (
+                <Card key={segment.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      {/* Información general del viaje */}
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h4 className="font-semibold text-lg">
-                            {trip.route?.name || `Viaje ${trip.id}`}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            Capacidad: {trip.capacity} pasajeros
-                          </p>
+                    <div className="flex justify-between items-center">
+                      <div className="space-y-3 flex-1">
+                        {/* Ruta del segmento */}
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-green-600" />
+                          <span className="font-medium text-lg">{segment.origin}</span>
+                          <span className="text-muted-foreground text-lg">→</span>
+                          <MapPin className="h-4 w-4 text-red-600" />
+                          <span className="font-medium text-lg">{segment.destination}</span>
+                          {segment.isMainTrip && (
+                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                              Principal
+                            </span>
+                          )}
                         </div>
-                        <Button 
-                          onClick={() => handleTripSelect(trip)}
-                          className="ml-4"
-                        >
-                          Seleccionar Viaje
-                        </Button>
-                      </div>
 
-                      {/* Segmentos del viaje */}
-                      <div className="space-y-3">
-                        {trip.tripData.map((segment, index) => (
-                          <div key={index} className="border rounded-lg p-4">
-                            {index > 0 && <hr className="my-4" />}
-                            
-                            <div className="space-y-3">
-                              {/* Ruta del segmento */}
-                              <div className="flex items-center gap-2">
-                                <MapPin className="h-4 w-4 text-green-600" />
-                                <span className="font-medium">{segment.origin}</span>
-                                <span className="text-muted-foreground">→</span>
-                                <MapPin className="h-4 w-4 text-red-600" />
-                                <span className="font-medium">{segment.destination}</span>
-                                {segment.isMainTrip && (
-                                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                                    Principal
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Fecha y horarios */}
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>{formatDate(segment.departureDate)}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>{formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Users className="h-4 w-4" />
-                                  <span>{segment.availableSeats} asientos disponibles</span>
-                                </div>
-                              </div>
-
-                              {/* Precio */}
-                              <div className="text-xl font-bold text-blue-600">
-                                ${segment.price}
-                              </div>
-                            </div>
+                        {/* Fecha y horarios */}
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{formatDate(segment.departureDate)}</span>
                           </div>
-                        ))}
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            <span>{segment.availableSeats} asientos disponibles</span>
+                          </div>
+                        </div>
+
+                        {/* Información adicional del viaje */}
+                        <div className="text-xs text-muted-foreground">
+                          {segment.route?.name && `Ruta: ${segment.route.name}`}
+                          {segment.capacity && ` • Capacidad total: ${segment.capacity} pasajeros`}
+                        </div>
                       </div>
+
+                      {/* Botón de selección */}
+                      <Button 
+                        onClick={() => handleSegmentSelect(segment)}
+                        className="ml-4"
+                      >
+                        Seleccionar
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
