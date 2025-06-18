@@ -43,15 +43,13 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     queryKey: ["/api/trips", { 
       date: searchDate, 
       origin: searchOrigin || undefined,
-      destination: searchDestination || undefined,
-      visibility: "publicado" 
+      destination: searchDestination || undefined
     }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchDate) params.append("date", searchDate);
       if (searchOrigin) params.append("origin", searchOrigin);
       if (searchDestination) params.append("destination", searchDestination);
-      params.append("visibility", "publicado");
 
       const response = await fetch(`/api/trips?${params.toString()}`);
       if (!response.ok) {

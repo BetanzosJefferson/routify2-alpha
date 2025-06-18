@@ -2093,4 +2093,101 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Métodos para presupuestos de viajes
+  async getTripBudget(tripId: number): Promise<any> {
+    try {
+      console.log(`DB Storage: Consultando presupuesto para viaje ${tripId}`);
+      
+      const budget = await this.db
+        .select()
+        .from(schema.tripBudgets)
+        .where(eq(schema.tripBudgets.tripId, tripId))
+        .limit(1);
+      
+      if (budget.length === 0) {
+        console.log(`DB Storage: No se encontró presupuesto para viaje ${tripId}`);
+        return undefined;
+      }
+      
+      console.log(`DB Storage: Presupuesto encontrado para viaje ${tripId}: ${budget[0].amount}`);
+      return budget[0];
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener presupuesto del viaje ${tripId}:`, error);
+      throw error;
+    }
+  }
+
+  async createTripBudget(budget: any): Promise<any> {
+    try {
+      console.log(`DB Storage: Creando presupuesto para viaje ${budget.tripId}`);
+      
+      const [newBudget] = await this.db
+        .insert(schema.tripBudgets)
+        .values(budget)
+        .returning();
+      
+      console.log(`DB Storage: Presupuesto creado exitosamente para viaje ${budget.tripId}`);
+      return newBudget;
+    } catch (error) {
+      console.error(`DB Storage: Error al crear presupuesto:`, error);
+      throw error;
+    }
+  }
+
+  async updateTripBudget(tripId: number, amount: number): Promise<any> {
+    try {
+      console.log(`DB Storage: Actualizando presupuesto para viaje ${tripId} con monto ${amount}`);
+      
+      const [updatedBudget] = await this.db
+        .update(schema.tripBudgets)
+        .set({ 
+          amount: amount,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.tripBudgets.tripId, tripId))
+        .returning();
+      
+      console.log(`DB Storage: Presupuesto actualizado exitosamente para viaje ${tripId}`);
+      return updatedBudget;
+    } catch (error) {
+      console.error(`DB Storage: Error al actualizar presupuesto:`, error);
+      throw error;
+    }
+  }
+
+  // Métodos para gastos de viajes
+  async getTripExpenses(tripId: number): Promise<any[]> {
+    try {
+      console.log(`DB Storage: Consultando gastos para viaje ${tripId}`);
+      
+      const expenses = await this.db
+        .select()
+        .from(schema.tripExpenses)
+        .where(eq(schema.tripExpenses.tripId, tripId));
+      
+      console.log(`DB Storage: Encontrados ${expenses.length} gastos para viaje ${tripId}`);
+      return expenses;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener gastos del viaje ${tripId}:`, error);
+      throw error;
+    }
+  }
+
+  async createTripExpense(expense: any): Promise<any> {
+    try {
+      console.log(`DB Storage: Creando gasto para viaje ${expense.tripId}`);
+      
+      const [newExpense] = await this.db
+        .insert(schema.tripExpenses)
+        .values(expense)
+        .returning();
+      
+      console.log(`DB Storage: Gasto creado exitosamente para viaje ${expense.tripId}`);
+      return newExpense;
+    } catch (error) {
+      console.error(`DB Storage: Error al crear gasto:`, error);
+      throw error;
+    }
+  }
 }
