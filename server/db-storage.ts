@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import { db } from "./db";
-import { eq, and, gte, lt, like, or, sql, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, gte, lt, like, or, sql, isNotNull, isNull, inArray } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   private db = db;
@@ -2209,6 +2209,74 @@ export class DatabaseStorage implements IStorage {
       return packages;
     } catch (error) {
       console.error(`DB Storage: Error al obtener paquetes:`, error);
+      throw error;
+    }
+  }
+
+  async getPackagesWithTripInfo(filters?: { 
+    companyId?: string; 
+    companyIds?: string[]; 
+    tripId?: number; 
+    tripIds?: number[] 
+  }): Promise<any[]> {
+    try {
+      let query = this.db.select().from(schema.packages);
+      let conditions: any[] = [];
+
+      // Filtro por compañía única
+      if (filters?.companyId) {
+        conditions.push(eq(schema.packages.companyId, filters.companyId));
+      }
+
+      // Filtro por múltiples compañías (para taquilleros)
+      if (filters?.companyIds && filters.companyIds.length > 0) {
+        conditions.push(inArray(schema.packages.companyId, filters.companyIds));
+      }
+
+      // Filtro por viaje único
+      if (filters?.tripId) {
+        const tripDetails = sql`JSON_EXTRACT(${schema.packages.tripDetails}, '$.tripId')`;
+        conditions.push(eq(tripDetails, filters.tripId.toString()));
+      }
+
+      // Filtro por múltiples viajes (para conductores)
+      if (filters?.tripIds && filters.tripIds.length > 0) {
+        const tripIdStrings = filters.tripIds.map(id => id.toString());
+        const tripDetails = sql`JSON_EXTRACT(${schema.packages.tripDetails}, '$.tripId')`;
+        conditions.push(inArray(tripDetails, tripIdStrings));
+      }
+
+      // Aplicar condiciones si existen
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const rawPackages = await query;
+
+      // Mapear los datos para incluir información del viaje desde trip_details
+      const packagesWithTripInfo = rawPackages.map(pkg => {
+        const tripDetails = typeof pkg.tripDetails === 'string' 
+          ? JSON.parse(pkg.tripDetails) 
+          : pkg.tripDetails;
+
+        return {
+          ...pkg,
+          // Mapear campos para compatibilidad con el frontend
+          tripOrigin: tripDetails?.origin || '',
+          tripDestination: tripDetails?.destination || '',
+          tripDepartureDate: tripDetails?.departureDate || '',
+          tripDepartureTime: tripDetails?.departureTime || '',
+          tripArrivalTime: tripDetails?.arrivalTime || '',
+          tripId: tripDetails?.tripId || null,
+          // Mantener tripDetails original para compatibilidad
+          tripDetails: tripDetails
+        };
+      });
+
+      console.log(`DB Storage: Encontrados ${packagesWithTripInfo.length} paquetes con información de viaje`);
+      return packagesWithTripInfo;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener paquetes con información de viaje:`, error);
       throw error;
     }
   }
