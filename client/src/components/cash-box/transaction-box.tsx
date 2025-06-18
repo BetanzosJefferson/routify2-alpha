@@ -91,7 +91,7 @@ const TransactionBox: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [reservationTransactions, setReservationTransactions] = useState<Transaction[]>([]);
-  const [packageTransactions, setPackageTransactions] = useState<Transaction[]>([]);
+
   const [isCreatingCutoff, setIsCreatingCutoff] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -139,7 +139,7 @@ const TransactionBox: React.FC = () => {
   const createCutoffMutation = useMutation({
     mutationFn: async () => {
       // Capturar todas las transacciones actuales para el PDF antes de hacer el corte
-      const allTransactions = [...reservationTransactions, ...packageTransactions];
+      const allTransactions = [...reservationTransactions];
       console.log("Guardando transacciones para PDF:", allTransactions.length);
       
       // Preparar el cuerpo de la petición con información del filtro de empresa para usuarios taquilla
@@ -262,7 +262,7 @@ const TransactionBox: React.FC = () => {
     if (data && user) {
       // Separar las transacciones por tipo
       const reservations: Transaction[] = [];
-      const packages: Transaction[] = [];
+
 
       if (Array.isArray(data)) {
         console.log("Transacciones recibidas:", data.length);
@@ -302,9 +302,7 @@ const TransactionBox: React.FC = () => {
               if (transactionType === "reservation" || transactionType === "reservation-final-payment") {
                 console.log("Añadiendo transacción de reservación:", transaction.id);
                 reservations.push(transaction as Transaction);
-              } else if (transactionType === "package" || transactionType === "package-final-payment") {
-                console.log("Añadiendo transacción de paquetería:", transaction.id);
-                packages.push(transaction as Transaction);
+
               } else {
                 console.warn("Tipo de transacción desconocido:", transactionType, transaction);
               }
@@ -316,7 +314,7 @@ const TransactionBox: React.FC = () => {
           }
         });
         
-        console.log("Transacciones procesadas - Reservaciones:", reservations.length, "Paquetes:", packages.length);
+        console.log("Transacciones procesadas - Reservaciones:", reservations.length);
       } else {
         console.error("Los datos recibidos no son un array:", data);
         toast({
@@ -327,7 +325,7 @@ const TransactionBox: React.FC = () => {
       }
 
       setReservationTransactions(reservations);
-      setPackageTransactions(packages);
+
     }
   }, [data, toast, user, selectedCompany]);
 
@@ -387,8 +385,7 @@ const TransactionBox: React.FC = () => {
     }
   });
 
-  // Sumar montos de paqueterías
-  packageTransactions.forEach(transaction => {
+  // Sumar montos de transacciones
     const details = transaction.details?.details || {};
     const amount = details.monto || 0;
     totalAmount += amount;

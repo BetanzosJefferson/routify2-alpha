@@ -20,7 +20,7 @@ import MyCommissionsPage from "@/pages/my-commissions-page";
 import ReservationRequestsPage from "@/pages/reservation-requests-page";
 import NotificationsPage from "@/pages/notifications-page";
 import CouponsPage from "@/pages/coupons-page";
-import PackagesPage from "@/pages/packages-page";
+
 import PackageDetailPage from "@/pages/package-detail-page";
 import EditTripPage from "@/pages/edit-trip-page";
 import CashBoxPage from "@/pages/cash-box";

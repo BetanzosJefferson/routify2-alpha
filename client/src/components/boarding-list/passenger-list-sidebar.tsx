@@ -799,60 +799,6 @@ export function PassengerListSidebar({ tripId, onClose }: PassengerListSidebarPr
             </p>
           </div>
         )}
-
-                </div>
-              </div>
-              
-              <div className="max-h-48 overflow-y-auto space-y-2">
-                  <Card key={pkg.id} className="border border-gray-200">
-                    <CardContent className="p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm text-gray-900">
-                            {pkg.senderName} → {pkg.recipientName}
-                          </p>
-                          <p className="text-xs text-gray-600 truncate">
-                            {pkg.description}
-                          </p>
-                        </div>
-                        <Badge 
-                          variant={pkg.isPaid ? "default" : "secondary"}
-                          className={pkg.isPaid ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}
-                        >
-                          {pkg.isPaid ? "Pagado" : "Pendiente"}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>{pkg.weight}kg</span>
-                        <span className="font-medium text-gray-900">
-                          {formatPrice(pkg.amount)}
-                        </span>
-                      </div>
-                      
-                      {pkg.fragile && (
-                        <div className="mt-1">
-                          <Badge variant="outline" className="text-xs border-red-200 text-red-600">
-                            Frágil
-                          </Badge>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="rounded-full bg-gray-100 p-3 mx-auto w-12 h-12 mb-3 flex items-center justify-center">
-              </div>
-              <p className="text-gray-500 text-xs max-w-xs mx-auto">
-                Este viaje no tiene paquetes registrados en el sistema.
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
