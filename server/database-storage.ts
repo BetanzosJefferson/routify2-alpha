@@ -369,11 +369,7 @@ export class DatabaseStorage implements IStorage {
       }
     } else if (params.date) {
       console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
-      // Buscar la fecha en cualquier segmento del array tripData usando SQL directo
-      condiciones.push(sql`EXISTS (
-        SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
-        WHERE DATE(segment->>'departureDate') = ${params.date}
-      )`);
+      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -382,8 +378,11 @@ export class DatabaseStorage implements IStorage {
       condiciones.push(eq(schema.trips.driverId, params.driverId));
     }
     
-    // Aplicar filtro de asientos - removido porque availableSeats no está en el esquema trips
-    // El filtro de asientos se aplicará después en el procesamiento de los resultados
+    // Aplicar filtro de asientos
+    if (params.seats) {
+      console.log(`[searchTrips] Filtro: Mínimo ${params.seats} asientos disponibles`);
+      condiciones.push(gte(schema.trips.availableSeats, params.seats));
+    }
     
     // Ejecutar consulta con todas las condiciones
     let trips;
@@ -391,11 +390,7 @@ export class DatabaseStorage implements IStorage {
     if (condiciones.length > 0) {
       const whereClause = condiciones.length === 1 ? condiciones[0] : and(...condiciones);
       console.log(`[searchTrips] Ejecutando consulta con ${condiciones.length} filtros`);
-      
-      const query = db.select().from(schema.trips).where(whereClause);
-      console.log(`[searchTrips] SQL Query:`, query.toSQL());
-      
-      trips = await query;
+      trips = await db.select().from(schema.trips).where(whereClause);
     } else {
       console.log(`[searchTrips] Ejecutando consulta SIN FILTROS`);
       trips = await db.select().from(schema.trips);
@@ -570,25 +565,15 @@ export class DatabaseStorage implements IStorage {
           if (params.origin) {
             const searchOrigin = params.origin.toLowerCase();
             originMatch = segment.origin?.toLowerCase().includes(searchOrigin);
-            console.log(`[searchTrips] Origin filter: "${params.origin}" vs "${segment.origin}" => ${originMatch}`);
           }
           
           if (params.destination) {
             const searchDest = params.destination.toLowerCase();
             destMatch = segment.destination?.toLowerCase().includes(searchDest);
-            console.log(`[searchTrips] Destination filter: "${params.destination}" vs "${segment.destination}" => ${destMatch}`);
           }
           
           // Check seat availability filter
           let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
-          
-          console.log(`[searchTrips] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
-          console.log(`[searchTrips] Segment ${segmentIndex} data:`, {
-            origin: segment.origin,
-            destination: segment.destination,
-            departureDate: segment.departureDate,
-            availableSeats: segment.availableSeats
-          });
           
           // Only include segment if it matches all filters
           if (originMatch && destMatch && seatMatch) {
