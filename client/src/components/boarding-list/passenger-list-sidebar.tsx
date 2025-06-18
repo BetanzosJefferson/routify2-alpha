@@ -22,7 +22,7 @@ import {
   LockIcon,
   DollarSign,
   Wallet,
-  Package
+
 } from "lucide-react";
 import { formatTripTime } from "@/lib/trip-utils";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ import { useDriverTrips, Trip } from "@/hooks/use-driver-trips";
 import { useDriverReservations, Reservation, Passenger } from "@/hooks/use-driver-reservations";
 import { useTripBudget } from "@/hooks/use-trip-budget";
 import { useTripExpenses, TripExpense } from "@/hooks/use-trip-expenses";
-import { useTripPackages } from "@/hooks/use-trip-packages";
+
 import { normalizeToStartOfDay, formatPrice } from "@/lib/utils";
 import { AddExpenseModal } from "./add-expense-modal";
 import { ExpenseButton } from "./expense-button";
