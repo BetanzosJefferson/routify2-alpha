@@ -62,7 +62,7 @@ type PackageFormValues = z.infer<typeof packageFormSchema>;
 
 // Props para el componente del formulario
 interface PackageFormProps {
-  tripId?: number;
+  tripId?: number | string | { id: string };
   packageId?: number;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -254,14 +254,19 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         throw new Error("No se ha seleccionado un viaje para la paquetería");
       }
 
+      // Convertir tripId a string si es un objeto
+      const tripIdString = typeof tripId === 'object' && tripId !== null && 'id' in tripId 
+        ? String((tripId as any).id) 
+        : String(tripId);
+
       // Extraer información del tripId (formato: "baseId_segmentIndex" como "28_1")
-      const tripIdParts = tripId.toString().split('_');
+      const tripIdParts = tripIdString.split('_');
       const recordId = parseInt(tripIdParts[0]); // ID base del viaje (28)
       const segmentIndex = tripIdParts.length > 1 ? parseInt(tripIdParts[1]) : 0; // Índice del segmento (1)
-      
+
       // Obtener información del viaje seleccionado desde tripInfo
       const tripDetails = {
-        tripId: tripId, // ID completo con segmento (ej: "28_1")
+        tripId: tripIdString, // ID completo con segmento (ej: "28_1")
         recordId: recordId, // ID base del viaje (ej: 28)
         segmentIndex: segmentIndex, // Índice del segmento (ej: 1)
         origin: tripInfo?.origin || "", // Origen del segmento

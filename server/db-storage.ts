@@ -2190,4 +2190,102 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Package methods
+  async getPackages(filters?: { companyId?: string; tripId?: number }): Promise<schema.Package[]> {
+    try {
+      let query = this.db.select().from(schema.packages);
+
+      if (filters?.companyId) {
+        query = query.where(eq(schema.packages.companyId, filters.companyId));
+      }
+
+      if (filters?.tripId) {
+        query = query.where(eq(schema.packages.tripId, filters.tripId.toString()));
+      }
+
+      const packages = await query;
+      console.log(`DB Storage: Encontrados ${packages.length} paquetes`);
+      return packages;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener paquetes:`, error);
+      throw error;
+    }
+  }
+
+  async getPackage(id: number): Promise<schema.Package | undefined> {
+    try {
+      const packages = await this.db
+        .select()
+        .from(schema.packages)
+        .where(eq(schema.packages.id, id))
+        .limit(1);
+
+      return packages[0];
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener paquete ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async getPackageWithTripInfo(id: number): Promise<schema.Package & { trip?: TripWithRouteInfo } | undefined> {
+    try {
+      const packageData = await this.getPackage(id);
+      if (!packageData) return undefined;
+
+      // Si el paquete tiene tripId, obtener información del viaje
+      let trip: TripWithRouteInfo | undefined;
+      if (packageData.tripId) {
+        const tripId = parseInt(packageData.tripId.toString().split('_')[0]);
+        trip = await this.getTripWithRouteInfo(tripId);
+      }
+
+      return { ...packageData, trip };
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener paquete con información del viaje ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async createPackage(packageData: schema.InsertPackage): Promise<schema.Package> {
+    try {
+      console.log(`DB Storage: Creando paquete:`, packageData);
+      
+      const [newPackage] = await this.db
+        .insert(schema.packages)
+        .values(packageData)
+        .returning();
+      
+      console.log(`DB Storage: Paquete creado exitosamente con ID ${newPackage.id}`);
+      return newPackage;
+    } catch (error) {
+      console.error(`DB Storage: Error al crear paquete:`, error);
+      throw error;
+    }
+  }
+
+  async updatePackage(id: number, packageData: Partial<schema.Package>): Promise<schema.Package | undefined> {
+    try {
+      const [updatedPackage] = await this.db
+        .update(schema.packages)
+        .set({ ...packageData, updatedAt: new Date() })
+        .where(eq(schema.packages.id, id))
+        .returning();
+
+      return updatedPackage;
+    } catch (error) {
+      console.error(`DB Storage: Error al actualizar paquete ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deletePackage(id: number): Promise<boolean> {
+    try {
+      await this.db.delete(schema.packages).where(eq(schema.packages.id, id));
+      return true;
+    } catch (error) {
+      console.error(`DB Storage: Error al eliminar paquete ${id}:`, error);
+      return false;
+    }
+  }
 }
