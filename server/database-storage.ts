@@ -372,7 +372,7 @@ export class DatabaseStorage implements IStorage {
       // Buscar la fecha en cualquier segmento del array tripData usando SQL directo
       condiciones.push(sql`EXISTS (
         SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
-        WHERE DATE(segment->>'departureDate') = ${params.date}
+        WHERE segment->>'departureDate' = ${params.date}
       )`);
     }
     
