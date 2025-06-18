@@ -10,12 +10,6 @@ type UseTripsOptions = {
   searchTerm?: string;
 };
 
-// Tipo para la respuesta optimizada del endpoint /api/trips
-type OptimizedTripsResponse = {
-  trips: TripWithRouteInfo[];
-  companies: Record<string, { name: string; logo?: string }>;
-};
-
 /**
  * Hook especializado para obtener viajes para cualquier rol de usuario
  */
@@ -74,18 +68,10 @@ export function useTrips(options: UseTripsOptions = {}) {
           throw new Error(`Error al obtener viajes: ${response.statusText}`);
         }
         
-        const data: OptimizedTripsResponse = await response.json();
+        const trips = await response.json();
+        console.log(`[useTrips] Obtenidos ${trips.length} viajes`);
         
-        // COMPATIBILIDAD: Enriquecer los viajes con información de compañías
-        const enrichedTrips = data.trips.map(trip => ({
-          ...trip,
-          companyName: (trip.companyId && data.companies[trip.companyId]?.name) || trip.companyName,
-          companyLogo: (trip.companyId && data.companies[trip.companyId]?.logo) || trip.companyLogo
-        }));
-        
-        console.log(`[useTrips] OPTIMIZADO: Obtenidos ${enrichedTrips.length} viajes únicos (información de ${Object.keys(data.companies).length} compañías)`);
-        
-        return enrichedTrips;
+        return trips;
       } catch (error) {
         console.error("[useTrips] Error al obtener viajes:", error);
         throw error;

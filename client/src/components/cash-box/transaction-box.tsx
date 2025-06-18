@@ -74,7 +74,7 @@ interface PackageDetails extends TransactionDetails {
 interface Transaction {
   id: number;
   detalles: {
-    type: "reservation" | "reservation-final-payment";
+    type: "reservation" | "package" | "reservation-final-payment" | "package-final-payment";
     details: TransactionDetails;
   };
   usuario_id: number; // Nombre en español que viene del cliente
@@ -91,7 +91,7 @@ const TransactionBox: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [reservationTransactions, setReservationTransactions] = useState<Transaction[]>([]);
-
+  const [packageTransactions, setPackageTransactions] = useState<Transaction[]>([]);
   const [isCreatingCutoff, setIsCreatingCutoff] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -139,7 +139,7 @@ const TransactionBox: React.FC = () => {
   const createCutoffMutation = useMutation({
     mutationFn: async () => {
       // Capturar todas las transacciones actuales para el PDF antes de hacer el corte
-      const allTransactions = [...reservationTransactions];
+      const allTransactions = [...reservationTransactions, ...packageTransactions];
       console.log("Guardando transacciones para PDF:", allTransactions.length);
       
       // Preparar el cuerpo de la petición con información del filtro de empresa para usuarios taquilla
@@ -262,7 +262,7 @@ const TransactionBox: React.FC = () => {
     if (data && user) {
       // Separar las transacciones por tipo
       const reservations: Transaction[] = [];
-
+      const packages: Transaction[] = [];
 
       if (Array.isArray(data)) {
         console.log("Transacciones recibidas:", data.length);
@@ -302,7 +302,9 @@ const TransactionBox: React.FC = () => {
               if (transactionType === "reservation" || transactionType === "reservation-final-payment") {
                 console.log("Añadiendo transacción de reservación:", transaction.id);
                 reservations.push(transaction as Transaction);
-
+              } else if (transactionType === "package" || transactionType === "package-final-payment") {
+                console.log("Añadiendo transacción de paquetería:", transaction.id);
+                packages.push(transaction as Transaction);
               } else {
                 console.warn("Tipo de transacción desconocido:", transactionType, transaction);
               }
@@ -314,7 +316,7 @@ const TransactionBox: React.FC = () => {
           }
         });
         
-        console.log("Transacciones procesadas - Reservaciones:", reservations.length);
+        console.log("Transacciones procesadas - Reservaciones:", reservations.length, "Paquetes:", packages.length);
       } else {
         console.error("Los datos recibidos no son un array:", data);
         toast({
@@ -325,7 +327,7 @@ const TransactionBox: React.FC = () => {
       }
 
       setReservationTransactions(reservations);
-
+      setPackageTransactions(packages);
     }
   }, [data, toast, user, selectedCompany]);
 
@@ -368,33 +370,44 @@ const TransactionBox: React.FC = () => {
   }
 
   // Calcular totales para el resumen
-  const totals = React.useMemo(() => {
-    let totalAmount = 0;
-    let cashAmount = 0;
-    let transferAmount = 0;
+  let totalAmount = 0;
+  let cashAmount = 0;
+  let transferAmount = 0;
 
-    // Sumar montos de reservaciones
-    reservationTransactions.forEach(transaction => {
-      const details = transaction.detalles?.details || {};
-      const amount = details.monto || 0;
-      totalAmount += amount;
-      
-      if (details.metodoPago === "efectivo") {
-        cashAmount += amount;
-      } else if (details.metodoPago === "transferencia") {
-        transferAmount += amount;
-      }
-    });
+  // Sumar montos de reservaciones
+  reservationTransactions.forEach(transaction => {
+    const details = transaction.details?.details || {};
+    const amount = details.monto || 0;
+    totalAmount += amount;
+    
+    if (details.metodoPago === "efectivo") {
+      cashAmount += amount;
+    } else if (details.metodoPago === "transferencia") {
+      transferAmount += amount;
+    }
+  });
 
-    return {
-      total: totalAmount,
-      efectivo: cashAmount,
-      transferencia: transferAmount
-    };
-  }, [reservationTransactions]);
-
+  // Sumar montos de paqueterías
+  packageTransactions.forEach(transaction => {
+    const details = transaction.details?.details || {};
+    const amount = details.monto || 0;
+    totalAmount += amount;
+    
+    if (details.metodoPago === "efectivo") {
+      cashAmount += amount;
+    } else if (details.metodoPago === "transferencia") {
+      transferAmount += amount;
+    }
+  });
+  
   // Total de transacciones
-  const totalTransactions = reservationTransactions.length;
+  const totalTransactions = reservationTransactions.length + packageTransactions.length;
+
+  const totals = {
+    total: totalAmount,
+    efectivo: cashAmount,
+    transferencia: transferAmount
+  };
 
   // Función para descargar el PDF
   const handleDownloadPdf = () => {
@@ -664,7 +677,174 @@ const TransactionBox: React.FC = () => {
             </div>
           </div>
 
+          <Separator className="my-6" />
 
+          {/* Sección de Paqueterías */}
+          <div>
+            <div className="flex items-center mb-4">
+              <h3 className="text-lg font-semibold">Paqueterías ({packageTransactions.length})</h3>
+            </div>
+            
+            {/* Desktop Table */}
+            <div className="hidden lg:block">
+              <Table>
+                <TableCaption>
+                  {packageTransactions.length === 0
+                    ? "No hay transacciones de paqueterías pendientes"
+                    : "Lista de transacciones de paqueterías"}
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Origen-Destino</TableHead>
+                    <TableHead>Remitente/Destinatario</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Método</TableHead>
+                    <TableHead>Monto</TableHead>
+                    {user?.role === "taquilla" && <TableHead>Empresa</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {packageTransactions.map((transaction) => {
+                    try {
+                      const details = transaction.details?.details || {};
+                      return (
+                        <TableRow key={transaction.id}>
+                          <TableCell>{transaction.id}</TableCell>
+                          <TableCell>
+                            {formatDate(details.dateCreated || transaction.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs">
+                              <div className="font-medium">{details.origen}</div>
+                              <div className="mt-1">{details.destino}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs">
+                              <div className="font-medium">De: {details.remitente || 'No especificado'}</div>
+                              <div className="mt-1">Para: {details.destinatario || 'No especificado'}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs max-w-[150px] truncate">
+                              {details.descripcion || "Sin descripción"}
+                              {details.usaAsientos && (
+                                <Badge variant="outline" className="ml-1">
+                                  {details.asientos} asiento{details.asientos !== 1 && "s"}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={details.metodoPago === "efectivo" ? "default" : "secondary"}>
+                              {details.metodoPago || "N/A"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{formatCurrency(details.monto || 0)}</TableCell>
+                          {user?.role === "taquilla" && (
+                            <TableCell>
+                              <div className="text-xs font-mono">
+                                {transaction.companyId || 'N/A'}
+                              </div>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    } catch (error) {
+                      console.error("Error al renderizar transacción de paquete:", error, transaction);
+                      return null;
+                    }
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-3">
+              {packageTransactions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No hay transacciones de paqueterías pendientes
+                </div>
+              ) : (
+                packageTransactions.map((transaction) => {
+                  try {
+                    const details = transaction.details?.details || {};
+                    return (
+                      <div key={transaction.id} className="border rounded-xl p-4 bg-white">
+                        {/* Header con ID y fecha */}
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 text-sm">ID #{transaction.id}</h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {formatDate(details.dateCreated || transaction.createdAt)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-green-600 text-sm">
+                              {formatCurrency(details.monto || 0)}
+                            </p>
+                            <Badge 
+                              variant={details.metodoPago === "efectivo" ? "default" : "secondary"}
+                              className="text-xs mt-1"
+                            >
+                              {details.metodoPago || "N/A"}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {/* Ruta */}
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-500">Origen - Destino</p>
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-900 truncate">{details.origen}</div>
+                            <div className="text-gray-700 truncate">{details.destino}</div>
+                          </div>
+                        </div>
+                        
+                        {/* Remitente y Destinatario */}
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-500">Remitente</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            De: {details.remitente || 'No especificado'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">Destinatario</p>
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            Para: {details.destinatario || 'No especificado'}
+                          </p>
+                        </div>
+                        
+                        {/* Descripción y información adicional */}
+                        <div className="flex justify-between items-start pt-2 border-t border-gray-100">
+                          <div className="flex-1 min-w-0 mr-2">
+                            <p className="text-xs text-gray-500">Descripción</p>
+                            <p className="text-sm text-gray-900 truncate">
+                              {details.descripcion || "Sin descripción"}
+                            </p>
+                            {details.usaAsientos && (
+                              <Badge variant="outline" className="text-xs mt-1">
+                                {details.asientos} asiento{details.asientos !== 1 && "s"}
+                              </Badge>
+                            )}
+                          </div>
+                          {user?.role === "taquilla" && (
+                            <div className="text-right">
+                              <p className="text-xs text-gray-500">Empresa</p>
+                              <p className="text-xs font-mono text-gray-900">{transaction.companyId || 'N/A'}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  } catch (error) {
+                    console.error("Error al renderizar transacción de paquete:", error, transaction);
+                    return null;
+                  }
+                })
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
