@@ -179,6 +179,7 @@ export interface IStorage {
   updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined>;
   deleteTransaccion(id: number): Promise<boolean>;
   getTransaccionesByReservation(reservationId: number): Promise<schema.Transaccion[]>;
+  getTransaccionesByPackageId(packageId: number): Promise<schema.Transaccion[]>;
   
   // Cajas de usuarios methods
   getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]>;

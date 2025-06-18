@@ -1176,6 +1176,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getTransaccionesByPackageId(packageId: number): Promise<schema.Transaccion[]> {
+    try {
+      const transactions = await this.db
+        .select()
+        .from(schema.transacciones)
+        .where(
+          and(
+            eq(sql`${schema.transacciones.details}->>'type'`, 'package'),
+            eq(sql`(${schema.transacciones.details}->'details'->>'id')::integer`, packageId)
+          )
+        );
+      
+      console.log(`[DatabaseStorage] Encontradas ${transactions.length} transacciones para paquetería ID ${packageId}`);
+      return transactions;
+    } catch (error) {
+      console.error(`[DatabaseStorage] Error obteniendo transacciones para paquetería ${packageId}:`, error);
+      return [];
+    }
+  }
+
   async getTransaccionesByReservation(reservationId: number): Promise<schema.Transaccion[]> {
     try {
       console.log(`[DatabaseStorage] Buscando todas las transacciones para reservación ${reservationId}`);

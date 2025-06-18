@@ -3403,9 +3403,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Crear la transacción en la base de datos
           const transaccion = await storage.createTransaccion({
-            detalles: detallesTransaccion,
-            usuario_id: userId,
-            // id_corte se asignará posteriormente cuando se haga un corte de caja
+            details: detallesTransaccion,
+            user_id: userId,
+            cutoff_id: null,
             companyId: companyId // Añadimos el ID de la compañía a la transacción
           });
           
@@ -5399,10 +5399,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Crear la transacción en la base de datos
           const transaccion = await storage.createTransaccion({
-            detalles: detallesTransaccion,
-            usuario_id: user.id,
+            details: detallesTransaccion,
+            user_id: user.id,
+            cutoff_id: null,
             companyId: userCompanyId // Incluir el ID de la compañía para el aislamiento de datos
-            // id_corte se asignará posteriormente cuando se haga un corte de caja
           });
           
           console.log(`[POST /packages] Transacción creada con ID:`, transaccion.id);
@@ -5568,6 +5568,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`[DELETE /packages/${id}] Error al liberar asientos:`, seatUpdateError);
           // Continuamos con la eliminación aunque falle la liberación de asientos
         }
+      }
+      
+      // ELIMINACIÓN EN CASCADA: Eliminar transacciones relacionadas con esta paquetería
+      try {
+        console.log(`[DELETE /packages/${id}] Buscando transacciones relacionadas con paquetería ID ${id}`);
+        const relatedTransactions = await storage.getTransaccionesByPackageId(parseInt(id));
+        
+        if (relatedTransactions.length > 0) {
+          console.log(`[DELETE /packages/${id}] Encontradas ${relatedTransactions.length} transacciones relacionadas, procediendo a eliminarlas`);
+          
+          for (const transaction of relatedTransactions) {
+            try {
+              const deletedTransaction = await storage.deleteTransaccion(transaction.id);
+              if (deletedTransaction) {
+                console.log(`[DELETE /packages/${id}] Transacción ${transaction.id} eliminada exitosamente`);
+              } else {
+                console.warn(`[DELETE /packages/${id}] No se pudo eliminar la transacción ${transaction.id}`);
+              }
+            } catch (transactionError) {
+              console.error(`[DELETE /packages/${id}] Error eliminando transacción ${transaction.id}:`, transactionError);
+              // Continuamos con otras transacciones aunque falle una
+            }
+          }
+          
+          console.log(`[DELETE /packages/${id}] Proceso de eliminación de transacciones completado`);
+        } else {
+          console.log(`[DELETE /packages/${id}] No se encontraron transacciones relacionadas con esta paquetería`);
+        }
+      } catch (transactionSearchError) {
+        console.error(`[DELETE /packages/${id}] Error al buscar/eliminar transacciones relacionadas:`, transactionSearchError);
+        // Continuamos con la eliminación de la paquetería aunque falle la eliminación de transacciones
       }
       
       // Eliminar la paquetería
