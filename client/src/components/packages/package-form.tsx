@@ -139,15 +139,25 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         // Si tripId es un objeto, extraer la información directamente
         if (typeof tripId === 'object' && tripId !== null) {
           const selectedTrip = tripId as any;
+          
+          // Los datos del segmento específico están en las propiedades directas del objeto seleccionado
+          // que viene del PackageTripSelection
           setTripInfo({
             availableSeats: selectedTrip.availableSeats || selectedTrip.capacity || 0,
-            origin: selectedTrip.origin || "",
-            destination: selectedTrip.destination || "",
+            origin: selectedTrip.origin || "", // Estos ya son del segmento específico
+            destination: selectedTrip.destination || "", // Estos ya son del segmento específico
             departureDate: selectedTrip.departureDate || "",
             departureTime: selectedTrip.departureTime || "",
             arrivalTime: selectedTrip.arrivalTime || ""
           });
-          console.log(`Información del viaje cargada desde objeto:`, selectedTrip);
+          
+          console.log(`Información del viaje cargada desde objeto seleccionado:`, {
+            origin: selectedTrip.origin,
+            destination: selectedTrip.destination, 
+            departureDate: selectedTrip.departureDate,
+            departureTime: selectedTrip.departureTime,
+            arrivalTime: selectedTrip.arrivalTime
+          });
           return;
         }
 
