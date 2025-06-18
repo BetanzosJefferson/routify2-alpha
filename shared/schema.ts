@@ -478,74 +478,7 @@ export const passengerRelations = relations(passengers, ({ one }) => ({
   })
 }));
 
-// ESQUEMA DE PAQUETERÍAS
-export const packages = pgTable("packages", {
-  id: serial("id").primaryKey(),
-  tripDetails: jsonb("trip_details").notNull(), // Contiene tripId, recordId y otros detalles del viaje
-  
-  // Datos del remitente
-  senderName: text("sender_name").notNull(),
-  senderLastName: text("sender_lastname").notNull(),
-  senderPhone: text("sender_phone").notNull(),
-  
-  // Datos del destinatario
-  recipientName: text("recipient_name").notNull(),
-  recipientLastName: text("recipient_lastname").notNull(),
-  recipientPhone: text("recipient_phone").notNull(),
-  
-  // Detalles del paquete
-  packageDescription: text("package_description").notNull(),
-  price: doublePrecision("price").notNull(),
-  
-  // Uso de asientos
-  usesSeats: boolean("uses_seats").default(false).notNull(),
-  seatsQuantity: integer("seats_quantity").default(0),
-  
-  // Estado del pago
-  isPaid: boolean("is_paid").default(false).notNull(),
-  paymentMethod: text("payment_method"), // efectivo, transferencia, etc.
-  paidBy: integer("paid_by"), // ID del usuario que marca como pagado
-  
-  // Metadatos
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  createdBy: integer("created_by").references(() => users.id), // ID del usuario que registra el paquete
-  companyId: text("company_id"), // Para el aislamiento de datos por compañía
-  
-  // Para seguimiento de estado
-  deliveryStatus: text("delivery_status").notNull().default("pendiente"), // pendiente, entregado
-  deliveredAt: timestamp("delivered_at"),
-  deliveredBy: integer("delivered_by"), // ID del usuario que marca como entregado
-});
 
-export const insertPackageSchema = createInsertSchema(packages).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true,
-  deliveredAt: true 
-});
-export type InsertPackage = z.infer<typeof insertPackageSchema>;
-export type Package = typeof packages.$inferSelect;
-
-// Relaciones para paqueterías
-export const packageRelations = relations(packages, ({ one }) => ({
-  createdByUser: one(users, {
-    fields: [packages.createdBy],
-    references: [users.id]
-  }),
-  paidByUser: one(users, {
-    fields: [packages.paidBy],
-    references: [users.id]
-  }),
-  deliveredByUser: one(users, {
-    fields: [packages.deliveredBy],
-    references: [users.id]
-  }),
-  company: one(companies, {
-    fields: [packages.companyId],
-    references: [companies.identifier]
-  })
-}));
 
 // COMPANIES SCHEMA
 export const companies = pgTable("companies", {
@@ -796,7 +729,6 @@ export type TransactionTypeType = typeof TransactionType[keyof typeof Transactio
 // Enum para la fuente de la transacción
 export const TransactionSource = {
   RESERVATION: "reservation",   // Reservación
-  PACKAGE: "package",          // Paquetería
   MANUAL: "manual",            // Entrada manual
 } as const;
 

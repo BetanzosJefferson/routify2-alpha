@@ -11,7 +11,6 @@ import {
   insertTripSchema, 
   insertReservationSchema, 
   insertPassengerSchema,
-  insertPackageSchema,
   createRouteValidationSchema,
   publishTripValidationSchema,
   createReservationValidationSchema,
