@@ -5290,6 +5290,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crear la paquetería
       const newPackage = await storage.createPackage(packageData);
       
+      // ACTUALIZACIÓN DE ASIENTOS: Si el paquete ocupa asientos, actualizar disponibilidad del viaje
+      if (packageData.usesSeats && packageData.seatsQuantity && packageData.seatsQuantity > 0) {
+        try {
+          // Extraer recordId y tripId desde tripDetails JSON
+          const tripDetails = packageData.tripDetails as any;
+          if (tripDetails && tripDetails.tripId) {
+            const tripIdString = tripDetails.tripId.toString(); // ej: "28_2"
+            const recordId = parseInt(tripIdString.split('_')[0]); // ej: 28
+            
+            if (!isNaN(recordId)) {
+              console.log(`[POST /packages] Paquete ocupa ${packageData.seatsQuantity} asientos. Actualizando viaje ${recordId}, segmento ${tripIdString}`);
+              
+              // Reducir asientos disponibles (número negativo)
+              await storage.updateRelatedTripsAvailability(recordId, tripIdString, -packageData.seatsQuantity);
+              
+              console.log(`[POST /packages] Asientos actualizados exitosamente: -${packageData.seatsQuantity} para ${tripIdString}`);
+            } else {
+              console.warn(`[POST /packages] No se pudo extraer recordId válido de tripId: ${tripIdString}`);
+            }
+          } else {
+            console.warn(`[POST /packages] tripDetails no contiene tripId válido:`, tripDetails);
+          }
+        } catch (seatUpdateError) {
+          console.error(`[POST /packages] Error al actualizar asientos disponibles:`, seatUpdateError);
+          // No fallar la operación principal, solo loggeamos el error
+        }
+      }
+      
       // Si el paquete está marcado como pagado, crear una transacción en la base de datos
       if (packageData.isPaid === true) {
         try {
@@ -5443,8 +5471,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // ACTUALIZACIÓN DE ASIENTOS: Manejar cambios en el uso de asientos
+      const oldUsesSeats = existingPackage.usesSeats || false;
+      const oldSeatsQuantity = existingPackage.seatsQuantity || 0;
+      const newUsesSeats = updateData.usesSeats !== undefined ? updateData.usesSeats : oldUsesSeats;
+      const newSeatsQuantity = updateData.seatsQuantity !== undefined ? updateData.seatsQuantity : oldSeatsQuantity;
+      
+      // Calcular el cambio neto en asientos
+      const oldSeatsUsed = oldUsesSeats ? oldSeatsQuantity : 0;
+      const newSeatsUsed = newUsesSeats ? newSeatsQuantity : 0;
+      const seatChangeDelta = newSeatsUsed - oldSeatsUsed;
+      
       // Actualizar la paquetería
       const updatedPackage = await storage.updatePackage(parseInt(id), updateData);
+      
+      // Si hay cambio en los asientos, actualizar disponibilidad del viaje
+      if (seatChangeDelta !== 0) {
+        try {
+          // Usar tripDetails del paquete existente (asumir que el viaje no cambió)
+          const tripDetails = existingPackage.tripDetails as any;
+          if (tripDetails && tripDetails.tripId) {
+            const tripIdString = tripDetails.tripId.toString();
+            const recordId = parseInt(tripIdString.split('_')[0]);
+            
+            if (!isNaN(recordId)) {
+              console.log(`[PATCH /packages/${id}] Cambio en asientos: ${oldSeatsUsed} → ${newSeatsUsed} (Δ${seatChangeDelta})`);
+              
+              // Aplicar el cambio neto (negativo para reducir disponibilidad, positivo para aumentar)
+              await storage.updateRelatedTripsAvailability(recordId, tripIdString, -seatChangeDelta);
+              
+              console.log(`[PATCH /packages/${id}] Asientos actualizados: ${seatChangeDelta > 0 ? '-' : '+'}${Math.abs(seatChangeDelta)} para ${tripIdString}`);
+            }
+          }
+        } catch (seatUpdateError) {
+          console.error(`[PATCH /packages/${id}] Error al actualizar asientos disponibles:`, seatUpdateError);
+        }
+      }
       
       // Responder con la paquetería actualizada
       res.json(updatedPackage);
@@ -5482,6 +5544,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingPackage.companyId !== userCompanyId) {
           console.log(`[DELETE /packages/${id}] Acceso denegado: La paquetería pertenece a otra compañía`);
           return res.status(403).json({ message: "Acceso denegado" });
+        }
+      }
+      
+      // LIBERACIÓN DE ASIENTOS: Si el paquete ocupaba asientos, liberarlos antes de eliminar
+      if (existingPackage.usesSeats && existingPackage.seatsQuantity && existingPackage.seatsQuantity > 0) {
+        try {
+          const tripDetails = existingPackage.tripDetails as any;
+          if (tripDetails && tripDetails.tripId) {
+            const tripIdString = tripDetails.tripId.toString();
+            const recordId = parseInt(tripIdString.split('_')[0]);
+            
+            if (!isNaN(recordId)) {
+              console.log(`[DELETE /packages/${id}] Liberando ${existingPackage.seatsQuantity} asientos para ${tripIdString}`);
+              
+              // Liberar asientos (número positivo para aumentar disponibilidad)
+              await storage.updateRelatedTripsAvailability(recordId, tripIdString, existingPackage.seatsQuantity);
+              
+              console.log(`[DELETE /packages/${id}] Asientos liberados exitosamente: +${existingPackage.seatsQuantity} para ${tripIdString}`);
+            }
+          }
+        } catch (seatUpdateError) {
+          console.error(`[DELETE /packages/${id}] Error al liberar asientos:`, seatUpdateError);
+          // Continuamos con la eliminación aunque falle la liberación de asientos
         }
       }
       
