@@ -35,7 +35,8 @@ const PACKAGE_ACCESS_ROLES = [
   UserRole.ADMIN, 
   UserRole.CALL_CENTER, 
   UserRole.CHECKER, 
-  UserRole.DRIVER
+  UserRole.DRIVER,
+  'superAdmin'
 ];
 
 const PACKAGE_WRITE_ROLES = [
