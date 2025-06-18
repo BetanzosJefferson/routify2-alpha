@@ -112,21 +112,13 @@ export default function TripSummary({ className }: TripSummaryProps) {
   useEffect(() => {
     if (selectedTrip && reservations) {
       // Filtrar reservas directas para este viaje
-      const directReservations = reservations.filter(r => r.tripId === selectedTrip);
+      const directReservations = reservations.filter(r => r.trip.id === selectedTrip);
       
       // Buscar el viaje seleccionado
       const selectedTripData = trips?.find(t => t.id === selectedTrip);
       
-      // Si es un viaje principal, buscar también reservas de sub-viajes relacionados
-      const relatedReservations = selectedTripData && !selectedTripData.isSubTrip
-        ? reservations.filter(r => {
-            const trip = trips?.find(t => t.id === r.tripId);
-            return trip?.parentTripId === selectedTrip;
-          })
-        : [];
-      
-      // Combinar reservas directas y relacionadas
-      const allReservations = [...directReservations, ...relatedReservations];
+      // Combinar reservas directas
+      const allReservations = [...directReservations];
       
       // Calcular totales
       const passengers = allReservations.reduce((acc, res) => acc + (res.passengers?.length || 0), 0);
