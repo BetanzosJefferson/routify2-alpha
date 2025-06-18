@@ -74,7 +74,7 @@ interface PackageDetails extends TransactionDetails {
 interface Transaction {
   id: number;
   detalles: {
-    type: "reservation" | "package" | "reservation-final-payment" | "package-final-payment";
+    type: "reservation" | "reservation-final-payment";
     details: TransactionDetails;
   };
   usuario_id: number; // Nombre en español que viene del cliente
