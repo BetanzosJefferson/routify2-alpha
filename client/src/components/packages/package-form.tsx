@@ -136,7 +136,24 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
       if (!tripId) return;
       
       try {
-        const response = await fetch(`/api/trips/${tripId}`);
+        // Si tripId es un objeto, extraer la información directamente
+        if (typeof tripId === 'object' && tripId !== null) {
+          const selectedTrip = tripId as any;
+          setTripInfo({
+            availableSeats: selectedTrip.availableSeats || selectedTrip.capacity || 0,
+            origin: selectedTrip.origin || "",
+            destination: selectedTrip.destination || "",
+            departureDate: selectedTrip.departureDate || "",
+            departureTime: selectedTrip.departureTime || "",
+            arrivalTime: selectedTrip.arrivalTime || ""
+          });
+          console.log(`Información del viaje cargada desde objeto:`, selectedTrip);
+          return;
+        }
+
+        // Si es un ID string/number, hacer fetch
+        const tripIdString = String(tripId);
+        const response = await fetch(`/api/trips/${tripIdString}`);
         if (!response.ok) {
           throw new Error('Error al cargar la información del viaje');
         }
@@ -151,7 +168,7 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
           arrivalTime: tripData.arrivalTime
         });
         
-        console.log(`Viaje ID ${tripId} tiene ${tripData.availableSeats} asientos disponibles`);
+        console.log(`Viaje ID ${tripIdString} tiene ${tripData.availableSeats} asientos disponibles`);
       } catch (error) {
         console.error('Error al cargar información del viaje:', error);
         // No mostramos toast de error para no interrumpir el flujo
@@ -264,18 +281,18 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
       const recordId = parseInt(tripIdParts[0]); // ID base del viaje (28)
       const segmentIndex = tripIdParts.length > 1 ? parseInt(tripIdParts[1]) : 0; // Índice del segmento (1)
 
-      // Obtener información del viaje seleccionado desde tripInfo
+      // Construir tripDetails solo con información relevante
       const tripDetails = {
         tripId: tripIdString, // ID completo con segmento (ej: "28_1")
-        recordId: recordId, // ID base del viaje (ej: 28)
-        segmentIndex: segmentIndex, // Índice del segmento (ej: 1)
         origin: tripInfo?.origin || "", // Origen del segmento
         destination: tripInfo?.destination || "", // Destino del segmento
         departureDate: tripInfo?.departureDate || "",
         departureTime: tripInfo?.departureTime || "",
-        arrivalTime: tripInfo?.arrivalTime || "",
-        price: 0 // No relevante para paqueterías
+        arrivalTime: tripInfo?.arrivalTime || ""
       };
+
+      console.log("TripDetails construido:", tripDetails);
+      console.log("TripInfo disponible:", tripInfo);
 
       const packageData = {
         ...data,
