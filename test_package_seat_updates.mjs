@@ -16,9 +16,9 @@ async function testPackageSeatUpdates() {
   try {
     // 1. Buscar un viaje existente con asientos disponibles
     const trips = await sql`
-      SELECT id, "tripData", capacity 
+      SELECT id, trip_data, capacity 
       FROM trips 
-      WHERE "tripData" IS NOT NULL 
+      WHERE trip_data IS NOT NULL 
       AND capacity > 5
       LIMIT 1
     `;
@@ -29,7 +29,7 @@ async function testPackageSeatUpdates() {
     }
 
     const trip = trips[0];
-    const tripData = JSON.parse(trip.tripData);
+    const tripData = JSON.parse(trip.trip_data);
     
     console.log(`✓ Viaje seleccionado: ID ${trip.id}, Capacidad: ${trip.capacity}`);
     console.log(`✓ Segmentos disponibles: ${tripData.length}`);
@@ -83,12 +83,12 @@ async function testPackageSeatUpdates() {
 
     // 3. Verificar que los asientos se redujeron
     const updatedTrips = await sql`
-      SELECT id, "tripData", capacity 
+      SELECT id, trip_data, capacity 
       FROM trips 
       WHERE id = ${trip.id}
     `;
 
-    const updatedTripData = JSON.parse(updatedTrips[0].tripData);
+    const updatedTripData = JSON.parse(updatedTrips[0].trip_data);
     
     console.log('\n--- VERIFICANDO ACTUALIZACIÓN DE ASIENTOS ---');
     updatedTripData.forEach((segment, index) => {
@@ -126,10 +126,10 @@ async function testPackageSeatUpdates() {
       
       // Verificar nueva actualización
       const modifiedTrips = await sql`
-        SELECT "tripData" FROM trips WHERE id = ${trip.id}
+        SELECT trip_data FROM trips WHERE id = ${trip.id}
       `;
       
-      const modifiedTripData = JSON.parse(modifiedTrips[0].tripData);
+      const modifiedTripData = JSON.parse(modifiedTrips[0].trip_data);
       const segmentSeats = modifiedTripData[1].availableSeats;
       const expectedSeats = tripData[1].availableSeats - updateData.seatsQuantity;
       
@@ -157,10 +157,10 @@ async function testPackageSeatUpdates() {
       
       // Verificar liberación de asientos
       const finalTrips = await sql`
-        SELECT "tripData" FROM trips WHERE id = ${trip.id}
+        SELECT trip_data FROM trips WHERE id = ${trip.id}
       `;
       
-      const finalTripData = JSON.parse(finalTrips[0].tripData);
+      const finalTripData = JSON.parse(finalTrips[0].trip_data);
       const finalSeats = finalTripData[1].availableSeats;
       const originalSeats = tripData[1].availableSeats;
       
