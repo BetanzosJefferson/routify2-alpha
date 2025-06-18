@@ -140,23 +140,24 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         if (typeof tripId === 'object' && tripId !== null) {
           const selectedTrip = tripId as any;
           
-          // Los datos del segmento específico están en las propiedades directas del objeto seleccionado
-          // que viene del PackageTripSelection
+          // Los datos del segmento específico están en tripData[0]
+          const segmentData = selectedTrip.tripData?.[0] || {};
+          
           setTripInfo({
-            availableSeats: selectedTrip.availableSeats || selectedTrip.capacity || 0,
-            origin: selectedTrip.origin || "", // Estos ya son del segmento específico
-            destination: selectedTrip.destination || "", // Estos ya son del segmento específico
-            departureDate: selectedTrip.departureDate || "",
-            departureTime: selectedTrip.departureTime || "",
-            arrivalTime: selectedTrip.arrivalTime || ""
+            availableSeats: segmentData.availableSeats || selectedTrip.capacity || 0,
+            origin: segmentData.origin || "",
+            destination: segmentData.destination || "",
+            departureDate: segmentData.departureDate || "",
+            departureTime: segmentData.departureTime || "",
+            arrivalTime: segmentData.arrivalTime || ""
           });
           
-          console.log(`Información del viaje cargada desde objeto seleccionado:`, {
-            origin: selectedTrip.origin,
-            destination: selectedTrip.destination, 
-            departureDate: selectedTrip.departureDate,
-            departureTime: selectedTrip.departureTime,
-            arrivalTime: selectedTrip.arrivalTime
+          console.log(`Información del viaje cargada desde segmentData:`, {
+            origin: segmentData.origin,
+            destination: segmentData.destination, 
+            departureDate: segmentData.departureDate,
+            departureTime: segmentData.departureTime,
+            arrivalTime: segmentData.arrivalTime
           });
           return;
         }
