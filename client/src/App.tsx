@@ -21,7 +21,7 @@ import ReservationRequestsPage from "@/pages/reservation-requests-page";
 import NotificationsPage from "@/pages/notifications-page";
 import CouponsPage from "@/pages/coupons-page";
 
-import PackageDetailPage from "@/pages/package-detail-page";
+
 import EditTripPage from "@/pages/edit-trip-page";
 import CashBoxPage from "@/pages/cash-box";
 import CutoffHistoryPage from "@/pages/cutoff-history";
@@ -50,7 +50,7 @@ function Router() {
       <ProtectedRoute path="/reservation-requests" component={ReservationRequestsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <ProtectedRoute path="/coupons" component={CouponsPage} />
-      <ProtectedRoute path="/packages" component={PackagesPage} />
+
       <ProtectedRoute path="/cash-box" component={CashBoxPage} />
       <ProtectedRoute path="/cutoff-history" component={CutoffHistoryPage} />
       <ProtectedRoute path="/edit-trip/:id" component={EditTripPage} />
@@ -71,7 +71,7 @@ function Router() {
       <Route path="/register/:token" component={RegisterPage} />
       <Route path="/reservation-details" component={ReservationDetails} />
       <Route path="/reservation-details/:id" component={ReservationDetails} />
-      <Route path="/package/:id" component={PackageDetailPage} />
+
       <Route component={NotFound} />
     </Switch>
   );

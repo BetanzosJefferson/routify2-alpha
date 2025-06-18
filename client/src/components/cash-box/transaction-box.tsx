@@ -368,43 +368,33 @@ const TransactionBox: React.FC = () => {
   }
 
   // Calcular totales para el resumen
-  let totalAmount = 0;
-  let cashAmount = 0;
-  let transferAmount = 0;
+  const totals = React.useMemo(() => {
+    let totalAmount = 0;
+    let cashAmount = 0;
+    let transferAmount = 0;
 
-  // Sumar montos de reservaciones
-  reservationTransactions.forEach(transaction => {
-    const details = transaction.details?.details || {};
-    const amount = details.monto || 0;
-    totalAmount += amount;
-    
-    if (details.metodoPago === "efectivo") {
-      cashAmount += amount;
-    } else if (details.metodoPago === "transferencia") {
-      transferAmount += amount;
-    }
-  });
+    // Sumar montos de reservaciones
+    reservationTransactions.forEach(transaction => {
+      const details = transaction.detalles?.details || {};
+      const amount = details.monto || 0;
+      totalAmount += amount;
+      
+      if (details.metodoPago === "efectivo") {
+        cashAmount += amount;
+      } else if (details.metodoPago === "transferencia") {
+        transferAmount += amount;
+      }
+    });
 
-  // Sumar montos de transacciones
-    const details = transaction.details?.details || {};
-    const amount = details.monto || 0;
-    totalAmount += amount;
-    
-    if (details.metodoPago === "efectivo") {
-      cashAmount += amount;
-    } else if (details.metodoPago === "transferencia") {
-      transferAmount += amount;
-    }
-  });
-  
+    return {
+      total: totalAmount,
+      efectivo: cashAmount,
+      transferencia: transferAmount
+    };
+  }, [reservationTransactions]);
+
   // Total de transacciones
-  const totalTransactions = reservationTransactions.length + packageTransactions.length;
-
-  const totals = {
-    total: totalAmount,
-    efectivo: cashAmount,
-    transferencia: transferAmount
-  };
+  const totalTransactions = reservationTransactions.length;
 
   // Función para descargar el PDF
   const handleDownloadPdf = () => {

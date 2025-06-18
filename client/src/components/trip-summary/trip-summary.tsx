@@ -11,7 +11,7 @@ import { es } from "date-fns/locale";
 import { Trip, TripWithRouteInfo, Reservation, Passenger } from "@shared/schema";
 import { useTrips } from "@/hooks/use-trips";
 import { useReservations } from "@/hooks/use-reservations";
-import { usePackages, Package } from "@/hooks/use-packages";
+
 import { formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
 
 type TripSummaryProps = {
