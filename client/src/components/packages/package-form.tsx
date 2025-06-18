@@ -201,7 +201,12 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
             if (tripResponse.ok) {
               const tripData = await tripResponse.json();
               setTripInfo({
-                availableSeats: tripData.availableSeats
+                availableSeats: tripData.availableSeats,
+                origin: tripData.origin,
+                destination: tripData.destination,
+                departureDate: tripData.departureDate,
+                departureTime: tripData.departureTime,
+                arrivalTime: tripData.arrivalTime
               });
               console.log(`Viaje ID ${packageTripId} tiene ${tripData.availableSeats} asientos disponibles`);
             }
