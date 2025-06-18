@@ -72,7 +72,14 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [tripInfo, setTripInfo] = useState<{ availableSeats: number } | null>(null);
+  const [tripInfo, setTripInfo] = useState<{ 
+    availableSeats: number;
+    origin?: string;
+    destination?: string;
+    departureDate?: string;
+    departureTime?: string;
+    arrivalTime?: string;
+  } | null>(null);
   
   // Valores por defecto para el formulario
   const defaultValues: Partial<PackageFormValues> = {
@@ -136,7 +143,12 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         
         const tripData = await response.json();
         setTripInfo({
-          availableSeats: tripData.availableSeats
+          availableSeats: tripData.availableSeats,
+          origin: tripData.origin,
+          destination: tripData.destination,
+          departureDate: tripData.departureDate,
+          departureTime: tripData.departureTime,
+          arrivalTime: tripData.arrivalTime
         });
         
         console.log(`Viaje ID ${tripId} tiene ${tripData.availableSeats} asientos disponibles`);
@@ -232,9 +244,32 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
   // Mutación para guardar el paquete
   const saveMutation = useMutation({
     mutationFn: async (data: PackageFormValues) => {
+      // Construir el objeto tripDetails que espera el backend
+      if (!tripId) {
+        throw new Error("No se ha seleccionado un viaje para la paquetería");
+      }
+
+      // Extraer información del tripId (formato: "baseId_segmentIndex" como "28_1")
+      const tripIdParts = tripId.toString().split('_');
+      const recordId = parseInt(tripIdParts[0]); // ID base del viaje (28)
+      const segmentIndex = tripIdParts.length > 1 ? parseInt(tripIdParts[1]) : 0; // Índice del segmento (1)
+      
+      // Obtener información del viaje seleccionado desde tripInfo
+      const tripDetails = {
+        tripId: tripId, // ID completo con segmento (ej: "28_1")
+        recordId: recordId, // ID base del viaje (ej: 28)
+        segmentIndex: segmentIndex, // Índice del segmento (ej: 1)
+        origin: tripInfo?.origin || "", // Origen del segmento
+        destination: tripInfo?.destination || "", // Destino del segmento
+        departureDate: tripInfo?.departureDate || "",
+        departureTime: tripInfo?.departureTime || "",
+        arrivalTime: tripInfo?.arrivalTime || "",
+        price: 0 // No relevante para paqueterías
+      };
+
       const packageData = {
         ...data,
-        tripId: tripId,
+        tripDetails: tripDetails, // Usar tripDetails en lugar de tripId
       };
       
       // Si tenemos ID de paquete, estamos actualizando, de lo contrario creando nuevo
