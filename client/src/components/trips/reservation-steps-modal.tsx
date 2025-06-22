@@ -495,7 +495,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       doc.setFont("courier", "normal");
       
       // Origen
-      const origin = trip.segmentOrigin || trip.route?.origin || '';
+      const origin = trip.origin || trip.route?.origin || 'No disponible';
       doc.text("Origen:", 5, y);
       y += 3;
       if (origin.length > 25) {
@@ -510,7 +510,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       }
       
       // Destino
-      const destination = trip.segmentDestination || trip.route?.destination || '';
+      const destination = trip.destination || trip.route?.destination || 'No disponible';
       doc.text("Destino:", 5, y);
       y += 3;
       if (destination.length > 25) {
@@ -1454,9 +1454,9 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                     <div className="text-gray-500">Ruta:</div>
                     <div className="font-medium">{trip.route.name}</div>
                     <div className="text-gray-500">Origen:</div>
-                    <div className="font-medium">{trip.segmentOrigin || trip.route.origin}</div>
+                    <div className="font-medium">{trip.origin || trip.route?.origin || "No disponible"}</div>
                     <div className="text-gray-500">Destino:</div>
-                    <div className="font-medium">{trip.segmentDestination || trip.route.destination}</div>
+                    <div className="font-medium">{trip.destination || trip.route?.destination || "No disponible"}</div>
                     <div className="text-gray-500">Fecha:</div>
                     <div className="font-medium">{formatDate(trip.departureDate)}</div>
                     <div className="text-gray-500">Salida:</div>
@@ -1675,11 +1675,11 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <div className="text-sm text-gray-500">Origen:</div>
-                          <div>{trip.segmentOrigin || trip.route.origin}</div>
+                          <div>{trip.origin || trip.route?.origin || "No disponible"}</div>
                         </div>
                         <div>
                           <div className="text-sm text-gray-500">Destino:</div>
-                          <div>{trip.segmentDestination || trip.route.destination}</div>
+                          <div>{trip.destination || trip.route?.destination || "No disponible"}</div>
                         </div>
                       </div>
                       
