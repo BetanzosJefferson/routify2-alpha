@@ -3332,7 +3332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               origen: origen,
               tripId: tripId,
               destino: destino,
-              isSubTrip: tripInfo?.isSubTrip || false,
+              isSubTrip: false, // Se puede determinar desde tripId si es necesario
               metodoPago: packageData.paymentMethod || "efectivo",
               remitente: `${packageData.senderName} ${packageData.senderLastName}`,
               destinatario: `${packageData.recipientName} ${packageData.recipientLastName}`,
