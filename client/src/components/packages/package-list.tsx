@@ -64,6 +64,7 @@ import {
   Search,
   Filter,
   X,
+  MapPin,
 } from "lucide-react";
 
 // Importar componentes relacionados con paquetes
@@ -542,93 +543,104 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
         </Card>
       )}
       
-      {/* Desktop Table */}
-      <div className="hidden lg:block rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Descripción</TableHead>
-              <TableHead>Remitente</TableHead>
-              <TableHead>Destinatario</TableHead>
-              <TableHead>Origen</TableHead>
-              <TableHead>Destino</TableHead>
-              <TableHead>Precio</TableHead>
-              <TableHead>Asientos</TableHead>
-              <TableHead>Estado Pago</TableHead>
-              <TableHead>Estado Entrega</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPackages.map((pkg: any) => (
-              <TableRow 
-                key={pkg.id} 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => {
-                  setPackageToDetail(pkg);
-                  setIsDetailModalOpen(true);
-                }}
-              >
-                <TableCell className="font-medium">{pkg.id}</TableCell>
-                <TableCell className="max-w-xs">
-                  <div className="truncate" title={pkg.packageDescription}>
-                    {pkg.packageDescription || "Sin descripción"}
+      {/* Package Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredPackages.map((pkg: any) => (
+          <Card 
+            key={pkg.id} 
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => {
+              setPackageToDetail(pkg);
+              setIsDetailModalOpen(true);
+            }}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">Paquete #{pkg.id}</CardTitle>
+                  <CardDescription className="text-sm">
+                    {pkg.tripDate ? formatDate(new Date(pkg.tripDate)) : formatDate(new Date(pkg.createdAt))}
+                  </CardDescription>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-lg text-green-600">
+                    {formatCurrency(pkg.price)}
+                  </p>
+                  <div className="mt-1">
+                    {pkg.isPaid ? (
+                      <Badge className="bg-green-500 hover:bg-green-600 text-xs">
+                        <Check className="mr-1 h-3 w-3" /> Pagado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        <Clock className="mr-1 h-3 w-3" /> Pendiente
+                      </Badge>
+                    )}
                   </div>
-                </TableCell>
-                <TableCell>
-                  {pkg.senderName} {pkg.senderLastName}
-                  <div className="text-xs text-muted-foreground">
-                    {pkg.senderPhone}
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              {/* Descripción */}
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Descripción</p>
+                <p className="text-sm font-medium truncate">
+                  {pkg.packageDescription || "Sin descripción"}
+                </p>
+              </div>
+              
+              {/* Detalles del Viaje */}
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Detalles del Viaje</p>
+                <div className="text-sm space-y-1">
+                  <div className="flex items-center text-blue-600">
+                    <MapPin className="mr-1 h-3 w-3" />
+                    <span className="truncate">{pkg.segmentOrigin || pkg.tripOrigin || "No disponible"}</span>
                   </div>
-                </TableCell>
-                <TableCell>
-                  {pkg.recipientName} {pkg.recipientLastName}
-                  <div className="text-xs text-muted-foreground">
-                    {pkg.recipientPhone}
+                  <div className="flex items-center text-red-600">
+                    <MapPin className="mr-1 h-3 w-3" />
+                    <span className="truncate">{pkg.segmentDestination || pkg.tripDestination || "No disponible"}</span>
                   </div>
-                </TableCell>
-                <TableCell>
-                  {pkg.segmentOrigin || pkg.tripOrigin || "No disponible"}
-                </TableCell>
-                <TableCell>
-                  {pkg.segmentDestination || pkg.tripDestination || "No disponible"}
-                </TableCell>
-                <TableCell>{formatCurrency(pkg.price)}</TableCell>
-                <TableCell>
-                  {pkg.usesSeats ? (
-                    <Badge className="bg-orange-500 hover:bg-orange-600">
-                      {pkg.seatsQuantity} {pkg.seatsQuantity === 1 ? 'asiento' : 'asientos'}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">No usa</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {pkg.isPaid ? (
-                    <Badge className="bg-green-500 hover:bg-green-600">
-                      <Check className="mr-1 h-3 w-3" /> Pagado
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      <Clock className="mr-1 h-3 w-3" /> Pendiente
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
+                </div>
+              </div>
+              
+              {/* Remitente y Destinatario */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Remitente</p>
+                  <p className="font-medium truncate">{pkg.senderName} {pkg.senderLastName}</p>
+                  <p className="text-xs text-muted-foreground">{pkg.senderPhone}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Destinatario</p>
+                  <p className="font-medium truncate">{pkg.recipientName} {pkg.recipientLastName}</p>
+                  <p className="text-xs text-muted-foreground">{pkg.recipientPhone}</p>
+                </div>
+              </div>
+              
+              {/* Estados y Asientos */}
+              <div className="flex justify-between items-center pt-2 border-t">
+                <div className="flex gap-2 items-center">
                   {pkg.deliveryStatus === "entregado" ? (
-                    <Badge className="bg-green-500 hover:bg-green-600">
+                    <Badge className="bg-green-500 hover:bg-green-600 text-xs">
                       <Check className="mr-1 h-3 w-3" /> Entregado
                     </Badge>
                   ) : (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs">
                       <Clock className="mr-1 h-3 w-3" /> Pendiente
                     </Badge>
                   )}
-                </TableCell>
-                <TableCell>{pkg.tripDate ? formatDate(new Date(pkg.tripDate)) : formatDate(new Date(pkg.createdAt))}</TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  
+                  {pkg.usesSeats && (
+                    <Badge className="bg-orange-500 hover:bg-orange-600 text-xs">
+                      {pkg.seatsQuantity} {pkg.seatsQuantity === 1 ? 'asiento' : 'asientos'}
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Acciones */}
+                <div onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
@@ -707,171 +719,14 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="lg:hidden space-y-3">
-        {filteredPackages.map((pkg: any) => (
-          <div 
-            key={pkg.id} 
-            className="border rounded-xl p-4 bg-white cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => {
-              setPackageToDetail(pkg);
-              setIsDetailModalOpen(true);
-            }}
-          >
-            {/* Header con ID y fecha */}
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h4 className="font-semibold text-gray-900 text-sm">ID #{pkg.id}</h4>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatDate(pkg.createdAt)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-green-600 text-sm">
-                  {formatCurrency(pkg.price)}
-                </p>
-                <div className="mt-1">
-                  {pkg.isPaid ? (
-                    <Badge className="bg-green-500 hover:bg-green-600 text-xs">
-                      <Check className="mr-1 h-3 w-3" /> Pagado
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs">
-                      <Clock className="mr-1 h-3 w-3" /> Pendiente
-                    </Badge>
-                  )}
                 </div>
               </div>
-            </div>
-            
-            {/* Descripción */}
-            <div className="mb-3">
-              <p className="text-xs text-gray-500">Descripción</p>
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {pkg.packageDescription || "Sin descripción"}
-              </p>
-            </div>
-            
-            {/* Ruta */}
-            <div className="mb-3">
-              <p className="text-xs text-gray-500">Origen - Destino</p>
-              <div className="text-sm">
-                <div className="font-medium text-gray-900 truncate">
-                  {pkg.segmentOrigin || pkg.tripOrigin || "No disponible"}
-                </div>
-                <div className="text-gray-700 truncate">
-                  {pkg.segmentDestination || pkg.tripDestination || "No disponible"}
-                </div>
-              </div>
-            </div>
-            
-            {/* Remitente y Destinatario */}
-            <div className="mb-3">
-              <p className="text-xs text-gray-500">Remitente</p>
-              <p className="text-sm font-medium text-gray-900 truncate">
-                De: {pkg.senderName} {pkg.senderLastName}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Destinatario</p>
-              <p className="text-sm font-medium text-gray-900 truncate">
-                Para: {pkg.recipientName} {pkg.recipientLastName}
-              </p>
-            </div>
-            
-            {/* Estado de entrega y información adicional */}
-            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-              <div className="flex gap-2 items-center">
-                {pkg.deliveryStatus === "entregado" ? (
-                  <Badge className="bg-green-500 hover:bg-green-600 text-xs">
-                    <Check className="mr-1 h-3 w-3" /> Entregado
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs">
-                    <Clock className="mr-1 h-3 w-3" /> Pendiente entrega
-                  </Badge>
-                )}
-                
-                {pkg.usesSeats && (
-                  <Badge className="bg-orange-500 hover:bg-orange-600 text-xs">
-                    {pkg.seatsQuantity} {pkg.seatsQuantity === 1 ? 'asiento' : 'asientos'}
-                  </Badge>
-                )}
-              </div>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div 
-                    className="p-1 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-4 w-4 text-gray-500" />
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPackageToDetail(pkg);
-                      setIsDetailModalOpen(true);
-                    }}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver detalle
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.open(`/api/public/packages/${pkg.id}`, '_blank');
-                    }}
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Ver ficha pública
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      printPackageTicket(pkg);
-                    }}
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Imprimir ticket
-                  </DropdownMenuItem>
-                  {(hasRoleAccess(user?.role as any, ['admin', 'dueño']) ||
-                    (user?.role === 'taquilla' && pkg.createdBy === user?.id)) && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditPackage(pkg.id);
-                      }}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </DropdownMenuItem>
-                  )}
-                  {hasRoleAccess(user?.role as any, ['admin', 'dueño']) && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPackageToDelete(pkg);
-                      }}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <Trash className="mr-2 h-4 w-4" />
-                      Eliminar
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
+
+
       
       {/* Diálogo de confirmación para eliminar paquete */}
       <AlertDialog open={!!packageToDelete} onOpenChange={(open) => !open && setPackageToDelete(null)}>
