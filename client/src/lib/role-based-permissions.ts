@@ -43,7 +43,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "publish-trip",
     "reservations",
     "trip-summary",
-    "boarding-list",
     "users",
     "vehicles",
     "commissions",
@@ -63,7 +62,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "publish-trip",
     "reservations",
     "trip-summary",
-    "boarding-list",
     "users",
     "vehicles",
     "commissions",
@@ -79,7 +77,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.CALL_CENTER]: [
     "trips",
     "reservations",
-    "boarding-list",
     "reservation-requests",
     "notifications",
     "packages",
@@ -88,7 +85,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   ],
   [UserRole.CHECKER]: [
     "trips",
-    "boarding-list",
     "notifications",
     "packages",
     "cash-register",

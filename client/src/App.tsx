@@ -27,7 +27,7 @@ import CashBoxPage from "@/pages/cash-box";
 import CutoffHistoryPage from "@/pages/cutoff-history";
 // Temporalmente deshabilitado
 // import PassengerTransferPageRoute from "@/pages/passenger-transfer-page";
-import BoardingListPageRoute from "@/pages/boarding-list-page";
+
 import TripLogPageRoute from "@/pages/trip-log-page";
 import UsersPageRoute from "@/pages/users-page";
 import VehiclesPageRoute from "@/pages/vehicles-page";
@@ -56,7 +56,7 @@ function Router() {
       <ProtectedRoute path="/edit-trip/:id" component={EditTripPage} />
       {/* Temporalmente deshabilitada la ruta de transferencia de pasajeros
       <ProtectedRoute path="/passenger-transfer" component={PassengerTransferPageRoute} /> */}
-      <ProtectedRoute path="/boarding-list" component={BoardingListPageRoute} />
+
       <ProtectedRoute path="/trip-log" component={TripLogPageRoute} />
       <ProtectedRoute path="/users" component={UsersPageRoute} />
       <ProtectedRoute path="/vehicles" component={VehiclesPageRoute} />

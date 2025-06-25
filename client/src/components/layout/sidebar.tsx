@@ -201,20 +201,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
           )}
           
-          {canAccess("boarding-list") && (
-            <div className="space-y-1">
-              <NavItem 
-                icon={<UsersIcon className="h-5 w-5" />} 
-                active={location === "/boarding-list"}
-                onClick={() => setLocation("/boarding-list")}
-              >
-                Lista de abordaje
-              </NavItem>
-            </div>
-          )}
+
 
           {/* Línea separadora */}
-          {(canAccess("reservations") || canAccess("reservation-requests") || canAccess("boarding-list")) && canAccess("packages") && (
+          {(canAccess("reservations") || canAccess("reservation-requests")) && canAccess("packages") && (
             <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
           )}
           
