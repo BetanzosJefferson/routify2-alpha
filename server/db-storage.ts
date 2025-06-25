@@ -2244,7 +2244,7 @@ export class DatabaseStorage implements IStorage {
     companyIds?: string[]; 
     tripId?: number; 
     tripIds?: number[] 
-  }): Promise<any[]> {
+  }, currentUserId?: number, userRole?: string): Promise<any[]> {
     try {
       let query = this.db.select().from(schema.packages);
       let conditions: any[] = [];
@@ -2268,7 +2268,7 @@ export class DatabaseStorage implements IStorage {
       // Filtro por múltiples viajes (para conductores)
       if (filters?.tripIds && filters.tripIds.length > 0) {
         const tripIdStrings = filters.tripIds.map(id => id.toString());
-        const tripDetails = sql`JSON_EXTRACT(${schema.packages.tripDetails}, '$.tripId')`;
+        const tripDetails = sql`${schema.packages.tripDetails}->>'tripId'`;
         conditions.push(inArray(tripDetails, tripIdStrings));
       }
 
@@ -2279,8 +2279,36 @@ export class DatabaseStorage implements IStorage {
 
       const rawPackages = await query;
 
+      // Implementar filtrado por conductor si es necesario
+      let filteredPackages = rawPackages;
+      
+      if (userRole === 'chofer' && currentUserId) {
+        console.log(`DB Storage: Aplicando filtro de conductor para usuario ${currentUserId}`);
+        
+        filteredPackages = [];
+        for (const pkg of rawPackages) {
+          const tripDetails = typeof pkg.tripDetails === 'string' 
+            ? JSON.parse(pkg.tripDetails) 
+            : pkg.tripDetails;
+          
+          if (tripDetails?.recordId && tripDetails?.tripId) {
+            // Obtener el trip record para verificar el conductor
+            const tripRecord = await this.getTripWithRouteInfo(tripDetails.recordId, tripDetails.tripId);
+            
+            if (tripRecord && tripRecord.driverId === currentUserId) {
+              console.log(`DB Storage: Incluyendo paquete ${pkg.id} - conductor ${currentUserId} asignado`);
+              filteredPackages.push(pkg);
+            } else {
+              console.log(`DB Storage: Omitiendo paquete ${pkg.id} - no es del conductor ${currentUserId}`);
+            }
+          }
+        }
+        
+        console.log(`DB Storage: Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor`);
+      }
+
       // Mapear los datos para incluir información del viaje desde trip_details
-      const packagesWithTripInfo = rawPackages.map(pkg => {
+      const packagesWithTripInfo = filteredPackages.map(pkg => {
         const tripDetails = typeof pkg.tripDetails === 'string' 
           ? JSON.parse(pkg.tripDetails) 
           : pkg.tripDetails;

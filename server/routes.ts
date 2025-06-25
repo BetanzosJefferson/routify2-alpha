@@ -5131,7 +5131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[GET /packages] Buscando paqueterías con filtros:`, filters);
       
       // Obtener paqueterías con los filtros aplicados incluyendo información de viaje
-      let packages = await storage.getPackagesWithTripInfo(filters);
+      let packages = await storage.getPackagesWithTripInfo(filters, user.id, user.role);
       
       // Responder con las paqueterías encontradas (ahora incluyen origen y destino)
       res.json(packages);

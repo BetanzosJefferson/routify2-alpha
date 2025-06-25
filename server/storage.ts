@@ -165,6 +165,12 @@ export interface IStorage {
   getPackages(filters?: { companyId?: string, tripId?: number }): Promise<schema.Package[]>;
   getPackage(id: number): Promise<schema.Package | undefined>;
   getPackageWithTripInfo(id: number): Promise<schema.Package & { trip?: TripWithRouteInfo } | undefined>;
+  getPackagesWithTripInfo(filters?: { 
+    companyId?: string; 
+    companyIds?: string[]; 
+    tripId?: number; 
+    tripIds?: number[] 
+  }, currentUserId?: number, userRole?: string): Promise<any[]>;
   createPackage(packageData: schema.InsertPackage): Promise<schema.Package>;
   updatePackage(id: number, packageData: Partial<schema.Package>): Promise<schema.Package | undefined>;
   deletePackage(id: number): Promise<boolean>;
@@ -853,6 +859,84 @@ export class MemStorage implements IStorage {
   
   async deleteUser(id: number): Promise<boolean> {
     return this.users.delete(id);
+  }
+
+  // Package methods - placeholder implementations for MemStorage
+  async getPackages(filters?: { companyId?: string, tripId?: number }): Promise<schema.Package[]> {
+    return [];
+  }
+
+  async getPackage(id: number): Promise<schema.Package | undefined> {
+    return undefined;
+  }
+
+  async getPackageWithTripInfo(id: number): Promise<schema.Package & { trip?: TripWithRouteInfo } | undefined> {
+    return undefined;
+  }
+
+  async getPackagesWithTripInfo(filters?: { 
+    companyId?: string; 
+    companyIds?: string[]; 
+    tripId?: number; 
+    tripIds?: number[] 
+  }, currentUserId?: number, userRole?: string): Promise<any[]> {
+    return [];
+  }
+
+  async createPackage(packageData: schema.InsertPackage): Promise<schema.Package> {
+    throw new Error("Package creation not implemented in MemStorage");
+  }
+
+  async updatePackage(id: number, packageData: Partial<schema.Package>): Promise<schema.Package | undefined> {
+    return undefined;
+  }
+
+  async deletePackage(id: number): Promise<boolean> {
+    return false;
+  }
+
+  // Company methods - placeholder
+  async getCompanyById(companyId: string): Promise<{id: string, name: string} | null> {
+    return null;
+  }
+
+  // Transaction methods - placeholders
+  async createTransaccion(transaccionData: schema.InsertTransaccion): Promise<schema.Transaccion> {
+    throw new Error("Transaction creation not implemented in MemStorage");
+  }
+
+  async getTransacciones(filters?: { usuario_id?: number, id_corte?: number }): Promise<schema.Transaccion[]> {
+    return [];
+  }
+
+  async getTransactionsByCompanyExcludingUser(companyId: string, excludeUserId: number): Promise<schema.Transaccion[]> {
+    return [];
+  }
+
+  async updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined> {
+    return undefined;
+  }
+
+  async deleteTransaccion(id: number): Promise<boolean> {
+    return false;
+  }
+
+  async getTransaccionesByReservation(reservationId: number): Promise<schema.Transaccion[]> {
+    return [];
+  }
+
+  async getTransaccionesByPackageId(packageId: number): Promise<schema.Transaccion[]> {
+    return [];
+  }
+
+  // Cash box methods - placeholder
+  async getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]> {
+    return [];
+  }
+
+  // Box cutoff methods - placeholder
+  async createBoxCutoff(cutoffData: schema.InsertBoxCutoff): Promise<schema.BoxCutoff> {
+    throw new Error("Box cutoff creation not implemented in MemStorage");
   }
 }
 
