@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import { db } from "./db";
-import { eq, and, gte, lt, like, or, sql, isNotNull, isNull, inArray } from "drizzle-orm";
+import { eq, and, gte, lt, like, or, sql, isNotNull, isNull, inArray, ne, desc } from "drizzle-orm";
 
 export class DatabaseStorage implements IStorage {
   private db = db;
@@ -2374,6 +2374,92 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`DB Storage: Error al eliminar paquete ${id}:`, error);
       return false;
+    }
+  }
+
+  async getUserCashBoxes(currentUserId: number, companyId: string): Promise<any[]> {
+    try {
+      console.log(`DB Storage: Consultando cajas de usuarios para compañía ${companyId}, excluyendo usuario ${currentUserId}`);
+      
+      // Obtener transacciones que cumplan los criterios:
+      // 1. cutoff_id sea null (no pertenecen a un corte)
+      // 2. companyId igual al del usuario actual
+      // 3. user_id diferente al usuario actual
+      const transactions = await this.db
+        .select({
+          id: schema.transacciones.id,
+          details: schema.transacciones.details,
+          user_id: schema.transacciones.user_id,
+          createdAt: schema.transacciones.createdAt,
+          // Información del usuario
+          firstName: schema.users.firstName,
+          lastName: schema.users.lastName,
+          email: schema.users.email,
+          role: schema.users.role
+        })
+        .from(schema.transacciones)
+        .innerJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
+        .where(
+          and(
+            isNull(schema.transacciones.cutoff_id), // cutoff es null
+            eq(schema.transacciones.companyId, companyId), // mismo company_id
+            ne(schema.transacciones.user_id, currentUserId) // diferente user_id
+          )
+        )
+        .orderBy(desc(schema.transacciones.createdAt));
+
+      console.log(`DB Storage: Encontradas ${transactions.length} transacciones sin corte de otros usuarios`);
+
+      // Agrupar transacciones por usuario
+      const groupedByUser = transactions.reduce((acc: any, transaction: any) => {
+        const userId = transaction.user_id;
+        
+        if (!acc[userId]) {
+          acc[userId] = {
+            userId: userId,
+            firstName: transaction.firstName,
+            lastName: transaction.lastName,
+            email: transaction.email,
+            role: transaction.role,
+            transactions: [],
+            totalAmount: 0,
+            totalReservations: 0,
+            totalPackages: 0
+          };
+        }
+
+        // Agregar la transacción al usuario
+        acc[userId].transactions.push({
+          id: transaction.id,
+          details: transaction.details,
+          createdAt: transaction.createdAt
+        });
+
+        // Calcular totales según el tipo de transacción
+        if (transaction.details && typeof transaction.details === 'object') {
+          const details = transaction.details as any;
+          
+          if (details.type === 'reservation') {
+            acc[userId].totalReservations += details.amount || 0;
+            acc[userId].totalAmount += details.amount || 0;
+          } else if (details.type === 'package') {
+            acc[userId].totalPackages += details.amount || 0;
+            acc[userId].totalAmount += details.amount || 0;
+          }
+        }
+
+        return acc;
+      }, {});
+
+      // Convertir el objeto agrupado en un array
+      const result = Object.values(groupedByUser);
+      
+      console.log(`DB Storage: Transacciones agrupadas por ${result.length} usuarios diferentes`);
+      
+      return result;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener cajas de usuarios:`, error);
+      throw error;
     }
   }
 }
