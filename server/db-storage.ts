@@ -646,7 +646,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.trips.id, recordId));
   }
   
-  async getReservations(companyId?: string): Promise<ReservationWithDetails[]> {
+  async getReservations(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
     console.log("DB Storage: Consultando reservaciones");
     
     // Primero, definimos la consulta base
@@ -687,6 +687,12 @@ export class DatabaseStorage implements IStorage {
       const tripRecord = await this.getTrip(tripDetails.recordId);
       if (!tripRecord) {
         console.warn(`Trip record ${tripDetails.recordId} not found for reservation ${reservation.id}`);
+        continue;
+      }
+      
+      // Si el usuario es conductor (chofer), solo mostrar reservaciones de sus viajes asignados
+      if (userRole === 'chofer' && currentUserId && tripRecord.driverId !== currentUserId) {
+        console.log(`DB Storage: Omitiendo reservación ${reservation.id} - no es del conductor ${currentUserId}`);
         continue;
       }
       
