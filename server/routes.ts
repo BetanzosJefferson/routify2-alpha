@@ -1934,7 +1934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Get reservations using the updated storage method
-        const reservations = await storage.getReservations(companyId);
+        const reservations = await storage.getReservations(companyId, user.id, user.role);
         
         // Apply additional filtering if needed
         let filteredReservations = reservations;
@@ -2031,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Get reservations using the updated storage method
-        const reservations = await storage.getReservations(companyId);
+        const reservations = await storage.getReservations(companyId, user.id, user.role);
         
         // Apply additional filtering if needed
         let filteredReservations = reservations;
