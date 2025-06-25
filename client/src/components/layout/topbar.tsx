@@ -197,18 +197,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </NavLink>
                   )}
                   
-                  {/* Lista de abordaje */}
-                  {canAccess("boarding-list") && (
-                    <NavLink 
-                      active={window.location.pathname === "/boarding-list"}
-                      onClick={() => {
-                        setLocation("/boarding-list");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      Lista de abordaje
-                    </NavLink>
-                  )}
+
                   
                   {/* Paqueterías */}
                   {canAccess("packages") && (

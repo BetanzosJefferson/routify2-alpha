@@ -94,7 +94,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   // Permisos para rol DRIVER (conductor) - ya incluye el alias español 'chofer'
   [UserRole.DRIVER]: [
     "dashboard",
-    "boarding-list",
     "notifications",
     "packages",
     "cash-register",
