@@ -2284,6 +2284,7 @@ export class DatabaseStorage implements IStorage {
       
       if (userRole === 'chofer' && currentUserId) {
         console.log(`DB Storage: Aplicando filtro de conductor para usuario ${currentUserId}`);
+        console.log(`DB Storage: Total de paquetes a filtrar: ${rawPackages.length}`);
         
         filteredPackages = [];
         for (const pkg of rawPackages) {
@@ -2291,20 +2292,40 @@ export class DatabaseStorage implements IStorage {
             ? JSON.parse(pkg.tripDetails) 
             : pkg.tripDetails;
           
-          if (tripDetails?.recordId && tripDetails?.tripId) {
-            // Obtener el trip record para verificar el conductor
-            const tripRecord = await this.getTripWithRouteInfo(tripDetails.recordId, tripDetails.tripId);
+          console.log(`DB Storage: Evaluando paquete ${pkg.id} con tripDetails:`, tripDetails);
+          
+          if (tripDetails?.tripId) {
+            // Extraer recordId del tripId (ej: "31_0" -> recordId = 31)
+            const tripIdParts = tripDetails.tripId.split('_');
+            const recordId = parseInt(tripIdParts[0]);
             
-            if (tripRecord && tripRecord.driverId === currentUserId) {
-              console.log(`DB Storage: Incluyendo paquete ${pkg.id} - conductor ${currentUserId} asignado`);
-              filteredPackages.push(pkg);
+            console.log(`DB Storage: Paquete ${pkg.id} - Extrayendo recordId ${recordId} de tripId ${tripDetails.tripId}`);
+            
+            if (!isNaN(recordId)) {
+              // Verificar directamente en la tabla trips si este viaje está asignado al conductor
+              const tripRecord = await this.getTrip(recordId);
+              
+              console.log(`DB Storage: Trip record ${recordId}:`, tripRecord ? {
+                id: tripRecord.id,
+                driverId: tripRecord.driverId,
+                companyId: tripRecord.companyId
+              } : 'No encontrado');
+              
+              if (tripRecord && tripRecord.driverId === currentUserId) {
+                console.log(`DB Storage: ✓ Incluyendo paquete ${pkg.id} - conductor ${currentUserId} asignado al viaje ${recordId}`);
+                filteredPackages.push(pkg);
+              } else {
+                console.log(`DB Storage: ✗ Omitiendo paquete ${pkg.id} - conductor ${currentUserId} NO asignado al viaje ${recordId} (driverId: ${tripRecord?.driverId})`);
+              }
             } else {
-              console.log(`DB Storage: Omitiendo paquete ${pkg.id} - no es del conductor ${currentUserId}`);
+              console.log(`DB Storage: ✗ Omitiendo paquete ${pkg.id} - no se pudo extraer recordId válido de tripId ${tripDetails.tripId}`);
             }
+          } else {
+            console.log(`DB Storage: ✗ Omitiendo paquete ${pkg.id} - sin tripId en tripDetails`);
           }
         }
         
-        console.log(`DB Storage: Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor`);
+        console.log(`DB Storage: Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
       }
 
       // Mapear los datos para incluir información del viaje desde trip_details
