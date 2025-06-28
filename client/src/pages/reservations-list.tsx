@@ -14,7 +14,7 @@ import { ReservationDetailsSidebar } from "@/components/reservations/reservation
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
+  const [selectedDate, setSelectedDate] = useState("2025-06-28");
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
     tripInfo: any;
