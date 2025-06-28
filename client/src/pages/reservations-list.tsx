@@ -327,38 +327,38 @@ function ReservationsListContent() {
                                   Paquete #{pkg.id}
                                 </span>
                                 <Badge 
-                                  variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'}
-                                  className={pkg.deliveryStatus === 'entregado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
+                                  variant={pkg.delivery_status === 'entregado' ? 'default' : 'secondary'}
+                                  className={pkg.delivery_status === 'entregado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
                                 >
-                                  {pkg.deliveryStatus || 'pendiente'}
+                                  {pkg.delivery_status || 'pendiente'}
                                 </Badge>
                               </div>
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
                                 <div>
-                                  <span className="font-medium">Remitente:</span> {pkg.senderName} {pkg.senderLastName}
+                                  <span className="font-medium">Remitente:</span> {pkg.sender_name} {pkg.sender_lastname}
                                 </div>
                                 <div>
-                                  <span className="font-medium">Destinatario:</span> {pkg.recipientName} {pkg.recipientLastName}
+                                  <span className="font-medium">Destinatario:</span> {pkg.recipient_name} {pkg.recipient_lastname}
                                 </div>
                                 <div>
-                                  <span className="font-medium">Descripción:</span> {pkg.packageDescription}
+                                  <span className="font-medium">Descripción:</span> {pkg.package_description}
                                 </div>
                                 <div>
                                   <span className="font-medium">Precio:</span> {formatPrice(pkg.price)}
                                 </div>
                               </div>
                               
-                              {(pkg.senderPhone || pkg.recipientPhone) && (
+                              {(pkg.sender_phone || pkg.recipient_phone) && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mt-2">
-                                  {pkg.senderPhone && (
+                                  {pkg.sender_phone && (
                                     <div>
-                                      <span className="font-medium">Tel. Remitente:</span> {pkg.senderPhone}
+                                      <span className="font-medium">Tel. Remitente:</span> {pkg.sender_phone}
                                     </div>
                                   )}
-                                  {pkg.recipientPhone && (
+                                  {pkg.recipient_phone && (
                                     <div>
-                                      <span className="font-medium">Tel. Destinatario:</span> {pkg.recipientPhone}
+                                      <span className="font-medium">Tel. Destinatario:</span> {pkg.recipient_phone}
                                     </div>
                                   )}
                                 </div>
@@ -366,7 +366,7 @@ function ReservationsListContent() {
                             </div>
                             
                             <div className="flex flex-col items-end gap-1 ml-4">
-                              {pkg.isPaid ? (
+                              {pkg.is_paid ? (
                                 <Badge variant="default" className="bg-green-100 text-green-800">
                                   Pagado
                                 </Badge>
@@ -375,9 +375,9 @@ function ReservationsListContent() {
                                   Pendiente
                                 </Badge>
                               )}
-                              {pkg.paymentMethod && (
+                              {pkg.payment_method && (
                                 <span className="text-xs text-gray-500">
-                                  {pkg.paymentMethod}
+                                  {pkg.payment_method}
                                 </span>
                               )}
                             </div>

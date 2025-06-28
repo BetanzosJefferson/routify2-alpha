@@ -5077,9 +5077,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(apiRouter("/packages"), validatePackageAccess, async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
-      const { tripId } = req.query;
+      const { tripId, recordId } = req.query;
       
       console.log(`[GET /packages] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      console.log(`[GET /packages] Parámetros: tripId=${tripId}, recordId=${recordId}`);
       
       // Extraer companyId del usuario para aislamiento de datos
       const userCompanyId = user.companyId || user.company;
@@ -5101,6 +5102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Aplicar filtro por viaje si se proporciona
       if (tripId && !isNaN(parseInt(tripId as string))) {
         filters.tripId = parseInt(tripId as string);
+      }
+      
+      // Aplicar filtro por recordId si se proporciona
+      if (recordId) {
+        filters.recordId = recordId as string;
       }
       
       // CASO ESPECIAL: CONDUCTORES (CHOFER) - solo ven paqueterías de sus viajes asignados

@@ -2243,7 +2243,8 @@ export class DatabaseStorage implements IStorage {
     companyId?: string; 
     companyIds?: string[]; 
     tripId?: number; 
-    tripIds?: number[] 
+    tripIds?: number[];
+    recordId?: string;
   }, currentUserId?: number, userRole?: string): Promise<any[]> {
     try {
       let query = this.db.select().from(schema.packages);
@@ -2270,6 +2271,12 @@ export class DatabaseStorage implements IStorage {
         const tripIdStrings = filters.tripIds.map(id => id.toString());
         const tripDetails = sql`${schema.packages.tripDetails}->>'tripId'`;
         conditions.push(inArray(tripDetails, tripIdStrings));
+      }
+
+      // Filtro por recordId (para filtrar por viaje específico)
+      if (filters?.recordId) {
+        const recordIdFilter = sql`${schema.packages.tripDetails}->>'recordId'`;
+        conditions.push(eq(recordIdFilter, filters.recordId));
       }
 
       // Aplicar condiciones si existen
