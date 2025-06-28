@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
-import { usePackagesByTripDetails, Package } from "@/hooks/use-packages";
 import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
+import { PackagesByDate } from "@/components/packages/packages-by-date";
 import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck, Package as PackageIcon } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
@@ -302,98 +302,7 @@ function ReservationsListContent() {
               </CardTitle>
             </CardHeader>
 
-            {/* Mostrar paqueterías del viaje cuando está seleccionado */}
-            {selectedTrip && selectedTrip.recordId === recordId && (
-              <CardContent className="pt-4">
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <PackageIcon className="h-5 w-5 text-amber-600" />
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Paqueterías del Viaje
-                    </h3>
-                    {packagesLoading && (
-                      <div className="text-sm text-gray-500">Cargando...</div>
-                    )}
-                  </div>
 
-                  {tripPackages.length > 0 ? (
-                    <div className="space-y-3">
-                      {tripPackages.map((pkg) => (
-                        <div key={pkg.id} className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-medium text-amber-700">
-                                  Paquete #{pkg.id}
-                                </span>
-                                <Badge 
-                                  variant={pkg.delivery_status === 'entregado' ? 'default' : 'secondary'}
-                                  className={pkg.delivery_status === 'entregado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
-                                >
-                                  {pkg.delivery_status || 'pendiente'}
-                                </Badge>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700">
-                                <div>
-                                  <span className="font-medium">Remitente:</span> {pkg.sender_name} {pkg.sender_lastname}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Destinatario:</span> {pkg.recipient_name} {pkg.recipient_lastname}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Descripción:</span> {pkg.package_description}
-                                </div>
-                                <div>
-                                  <span className="font-medium">Precio:</span> {formatPrice(pkg.price)}
-                                </div>
-                              </div>
-                              
-                              {(pkg.sender_phone || pkg.recipient_phone) && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mt-2">
-                                  {pkg.sender_phone && (
-                                    <div>
-                                      <span className="font-medium">Tel. Remitente:</span> {pkg.sender_phone}
-                                    </div>
-                                  )}
-                                  {pkg.recipient_phone && (
-                                    <div>
-                                      <span className="font-medium">Tel. Destinatario:</span> {pkg.recipient_phone}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex flex-col items-end gap-1 ml-4">
-                              {pkg.is_paid ? (
-                                <Badge variant="default" className="bg-green-100 text-green-800">
-                                  Pagado
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="bg-red-100 text-red-800">
-                                  Pendiente
-                                </Badge>
-                              )}
-                              {pkg.payment_method && (
-                                <span className="text-xs text-gray-500">
-                                  {pkg.payment_method}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <PackageIcon className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                      <p>No hay paqueterías asociadas a este viaje</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            )}
 
           </Card>
         ))}
@@ -425,6 +334,11 @@ function ReservationsListContent() {
           </Button>
         </div>
       )}
+
+      {/* Sección de Paqueterías del Día */}
+      <div className="mt-8">
+        <PackagesByDate selectedDate={selectedDate} />
+      </div>
 
       {filteredReservations.length === 0 && (
         <div className="text-center py-12">
