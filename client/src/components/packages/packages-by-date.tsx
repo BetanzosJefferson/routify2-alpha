@@ -18,9 +18,12 @@ export function PackagesByDate({ selectedDate }: PackagesByDateProps) {
   const { data: packages = [], isLoading } = useQuery({
     queryKey: ['/api/packages', { date: selectedDate }],
     queryFn: async () => {
+      console.log('[PackagesByDate] Solicitando paquetes para fecha:', selectedDate);
       const response = await fetch(`/api/packages?date=${selectedDate}`);
       if (!response.ok) throw new Error('Error al cargar paqueterías');
-      return response.json();
+      const data = await response.json();
+      console.log('[PackagesByDate] Paquetes recibidos:', data);
+      return data;
     }
   });
 
