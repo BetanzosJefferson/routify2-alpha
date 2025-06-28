@@ -22,18 +22,6 @@ function ReservationsListContent() {
   } | null>(null);
   const itemsPerPage = 50;
 
-  // Hook para obtener paqueterías del viaje seleccionado
-  const { data: tripPackages = [], isLoading: packagesLoading } = usePackagesByTripDetails({
-    tripDetails: selectedTrip ? {
-      recordId: selectedTrip.recordId,
-      tripId: selectedTrip.tripInfo?.tripId,
-      origin: selectedTrip.tripInfo?.origin,
-      destination: selectedTrip.tripInfo?.destination,
-      departureDate: selectedTrip.tripInfo?.departureDate
-    } : undefined,
-    enabled: !!selectedTrip
-  });
-
   const { 
     data: reservations = [], 
     isLoading, 
