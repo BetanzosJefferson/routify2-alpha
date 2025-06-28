@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
 import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
-import { PackagesByDate } from "@/components/packages/packages-by-date";
-import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck, Package as PackageIcon } from "lucide-react";
+import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
@@ -14,7 +13,7 @@ import { ReservationDetailsSidebar } from "@/components/reservations/reservation
 function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDate, setSelectedDate] = useState("2025-06-28");
+  const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
     tripInfo: any;
@@ -290,8 +289,6 @@ function ReservationsListContent() {
               </CardTitle>
             </CardHeader>
 
-
-
           </Card>
         ))}
       </div>
@@ -322,11 +319,6 @@ function ReservationsListContent() {
           </Button>
         </div>
       )}
-
-      {/* Sección de Paqueterías del Día */}
-      <div className="mt-8">
-        <PackagesByDate selectedDate={selectedDate} />
-      </div>
 
       {filteredReservations.length === 0 && (
         <div className="text-center py-12">
