@@ -2245,6 +2245,7 @@ export class DatabaseStorage implements IStorage {
     tripId?: number; 
     tripIds?: number[];
     recordId?: string;
+    date?: string;
   }, currentUserId?: number, userRole?: string): Promise<any[]> {
     try {
       let query = this.db.select().from(schema.packages);
@@ -2277,6 +2278,12 @@ export class DatabaseStorage implements IStorage {
       if (filters?.recordId) {
         const recordIdFilter = sql`${schema.packages.tripDetails}->>'recordId'`;
         conditions.push(eq(recordIdFilter, filters.recordId));
+      }
+
+      // Filtro por fecha (para filtrar paqueterías por fecha específica)
+      if (filters?.date) {
+        const dateFilter = sql`${schema.packages.tripDetails}->>'departureDate'`;
+        conditions.push(eq(dateFilter, filters.date));
       }
 
       // Aplicar condiciones si existen

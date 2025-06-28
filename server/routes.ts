@@ -5077,10 +5077,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(apiRouter("/packages"), validatePackageAccess, async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
-      const { tripId, recordId } = req.query;
+      const { tripId, recordId, date } = req.query;
       
       console.log(`[GET /packages] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-      console.log(`[GET /packages] Parámetros: tripId=${tripId}, recordId=${recordId}`);
+      console.log(`[GET /packages] Parámetros: tripId=${tripId}, recordId=${recordId}, date=${date}`);
       
       // Extraer companyId del usuario para aislamiento de datos
       const userCompanyId = user.companyId || user.company;
@@ -5097,6 +5097,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Aplicar filtro de aislamiento por compañía excepto para superAdmin
       if (user.role !== UserRole.SUPER_ADMIN) {
         filters.companyId = userCompanyId;
+      }
+      
+      // Aplicar filtro por fecha si se proporciona
+      if (date) {
+        filters.date = date as string;
       }
       
       // Aplicar filtro por viaje si se proporciona
