@@ -64,19 +64,7 @@ function ReservationsListContent() {
     // Analizar tripDetails para encontrar el viaje padre
     const tripDetails = reservation.tripDetails as any;
     
-    // DEBUG: Verificar qué datos tiene la reservación
-    console.log('DEBUG - Reservación:', {
-      id: reservation.id,
-      tripDetails,
-      trip: reservation.trip,
-      driver: reservation.trip?.driver,
-      vehicle: reservation.trip?.vehicle
-    });
-    
-    // DEBUG: También mostrar qué información llega al parentTripInfo después
-    console.log('DEBUG - parentTripInfo será construido a partir de:', reservation.trip);
-    
-    // DEBUG: Mostrar después de construir parentTripInfo también
+
     
     // Usar información del viaje padre del backend para agrupación
     let parentTripInfo = null;
@@ -313,7 +301,10 @@ function ReservationsListContent() {
                     <div>
                       <p className="text-xs text-orange-600 font-medium uppercase tracking-wide">Unidad</p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
+                        {groupData.tripInfo.vehicle?.plates ? 
+                          `${groupData.tripInfo.vehicle.brand} ${groupData.tripInfo.vehicle.model} ${groupData.tripInfo.vehicle.plates}` : 
+                          'Sin asignar'
+                        }
                       </p>
                     </div>
                   </div>

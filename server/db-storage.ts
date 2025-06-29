@@ -849,9 +849,6 @@ export class DatabaseStorage implements IStorage {
         passengers,
         createdByUser
       });
-      
-      // DEBUG: Mostrar información del conductor y vehículo que se envía
-      console.log(`[getReservations] Reservación ${reservation.id} - Driver:`, driverInfo, 'Vehicle:', vehicleInfo);
     }
     
     console.log(`DB Storage: Reservaciones procesadas: ${reservationsWithDetails.length}`);
