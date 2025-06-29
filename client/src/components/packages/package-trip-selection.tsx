@@ -132,8 +132,21 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     };
   });
 
-  // Formatear fecha para mostrar
+  // Formatear fecha para mostrar - evitar problemas de zona horaria
   const formatDate = (dateString: string) => {
+    // Si la fecha está en formato YYYY-MM-DD, crear la fecha localmente
+    if (dateString && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // month - 1 porque JavaScript cuenta meses desde 0
+      return date.toLocaleDateString('es-MX', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    
+    // Para otros formatos, usar el método original
     const date = new Date(dateString);
     return date.toLocaleDateString('es-MX', {
       weekday: 'short',
@@ -312,7 +325,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
               <h3 className="text-lg font-semibold">
                 {availableSegments.length} combinación{availableSegments.length !== 1 ? 'es' : ''} de viaje disponible{availableSegments.length !== 1 ? 's' : ''}
               </h3>
-              {availableSegments.map((segment) => (
+              {availableSegments.map((segment: any) => (
                 <Card key={segment.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
                     <div className="flex justify-between items-center">

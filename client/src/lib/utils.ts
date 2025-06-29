@@ -185,10 +185,13 @@ export function formatDateForInput(date: Date | string): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    console.log(`[formatDateForInput] Fecha por componentes: ${year}-${month}-${day}`);
     return `${year}-${month}-${day}`;
   } else {
-    // Para strings, normalizar primero
+    // Para strings que ya están en formato YYYY-MM-DD, devolverlas directamente
+    if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return date;
+    }
+    // Para otros formatos, normalizar
     const normalizedDate = normalizeToStartOfDay(date);
     return dateToLocalISOString(normalizedDate);
   }
