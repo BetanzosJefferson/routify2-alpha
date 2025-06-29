@@ -119,6 +119,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 29, 2025** - Enhanced reservation details sidebar with package integration:
+  - Added `usePackagesByTrip` hook for intelligent package-to-trip association
+  - Implemented multi-criteria matching: recordId, tripId base, and date+route combination
+  - Extended `ReservationDetailsSidebar` to display packages alongside reservations
+  - Added visual distinction with orange-themed package cards and delivery status indicators
+
 - **June 29, 2025** - Fixed timezone issues in packages section:
   - Corrected date formatting in `PackageTripSelection` component to use local date components
   - Modified `formatDate` function to handle YYYY-MM-DD format without timezone conversion

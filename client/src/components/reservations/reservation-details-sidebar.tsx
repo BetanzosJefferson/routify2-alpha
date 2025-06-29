@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input"; 
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { ReservationWithDetails } from "@shared/schema";
+import { usePackagesByTrip } from "@/hooks/use-packages-by-trip";
 
 interface ReservationDetailsSidebarProps {
   recordId: string;
@@ -41,6 +42,17 @@ export function ReservationDetailsSidebar({
 }: ReservationDetailsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Obtener paqueterías relacionadas al viaje
+  const { 
+    data: packages = [], 
+    isLoading: isLoadingPackages,
+    error: packagesError 
+  } = usePackagesByTrip({
+    recordId,
+    tripInfo,
+    enabled: true
+  });
 
   // Efecto para detectar clics fuera del sidebar
   useEffect(() => {
@@ -240,7 +252,7 @@ export function ReservationDetailsSidebar({
                               ? reservation.passengers[0]?.firstName + ' ' + reservation.passengers[0]?.lastName
                               : `${reservation.passengers[0]?.firstName || 'nombre'} ${reservation.passengers[0]?.lastName || 'del pasajero'}`}
                           </div>
-                          <div className="text-xs text-gray-500">{reservation.code}</div> {/* Usa reservation.code como en el diseño original */}
+                          <div className="text-xs text-gray-500">#{reservation.id}</div>
                           {/* Indicador de Check basado en checkCount */}
                           <div className="mt-1">
                             {reservation.checkCount && reservation.checkCount > 0 ? (
@@ -380,6 +392,128 @@ export function ReservationDetailsSidebar({
                 </Card>
               );
             })
+          )}
+        </div>
+
+        {/* Sección de Paqueterías */}
+        <div className="space-y-4 mt-8">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <div className="rounded-full bg-orange-100 p-2">
+              <div className="h-4 w-4 bg-orange-600 rounded-sm"></div>
+            </div>
+            Paqueterías ({packages.length})
+          </h3>
+          
+          {isLoadingPackages ? (
+            <div className="text-center py-4 text-gray-500">
+              Cargando paqueterías...
+            </div>
+          ) : packagesError ? (
+            <div className="text-center py-4 text-red-500">
+              Error al cargar paqueterías
+            </div>
+          ) : packages.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              No hay paqueterías para este viaje.
+            </div>
+          ) : (
+            packages.map((pkg: any) => (
+              <Card key={pkg.id} className="border border-orange-200 rounded-xl overflow-hidden shadow-sm bg-orange-50 hover:shadow-md transition-shadow">
+                <CardHeader className="border-b border-orange-100 bg-orange-100 px-4 py-2.5">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <div className="bg-orange-200 text-orange-800 font-medium px-3 py-1 rounded-md mr-3">
+                        Paquete #{pkg.id}
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          {pkg.senderName} {pkg.senderLastName}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          → {pkg.recipientName} {pkg.recipientLastName}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-orange-700">
+                        {formatPrice(pkg.price)}
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={pkg.isPaid
+                          ? 'bg-green-100 text-green-800 border-green-200'
+                          : 'bg-yellow-100 text-yellow-800 border-yellow-200'}
+                      >
+                        {pkg.isPaid ? 'PAGADO' : 'PENDIENTE'}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="p-4">
+                  {/* Descripción del paquete */}
+                  <div className="mb-3">
+                    <div className="text-sm font-medium text-gray-800">
+                      Descripción: {pkg.packageDescription || 'Sin descripción'}
+                    </div>
+                  </div>
+
+                  {/* Origen y destino específicos del paquete */}
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                      <div className="text-xs text-gray-500">Origen</div>
+                      <div className="font-medium">
+                        {pkg.tripDetails?.origin || pkg.tripOrigin || 'No especificado'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Destino</div>
+                      <div className="font-medium">
+                        {pkg.tripDetails?.destination || pkg.tripDestination || 'No especificado'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Información de contacto */}
+                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                      <div className="text-xs text-gray-500">Remitente</div>
+                      <div className="font-medium flex items-center">
+                        <Phone className="h-3 w-3 mr-1 text-gray-500" />
+                        <a href={`tel:${pkg.senderPhone}`} className="text-orange-600 hover:underline">
+                          {pkg.senderPhone}
+                        </a>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Destinatario</div>
+                      <div className="font-medium flex items-center">
+                        <Phone className="h-3 w-3 mr-1 text-gray-500" />
+                        <a href={`tel:${pkg.recipientPhone}`} className="text-orange-600 hover:underline">
+                          {pkg.recipientPhone}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estado de entrega y asientos */}
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-gray-500">Estado de entrega</div>
+                      <Badge variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'}>
+                        {pkg.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente'}
+                      </Badge>
+                    </div>
+                    {pkg.usesSeats && (
+                      <div>
+                        <div className="text-xs text-gray-500">Asientos ocupados</div>
+                        <div className="font-medium">{pkg.seatsQuantity || 0}</div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
           )}
         </div>
       </div>
