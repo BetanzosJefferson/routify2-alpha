@@ -192,6 +192,21 @@ export function TripLogbook() {
         </div>
       </div>
 
+      {/* Leyenda explicativa */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start gap-2">
+          <div className="bg-blue-500 rounded-full p-1 mt-0.5">
+            <div className="w-2 h-2 bg-white rounded-full"></div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-blue-900">Información mostrada</p>
+            <p className="text-sm text-blue-700">
+              Solo se toman en cuenta reservaciones y paqueterías pagadas, o con anticipos
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Métricas del día */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>

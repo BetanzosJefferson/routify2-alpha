@@ -229,17 +229,17 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   const parentTripInfo = tripData.tripInfo.parentTrip || tripData.tripInfo;
 
   return (
-    <>
+    <div className="fixed inset-0 z-50 flex">
       {/* Overlay para cerrar al hacer click afuera */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40"
+        className="flex-1 bg-black bg-opacity-50"
         onClick={onClose}
       />
       
-      {/* Sidebar con scroll mejorado */}
-      <div className="fixed inset-y-0 right-0 w-1/2 bg-white shadow-xl z-50 flex flex-col max-h-screen">
+      {/* Sidebar */}
+      <div className="w-1/2 bg-white shadow-xl flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between p-6 border-b bg-white flex-shrink-0">
           <div>
             <h2 className="text-xl font-semibold">Detalles Financieros</h2>
             <p className="text-sm text-gray-600">
@@ -255,7 +255,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
         </div>
 
         {/* Resumen financiero */}
-        <div className="p-6 border-b bg-gray-50 sticky top-[89px] z-10">
+        <div className="p-6 border-b bg-gray-50 flex-shrink-0">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Ventas Totales</p>
@@ -276,8 +276,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
         {/* Contenido con tabs - área scrolleable */}
         <div className="flex-1 overflow-y-auto">
-          <Tabs defaultValue="reservations" className="h-full">
-            <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10 bg-white">
+          <Tabs defaultValue="reservations" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0 bg-white">
               <TabsTrigger value="reservations">
                 <Users className="h-4 w-4 mr-2" />
                 Reservaciones ({tripData.reservations.length})
@@ -511,6 +511,6 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
           </Tabs>
         </div>
       </div>
-    </>
+    </div>
   );
 }
