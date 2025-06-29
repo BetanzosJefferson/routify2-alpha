@@ -119,6 +119,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 29, 2025** - Enhanced reservation list UI with modern design:
+  - Redesigned trip preview cards with gradient headers and color-coded information sections
+  - Improved visual hierarchy with rounded sections for schedule, vehicle, and operator info
+  - Added hover effects and smooth transitions for better user interaction
+  - Implemented cleaner layout separating route information from operational details
+
 - **June 29, 2025** - Enhanced reservation details sidebar with package integration:
   - Added `usePackagesByTrip` hook for intelligent package-to-trip association
   - Implemented multi-criteria matching: recordId, tripId base, and date+route combination

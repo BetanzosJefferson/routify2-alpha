@@ -234,61 +234,96 @@ function ReservationsListContent() {
       {/* Lista de reservaciones agrupadas por viaje */}
       <div className="space-y-6">
         {paginatedGroups.map(([recordId, groupData]) => (
-          <Card key={recordId} className="border-2 border-gray-200">
-            <CardHeader 
-              className="bg-gray-50 pb-3 cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={() => handleTripClick(recordId, groupData.tripInfo, groupData.reservations)}
-            >
-              <CardTitle className="text-lg font-semibold text-gray-800">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-600" />
-                    {groupData.tripInfo ? 
-                      `${groupData.tripInfo.origin} → ${groupData.tripInfo.destination} - ${formatDate(groupData.tripInfo.departureDate)}` :
-                      `Viaje ${recordId}`
-                    }
+          <Card 
+            key={recordId} 
+            className="border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group overflow-hidden"
+            onClick={() => handleTripClick(recordId, groupData.tripInfo, groupData.reservations)}
+          >
+            {/* Header con gradiente y ruta principal */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <MapPin className="h-5 w-5" />
                   </div>
-
+                  <div>
+                    <h3 className="font-semibold text-lg">
+                      {groupData.tripInfo ? 
+                        `${groupData.tripInfo.origin.split(' - ')[0]} → ${groupData.tripInfo.destination.split(' - ')[0]}` :
+                        `Viaje ${recordId}`
+                      }
+                    </h3>
+                    <p className="text-blue-100 text-sm">
+                      {groupData.tripInfo && formatDate(groupData.tripInfo.departureDate)}
+                    </p>
+                  </div>
                 </div>
                 
-                {/* Información adicional del viaje */}
-                {groupData.tripInfo && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm font-normal text-gray-600">
-                    {/* Horarios */}
-                    <div className="flex items-center gap-2">
+                {/* Contador de reservaciones */}
+                <div className="bg-white/20 px-3 py-1 rounded-full">
+                  <span className="text-sm font-medium">
+                    {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Contenido con información detallada */}
+            <CardContent className="p-4 bg-white group-hover:bg-gray-50/50 transition-colors">
+              {groupData.tripInfo && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Horarios */}
+                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="bg-green-100 p-2 rounded-lg">
                       <Clock className="h-4 w-4 text-green-600" />
-                      <span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-green-600 font-medium uppercase tracking-wide">Horario</p>
+                      <p className="text-sm font-semibold text-gray-900">
                         {groupData.tripInfo.departureTime || 'Sin horario'} - {groupData.tripInfo.arrivalTime || 'Sin horario'}
-                      </span>
+                      </p>
                     </div>
-                    
-                    {/* Unidad */}
-                    <div className="flex items-center gap-2">
+                  </div>
+                  
+                  {/* Unidad */}
+                  <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                    <div className="bg-orange-100 p-2 rounded-lg">
                       <Truck className="h-4 w-4 text-orange-600" />
-                      <span>
-                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
-                      </span>
                     </div>
-                    
-                    {/* Operador */}
-                    <div className="flex items-center gap-2">
+                    <div>
+                      <p className="text-xs text-orange-600 font-medium uppercase tracking-wide">Unidad</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {groupData.tripInfo.vehicle?.licensePlate || 'Sin asignar'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Operador */}
+                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <div className="bg-purple-100 p-2 rounded-lg">
                       <UserCheck className="h-4 w-4 text-purple-600" />
-                      <span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-purple-600 font-medium uppercase tracking-wide">Operador</p>
+                      <p className="text-sm font-semibold text-gray-900">
                         {groupData.tripInfo.driver ? 
                           `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` : 
                           'Sin asignar'
                         }
-                      </span>
+                      </p>
                     </div>
                   </div>
-                )}
-                
-                <div className="text-sm font-normal text-gray-600 mt-2">
-                  {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
                 </div>
-              </CardTitle>
-            </CardHeader>
-
+              )}
+              
+              {/* Indicador de acción */}
+              <div className="mt-4 flex items-center justify-center text-gray-400 group-hover:text-blue-600 transition-colors">
+                <span className="text-xs font-medium">Haz clic para ver detalles</span>
+                <div className="ml-2 transform group-hover:translate-x-1 transition-transform">
+                  →
+                </div>
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>
