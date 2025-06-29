@@ -237,13 +237,33 @@ export class DatabaseStorage implements IStorage {
         companyLogo = owner.profilePicture;
       }
     }
+
+    // Obtener información completa del conductor si existe driverId
+    let driverInfo = null;
+    if (trip.driverId) {
+      const [driver] = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.id, trip.driverId));
+      
+      if (driver) {
+        driverInfo = {
+          id: driver.id,
+          firstName: driver.firstName,
+          lastName: driver.lastName,
+          email: driver.email,
+          phone: driver.phone
+        };
+      }
+    }
     
     return {
       ...trip,
       route,
       numStops: route.stops.length,
       companyName,
-      companyLogo
+      companyLogo,
+      driver: driverInfo
     };
   }
   

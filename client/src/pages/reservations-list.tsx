@@ -131,7 +131,7 @@ function ReservationsListContent() {
         departureTime: parentTripInfo.departureTime,
         arrivalTime: parentTripInfo.arrivalTime,
         vehicle: reservation.trip?.vehicleId || "Sin asignar",
-        driver: reservation.trip?.driverId || "Sin asignar",
+        driver: reservation.trip?.driver || null, // Usar el objeto completo del conductor
         recordId: parentTripKey,
         isParentTrip: true
       };
@@ -306,7 +306,7 @@ function ReservationsListContent() {
                     <div>
                       <p className="text-xs text-purple-600 font-medium uppercase tracking-wide">Operador</p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {groupData.tripInfo.driver ? 
+                        {groupData.tripInfo.driver && groupData.tripInfo.driver.firstName ? 
                           `${groupData.tripInfo.driver.firstName} ${groupData.tripInfo.driver.lastName}` : 
                           'Sin asignar'
                         }

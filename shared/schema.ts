@@ -182,6 +182,14 @@ export type TripWithRouteInfo = Trip & {
   // Información del vehículo y conductor asignados
   assignedVehicle?: Vehicle;
   assignedDriver?: User;
+  // Información completa del conductor
+  driver?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  };
   // Campos para terminales
   originTerminal?: string;
   destinationTerminal?: string;

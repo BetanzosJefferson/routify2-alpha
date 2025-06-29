@@ -240,6 +240,25 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Obtener información completa del conductor si existe driverId
+    let driverInfo = null;
+    if (trip.driverId) {
+      const [driver] = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.id, trip.driverId));
+      
+      if (driver) {
+        driverInfo = {
+          id: driver.id,
+          firstName: driver.firstName,
+          lastName: driver.lastName,
+          email: driver.email,
+          phone: driver.phone
+        };
+      }
+    }
+
     // Si se proporciona tripId, extraer datos del segmento específico del tripData JSON
     let segmentData = null;
     if (tripId && trip.tripData) {
@@ -264,6 +283,7 @@ export class DatabaseStorage implements IStorage {
       numStops: route.stops.length,
       companyName,
       companyLogo,
+      driver: driverInfo, // Incluir información completa del conductor
       // Datos específicos del segmento si están disponibles
       origin: segmentData?.origin || route.origin,
       destination: segmentData?.destination || route.destination,
