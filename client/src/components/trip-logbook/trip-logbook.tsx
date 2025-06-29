@@ -275,7 +275,7 @@ export function TripLogbook() {
                   <div>
                     <p className="text-xs text-blue-600 font-medium uppercase">Horario</p>
                     <p className="text-sm font-semibold">
-                      {tripData.tripInfo.departureTime} - {tripData.tripInfo.arrivalTime}
+                      {(tripData.tripInfo.parentTrip || tripData.tripInfo).departureTime} - {(tripData.tripInfo.parentTrip || tripData.tripInfo).arrivalTime}
                     </p>
                   </div>
                 </div>
