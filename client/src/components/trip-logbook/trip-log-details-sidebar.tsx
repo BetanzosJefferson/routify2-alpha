@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ interface TripLogDetailsSidebarProps {
   onClose: () => void;
 }
 
-export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSidebarProps) {
+export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSidebarProps): JSX.Element {
   const [budget, setBudget] = useState<number>(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [newExpense, setNewExpense] = useState<Expense>({
@@ -228,7 +229,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   // Obtener información del viaje padre para horarios
   const parentTripInfo = tripData.tripInfo.parentTrip || tripData.tripInfo;
 
-  return (
+  const sidebarContent = (
     <div className="fixed inset-0 z-[9999] flex" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
       {/* Overlay */}
       <div 
@@ -515,4 +516,6 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
       </div>
     </div>
   );
+
+  return createPortal(sidebarContent, document.body);
 }
