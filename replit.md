@@ -117,7 +117,14 @@ TransRoute is a comprehensive transportation management system built with Node.j
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **June 29, 2025** - Fixed timezone issues in packages section:
+  - Corrected date formatting in `PackageTripSelection` component to use local date components
+  - Modified `formatDate` function to handle YYYY-MM-DD format without timezone conversion
+  - Optimized `formatDateForInput` function to avoid unnecessary date conversions
+  - Resolved issue where package trip dates showed one day behind the selected date
+
 ## Changelog
 
-Changelog:
 - June 13, 2025. Initial setup
