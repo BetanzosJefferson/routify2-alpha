@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 import { useToast } from "@/hooks/use-toast";
 
 type TripLogData = {
@@ -518,41 +518,39 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
     </div>
   );
 
-  // Modales separados usando createPortal
+  // Modales personalizados con z-index superior
   const budgetModal = showBudgetModal && (
-    <Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center text-green-600">¡Presupuesto Guardado!</DialogTitle>
-          <DialogDescription className="text-center">
-            El presupuesto se ha actualizado correctamente.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex justify-center py-4">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-            <DollarSign className="w-8 h-8 text-green-600" />
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowBudgetModal(false)} />
+      <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 z-[10002]">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-green-600 mb-2">¡Presupuesto Guardado!</h3>
+          <p className="text-gray-600 mb-4">El presupuesto se ha actualizado correctamente.</p>
+          <div className="flex justify-center py-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <DollarSign className="w-8 h-8 text-green-600" />
+            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 
   const expenseModal = showExpenseModal && (
-    <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center text-green-600">¡Gasto Agregado!</DialogTitle>
-          <DialogDescription className="text-center">
-            El gasto se ha registrado correctamente.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex justify-center py-4">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-            <PlusCircle className="w-8 h-8 text-green-600" />
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowExpenseModal(false)} />
+      <div className="relative bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 z-[10002]">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-green-600 mb-2">¡Gasto Agregado!</h3>
+          <p className="text-gray-600 mb-4">El gasto se ha registrado correctamente.</p>
+          <div className="flex justify-center py-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <PlusCircle className="w-8 h-8 text-green-600" />
+            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 
   return (
