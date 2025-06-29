@@ -424,11 +424,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           <SelectValue placeholder="Seleccionar categoría" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="combustible">Combustible</SelectItem>
-                          <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
-                          <SelectItem value="peajes">Peajes</SelectItem>
-                          <SelectItem value="comida">Comida</SelectItem>
-                          <SelectItem value="hospedaje">Hospedaje</SelectItem>
+                          <SelectItem value="gasolina">Gasolina</SelectItem>
+                          <SelectItem value="casetas">Casetas</SelectItem>
                           <SelectItem value="otros">Otros</SelectItem>
                         </SelectContent>
                       </Select>
