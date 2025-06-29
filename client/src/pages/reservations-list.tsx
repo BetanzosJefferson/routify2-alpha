@@ -64,6 +64,20 @@ function ReservationsListContent() {
     // Analizar tripDetails para encontrar el viaje padre
     const tripDetails = reservation.tripDetails as any;
     
+    // DEBUG: Verificar qué datos tiene la reservación
+    console.log('DEBUG - Reservación:', {
+      id: reservation.id,
+      tripDetails,
+      trip: reservation.trip,
+      driver: reservation.trip?.driver,
+      vehicle: reservation.trip?.vehicle
+    });
+    
+    // DEBUG: También mostrar qué información llega al parentTripInfo después
+    console.log('DEBUG - parentTripInfo será construido a partir de:', reservation.trip);
+    
+    // DEBUG: Mostrar después de construir parentTripInfo también
+    
     // Usar información del viaje padre del backend para agrupación
     let parentTripInfo = null;
     let parentTripKey = 'sin-viaje-padre';
@@ -136,8 +150,8 @@ function ReservationsListContent() {
         departureDate: parentTripInfo.departureDate,
         departureTime: parentTripInfo.departureTime,
         arrivalTime: parentTripInfo.arrivalTime,
-        vehicle: reservation.trip?.vehicleId || "Sin asignar",
-        driver: reservation.trip?.driver || null, // Usar el objeto completo del conductor
+        vehicle: parentTripInfo.vehicle, // Usar la información completa del vehículo del parentTripInfo
+        driver: parentTripInfo.driver,   // Usar la información completa del conductor del parentTripInfo
         recordId: parentTripKey,
         isParentTrip: true
       };
