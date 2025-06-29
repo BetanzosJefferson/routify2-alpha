@@ -176,6 +176,46 @@ export class DatabaseStorage implements IStorage {
         } else {
           console.log(`Viaje ${trip.id} no tiene companyId`);
         }
+
+        // Obtener información completa del conductor si existe driverId
+        let driverInfo = null;
+        if (trip.driverId) {
+          const [driver] = await db
+            .select()
+            .from(schema.users)
+            .where(eq(schema.users.id, trip.driverId));
+          
+          if (driver) {
+            driverInfo = {
+              id: driver.id,
+              firstName: driver.firstName,
+              lastName: driver.lastName,
+              email: driver.email,
+              phone: driver.phone
+            };
+          }
+        }
+
+        // Obtener información completa del vehículo si existe vehicleId
+        let vehicleInfo = null;
+        if (trip.vehicleId) {
+          const [vehicle] = await db
+            .select()
+            .from(schema.vehicles)
+            .where(eq(schema.vehicles.id, trip.vehicleId));
+          
+          if (vehicle) {
+            vehicleInfo = {
+              id: vehicle.id,
+              plates: vehicle.plates,
+              licensePlate: vehicle.plates, // Alias para compatibilidad con frontend
+              brand: vehicle.brand,
+              model: vehicle.model,
+              economicNumber: vehicle.economicNumber,
+              capacity: vehicle.capacity
+            };
+          }
+        }
         
         const tripWithInfo = {
           ...trip,
@@ -183,7 +223,10 @@ export class DatabaseStorage implements IStorage {
           numStops: route.stops.length,
           // Agregar información de la compañía
           companyName: companyData.companyName,
-          companyLogo: companyData.companyLogo
+          companyLogo: companyData.companyLogo,
+          // Incluir información completa del conductor y vehículo
+          driver: driverInfo,
+          vehicle: vehicleInfo
         };
         
         // Verificar que los datos de la compañía estén presentes
@@ -259,6 +302,27 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Obtener información completa del vehículo si existe vehicleId
+    let vehicleInfo = null;
+    if (trip.vehicleId) {
+      const [vehicle] = await db
+        .select()
+        .from(schema.vehicles)
+        .where(eq(schema.vehicles.id, trip.vehicleId));
+      
+      if (vehicle) {
+        vehicleInfo = {
+          id: vehicle.id,
+          plates: vehicle.plates,
+          licensePlate: vehicle.plates, // Alias para compatibilidad con frontend
+          brand: vehicle.brand,
+          model: vehicle.model,
+          economicNumber: vehicle.economicNumber,
+          capacity: vehicle.capacity
+        };
+      }
+    }
+
     // Si se proporciona tripId, extraer datos del segmento específico del tripData JSON
     let segmentData = null;
     if (tripId && trip.tripData) {
@@ -284,6 +348,7 @@ export class DatabaseStorage implements IStorage {
       companyName,
       companyLogo,
       driver: driverInfo, // Incluir información completa del conductor
+      vehicle: vehicleInfo, // Incluir información completa del vehículo
       // Datos específicos del segmento si están disponibles
       origin: segmentData?.origin || route.origin,
       destination: segmentData?.destination || route.destination,

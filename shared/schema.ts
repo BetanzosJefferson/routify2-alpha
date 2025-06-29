@@ -190,6 +190,16 @@ export type TripWithRouteInfo = Trip & {
     email: string;
     phone?: string;
   };
+  // Información completa del vehículo
+  vehicle?: {
+    id: number;
+    plates: string;
+    licensePlate: string;
+    brand: string;
+    model: string;
+    economicNumber: string;
+    capacity: number;
+  };
   // Campos para terminales
   originTerminal?: string;
   destinationTerminal?: string;
