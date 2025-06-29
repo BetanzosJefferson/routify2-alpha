@@ -775,6 +775,44 @@ export class DatabaseStorage implements IStorage {
       // Buscar el segmento principal (isMainTrip: true) para información del viaje padre
       const mainTripSegment = tripDataArray.find(segment => segment.isMainTrip === true);
       
+      // Obtener información del conductor
+      let driverInfo = null;
+      if (tripRecord.driverId) {
+        try {
+          const [driver] = await db.select().from(schema.users).where(eq(schema.users.id, tripRecord.driverId));
+          if (driver) {
+            driverInfo = {
+              id: driver.id,
+              firstName: driver.firstName,
+              lastName: driver.lastName,
+              email: driver.email,
+              phone: driver.phone
+            };
+          }
+        } catch (error) {
+          console.warn(`Error fetching driver ${tripRecord.driverId}:`, error);
+        }
+      }
+      
+      // Obtener información del vehículo
+      let vehicleInfo = null;
+      if (tripRecord.vehicleId) {
+        try {
+          const [vehicle] = await db.select().from(schema.vehicles).where(eq(schema.vehicles.id, tripRecord.vehicleId));
+          if (vehicle) {
+            vehicleInfo = {
+              id: vehicle.id,
+              model: vehicle.model,
+              plates: vehicle.plates, // Usar "plates" como está en la base de datos
+              brand: vehicle.brand,
+              capacity: vehicle.capacity
+            };
+          }
+        } catch (error) {
+          console.warn(`Error fetching vehicle ${tripRecord.vehicleId}:`, error);
+        }
+      }
+      
       // Crear objeto trip compatible con el frontend usando datos del segmento específico
       const trip = {
         id: tripDetails.tripId, // Use the specific segment ID
@@ -791,6 +829,9 @@ export class DatabaseStorage implements IStorage {
         capacity: tripRecord.capacity,
         companyId: tripRecord.companyId,
         visibility: tripRecord.visibility,
+        // Información del conductor y vehículo
+        driver: driverInfo,
+        vehicle: vehicleInfo,
         // Información del viaje padre para agrupación en frontend
         parentTrip: mainTripSegment ? {
           origin: mainTripSegment.origin,
@@ -808,6 +849,9 @@ export class DatabaseStorage implements IStorage {
         passengers,
         createdByUser
       });
+      
+      // DEBUG: Mostrar información del conductor y vehículo que se envía
+      console.log(`[getReservations] Reservación ${reservation.id} - Driver:`, driverInfo, 'Vehicle:', vehicleInfo);
     }
     
     console.log(`DB Storage: Reservaciones procesadas: ${reservationsWithDetails.length}`);

@@ -366,7 +366,9 @@ export class DatabaseStorage implements IStorage {
       origin: finalTripData.origin,
       destination: finalTripData.destination,
       departureTime: finalTripData.departureTime,
-      isSubTrip: finalTripData.isSubTrip
+      isSubTrip: finalTripData.isSubTrip,
+      driver: finalTripData.driver,
+      vehicle: finalTripData.vehicle
     });
 
     return finalTripData;
@@ -786,7 +788,11 @@ export class DatabaseStorage implements IStorage {
 
       console.log(`[getReservations] Llamando getTripWithRouteInfo(${tripDetails?.recordId}, "${specificTripId}")`);
       const trip = await this.getTripWithRouteInfo(tripDetails?.recordId, specificTripId);
-      if (!trip) continue;
+      if (!trip) {
+        console.log(`[getReservations] getTripWithRouteInfo retornó null/undefined para recordId: ${tripDetails?.recordId}, tripId: ${specificTripId}`);
+        continue;
+      }
+      console.log(`[getReservations] getTripWithRouteInfo exitoso para recordId: ${tripDetails?.recordId}. Driver:`, trip.driver, 'Vehicle:', trip.vehicle);
       
       const passengers = await this.getPassengers(reservation.id);
       
