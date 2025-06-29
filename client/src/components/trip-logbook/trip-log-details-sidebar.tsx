@@ -229,7 +229,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   const parentTripInfo = tripData.tripInfo.parentTrip || tripData.tripInfo;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    <div className="fixed inset-0 z-[9999] flex" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
       {/* Overlay */}
       <div 
         className="flex-1 bg-black bg-opacity-50"
@@ -237,7 +237,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
       />
       
       {/* Sidebar principal */}
-      <div className="w-1/2 bg-white shadow-xl flex flex-col h-full">
+      <div className="w-1/2 min-w-[400px] bg-white shadow-2xl flex flex-col h-full border-l-2 border-gray-200 relative">
         {/* Header fijo */}
         <div className="flex items-center justify-between p-6 border-b bg-white">
           <div>
