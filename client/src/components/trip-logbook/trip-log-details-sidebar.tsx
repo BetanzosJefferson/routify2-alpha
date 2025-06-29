@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 type TripLogData = {
@@ -52,6 +53,10 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [isSavingExpense, setIsSavingExpense] = useState(false);
   const [isRemovingExpense, setIsRemovingExpense] = useState<number | null>(null);
+  
+  // Estados para modales de confirmación
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
 
   const { toast } = useToast();
 
@@ -108,10 +113,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
       });
 
       if (response.ok) {
-        toast({
-          title: "Presupuesto guardado",
-          description: "El presupuesto se ha actualizado correctamente.",
-        });
+        setShowBudgetModal(true);
+        setTimeout(() => setShowBudgetModal(false), 2000);
       } else {
         throw new Error('Error al guardar presupuesto');
       }
@@ -154,10 +157,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
           description: ''
         });
         
-        toast({
-          title: "Gasto agregado",
-          description: "El gasto se ha registrado correctamente.",
-        });
+        setShowExpenseModal(true);
+        setTimeout(() => setShowExpenseModal(false), 2000);
       } else {
         throw new Error('Error al agregar gasto');
       }
@@ -517,5 +518,48 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
     </div>
   );
 
-  return createPortal(sidebarContent, document.body);
+  // Modales separados usando createPortal
+  const budgetModal = showBudgetModal && (
+    <Dialog open={showBudgetModal} onOpenChange={setShowBudgetModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-center text-green-600">¡Presupuesto Guardado!</DialogTitle>
+          <DialogDescription className="text-center">
+            El presupuesto se ha actualizado correctamente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center py-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <DollarSign className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const expenseModal = showExpenseModal && (
+    <Dialog open={showExpenseModal} onOpenChange={setShowExpenseModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-center text-green-600">¡Gasto Agregado!</DialogTitle>
+          <DialogDescription className="text-center">
+            El gasto se ha registrado correctamente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-center py-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+            <PlusCircle className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  return (
+    <>
+      {createPortal(sidebarContent, document.body)}
+      {budgetModal && createPortal(budgetModal, document.body)}
+      {expenseModal && createPortal(expenseModal, document.body)}
+    </>
+  );
 }
