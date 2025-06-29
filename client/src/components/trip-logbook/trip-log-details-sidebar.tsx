@@ -230,16 +230,16 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Overlay para cerrar al hacer click afuera */}
+      {/* Overlay */}
       <div 
         className="flex-1 bg-black bg-opacity-50"
         onClick={onClose}
       />
       
-      {/* Sidebar */}
-      <div className="w-1/2 bg-white shadow-xl flex flex-col h-full overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-white flex-shrink-0">
+      {/* Sidebar principal */}
+      <div className="w-1/2 bg-white shadow-xl flex flex-col h-full">
+        {/* Header fijo */}
+        <div className="flex items-center justify-between p-6 border-b bg-white">
           <div>
             <h2 className="text-xl font-semibold">Detalles Financieros</h2>
             <p className="text-sm text-gray-600">
@@ -254,8 +254,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
           </Button>
         </div>
 
-        {/* Resumen financiero */}
-        <div className="p-6 border-b bg-gray-50 flex-shrink-0">
+        {/* Resumen financiero fijo */}
+        <div className="p-6 border-b bg-gray-50">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Ventas Totales</p>
@@ -274,10 +274,10 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
           </div>
         </div>
 
-        {/* Contenido con tabs - área scrolleable */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Contenido scrolleable */}
+        <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="reservations" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 flex-shrink-0 bg-white">
+            <TabsList className="grid w-full grid-cols-3 bg-white border-b">
               <TabsTrigger value="reservations">
                 <Users className="h-4 w-4 mr-2" />
                 Reservaciones ({tripData.reservations.length})
@@ -292,222 +292,224 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="reservations" className="p-6 space-y-4">
-              {tripData.reservations.map((reservation: any) => (
-                <div key={reservation.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-medium">Reservación #{reservation.id}</p>
-                      <p className="text-sm text-gray-600">{reservation.phone}</p>
+            <div className="flex-1 overflow-y-auto">
+              <TabsContent value="reservations" className="p-6 space-y-4 m-0">
+                {tripData.reservations.map((reservation: any) => (
+                  <div key={reservation.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium">Reservación #{reservation.id}</p>
+                        <p className="text-sm text-gray-600">{reservation.phone}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{formatCurrency(reservation.totalAmount)}</p>
+                        {getPaymentStatusBadge(reservation.paymentStatus)}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold">{formatCurrency(reservation.totalAmount)}</p>
-                      {getPaymentStatusBadge(reservation.paymentStatus)}
-                    </div>
+                    {reservation.passengers && reservation.passengers.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium">Pasajeros:</p>
+                        <ul className="text-sm text-gray-600">
+                          {reservation.passengers.map((passenger: any, idx: number) => (
+                            <li key={idx}>{passenger.firstName} {passenger.lastName}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  {reservation.passengers && reservation.passengers.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium">Pasajeros:</p>
-                      <ul className="text-sm text-gray-600">
-                        {reservation.passengers.map((passenger: any, idx: number) => (
-                          <li key={idx}>{passenger.firstName} {passenger.lastName}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-              
-              {tripData.reservations.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No hay reservaciones para este viaje
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="packages" className="p-6 space-y-4">
-              {tripData.packages.map((pkg: any) => (
-                <div key={pkg.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-medium">Paquete #{pkg.id}</p>
-                      <p className="text-sm text-gray-600">
-                        {pkg.senderName} → {pkg.recipientName}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold">{formatCurrency(pkg.price)}</p>
-                      <Badge className="bg-green-100 text-green-800">Pagado</Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600">{pkg.packageDescription}</p>
-                </div>
-              ))}
-              
-              {tripData.packages.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No hay paqueterías para este viaje
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="finances" className="p-6 space-y-6">
-              {/* Gestión de presupuesto */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Presupuesto del Viaje
-                </h3>
+                ))}
                 
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Label htmlFor="budget">Presupuesto</Label>
-                    <Input
-                      id="budget"
-                      type="number"
-                      value={budget}
-                      onChange={(e) => setBudget(Number(e.target.value))}
-                      placeholder="Ingrese el presupuesto"
-                    />
-                  </div>
-                  <Button 
-                    onClick={saveBudget} 
-                    disabled={isSavingBudget || isLoadingBudget}
-                    className="mt-6"
-                  >
-                    {isSavingBudget && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Guardar
-                  </Button>
-                </div>
-
-                {budget > 0 && (
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="flex justify-between text-sm">
-                      <span>Presupuesto:</span>
-                      <span>{formatCurrency(budget)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Gastado:</span>
-                      <span>{formatCurrency(totalExpenses)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Variación:</span>
-                      <span className={budgetVariance > 0 ? 'text-red-600' : 'text-green-600'}>
-                        {budgetVariance > 0 ? '+' : ''}{budgetVariance.toFixed(1)}%
-                      </span>
-                    </div>
+                {tripData.reservations.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No hay reservaciones para este viaje
                   </div>
                 )}
-              </div>
+              </TabsContent>
 
-              <Separator />
+              <TabsContent value="packages" className="p-6 space-y-4 m-0">
+                {tripData.packages.map((pkg: any) => (
+                  <div key={pkg.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium">Paquete #{pkg.id}</p>
+                        <p className="text-sm text-gray-600">
+                          {pkg.senderName} → {pkg.recipientName}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{formatCurrency(pkg.price)}</p>
+                        <Badge className="bg-green-100 text-green-800">Pagado</Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">{pkg.packageDescription}</p>
+                  </div>
+                ))}
+                
+                {tripData.packages.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No hay paqueterías para este viaje
+                  </div>
+                )}
+              </TabsContent>
 
-              {/* Gestión de gastos */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <MinusCircle className="h-5 w-5" />
-                  Gastos del Viaje
-                </h3>
-
-                {/* Formulario para agregar gasto */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="expense-type">Categoría</Label>
-                    <Select 
-                      value={newExpense.type} 
-                      onValueChange={(value) => setNewExpense(prev => ({ ...prev, type: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="combustible">Combustible</SelectItem>
-                        <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
-                        <SelectItem value="peajes">Peajes</SelectItem>
-                        <SelectItem value="comida">Comida</SelectItem>
-                        <SelectItem value="hospedaje">Hospedaje</SelectItem>
-                        <SelectItem value="otros">Otros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <TabsContent value="finances" className="p-6 space-y-6 m-0">
+                {/* Gestión de presupuesto */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Presupuesto del Viaje
+                  </h3>
                   
-                  <div>
-                    <Label htmlFor="expense-amount">Monto</Label>
-                    <Input
-                      id="expense-amount"
-                      type="number"
-                      value={newExpense.amount}
-                      onChange={(e) => setNewExpense(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  
-                  <div className="col-span-2">
-                    <Label htmlFor="expense-description">Descripción (opcional)</Label>
-                    <Input
-                      id="expense-description"
-                      value={newExpense.description || ''}
-                      onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Descripción del gasto"
-                    />
-                  </div>
-                  
-                  <div className="col-span-2">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor="budget">Presupuesto</Label>
+                      <Input
+                        id="budget"
+                        type="number"
+                        value={budget}
+                        onChange={(e) => setBudget(Number(e.target.value))}
+                        placeholder="Ingrese el presupuesto"
+                      />
+                    </div>
                     <Button 
-                      onClick={addExpense} 
-                      disabled={isSavingExpense || !newExpense.type || newExpense.amount <= 0}
-                      className="w-full"
+                      onClick={saveBudget} 
+                      disabled={isSavingBudget || isLoadingBudget}
+                      className="mt-6"
                     >
-                      {isSavingExpense && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Agregar Gasto
+                      {isSavingBudget && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Guardar
                     </Button>
                   </div>
-                </div>
 
-                {/* Lista de gastos */}
-                <div className="space-y-2 max-h-60 overflow-auto">
-                  {isLoadingExpenses ? (
-                    <div className="text-center py-4">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                    </div>
-                  ) : expenses.length > 0 ? (
-                    expenses.map((expense) => (
-                      <div key={expense.id} className="flex justify-between items-center p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium capitalize">{expense.type}</p>
-                          {expense.description && (
-                            <p className="text-sm text-gray-600">{expense.description}</p>
-                          )}
-                          {expense.createdBy && (
-                            <p className="text-xs text-gray-500">Por: {expense.createdBy}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold">{formatCurrency(expense.amount)}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeExpense(expense.id as number)}
-                            disabled={isRemovingExpense === expense.id}
-                          >
-                            {isRemovingExpense === expense.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
+                  {budget > 0 && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between text-sm">
+                        <span>Presupuesto:</span>
+                        <span>{formatCurrency(budget)}</span>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No hay gastos registrados para este viaje
+                      <div className="flex justify-between text-sm">
+                        <span>Gastado:</span>
+                        <span>{formatCurrency(totalExpenses)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Variación:</span>
+                        <span className={budgetVariance > 0 ? 'text-red-600' : 'text-green-600'}>
+                          {budgetVariance > 0 ? '+' : ''}{budgetVariance.toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            </TabsContent>
+
+                <Separator />
+
+                {/* Gestión de gastos */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <MinusCircle className="h-5 w-5" />
+                    Gastos del Viaje
+                  </h3>
+
+                  {/* Formulario para agregar gasto */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="expense-type">Categoría</Label>
+                      <Select 
+                        value={newExpense.type} 
+                        onValueChange={(value) => setNewExpense(prev => ({ ...prev, type: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="combustible">Combustible</SelectItem>
+                          <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                          <SelectItem value="peajes">Peajes</SelectItem>
+                          <SelectItem value="comida">Comida</SelectItem>
+                          <SelectItem value="hospedaje">Hospedaje</SelectItem>
+                          <SelectItem value="otros">Otros</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="expense-amount">Monto</Label>
+                      <Input
+                        id="expense-amount"
+                        type="number"
+                        value={newExpense.amount}
+                        onChange={(e) => setNewExpense(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Label htmlFor="expense-description">Descripción (opcional)</Label>
+                      <Input
+                        id="expense-description"
+                        value={newExpense.description || ''}
+                        onChange={(e) => setNewExpense(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Descripción del gasto"
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Button 
+                        onClick={addExpense} 
+                        disabled={isSavingExpense || !newExpense.type || newExpense.amount <= 0}
+                        className="w-full"
+                      >
+                        {isSavingExpense && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Agregar Gasto
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Lista de gastos */}
+                  <div className="space-y-2 max-h-60 overflow-auto">
+                    {isLoadingExpenses ? (
+                      <div className="text-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                      </div>
+                    ) : expenses.length > 0 ? (
+                      expenses.map((expense) => (
+                        <div key={expense.id} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <p className="font-medium capitalize">{expense.type}</p>
+                            {expense.description && (
+                              <p className="text-sm text-gray-600">{expense.description}</p>
+                            )}
+                            {expense.createdBy && (
+                              <p className="text-xs text-gray-500">Por: {expense.createdBy}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold">{formatCurrency(expense.amount)}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeExpense(expense.id as number)}
+                              disabled={isRemovingExpense === expense.id}
+                            >
+                              {isRemovingExpense === expense.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        No hay gastos registrados para este viaje
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
       </div>
