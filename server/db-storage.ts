@@ -1025,9 +1025,12 @@ export class DatabaseStorage implements IStorage {
       hasRecliningSeats: vehicle.hasRecliningSeats === true,
       services: Array.isArray(vehicle.services) ? vehicle.services : [],
       description: vehicle.description || null,
+      companyId: vehicle.companyId || null, // Incluir companyId
       createdAt: new Date(),
       updatedAt: new Date()
     };
+    
+    console.log("Insertando vehículo con companyId:", vehicleData.companyId);
     
     const [newVehicle] = await db.insert(schema.vehicles).values(vehicleData).returning();
     return newVehicle;
