@@ -83,6 +83,8 @@ export function ReservationDetailsSidebar({
 
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
+  
+  console.log('[ReservationDetailsSidebar] Debug - user:', user, 'isDriver:', isDriver);
 
   // Funciones para manejo de presupuesto y gastos
   const formatCurrency = (amount: number) => {
@@ -114,6 +116,14 @@ export function ReservationDetailsSidebar({
           console.log('[getTripId] Usando trip.id numérico:', tripId);
           return tripId;
         }
+        // Si es un string sin "_", intentar convertir a número
+        if (typeof tripId === 'string') {
+          const numericId = parseInt(tripId, 10);
+          if (!isNaN(numericId)) {
+            console.log('[getTripId] Convirtiendo string a número:', tripId, '-> ID:', numericId);
+            return numericId;
+          }
+        }
       }
       
       // Extraer desde tripId si está disponible
@@ -141,27 +151,34 @@ export function ReservationDetailsSidebar({
     
     const tripId = getTripId();
     if (!tripId) {
-      console.log('No se pudo obtener el ID del viaje para cargar presupuesto');
+      console.log('[loadBudgetAndExpenses] No se pudo obtener el ID del viaje para cargar presupuesto');
       return;
     }
     
+    console.log('[loadBudgetAndExpenses] Iniciando carga de presupuesto y gastos para viaje:', tripId);
     setIsLoadingBudget(true);
     try {
       // Cargar presupuesto del viaje usando el ID numérico
+      console.log('[loadBudgetAndExpenses] Haciendo fetch a:', `/api/trips/${tripId}/budget`);
       const budgetResponse = await fetch(`/api/trips/${tripId}/budget`);
+      console.log('[loadBudgetAndExpenses] Budget response status:', budgetResponse.status);
       if (budgetResponse.ok) {
         const budgetData = await budgetResponse.json();
+        console.log('[loadBudgetAndExpenses] Budget data recibida:', budgetData);
         setBudget(budgetData.budget || 0);
       }
 
       // Cargar gastos del viaje usando el ID numérico
+      console.log('[loadBudgetAndExpenses] Haciendo fetch a:', `/api/trips/${tripId}/expenses`);
       const expensesResponse = await fetch(`/api/trips/${tripId}/expenses`);
+      console.log('[loadBudgetAndExpenses] Expenses response status:', expensesResponse.status);
       if (expensesResponse.ok) {
         const expensesData = await expensesResponse.json();
+        console.log('[loadBudgetAndExpenses] Expenses data recibida:', expensesData);
         setExpenses(expensesData || []);
       }
     } catch (error) {
-      console.error('Error loading budget and expenses:', error);
+      console.error('[loadBudgetAndExpenses] Error loading budget and expenses:', error);
     } finally {
       setIsLoadingBudget(false);
     }
@@ -261,10 +278,12 @@ export function ReservationDetailsSidebar({
 
   // Cargar datos al montar el componente si es chofer
   useEffect(() => {
+    console.log('[useEffect] Checking conditions - isDriver:', isDriver, 'reservations.length:', reservations.length);
     if (isDriver && reservations.length > 0) {
+      console.log('[useEffect] Calling loadBudgetAndExpenses()');
       loadBudgetAndExpenses();
     }
-  }, [isDriver, reservations.length]);
+  }, [isDriver, reservations.length, reservations]);
 
   // Obtener paqueterías relacionadas al viaje
   const { 
