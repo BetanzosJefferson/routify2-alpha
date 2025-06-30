@@ -71,6 +71,7 @@ interface UserCashBoxData {
     transactionCount: number;
     hasPendingCutoff: boolean;
     allTransactionsCutoff: boolean;
+    hasCompletedCutoff: boolean; // Nueva propiedad para rastrear transacciones con corte
 }
 
 export function UserCashBoxesPage() {
@@ -122,6 +123,7 @@ export function UserCashBoxesPage() {
             let totalAmount = 0;
             let hasPendingCutoff = false;
             let allTransactionsCutoff = true;
+            let hasCompletedCutoff = false; // Nueva variable para rastrear si tiene transacciones con corte
 
             userGroup.transactions.forEach((transaction: any) => {
                 const amount = transaction.details?.details?.monto || 0;
@@ -141,10 +143,13 @@ export function UserCashBoxesPage() {
                     console.log(`[UserCashBoxes] Transacción ${transaction.id} marcada como pendiente`);
                     hasPendingCutoff = true;
                     allTransactionsCutoff = false;
+                } else {
+                    // Tiene al menos una transacción con corte realizado
+                    hasCompletedCutoff = true;
                 }
             });
 
-            console.log(`[UserCashBoxes] Usuario ${userGroup.firstName} ${userGroup.lastName} - hasPendingCutoff: ${hasPendingCutoff}, allTransactionsCutoff: ${allTransactionsCutoff}`);
+            console.log(`[UserCashBoxes] Usuario ${userGroup.firstName} ${userGroup.lastName} - hasPendingCutoff: ${hasPendingCutoff}, allTransactionsCutoff: ${allTransactionsCutoff}, hasCompletedCutoff: ${hasCompletedCutoff}`);
 
             return {
                 userId: userGroup.userId,
@@ -159,7 +164,8 @@ export function UserCashBoxesPage() {
                 totalAmount,
                 transactionCount: userGroup.transactions.length,
                 hasPendingCutoff,
-                allTransactionsCutoff
+                allTransactionsCutoff,
+                hasCompletedCutoff
             };
         });
 
@@ -186,7 +192,8 @@ export function UserCashBoxesPage() {
                 if (selectedCutoffFilter === "pending") {
                     return userBox.hasPendingCutoff;
                 } else if (selectedCutoffFilter === "completed") {
-                    return userBox.allTransactionsCutoff && userBox.transactionCount > 0; // Solo si tienen transacciones
+                    // Cambio: mostrar usuarios que tengan al menos una transacción con corte, no que todas tengan corte
+                    return userBox.hasCompletedCutoff && userBox.transactionCount > 0;
                 }
                 return true; // Debería ser capturado por 'all' pero para seguridad
             });
