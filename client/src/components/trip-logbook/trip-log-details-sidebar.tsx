@@ -416,19 +416,17 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label htmlFor="expense-type">Categoría</Label>
-                      <Select 
-                        value={newExpense.type} 
-                        onValueChange={(value) => setNewExpense(prev => ({ ...prev, type: value }))}
+                      <select
+                        id="expense-type"
+                        value={newExpense.type}
+                        onChange={(e) => setNewExpense(prev => ({ ...prev, type: e.target.value }))}
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar categoría" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="gasolina">Gasolina</SelectItem>
-                          <SelectItem value="casetas">Casetas</SelectItem>
-                          <SelectItem value="otros">Otros</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <option value="">Seleccionar categoría</option>
+                        <option value="gasolina">Gasolina</option>
+                        <option value="casetas">Casetas</option>
+                        <option value="otros">Otros</option>
+                      </select>
                     </div>
                     
                     <div>
