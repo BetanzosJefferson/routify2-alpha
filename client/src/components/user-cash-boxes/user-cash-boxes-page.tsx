@@ -119,6 +119,12 @@ export function UserCashBoxesPage() {
             const amount = transaction.details?.details?.monto || 0;
             const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
 
+            // Validar que userId existe antes de procesar
+            if (!userId || userId === null || userId === undefined) {
+                console.warn('[UserCashBoxes] Transacción sin user_id válido:', transaction);
+                return; // Saltar esta transacción
+            }
+
             if (!userGroups.has(userId)) {
                 userGroups.set(userId, {
                     userId,
@@ -173,7 +179,14 @@ export function UserCashBoxesPage() {
         let currentFiltered = allUserCashBoxes;
 
         if (selectedUserFilter !== "all") {
-            currentFiltered = currentFiltered.filter(userBox => userBox.userId.toString() === selectedUserFilter);
+            currentFiltered = currentFiltered.filter(userBox => {
+                // Validar que userId existe y es válido antes de hacer toString()
+                if (!userBox.userId || userBox.userId === null || userBox.userId === undefined) {
+                    console.warn('[UserCashBoxes] UserBox sin userId válido en filtro:', userBox);
+                    return false;
+                }
+                return userBox.userId.toString() === selectedUserFilter;
+            });
         }
 
         if (selectedCutoffFilter !== "all") {
