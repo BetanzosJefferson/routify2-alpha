@@ -165,7 +165,7 @@ export function ReservationDetailsSidebar({
       if (budgetResponse.ok) {
         const budgetData = await budgetResponse.json();
         console.log('[loadBudgetAndExpenses] Budget data recibida:', budgetData);
-        setBudget(budgetData.budget || 0);
+        setBudget(budgetData.amount || 0);
       }
 
       // Cargar gastos del viaje usando el ID numérico
