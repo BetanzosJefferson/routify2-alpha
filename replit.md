@@ -119,6 +119,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 30, 2025** - Fixed user cash boxes display issue for multi-company ticket office users:
+  - Adapted frontend code to handle pre-grouped user data from backend instead of individual transactions
+  - Fixed "Cannot read properties of undefined (reading 'toString')" error that caused blank screens
+  - User cash boxes now correctly display ticket office transactions across multiple companies
+  - Added validation and logging for improved debugging of data processing
+
 - **June 30, 2025** - Enhanced reservation sidebar with budget and expense management for drivers:
   - Added "Presupuesto y Gastos" section exclusively for chofer role in reservation details sidebar
   - Implemented budget display (read-only for drivers) and expense tracking functionality

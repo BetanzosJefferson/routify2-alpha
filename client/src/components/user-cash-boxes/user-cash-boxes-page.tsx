@@ -109,69 +109,57 @@ export function UserCashBoxesPage() {
         refetchOnMount: true,
     });
 
-    const allUserCashBoxes: UserCashBoxData[] = useMemo(() => { // Renombrado a allUserCashBoxes
+    const allUserCashBoxes: UserCashBoxData[] = useMemo(() => {
         if (!transactions || !Array.isArray(transactions)) return [];
 
-        const userGroups = new Map<number, UserCashBoxData>();
+        // El backend ya envía datos pre-agrupados por usuario, no transacciones individuales
+        const userCashBoxes: UserCashBoxData[] = transactions.map((userGroup: any) => {
+            console.log('[UserCashBoxes] Procesando grupo de usuario:', userGroup);
+            
+            // Calcular totales basados en las transacciones del grupo
+            let totalCash = 0;
+            let totalTransfer = 0;
+            let totalAmount = 0;
+            let hasPendingCutoff = false;
+            let allTransactionsCutoff = true;
 
-        transactions.forEach((transaction) => {
-            const userId = transaction.user_id;
-            const amount = transaction.details?.details?.monto || 0;
-            const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+            userGroup.transactions.forEach((transaction: any) => {
+                const amount = transaction.details?.details?.monto || 0;
+                const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+                
+                totalAmount += amount;
+                
+                if (paymentMethod === "efectivo") {
+                    totalCash += amount;
+                } else {
+                    totalTransfer += amount;
+                }
 
-            // Validar que userId existe antes de procesar
-            if (!userId || userId === null || userId === undefined) {
-                console.warn('[UserCashBoxes] Transacción sin user_id válido:', transaction);
-                return; // Saltar esta transacción
-            }
+                // Verificar estado de corte
+                if (transaction.cutoff_id === null) {
+                    hasPendingCutoff = true;
+                    allTransactionsCutoff = false;
+                }
+            });
 
-            if (!userGroups.has(userId)) {
-                userGroups.set(userId, {
-                    userId,
-                    userName: `Usuario ${userId}`,
-                    transactions: [],
-                    totalCash: 0,
-                    totalTransfer: 0,
-                    totalAmount: 0,
-                    transactionCount: 0,
-                    userEmail: '',
-                    userRole: '',
-                    userCompany: '',
-                    userProfilePicture: '',
-                    hasPendingCutoff: false,
-                    allTransactionsCutoff: true,
-                });
-            }
-
-            const userGroup = userGroups.get(userId)!;
-            userGroup.transactions.push(transaction);
-            userGroup.transactionCount++;
-            userGroup.totalAmount += amount;
-
-            if (paymentMethod === "efectivo") {
-                userGroup.totalCash += amount;
-            } else {
-                userGroup.totalTransfer += amount;
-            }
-
-            if (transaction.cutoff_id === null) {
-                userGroup.hasPendingCutoff = true;
-                userGroup.allTransactionsCutoff = false;
-            }
+            return {
+                userId: userGroup.userId,
+                userName: `${userGroup.firstName} ${userGroup.lastName}`,
+                userEmail: userGroup.email,
+                userRole: userGroup.role,
+                userCompany: userGroup.company || '',
+                userProfilePicture: userGroup.profilePicture || '',
+                transactions: userGroup.transactions,
+                totalCash,
+                totalTransfer,
+                totalAmount,
+                transactionCount: userGroup.transactions.length,
+                hasPendingCutoff,
+                allTransactionsCutoff
+            };
         });
 
-        Array.from(userGroups.values()).forEach(userBox => {
-            if (userBox.transactions.length > 0 && userBox.transactions[0].user) {
-                const firstTransactionUser = userBox.transactions[0].user;
-                userBox.userName = `${firstTransactionUser.firstName} ${firstTransactionUser.lastName}`;
-                userBox.userEmail = firstTransactionUser.email;
-                userBox.userRole = firstTransactionUser.role;
-                userBox.userCompany = firstTransactionUser.company;
-                userBox.userProfilePicture = firstTransactionUser.profilePicture;
-            }
-        });
-
-        return Array.from(userGroups.values()).sort((a, b) => b.totalAmount - a.totalAmount);
+        return userCashBoxes.sort((a, b) => b.totalAmount - a.totalAmount);
     }, [transactions]);
 
     // Aplicar filtros a los userCashBoxes
