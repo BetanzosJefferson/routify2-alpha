@@ -1030,8 +1030,8 @@ export default function ReservationDetailsModal({
                             ) : (
                               // Caso especial: se creó originalmente como pagado
                               reservation.createdByUser ? 
-                                `${reservation.createdByUser.firstName} ${reservation.createdByUser.lastName} (al crear)` : 
-                                'Usuario desconocido (al crear)'
+                                `${reservation.createdByUser.firstName} ${reservation.createdByUser.lastName} ` : 
+                                ''
                             )}
                           </div>
                         </div>

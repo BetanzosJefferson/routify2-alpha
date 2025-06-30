@@ -6282,7 +6282,7 @@ function setupPackageRoutes(app: Express) {
   }
   
   // Constantes para roles que pueden crear/editar paquetes
-  const PACKAGE_WRITE_ROLES = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, UserRole.CHECKER];
+  const PACKAGE_WRITE_ROLES = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, UserRole.CHECKER, UserRole.TICKET_OFFICE];
   // Roles que solo pueden ver paquetes
   const PACKAGE_READ_ONLY_ROLES = [UserRole.DRIVER];
   
