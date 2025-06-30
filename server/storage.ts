@@ -109,6 +109,7 @@ export interface IStorage {
   getUsersByCompany(companyId: string): Promise<User[]>;
   getUsersByRole(role: string): Promise<User[]>;
   getUserById(id: number): Promise<User | undefined>;
+  getUserCompanies(userId: number): Promise<schema.UserCompany[]>;
   updateUser(id: number, userData: { 
     email?: string; 
     password?: string; 

@@ -1389,6 +1389,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserCompanies(userId: number): Promise<schema.UserCompany[]> {
+    console.log(`DB Storage: Consultando empresas asociadas al usuario ${userId}`);
+    
+    try {
+      const userCompanyAssociations = await db
+        .select()
+        .from(schema.userCompanies)
+        .where(eq(schema.userCompanies.userId, userId));
+      
+      console.log(`DB Storage: Encontradas ${userCompanyAssociations.length} asociaciones de empresa para usuario ${userId}`);
+      return userCompanyAssociations;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener empresas del usuario ${userId}:`, error);
+      throw error;
+    }
+  }
+
   async updateUser(id: number, userUpdate: Partial<schema.User>): Promise<schema.User | undefined> {
     console.log(`DB Storage: Actualizando usuario ${id} con datos:`, JSON.stringify(userUpdate, null, 2));
     

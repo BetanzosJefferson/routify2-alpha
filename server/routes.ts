@@ -4333,12 +4333,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verificar que la compañía del usuario coincida con la de la reservación
-      if (user.companyId !== reservation.companyId) {
-        return res.status(403).json({
-          success: false,
-          message: 'No tienes permisos para verificar tickets de esta compañía'
-        });
+      // Verificar permisos de compañía - diferente lógica para taquilla vs otros roles
+      if (user.role === 'taquilla') {
+        // Para usuarios taquilla, verificar acceso a través de userCompanies
+        console.log(`[CHECK TICKET] Usuario taquilla ${user.id} intentando verificar reservación de compañía ${reservation.companyId}`);
+        
+        const userCompanyAssociations = await storage.getUserCompanies(user.id);
+        const hasAccess = userCompanyAssociations.some(assoc => assoc.companyId === reservation.companyId);
+        
+        console.log(`[CHECK TICKET] Usuario taquilla tiene acceso a empresas: ${userCompanyAssociations.map(a => a.companyId).join(', ')}`);
+        console.log(`[CHECK TICKET] ¿Tiene acceso a empresa ${reservation.companyId}? ${hasAccess}`);
+        
+        if (!hasAccess) {
+          return res.status(403).json({
+            success: false,
+            message: 'No tienes permisos para verificar tickets de esta compañía'
+          });
+        }
+      } else {
+        // Para otros roles, usar verificación tradicional de companyId
+        if (user.companyId !== reservation.companyId) {
+          return res.status(403).json({
+            success: false,
+            message: 'No tienes permisos para verificar tickets de esta compañía'
+          });
+        }
       }
 
       // Verificar si el ticket ya fue escaneado
