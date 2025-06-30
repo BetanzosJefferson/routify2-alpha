@@ -2517,15 +2517,16 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`DB Storage: Consultando cajas de usuarios para compañía ${companyId}, excluyendo usuario ${currentUserId}`);
       
-      // Obtener transacciones que cumplan los criterios:
-      // 1. cutoff_id sea null (no pertenecen a un corte)
-      // 2. companyId igual al del usuario actual
-      // 3. user_id diferente al usuario actual
+      // Obtener TODAS las transacciones que cumplan los criterios:
+      // 1. companyId igual al del usuario actual
+      // 2. user_id diferente al usuario actual
+      // (Removido el filtro de cutoff_id para mostrar tanto pendientes como realizados)
       const transactions = await this.db
         .select({
           id: schema.transacciones.id,
           details: schema.transacciones.details,
           user_id: schema.transacciones.user_id,
+          cutoff_id: schema.transacciones.cutoff_id, // Incluir cutoff_id en la respuesta
           createdAt: schema.transacciones.createdAt,
           // Información del usuario
           firstName: schema.users.firstName,
@@ -2537,14 +2538,13 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
         .where(
           and(
-            isNull(schema.transacciones.cutoff_id), // cutoff es null
             eq(schema.transacciones.companyId, companyId), // mismo company_id
             ne(schema.transacciones.user_id, currentUserId) // diferente user_id
           )
         )
         .orderBy(desc(schema.transacciones.createdAt));
 
-      console.log(`DB Storage: Encontradas ${transactions.length} transacciones sin corte de otros usuarios`);
+      console.log(`DB Storage: Encontradas ${transactions.length} transacciones (pendientes y realizadas) de otros usuarios`);
 
       // Agrupar transacciones por usuario
       const groupedByUser = transactions.reduce((acc: any, transaction: any) => {
@@ -2568,6 +2568,7 @@ export class DatabaseStorage implements IStorage {
         acc[userId].transactions.push({
           id: transaction.id,
           details: transaction.details,
+          cutoff_id: transaction.cutoff_id, // Incluir cutoff_id para determinar estado
           createdAt: transaction.createdAt
         });
 

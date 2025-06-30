@@ -19,7 +19,7 @@ import {
 
 interface Transaction {
     id: number;
-    user_id: number;
+    user_id?: number;
     details: {
         type: string;
         details: {
@@ -42,9 +42,9 @@ interface Transaction {
     };
     cutoff_id: number | null;
     createdAt: string;
-    updatedAt: string;
-    companyId: string;
-    user: {
+    updatedAt?: string;
+    companyId?: string;
+    user?: {
         id: number;
         firstName: string;
         lastName: string;
