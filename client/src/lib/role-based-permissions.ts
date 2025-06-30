@@ -13,6 +13,7 @@ export const ALL_SECTIONS: Section[] = [
   { id: "trips", name: "Viajes", description: "Lista de viajes programados" },
   { id: "publish-trip", name: "Publicar Viaje", description: "Crear y publicar nuevos viajes" },
   { id: "reservations", name: "Reservaciones", description: "Gestión de reservaciones de pasajeros" },
+  { id: "reservations-list", name: "Reservaciones en lista", description: "Vista de reservaciones del conductor para sus viajes asignados" },
   { id: "trip-summary", name: "Resumen de Viajes", description: "Reportes y estadísticas de viajes" },
   { id: "boarding-list", name: "Lista de Abordaje", description: "Control de abordaje de pasajeros" },
   { id: "users", name: "Usuarios", description: "Gestión de usuarios del sistema" },
@@ -42,6 +43,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "trips",
     "publish-trip",
     "reservations",
+    "reservations-list",
     "trip-summary",
     "users",
     "vehicles",
@@ -61,6 +63,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "trips",
     "publish-trip",
     "reservations",
+    "reservations-list",
     "trip-summary",
     "users",
     "vehicles",
@@ -77,6 +80,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.CALL_CENTER]: [
     "trips",
     "reservations",
+    "reservations-list",
     "reservation-requests",
     "notifications",
     "packages",
@@ -96,6 +100,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "dashboard",
     "notifications",
     "packages",
+    "reservations-list", // Vista específica de reservaciones para sus viajes asignados
     "cash-register",
     "cash-box",
     "cutoff-history"
@@ -103,6 +108,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.TICKET_OFFICE]: [
     "trips",
     "reservations",
+    "reservations-list",
     "notifications",
     "packages",
     "cash-register",

@@ -120,9 +120,10 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 - **June 29, 2025** - Updated role-based access control for drivers:
-  - Removed "reservations" permission from DRIVER/chofer role to restrict access
-  - Drivers now only have access to: dashboard, notifications, packages, cash-register, cash-box, cutoff-history
-  - Improved security by ensuring drivers cannot access passenger reservation data
+  - Removed "reservations" permission from DRIVER/chofer role to restrict general reservation access
+  - Added "reservations-list" permission for drivers to access only their assigned trip reservations
+  - Drivers now have access to: dashboard, notifications, packages, reservations-list, cash-register, cash-box, cutoff-history
+  - Enhanced security separation between general reservation management and driver-specific reservation viewing
 
 - **June 29, 2025** - Enhanced trip logbook sidebar functionality:
   - Fixed modal z-index issues using React Portal rendering outside sidebar container
