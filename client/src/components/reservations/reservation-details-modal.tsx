@@ -1018,14 +1018,21 @@ export default function ReservationDetailsModal({
                       </div>
 
                       {/* Usuario que marcó como pagada (si está pagada) */}
-                      {reservation.paymentStatus === 'pagado' && reservation.paidBy && (
+                      {reservation.paymentStatus === 'pagado' && (
                         <div className="grid grid-cols-2 items-center">
                           <div className="text-sm text-gray-500 font-medium">MARCADO COMO PAGADO POR</div>
                           <div className="text-right text-sm">
-                            {reservation.paidByUser ? 
-                              `${reservation.paidByUser.firstName} ${reservation.paidByUser.lastName}` : 
-                              `Usuario ID: ${reservation.paidBy}`
-                            }
+                            {reservation.paidBy ? (
+                              // Caso normal: alguien marcó como pagado después
+                              reservation.paidByUser ? 
+                                `${reservation.paidByUser.firstName} ${reservation.paidByUser.lastName}` : 
+                                `Usuario ID: ${reservation.paidBy}`
+                            ) : (
+                              // Caso especial: se creó originalmente como pagado
+                              reservation.createdByUser ? 
+                                `${reservation.createdByUser.firstName} ${reservation.createdByUser.lastName} (al crear)` : 
+                                'Usuario desconocido (al crear)'
+                            )}
                           </div>
                         </div>
                       )}
