@@ -15,7 +15,11 @@ import {
   MapPin,
   CheckIcon,
   ClipboardCopy, 
-  LockIcon
+  LockIcon,
+  Calculator,
+  PlusCircle,
+  Trash2,
+  Loader2
   
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +27,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input"; 
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { ReservationWithDetails } from "@shared/schema";
 import { usePackagesByTrip } from "@/hooks/use-packages-by-trip";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+
+type Expense = {
+  id: number | string;
+  tripId: number;
+  amount: number;
+  type: string;
+  description?: string;
+  createdAt?: Date;
+  userId?: number;
+  createdBy?: string;
+};
 
 interface ReservationDetailsSidebarProps {
   recordId: string;
@@ -42,6 +62,141 @@ export function ReservationDetailsSidebar({
 }: ReservationDetailsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para presupuesto y gastos (solo para chofer)
+  const [budget, setBudget] = useState<number>(0);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [newExpense, setNewExpense] = useState<Expense>({
+    id: '',
+    tripId: 0, // Se actualizará con el ID real del viaje
+    amount: 0,
+    type: '',
+    description: ''
+  });
+  const [isLoadingBudget, setIsLoadingBudget] = useState(false);
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [isRemovingExpense, setIsRemovingExpense] = useState<number | null>(null);
+  
+  // Hooks
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Verificar si el usuario es chofer
+  const isDriver = user?.role === 'chofer';
+
+  // Funciones para manejo de presupuesto y gastos
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(amount);
+  };
+
+  const loadBudgetAndExpenses = async () => {
+    if (!isDriver || !tripInfo?.recordId) return;
+    
+    setIsLoadingBudget(true);
+    try {
+      // Cargar presupuesto del viaje
+      const budgetResponse = await fetch(`/api/trips/${tripInfo.recordId}/budget`);
+      if (budgetResponse.ok) {
+        const budgetData = await budgetResponse.json();
+        setBudget(budgetData.budget || 0);
+      }
+
+      // Cargar gastos del viaje
+      const expensesResponse = await fetch(`/api/trips/${tripInfo.recordId}/expenses`);
+      if (expensesResponse.ok) {
+        const expensesData = await expensesResponse.json();
+        setExpenses(expensesData || []);
+      }
+    } catch (error) {
+      console.error('Error loading budget and expenses:', error);
+    } finally {
+      setIsLoadingBudget(false);
+    }
+  };
+
+  const addExpense = async () => {
+    if (!newExpense.amount || !newExpense.type || !tripInfo?.recordId) return;
+
+    setIsAddingExpense(true);
+    try {
+      const response = await fetch(`/api/trips/${tripInfo.recordId}/expenses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: newExpense.amount,
+          type: newExpense.type,
+          description: newExpense.description
+        }),
+      });
+
+      if (response.ok) {
+        const expense = await response.json();
+        setExpenses(prev => [...prev, expense]);
+        setNewExpense({
+          id: '',
+          tripId: 0,
+          amount: 0,
+          type: '',
+          description: ''
+        });
+        toast({
+          title: "Gasto agregado",
+          description: "El gasto se ha registrado correctamente.",
+        });
+      } else {
+        throw new Error('Error al agregar gasto');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el gasto. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingExpense(false);
+    }
+  };
+
+  const removeExpense = async (expenseId: number) => {
+    if (!tripInfo?.recordId) return;
+
+    setIsRemovingExpense(expenseId);
+    try {
+      const response = await fetch(`/api/trips/${tripInfo.recordId}/expenses/${expenseId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setExpenses(prev => prev.filter(expense => expense.id !== expenseId));
+        toast({
+          title: "Gasto eliminado",
+          description: "El gasto se ha eliminado correctamente.",
+        });
+      } else {
+        throw new Error('Error al eliminar gasto');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el gasto. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRemovingExpense(null);
+    }
+  };
+
+  // Cargar datos al montar el componente si es chofer
+  useEffect(() => {
+    if (isDriver) {
+      loadBudgetAndExpenses();
+    }
+  }, [isDriver, tripInfo?.recordId]);
 
   // Obtener paqueterías relacionadas al viaje
   const { 
@@ -516,6 +671,182 @@ export function ReservationDetailsSidebar({
             ))
           )}
         </div>
+
+        {/* Sección de Presupuesto y Gastos - Solo para Choferes */}
+        {isDriver && (
+          <div className="space-y-4 mt-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <div className="rounded-full bg-blue-100 p-2">
+                <Calculator className="h-4 w-4 text-blue-600" />
+              </div>
+              Presupuesto y Gastos
+            </h3>
+
+            {isLoadingBudget ? (
+              <div className="text-center py-4 text-gray-500 flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Cargando información financiera...
+              </div>
+            ) : (
+              <>
+                {/* Resumen financiero */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <Card className="border border-blue-200 bg-blue-50">
+                    <CardContent className="p-4 text-center">
+                      <div className="text-sm text-blue-600 font-medium">Presupuesto Asignado</div>
+                      <div className="text-xl font-bold text-blue-800">
+                        {formatCurrency(budget)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="border border-red-200 bg-red-50">
+                    <CardContent className="p-4 text-center">
+                      <div className="text-sm text-red-600 font-medium">Gastos Totales</div>
+                      <div className="text-xl font-bold text-red-800">
+                        {formatCurrency(expenses.reduce((sum, expense) => sum + expense.amount, 0))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Formulario para agregar gasto */}
+                <Card className="border border-gray-200 bg-gray-50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <PlusCircle className="h-4 w-4" />
+                      Agregar Nuevo Gasto
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="expense-amount" className="text-xs font-medium text-gray-600">
+                          Monto
+                        </Label>
+                        <Input
+                          id="expense-amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={newExpense.amount || ''}
+                          onChange={(e) => setNewExpense(prev => ({
+                            ...prev,
+                            amount: parseFloat(e.target.value) || 0
+                          }))}
+                          className="text-sm"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="expense-type" className="text-xs font-medium text-gray-600">
+                          Categoría
+                        </Label>
+                        <select
+                          id="expense-type"
+                          value={newExpense.type}
+                          onChange={(e) => setNewExpense(prev => ({
+                            ...prev,
+                            type: e.target.value
+                          }))}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Seleccionar categoría</option>
+                          <option value="Gasolina">Gasolina</option>
+                          <option value="Casetas">Casetas</option>
+                          <option value="Otros">Otros</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="expense-description" className="text-xs font-medium text-gray-600">
+                        Descripción (opcional)
+                      </Label>
+                      <Input
+                        id="expense-description"
+                        placeholder="Descripción del gasto..."
+                        value={newExpense.description || ''}
+                        onChange={(e) => setNewExpense(prev => ({
+                          ...prev,
+                          description: e.target.value
+                        }))}
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={addExpense}
+                      disabled={!newExpense.amount || !newExpense.type || isAddingExpense}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {isAddingExpense ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Agregando...
+                        </>
+                      ) : (
+                        <>
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Agregar Gasto
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Lista de gastos */}
+                {expenses.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Lista de Gastos</h4>
+                    {expenses.map((expense) => (
+                      <Card key={expense.id} className="border border-gray-200">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {expense.type}
+                                </Badge>
+                                <span className="text-sm font-medium">
+                                  {formatCurrency(expense.amount)}
+                                </span>
+                              </div>
+                              {expense.description && (
+                                <p className="text-xs text-gray-600">{expense.description}</p>
+                              )}
+                              {expense.createdAt && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {format(new Date(expense.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeExpense(expense.id as number)}
+                              disabled={isRemovingExpense === expense.id}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              {isRemovingExpense === expense.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

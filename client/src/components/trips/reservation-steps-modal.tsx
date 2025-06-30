@@ -1527,15 +1527,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                     )}
                   </div>
                   
-                  {paymentMethod === PaymentMethod.TRANSFER || (advanceAmount > 0 && advancePaymentMethod === PaymentMethod.TRANSFER) ? (
-                    <div className="bg-blue-50 border border-blue-100 rounded p-3 text-sm text-blue-800">
-                      <p className="font-medium mb-1">Información bancaria para transferencias:</p>
-                      <p>Banco: BBVA</p>
-                      <p>Titular: TransRoute S.A. de C.V.</p>
-                      <p>CLABE: 0123 4567 8901 2345 67</p>
-                      <p>Concepto: REF-{sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')!).id : 'USUARIO'}-{new Date().getTime().toString().slice(-6)}</p>
-                    </div>
-                  ) : null}
+               
                 </div>
                 
                 <div className="bg-primary/10 p-4 rounded-md">
@@ -1770,16 +1762,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                   </div>
                 </div>
                 
-                {(paymentMethod === PaymentMethod.TRANSFER || (advanceAmount > 0 && advancePaymentMethod === PaymentMethod.TRANSFER)) && (
-                  <div className="mt-4 mb-4 p-3 border border-blue-200 rounded bg-blue-50 text-xs text-blue-800">
-                    <p className="font-semibold mb-1">Información Bancaria:</p>
-                    <p>Banco: BBVA</p>
-                    <p>Titular: TransRoute S.A. de C.V.</p>
-                    <p>CLABE: 0123 4567 8901 2345 67</p>
-                    <p className="mt-1">Verifica tu pago: 555-123-4567</p>
-                  </div>
-                )}
-                
+              
                 <div className="border-t pt-4 text-xs text-center text-gray-500">
                   <p>Presente este boleto al abordar el vehículo</p>
                   {advanceAmount > 0 && advanceAmount < (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) && (

@@ -119,6 +119,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 30, 2025** - Enhanced reservation sidebar with budget and expense management for drivers:
+  - Added "Presupuesto y Gastos" section exclusively for chofer role in reservation details sidebar
+  - Implemented budget display (read-only for drivers) and expense tracking functionality
+  - Added expense form with dropdown categories: Gasolina, Casetas, Otros
+  - Included expense list with delete functionality for driver-added expenses
+  - Maintains consistent UI design with existing bitácora section
+
 - **June 29, 2025** - Updated role-based access control for drivers:
   - Removed "reservations" permission from DRIVER/chofer role to restrict general reservation access
   - Added "reservations-list" permission for drivers to access only their assigned trip reservations
