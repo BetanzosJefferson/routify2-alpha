@@ -32,6 +32,9 @@ export default function AuthPage() {
       // Si es comisionista, redirigir directamente a la sección de viajes
       if (user.role === "comisionista") {
         setLocation("/?tab=trips");
+      } else if (user.role === "chofer") {
+        // Si es chofer, redirigir directamente a reservaciones en lista
+        setLocation("/reservations-list");
       } else {
         // Para otros roles, ir a la página principal
         setLocation("/");

@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 30, 2025** - Implemented automatic redirection for driver role after login:
+  - Added logic in auth-page.tsx to redirect "chofer" role users directly to "/reservations-list" upon login
+  - Updated role-based routing to improve user experience for drivers who primarily work with reservation lists
+  - Maintains existing redirection logic for other roles (comisionista to trips, others to dashboard)
+
+- **June 30, 2025** - Fixed package access permissions for ticket office users:
+  - Added TICKET_OFFICE role to PACKAGE_WRITE_ROLES in backend package route permissions
+  - Updated all package-related hooks (usePackagesByTrip, usePackages, useTripPackages) to use correct endpoints based on user role
+  - Ticket office users now automatically use /api/taquilla/packages endpoint while other roles use /api/packages
+  - Resolved "Error al cargar paqueterías" issue in reservation sidebar for taquilla role
+
 - **June 30, 2025** - Fixed user cash boxes display issue for multi-company ticket office users:
   - Adapted frontend code to handle pre-grouped user data from backend instead of individual transactions
   - Fixed "Cannot read properties of undefined (reading 'toString')" error that caused blank screens
