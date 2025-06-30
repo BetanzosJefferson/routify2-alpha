@@ -172,7 +172,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                   )}
                   
                   {/* Reservaciones en lista */}
-                  {canAccess("reservations") && (
+                  {canAccess("reservations-list") && (
                     <NavLink 
                       active={window.location.pathname === "/reservations-list"}
                       onClick={() => {

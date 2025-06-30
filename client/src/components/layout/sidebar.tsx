@@ -177,7 +177,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           )}
           
           {/* Reservaciones en lista */}
-          {canAccess("reservations") && (
+          {canAccess("reservations-list") && (
             <div className="space-y-1">
               <NavItem 
                 icon={<ClipboardListIcon className="h-5 w-5" />} 
