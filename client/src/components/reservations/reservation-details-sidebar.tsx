@@ -97,10 +97,23 @@ export function ReservationDetailsSidebar({
     if (reservations.length > 0) {
       const firstReservation = reservations[0];
       
-      // Primero intentar desde trip.id
+      // Primero intentar desde trip.id y extraer la parte base
       if (firstReservation.trip?.id) {
-        console.log('[getTripId] Usando trip.id:', firstReservation.trip.id);
-        return firstReservation.trip.id;
+        const tripId = firstReservation.trip.id;
+        // Si es un string con formato "33_2", extraer solo la parte base "33"
+        if (typeof tripId === 'string' && tripId.includes('_')) {
+          const parts = tripId.split('_');
+          const baseId = parseInt(parts[0], 10);
+          console.log('[getTripId] Extrayendo ID base de trip.id:', tripId, '-> ID base:', baseId);
+          if (!isNaN(baseId)) {
+            return baseId;
+          }
+        }
+        // Si es un número, usarlo directamente
+        if (typeof tripId === 'number') {
+          console.log('[getTripId] Usando trip.id numérico:', tripId);
+          return tripId;
+        }
       }
       
       // Extraer desde tripId si está disponible
@@ -108,7 +121,7 @@ export function ReservationDetailsSidebar({
       if (tripDetails?.tripId) {
         const parts = tripDetails.tripId.split('_');
         const numericId = parseInt(parts[0], 10);
-        console.log('[getTripId] Extrayendo de tripId:', tripDetails.tripId, '-> ID:', numericId);
+        console.log('[getTripId] Extrayendo de tripDetails.tripId:', tripDetails.tripId, '-> ID:', numericId);
         if (!isNaN(numericId)) {
           return numericId;
         }
