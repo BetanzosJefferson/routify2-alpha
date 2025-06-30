@@ -92,20 +92,46 @@ export function ReservationDetailsSidebar({
     }).format(amount);
   };
 
+  const getTripId = () => {
+    // Obtener el ID del viaje desde las reservaciones
+    if (reservations.length > 0) {
+      const firstReservation = reservations[0];
+      if (firstReservation.trip?.id) {
+        return firstReservation.trip.id;
+      }
+      // Extraer desde tripId si está disponible
+      const tripDetails = firstReservation.tripDetails as any;
+      if (tripDetails?.tripId) {
+        const parts = tripDetails.tripId.split('_');
+        const numericId = parseInt(parts[0], 10);
+        if (!isNaN(numericId)) {
+          return numericId;
+        }
+      }
+    }
+    return null;
+  };
+
   const loadBudgetAndExpenses = async () => {
-    if (!isDriver || !tripInfo?.recordId) return;
+    if (!isDriver) return;
+    
+    const tripId = getTripId();
+    if (!tripId) {
+      console.log('No se pudo obtener el ID del viaje para cargar presupuesto');
+      return;
+    }
     
     setIsLoadingBudget(true);
     try {
-      // Cargar presupuesto del viaje
-      const budgetResponse = await fetch(`/api/trips/${tripInfo.recordId}/budget`);
+      // Cargar presupuesto del viaje usando el ID numérico
+      const budgetResponse = await fetch(`/api/trips/${tripId}/budget`);
       if (budgetResponse.ok) {
         const budgetData = await budgetResponse.json();
         setBudget(budgetData.budget || 0);
       }
 
-      // Cargar gastos del viaje
-      const expensesResponse = await fetch(`/api/trips/${tripInfo.recordId}/expenses`);
+      // Cargar gastos del viaje usando el ID numérico
+      const expensesResponse = await fetch(`/api/trips/${tripId}/expenses`);
       if (expensesResponse.ok) {
         const expensesData = await expensesResponse.json();
         setExpenses(expensesData || []);
@@ -118,11 +144,21 @@ export function ReservationDetailsSidebar({
   };
 
   const addExpense = async () => {
-    if (!newExpense.amount || !newExpense.type || !tripInfo?.recordId) return;
+    if (!newExpense.amount || !newExpense.type) return;
+
+    const tripId = getTripId();
+    if (!tripId) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el viaje para agregar el gasto.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsAddingExpense(true);
     try {
-      const response = await fetch(`/api/trips/${tripInfo.recordId}/expenses`, {
+      const response = await fetch(`/api/trips/${tripId}/expenses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,11 +199,19 @@ export function ReservationDetailsSidebar({
   };
 
   const removeExpense = async (expenseId: number) => {
-    if (!tripInfo?.recordId) return;
+    const tripId = getTripId();
+    if (!tripId) {
+      toast({
+        title: "Error",
+        description: "No se pudo identificar el viaje para eliminar el gasto.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsRemovingExpense(expenseId);
     try {
-      const response = await fetch(`/api/trips/${tripInfo.recordId}/expenses/${expenseId}`, {
+      const response = await fetch(`/api/trips/${tripId}/expenses/${expenseId}`, {
         method: 'DELETE',
       });
 
@@ -193,10 +237,10 @@ export function ReservationDetailsSidebar({
 
   // Cargar datos al montar el componente si es chofer
   useEffect(() => {
-    if (isDriver) {
+    if (isDriver && reservations.length > 0) {
       loadBudgetAndExpenses();
     }
-  }, [isDriver, tripInfo?.recordId]);
+  }, [isDriver, reservations.length]);
 
   // Obtener paqueterías relacionadas al viaje
   const { 
