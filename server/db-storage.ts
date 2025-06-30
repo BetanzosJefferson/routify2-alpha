@@ -946,6 +946,44 @@ export class DatabaseStorage implements IStorage {
         };
       }
     }
+
+    // Obtener información del usuario que marcó como pagada
+    let paidByUser = null;
+    if (reservation.paidBy) {
+      try {
+        const [user] = await db.select().from(schema.users).where(eq(schema.users.id, reservation.paidBy));
+        if (user) {
+          paidByUser = {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role
+          };
+        }
+      } catch (error) {
+        console.warn(`Error fetching paid_by user ${reservation.paidBy}:`, error);
+      }
+    }
+
+    // Obtener información del usuario que chequeó
+    let checkedByUser = null;
+    if (reservation.checkedBy) {
+      try {
+        const [user] = await db.select().from(schema.users).where(eq(schema.users.id, reservation.checkedBy));
+        if (user) {
+          checkedByUser = {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role
+          };
+        }
+      } catch (error) {
+        console.warn(`Error fetching checked_by user ${reservation.checkedBy}:`, error);
+      }
+    }
     
     // Crear objeto trip compatible con el frontend usando datos del segmento específico
     const trip = {
@@ -969,7 +1007,9 @@ export class DatabaseStorage implements IStorage {
       ...reservation,
       trip,
       passengers,
-      createdByUser
+      createdByUser,
+      paidByUser,
+      checkedByUser
     };
   }
   

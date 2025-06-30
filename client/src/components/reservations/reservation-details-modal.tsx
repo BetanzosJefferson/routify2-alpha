@@ -1017,6 +1017,41 @@ export default function ReservationDetailsModal({
                         </div>
                       </div>
 
+                      {/* Usuario que marcó como pagada (si está pagada) */}
+                      {reservation.paymentStatus === 'pagado' && reservation.paidBy && (
+                        <div className="grid grid-cols-2 items-center">
+                          <div className="text-sm text-gray-500 font-medium">MARCADO COMO PAGADO POR</div>
+                          <div className="text-right text-sm">
+                            {reservation.paidByUser ? 
+                              `${reservation.paidByUser.firstName} ${reservation.paidByUser.lastName}` : 
+                              `Usuario ID: ${reservation.paidBy}`
+                            }
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Usuario que chequeó (si está chequeada) */}
+                      {reservation.checkedAt && reservation.checkedBy && (
+                        <div className="grid grid-cols-2 items-center">
+                          <div className="text-sm text-gray-500 font-medium">CHEQUEADO POR</div>
+                          <div className="text-right text-sm">
+                            {reservation.checkedByUser ? 
+                              `${reservation.checkedByUser.firstName} ${reservation.checkedByUser.lastName}` : 
+                              `Usuario ID: ${reservation.checkedBy}`
+                            }
+                            <div className="text-xs text-gray-400">
+                              {new Date(reservation.checkedAt).toLocaleDateString('es-MX', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* NUEVO FORMATO MEJORADO PARA INFORMACIÓN DE PAGO */}
                       {reservation.status !== 'canceled' && reservation.status !== 'canceledAndRefund' ? (
                         <>
