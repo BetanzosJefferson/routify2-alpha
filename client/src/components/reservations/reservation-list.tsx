@@ -82,6 +82,18 @@ import { Reservation, ReservationWithDetails } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function ReservationList() {
+  // Mapeo de company_id a nombres amigables
+  const getCompanyDisplayName = (companyId?: string | null): string => {
+    const companyMap: Record<string, string> = {
+      "bamo-350045": "BAMO",
+      "turismo-mega-876598": "Turismo Mega",
+      "viaja-facil-123": "Viaja Fácil",
+      // Agregar más mapeos según sea necesario
+    };
+    
+    if (!companyId) return "Sin empresa";
+    return companyMap[companyId] || companyId;
+  };
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -960,13 +972,11 @@ export function ReservationList() {
                     {user?.role === "taquilla" && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {reservation.companyInfo?.name || 'N/A'}
+                          {getCompanyDisplayName(reservation.companyId || undefined)}
                         </div>
-                        {reservation.companyInfo?.id && (
-                          <div className="text-xs text-gray-500">
-                            ID: {reservation.companyInfo.id}
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-500">
+                          ID: {reservation.companyId || 'N/A'}
+                        </div>
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap text-center">
