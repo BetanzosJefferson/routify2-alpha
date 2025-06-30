@@ -469,29 +469,61 @@ export function UserCashBoxesPage() {
                                                 <div className="text-left">
                                                     <h3 className="font-semibold flex items-center gap-2">
                                                         {userBox.userName}
-                                                        {userBox.hasPendingCutoff ? (
-                                                            <Badge 
-                                                                style={{ 
-                                                                    backgroundColor: '#ffc107', 
-                                                                    color: '#333', 
-                                                                    fontWeight: 'bold' 
-                                                                }}
-                                                            >
-                                                                Corte pendiente
-                                                            </Badge>
-                                                        ) : (
-                                                            userBox.transactionCount > 0 && (
-                                                                <Badge 
-                                                                    style={{ 
-                                                                        backgroundColor: '#28a745', 
-                                                                        color: '#fff', 
-                                                                        fontWeight: 'bold' 
-                                                                    }}
-                                                                >
-                                                                    Corte realizado
-                                                                </Badge>
-                                                            )
-                                                        )}
+                                                        {(() => {
+                                                            // Determinar badge basado en el filtro actual y las transacciones mostradas
+                                                            if (selectedCutoffFilter === "pending") {
+                                                                return (
+                                                                    <Badge 
+                                                                        style={{ 
+                                                                            backgroundColor: '#ffc107', 
+                                                                            color: '#333', 
+                                                                            fontWeight: 'bold' 
+                                                                        }}
+                                                                    >
+                                                                        Corte pendiente
+                                                                    </Badge>
+                                                                );
+                                                            } else if (selectedCutoffFilter === "completed") {
+                                                                return (
+                                                                    <Badge 
+                                                                        style={{ 
+                                                                            backgroundColor: '#28a745', 
+                                                                            color: '#fff', 
+                                                                            fontWeight: 'bold' 
+                                                                        }}
+                                                                    >
+                                                                        Corte realizado
+                                                                    </Badge>
+                                                                );
+                                                            } else {
+                                                                // Vista "all" - mostrar badge según el estado predominante
+                                                                if (userBox.hasPendingCutoff) {
+                                                                    return (
+                                                                        <Badge 
+                                                                            style={{ 
+                                                                                backgroundColor: '#ffc107', 
+                                                                                color: '#333', 
+                                                                                fontWeight: 'bold' 
+                                                                            }}
+                                                                        >
+                                                                            Corte pendiente
+                                                                        </Badge>
+                                                                    );
+                                                                } else {
+                                                                    return userBox.transactionCount > 0 && (
+                                                                        <Badge 
+                                                                            style={{ 
+                                                                                backgroundColor: '#28a745', 
+                                                                                color: '#fff', 
+                                                                                fontWeight: 'bold' 
+                                                                            }}
+                                                                        >
+                                                                            Corte realizado
+                                                                        </Badge>
+                                                                    );
+                                                                }
+                                                            }
+                                                        })()}
                                                     </h3>
                                                     <p className="text-sm text-muted-foreground">
                                                         {userBox.transactionCount} transacciones
