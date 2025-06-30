@@ -98,8 +98,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "packages",
     "cash-register",
     "cash-box",
-    "cutoff-history",
-    "reservations" // Agregado para que puedan ver reservaciones de sus viajes asignados
+    "cutoff-history"
   ],
   [UserRole.TICKET_OFFICE]: [
     "trips",

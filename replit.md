@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 29, 2025** - Updated role-based access control for drivers:
+  - Removed "reservations" permission from DRIVER/chofer role to restrict access
+  - Drivers now only have access to: dashboard, notifications, packages, cash-register, cash-box, cutoff-history
+  - Improved security by ensuring drivers cannot access passenger reservation data
+
+- **June 29, 2025** - Enhanced trip logbook sidebar functionality:
+  - Fixed modal z-index issues using React Portal rendering outside sidebar container
+  - Implemented custom confirmation modals for budget and expense operations
+  - Added expense categories dropdown with native HTML select: Gasolina, Casetas, Otros
+  - Resolved sidebar visibility conflicts with proper portal-based modal rendering
+
 - **June 29, 2025** - Enhanced reservation list UI with modern design:
   - Redesigned trip preview cards with gradient headers and color-coded information sections
   - Improved visual hierarchy with rounded sections for schedule, vehicle, and operator info
