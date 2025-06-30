@@ -136,11 +136,15 @@ export function UserCashBoxesPage() {
                 }
 
                 // Verificar estado de corte
-                if (transaction.cutoff_id === null) {
+                console.log(`[UserCashBoxes] Transacción ${transaction.id} - cutoff_id:`, transaction.cutoff_id, typeof transaction.cutoff_id);
+                if (transaction.cutoff_id === null || transaction.cutoff_id === undefined) {
+                    console.log(`[UserCashBoxes] Transacción ${transaction.id} marcada como pendiente`);
                     hasPendingCutoff = true;
                     allTransactionsCutoff = false;
                 }
             });
+
+            console.log(`[UserCashBoxes] Usuario ${userGroup.firstName} ${userGroup.lastName} - hasPendingCutoff: ${hasPendingCutoff}, allTransactionsCutoff: ${allTransactionsCutoff}`);
 
             return {
                 userId: userGroup.userId,
