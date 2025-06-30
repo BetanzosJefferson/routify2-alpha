@@ -199,6 +199,52 @@ export function UserCashBoxesPage() {
             });
         }
 
+        // Filtrar las transacciones individuales según el estado de corte seleccionado
+        if (selectedCutoffFilter !== "all") {
+            currentFiltered = currentFiltered.map(userBox => {
+                let filteredTransactions = userBox.transactions;
+                
+                if (selectedCutoffFilter === "pending") {
+                    // Solo mostrar transacciones pendientes (cutoff_id null)
+                    filteredTransactions = userBox.transactions.filter((transaction: any) => 
+                        transaction.cutoff_id === null || transaction.cutoff_id === undefined
+                    );
+                } else if (selectedCutoffFilter === "completed") {
+                    // Solo mostrar transacciones con corte realizado (cutoff_id no null)
+                    filteredTransactions = userBox.transactions.filter((transaction: any) => 
+                        transaction.cutoff_id !== null && transaction.cutoff_id !== undefined
+                    );
+                }
+
+                // Recalcular totales basados en las transacciones filtradas
+                let totalCash = 0;
+                let totalTransfer = 0;
+                let totalAmount = 0;
+
+                filteredTransactions.forEach((transaction: any) => {
+                    const amount = transaction.details?.details?.monto || 0;
+                    const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+                    
+                    totalAmount += amount;
+                    
+                    if (paymentMethod === "efectivo") {
+                        totalCash += amount;
+                    } else {
+                        totalTransfer += amount;
+                    }
+                });
+
+                return {
+                    ...userBox,
+                    transactions: filteredTransactions,
+                    totalCash,
+                    totalTransfer,
+                    totalAmount,
+                    transactionCount: filteredTransactions.length
+                };
+            });
+        }
+
         return currentFiltered;
     }, [allUserCashBoxes, selectedUserFilter, selectedCutoffFilter]);
 
