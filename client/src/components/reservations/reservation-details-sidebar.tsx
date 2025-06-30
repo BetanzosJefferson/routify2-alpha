@@ -96,18 +96,29 @@ export function ReservationDetailsSidebar({
     // Obtener el ID del viaje desde las reservaciones
     if (reservations.length > 0) {
       const firstReservation = reservations[0];
+      
+      // Primero intentar desde trip.id
       if (firstReservation.trip?.id) {
+        console.log('[getTripId] Usando trip.id:', firstReservation.trip.id);
         return firstReservation.trip.id;
       }
+      
       // Extraer desde tripId si está disponible
       const tripDetails = firstReservation.tripDetails as any;
       if (tripDetails?.tripId) {
         const parts = tripDetails.tripId.split('_');
         const numericId = parseInt(parts[0], 10);
+        console.log('[getTripId] Extrayendo de tripId:', tripDetails.tripId, '-> ID:', numericId);
         if (!isNaN(numericId)) {
           return numericId;
         }
       }
+      
+      console.log('[getTripId] No se pudo extraer ID del viaje. Datos disponibles:', {
+        tripId: firstReservation.trip?.id,
+        tripDetails: tripDetails?.tripId,
+        reservation: firstReservation
+      });
     }
     return null;
   };
@@ -867,20 +878,6 @@ export function ReservationDetailsSidebar({
                                 </p>
                               )}
                             </div>
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeExpense(expense.id as number)}
-                              disabled={isRemovingExpense === expense.id}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              {isRemovingExpense === expense.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
                           </div>
                         </CardContent>
                       </Card>
