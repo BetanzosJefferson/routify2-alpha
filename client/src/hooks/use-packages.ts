@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 // Interfaces para manejar la información de los paquetes
 export interface Package {
@@ -27,9 +28,12 @@ interface UsePackagesOptions {
 
 export function usePackages(options: UsePackagesOptions = {}) {
   const { tripId, enabled = true } = options;
+  const { user } = useAuth();
+  
+  // Usar endpoint específico para taquilla o endpoint general
+  const baseUrl = user?.role === 'taquilla' ? '/api/taquilla/packages' : '/api/packages';
   
   // Construir la URL con los parámetros de consulta si existen
-  let url = '/api/packages';
   const params = new URLSearchParams();
   
   if (tripId) {
@@ -37,10 +41,10 @@ export function usePackages(options: UsePackagesOptions = {}) {
   }
   
   const queryString = params.toString();
-  const fullUrl = queryString ? `${url}?${queryString}` : url;
+  const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
   
   return useQuery<Package[]>({
-    queryKey: ['/api/packages', tripId],
+    queryKey: [baseUrl, tripId, user?.role],
     queryFn: async () => {
       const response = await fetch(fullUrl);
       

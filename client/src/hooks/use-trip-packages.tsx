@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 export interface Package {
   id: number;
@@ -32,10 +33,15 @@ export interface Package {
 }
 
 export function useTripPackages(tripId: number) {
+  const { user } = useAuth();
+  
+  // Usar endpoint específico para taquilla o endpoint general
+  const baseUrl = user?.role === 'taquilla' ? '/api/taquilla/packages' : '/api/packages';
+  
   return useQuery({
-    queryKey: ["/api/packages", tripId],
+    queryKey: [baseUrl, tripId, user?.role],
     queryFn: async (): Promise<Package[]> => {
-      const response = await fetch(`/api/packages?tripId=${tripId}`);
+      const response = await fetch(`${baseUrl}?tripId=${tripId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch packages");
       }

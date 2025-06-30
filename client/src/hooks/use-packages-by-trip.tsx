@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PackageByTripParams {
   recordId?: string;
@@ -7,12 +8,17 @@ interface PackageByTripParams {
 }
 
 export function usePackagesByTrip({ recordId, tripInfo, enabled = true }: PackageByTripParams) {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ["packages-by-trip", recordId, tripInfo?.departureDate],
+    queryKey: ["packages-by-trip", recordId, tripInfo?.departureDate, user?.role],
     queryFn: async () => {
       console.log(`[usePackagesByTrip] Fetching packages for trip:`, { recordId, tripInfo });
       
-      const response = await fetch('/api/packages');
+      // Usar endpoint específico para taquilla o endpoint general
+      const endpoint = user?.role === 'taquilla' ? '/api/taquilla/packages' : '/api/packages';
+      
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error(`Error fetching packages: ${response.status}`);
       }
