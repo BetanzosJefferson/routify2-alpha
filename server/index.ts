@@ -62,7 +62,7 @@ app.use((req, res, next) => {
     await setupVite(app, server);
   } else {
     // Serve static files from dist/public in production
-    const path = await import("path");
+    const path = require("path");
     const distPath = path.resolve(process.cwd(), "dist", "public");
     
     app.use(express.static(distPath));
