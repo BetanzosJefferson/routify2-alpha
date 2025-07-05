@@ -14,38 +14,19 @@ async function setupProduction() {
     await mkdir(resolve(__dirname, '../logs'), { recursive: true });
     console.log('✅ Carpeta logs creada');
     
-    // Crear server-wrapper.js
-    const wrapperContent = `// Wrapper para ejecutar el servidor con CommonJS
-const { createRequire } = require('module');
-const path = require('path');
-
-// Configurar variables de entorno
-require('dotenv').config();
-
-// Simular import.meta para el contexto CommonJS
-global.import = {
-  meta: {
-    dirname: __dirname,
-    url: \`file://\${__filename}\`
-  }
-};
-
-// Ejecutar el servidor principal
-async function startServer() {
-  try {
-    // Cargar el servidor principal usando dynamic import
-    const serverModule = await import('./index.js');
-    console.log('Servidor iniciado correctamente');
-  } catch (error) {
-    console.error('Error al iniciar el servidor:', error);
-    process.exit(1);
-  }
-}
-
-startServer();`;
+    // Crear server-wrapper.js - Versión simple que funciona con PM2
+    const wrapperContent = `import './index.js';`;
     
     await writeFile(resolve(__dirname, '../dist/server-wrapper.js'), wrapperContent);
     console.log('✅ server-wrapper.js creado');
+    
+    // Crear package.json para dist
+    const distPackageContent = `{
+  "type": "module"
+}`;
+    
+    await writeFile(resolve(__dirname, '../dist/package.json'), distPackageContent);
+    console.log('✅ dist/package.json creado');
     
     // Crear ecosystem.config.js si no existe
     const ecosystemContent = `module.exports = {
