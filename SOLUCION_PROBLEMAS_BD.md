@@ -5,49 +5,95 @@ Tu aplicación en producción tiene errores relacionados con campos JSON en Post
 
 ## Archivos Creados para Solución
 
-### 1. `production-db-diagnostic.sql`
-Script SQL que puedes ejecutar directamente en tu base de datos Supabase para diagnosticar problemas.
-
-**Cómo usar:**
-```bash
-# Conectar a tu base de datos Supabase y ejecutar:
-psql "tu_string_de_conexion_aqui" -f production-db-diagnostic.sql
-```
-
-### 2. `production-server-fix.js`
-Script Node.js para ejecutar en tu servidor de producción.
+### 1. `production-migration-fix.js` ⭐ **RECOMENDADO**
+Script completo que ejecuta migración + corrección en un solo paso.
 
 **Cómo usar:**
 ```bash
 # En tu servidor de producción:
 export DATABASE_URL="tu_string_de_conexion_aqui"
-node production-server-fix.js
+node production-migration-fix.js
 ```
 
-### 3. `emergency-db-fix.js`
-Script de emergencia para corregir automáticamente los problemas.
+### 2. `production-simple-migration.sh` ⭐ **MÁS SIMPLE**
+Script bash que ejecuta corrección + migración usando npm.
 
 **Cómo usar:**
 ```bash
-# Solo si los problemas persisten:
+# En tu servidor de producción:
+export DATABASE_URL="tu_string_de_conexion_aqui"
+chmod +x production-simple-migration.sh
+./production-simple-migration.sh
+```
+
+### 3. `run-production-migration.sh`
+Script completo con drizzle-kit y verificación.
+
+**Cómo usar:**
+```bash
+# En tu servidor de producción:
+export DATABASE_URL="tu_string_de_conexion_aqui"
+chmod +x run-production-migration.sh
+./run-production-migration.sh
+```
+
+### 4. `production-db-diagnostic.sql`
+Script SQL manual para diagnóstico.
+
+**Cómo usar:**
+```bash
+psql "tu_string_de_conexion_aqui" -f production-db-diagnostic.sql
+```
+
+### 5. `production-server-fix.js`
+Script Node.js solo para diagnóstico.
+
+**Cómo usar:**
+```bash
+export DATABASE_URL="tu_string_de_conexion_aqui"
+node production-server-fix.js
+```
+
+### 6. `emergency-db-fix.js`
+Script de emergencia solo para corrección.
+
+**Cómo usar:**
+```bash
 export DATABASE_URL="tu_string_de_conexion_aqui"
 node emergency-db-fix.js
 ```
 
 ## Pasos Recomendados
 
-### Paso 1: Diagnóstico
-1. Ejecuta `production-server-fix.js` para identificar problemas específicos
-2. Revisa la salida para entender qué campos necesitan corrección
+### Opción 1: Migración Completa (RECOMENDADO) ⭐
+1. **En tu servidor de producción:**
+   ```bash
+   export DATABASE_URL="tu_string_de_conexion_supabase"
+   node production-migration-fix.js
+   pm2 restart ecosystem.config.js
+   ```
 
-### Paso 2: Corrección
-1. Si hay campos `json` que deben ser `jsonb`, el script los convertirá automáticamente
-2. Si hay datos corruptos, usa `emergency-db-fix.js` para limpiarlos
+### Opción 2: Migración Simple ⭐
+1. **En tu servidor de producción:**
+   ```bash
+   export DATABASE_URL="tu_string_de_conexion_supabase"
+   chmod +x production-simple-migration.sh
+   ./production-simple-migration.sh
+   ```
 
-### Paso 3: Verificación
-1. Reinicia tu aplicación después de ejecutar los scripts
-2. Verifica que los errores hayan desaparecido
-3. Prueba las funcionalidades principales
+### Opción 3: Solo Diagnóstico
+1. **Para ver qué problemas hay:**
+   ```bash
+   export DATABASE_URL="tu_string_de_conexion_supabase"
+   node production-server-fix.js
+   ```
+
+### Opción 4: Solo Corrección de Emergencia
+1. **Si hay datos corruptos:**
+   ```bash
+   export DATABASE_URL="tu_string_de_conexion_supabase"
+   node emergency-db-fix.js
+   ```
 
 ## Problemas Comunes y Soluciones
 
