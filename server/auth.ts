@@ -311,9 +311,19 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
       const expiresAt = add(new Date(), { hours: 24 });
 
       // Crear la invitación
-      // IMPORTANTE: No convertimos a JSON aquí ya que Drizzle lo hace automáticamente
-      const metadataValue = role === UserRole.TICKET_OFFICE && selectedCompanies ? 
-        { selectedCompanies } : null;
+      // Validar y limpiar datos antes de insertar
+      let metadataValue = null;
+      if (role === UserRole.TICKET_OFFICE && selectedCompanies && Array.isArray(selectedCompanies) && selectedCompanies.length > 0) {
+        metadataValue = { selectedCompanies: selectedCompanies.filter(c => c && typeof c === 'string') };
+      }
+
+      console.log(`[POST /api/invitations] Datos a insertar:`, {
+        role,
+        email: email || null,
+        expiresAt,
+        createdById: user.id,
+        metadata: metadataValue
+      });
 
       const [invitation] = await db
         .insert(invitations)
@@ -321,8 +331,8 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
           role,
           email: email || null,
           expiresAt,
-          createdById: user.id, // Usar el ID del usuario autenticado como creador
-          metadata: metadataValue, // Guardar las empresas seleccionadas como metadatos
+          createdById: user.id,
+          metadata: metadataValue,
         })
         .returning();
         
