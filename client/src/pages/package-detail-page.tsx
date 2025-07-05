@@ -323,257 +323,239 @@ export default function PackageDetailPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      {/* Botón de navegación para móvil - sticky header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between p-4">
-          <Link href="/" className="md:hidden">
-            <Button variant="ghost" size="sm" className="p-2">
-              <ChevronLeft className="h-5 w-5" />
-              <span className="sr-only">Volver</span>
-            </Button>
+    <div className="min-h-screen w-screen bg-gray-50 overflow-x-hidden">
+      {/* Header fijo con navegación */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm w-full">
+        <div className="flex items-center justify-between p-3 max-w-full">
+          <Link href="/packages" className="flex items-center justify-center w-10 h-10">
+            <ChevronLeft className="h-5 w-5 text-gray-600" />
           </Link>
-          <h1 className="text-lg font-semibold md:hidden">Detalles del Paquete</h1>
-          <div className="md:hidden w-10"></div> {/* Spacer para centrar el título */}
+          <h1 className="text-base font-semibold text-gray-900 flex-1 text-center">Detalles del Paquete</h1>
+          <div className="w-10"></div>
         </div>
       </div>
 
-      {/* Contenido principal con porcentajes y viewport units */}
-      <div className="w-full px-4 py-4 max-w-none">
-        <div className="max-w-full mx-auto">
-          <Card className="shadow-md w-full">
-            <CardHeader className="bg-primary/5 pb-3 px-4 w-full">
-              <div className="flex flex-col gap-3 w-full">
-                <div className="w-full">
-                  <CardTitle className="text-lg font-bold leading-tight">Paquete #{packageData.id}</CardTitle>
-                  <CardDescription className="text-sm mt-1">
-                    Fecha de envío: {packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
-                      (packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
-                       formatDate(new Date(packageData.createdAt)))}
-                  </CardDescription>
+      {/* Contenido principal responsive */}
+      <div className="w-full h-full">
+        <div className="px-3 py-3 pb-20">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            
+            {/* Header del paquete */}
+            <div className="bg-blue-50 px-4 py-3 border-b border-gray-200">
+              <div className="space-y-2">
+                <h2 className="text-lg font-bold text-gray-900">Paquete #{packageData.id}</h2>
+                <p className="text-sm text-gray-600">
+                  {packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
+                    (packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
+                     formatDate(new Date(packageData.createdAt)))}
+                </p>
+                <div className="flex">
+                  <Badge
+                    className={`text-xs px-3 py-1 ${
+                      packageData.deliveryStatus === 'entregado' 
+                        ? "bg-green-500 hover:bg-green-600" 
+                        : "bg-orange-500 hover:bg-orange-600"
+                    }`}
+                  >
+                    {packageData.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente de entrega'}
+                  </Badge>
                 </div>
-                <Badge
-                  className={`text-xs w-full text-center py-2 ${
-                    packageData.deliveryStatus === 'entregado' 
-                      ? "bg-green-500 hover:bg-green-600" 
-                      : "bg-orange-500 hover:bg-orange-600"
-                  }`}
-                >
-                  {packageData.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente de entrega'}
-                </Badge>
               </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="p-4 w-full">
-              <div className="space-y-4 w-full">
-                {/* Sección de remitente con porcentajes */}
-                <div className="bg-slate-50 p-4 rounded-lg w-full">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center">
-                    <User className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                    Remitente
-                  </h3>
-                  <div className="space-y-2 w-full">
-                    <p className="text-sm font-medium break-words">
-                      {packageData.senderName} {packageData.senderLastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center">
-                      <Phone className="mr-2 h-3 w-3 flex-shrink-0" /> 
-                      <a href={`tel:${packageData.senderPhone}`} className="underline break-all">
-                        {packageData.senderPhone}
-                      </a>
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Sección de destinatario con porcentajes */}
-                <div className="bg-slate-50 p-4 rounded-lg w-full">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center">
-                    <User className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                    Destinatario
-                  </h3>
-                  <div className="space-y-2 w-full">
-                    <p className="text-sm font-medium break-words">
-                      {packageData.recipientName} {packageData.recipientLastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground flex items-center">
-                      <Phone className="mr-2 h-3 w-3 flex-shrink-0" /> 
-                      <a href={`tel:${packageData.recipientPhone}`} className="underline break-all">
-                        {packageData.recipientPhone}
-                      </a>
-                    </p>
-                  </div>
-                </div>
+            {/* Contenido del paquete */}
+            <div className="p-4 space-y-4">
               
-                {/* Información General - grid responsive */}
-                <div className="bg-slate-50 p-4 rounded-lg w-full">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center">
-                    <Package className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                    Información General
-                  </h3>
-                  <div className="space-y-3 w-full">
-                    <div className="grid grid-cols-2 gap-3 w-full">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-muted-foreground">Fecha</p>
-                        <p className="text-sm break-words">
-                          {packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
-                            (packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
-                             formatDate(new Date(packageData.createdAt)))}
-                        </p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-muted-foreground">Precio</p>
-                        <p className="text-sm font-semibold text-green-600 break-words">
-                          {formatCurrency(packageData.price)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-3 w-full">
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-muted-foreground">Descripción</p>
-                        <p className="text-sm break-words">{packageData.packageDescription}</p>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-muted-foreground">Método de Pago</p>
-                        <p className="text-sm break-words">{packageData.paymentMethod || 'efectivo'}</p>
-                      </div>
-                    </div>
-                    
-                    {packageData.usesSeats && (
-                      <div className="w-full">
-                        <p className="text-xs font-medium text-muted-foreground">Asientos</p>
-                        <p className="text-sm">
-                          Ocupa {packageData.seatsQuantity} {packageData.seatsQuantity === 1 ? 'asiento' : 'asientos'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Origen y Destino - stack en móvil */}
-                <div className="grid grid-cols-1 gap-4 w-full">
-                  <div className="bg-slate-50 p-4 rounded-lg w-full">
-                    <h3 className="text-sm font-semibold mb-3 flex items-center">
-                      <Truck className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                      Origen
-                    </h3>
-                    <p className="text-xs text-muted-foreground break-words">
-                      {packageData.segmentOrigin || "No disponible"}
+              {/* Información General */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
+                  <Package className="mr-2 h-4 w-4 text-blue-600" />
+                  Información General
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Fecha</p>
+                    <p className="text-sm text-gray-900">
+                      {packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
+                        (packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
+                         formatDate(new Date(packageData.createdAt)))}
                     </p>
                   </div>
-                  
-                  <div className="bg-slate-50 p-4 rounded-lg w-full">
-                    <h3 className="text-sm font-semibold mb-3 flex items-center">
-                      <Truck className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                      Destino
-                    </h3>
-                    <p className="text-xs text-muted-foreground break-words">
-                      {packageData.segmentDestination || "No disponible"}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Precio</p>
+                    <p className="text-sm font-semibold text-green-600">
+                      {formatCurrency(packageData.price)}
                     </p>
                   </div>
                 </div>
-
-                {/* Estado y Seguimiento */}
-                <div className="bg-slate-50 p-4 rounded-lg w-full">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center">
-                    <Clock className="mr-2 h-4 w-4 text-primary flex-shrink-0" />
-                    Estado y Seguimiento
-                  </h3>
-                  <div className="space-y-3 w-full">
-                    <div className="flex flex-col gap-2 w-full">
-                      <span className="text-xs font-medium text-muted-foreground">Estado de pago:</span>
-                      {packageData.isPaid ? (
-                        <Badge className="bg-green-500 hover:bg-green-600 text-xs w-fit">
-                          <CheckCircle className="mr-1 h-3 w-3" /> 
-                          Pagado
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs w-fit">
-                          <Clock className="mr-1 h-3 w-3" /> 
-                          Pendiente de pago
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col gap-2 w-full">
-                      <span className="text-xs font-medium text-muted-foreground">Estado de entrega:</span>
-                      {packageData.deliveryStatus === 'entregado' ? (
-                        <Badge className="bg-green-500 hover:bg-green-600 text-xs w-fit">
-                          <Truck className="mr-1 h-3 w-3" /> 
-                          Entregado
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs w-fit">
-                          <Clock className="mr-1 h-3 w-3" /> 
-                          Pendiente de entrega
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {packageData.registeredBy && (
-                      <div className="flex flex-col gap-2 w-full">
-                        <span className="text-xs font-medium text-muted-foreground">Registrado por:</span>
-                        <span className="text-xs break-words">{packageData.registeredBy}</span>
-                      </div>
-                    )}
-                  </div>
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Descripción</p>
+                  <p className="text-sm text-gray-900">{packageData.packageDescription}</p>
+                </div>
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Método de Pago</p>
+                  <p className="text-sm text-gray-900">{packageData.paymentMethod || 'efectivo'}</p>
                 </div>
               </div>
-            </CardContent>
-          
-            {/* Footer con botones optimizados para móvil */}
-            <CardFooter className="p-4 w-full bg-gray-50 border-t">
-              <div className="w-full space-y-3">
-                {/* Botones de acción para usuarios autorizados */}
-                {user && isSameCompany && (
-                  <div className="grid grid-cols-1 gap-3 w-full">
-                    {!packageData.isPaid && (
-                      <Button 
-                        variant="default" 
-                        className="bg-green-600 hover:bg-green-700 w-full text-sm py-3" 
-                        onClick={handleMarkAsPaid}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Marcar como pagado
-                      </Button>
-                    )}
-                    
-                    {packageData.deliveryStatus !== 'entregado' && (
-                      <Button 
-                        variant="default" 
-                        className="bg-blue-600 hover:bg-blue-700 w-full text-sm py-3" 
-                        onClick={handleMarkAsDelivered}
-                      >
-                        <Truck className="mr-2 h-4 w-4" />
-                        Marcar como entregado
-                      </Button>
+
+              {/* Remitente */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
+                  <User className="mr-2 h-4 w-4 text-blue-600" />
+                  Remitente
+                </h3>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-900">
+                    {packageData.senderName} {packageData.senderLastName}
+                  </p>
+                  <p className="text-xs text-gray-600 flex items-center">
+                    <Phone className="mr-2 h-3 w-3" /> 
+                    <a href={`tel:${packageData.senderPhone}`} className="underline">
+                      {packageData.senderPhone}
+                    </a>
+                  </p>
+                </div>
+              </div>
+              
+              {/* Destinatario */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
+                  <User className="mr-2 h-4 w-4 text-blue-600" />
+                  Destinatario
+                </h3>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-900">
+                    {packageData.recipientName} {packageData.recipientLastName}
+                  </p>
+                  <p className="text-xs text-gray-600 flex items-center">
+                    <Phone className="mr-2 h-3 w-3" /> 
+                    <a href={`tel:${packageData.recipientPhone}`} className="underline">
+                      {packageData.recipientPhone}
+                    </a>
+                  </p>
+                </div>
+              </div>
+              
+              {/* Origen y Destino */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
+                  <Truck className="mr-2 h-4 w-4 text-blue-600" />
+                  Origen
+                </h3>
+                <p className="text-xs text-gray-600">
+                  {packageData.segmentOrigin || "No disponible"}
+                </p>
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
+                  <Truck className="mr-2 h-4 w-4 text-blue-600" />
+                  Destino
+                </h3>
+                <p className="text-xs text-gray-600">
+                  {packageData.segmentDestination || "No disponible"}
+                </p>
+              </div>
+
+              {/* Estado y Seguimiento */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
+                  <Clock className="mr-2 h-4 w-4 text-blue-600" />
+                  Estado y Seguimiento
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block mb-1">Estado de pago:</span>
+                    {packageData.isPaid ? (
+                      <Badge className="bg-green-500 hover:bg-green-600 text-xs">
+                        <CheckCircle className="mr-1 h-3 w-3" /> 
+                        Pagado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        <Clock className="mr-1 h-3 w-3" /> 
+                        Pendiente de pago
+                      </Badge>
                     )}
                   </div>
-                )}
+                  
+                  <div>
+                    <span className="text-xs font-medium text-gray-500 block mb-1">Estado de entrega:</span>
+                    {packageData.deliveryStatus === 'entregado' ? (
+                      <Badge className="bg-green-500 hover:bg-green-600 text-xs">
+                        <Truck className="mr-1 h-3 w-3" /> 
+                        Entregado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        <Clock className="mr-1 h-3 w-3" /> 
+                        Pendiente de entrega
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {packageData.registeredBy && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500 block mb-1">Registrado por:</span>
+                      <span className="text-xs text-gray-900">{packageData.registeredBy}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Botones de acción fijos en la parte inferior */}
+            <div className="border-t border-gray-200 bg-white p-4 space-y-3">
+              
+              {/* Botones de acción para usuarios autorizados */}
+              {user && isSameCompany && (
+                <div className="space-y-2">
+                  {!packageData.isPaid && (
+                    <Button 
+                      variant="default" 
+                      className="bg-green-600 hover:bg-green-700 w-full py-3 text-sm font-medium" 
+                      onClick={handleMarkAsPaid}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Marcar como pagado
+                    </Button>
+                  )}
+                  
+                  {packageData.deliveryStatus !== 'entregado' && (
+                    <Button 
+                      variant="default" 
+                      className="bg-blue-600 hover:bg-blue-700 w-full py-3 text-sm font-medium" 
+                      onClick={handleMarkAsDelivered}
+                    >
+                      <Truck className="mr-2 h-4 w-4" />
+                      Marcar como entregado
+                    </Button>
+                  )}
+                </div>
+              )}
+              
+              {/* Botones secundarios */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="py-3 text-sm" 
+                  onClick={handlePrintTicket}
+                >
+                  <Printer className="mr-2 h-3 w-3" />
+                  Imprimir
+                </Button>
                 
-                {/* Botones siempre visibles */}
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-xs py-3" 
-                    onClick={handlePrintTicket}
-                  >
-                    <Printer className="mr-2 h-3 w-3" />
-                    Imprimir
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full text-xs py-3" 
-                    onClick={handleSharePackage}
-                  >
-                    <Share2 className="mr-2 h-3 w-3" />
-                    Compartir
-                  </Button>
-                </div>
+                <Button 
+                  variant="outline" 
+                  className="py-3 text-sm" 
+                  onClick={handleSharePackage}
+                >
+                  <Share2 className="mr-2 h-3 w-3" />
+                  Compartir
+                </Button>
               </div>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
