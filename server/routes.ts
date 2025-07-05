@@ -550,7 +550,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Ruta optimizada para obtener reservaciones (TESTING STEP 3)
+  app.get(apiRouter("/reservations-optimized"), async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      console.log(`[GET /reservations-optimized] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const startTime = Date.now();
+      let companyId = null;
+      
+      // Aplicar filtros de compañía según el rol del usuario
+      if (user.role === 'superAdmin') {
+        // Super admin puede ver todas las reservaciones
+        console.log(`[GET /reservations-optimized] Super admin - acceso a todas las reservaciones`);
+      } else if (user.role === 'taquilla' && user.company) {
+        // Taquilla puede manejar múltiples compañías
+        const companyIds = Array.isArray(user.company) ? user.company : [user.company];
+        console.log(`[GET /reservations-optimized] Taquilla - acceso a compañías:`, companyIds);
+        // Para el método optimizado, usaremos la primera compañía
+        companyId = companyIds[0];
+      } else if (user.companyId || user.company) {
+        // Usuarios normales solo ven su compañía
+        companyId = user.companyId || user.company;
+        console.log(`[GET /reservations-optimized] Usuario normal - acceso a compañía:`, companyId);
+      }
+      
+      console.log(`[GET /reservations-optimized] Llamando getReservationsOptimized con companyId: ${companyId}`);
+      const reservations = await storage.getReservationsOptimized(companyId, user.id, user.role);
+      
+      const queryTime = Date.now() - startTime;
+      console.log(`[GET /reservations-optimized] Obtenidas ${reservations.length} reservaciones en ${queryTime}ms`);
+      
+      res.json(reservations);
+    } catch (error: any) {
+      console.error("Error al obtener reservaciones optimizadas:", error.message);
+      res.status(500).json({ error: "Error al obtener reservaciones" });
+    }
+  });
 
   // Ruta estándar para buscar viajes (solo muestra los publicados por defecto)
   app.get(apiRouter("/trips"), async (req: Request, res: Response) => {
