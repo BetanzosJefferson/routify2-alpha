@@ -2639,4 +2639,153 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Métodos para gestión de cupones
+  async createCoupon(couponData: any): Promise<any> {
+    try {
+      // Calcular la fecha de expiración basada en las horas proporcionadas
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + couponData.expirationHours * 60 * 60 * 1000);
+      
+      const [coupon] = await db
+        .insert(schema.coupons)
+        .values({
+          ...couponData,
+          expiresAt,
+          createdAt: now,
+          usageCount: 0
+        })
+        .returning();
+      
+      return coupon;
+    } catch (error) {
+      console.error('Error al crear cupón:', error);
+      throw error;
+    }
+  }
+
+  async getCoupons(companyId?: string): Promise<any[]> {
+    try {
+      if (companyId) {
+        return await db
+          .select()
+          .from(schema.coupons)
+          .where(eq(schema.coupons.companyId, companyId))
+          .orderBy(sql`${schema.coupons.createdAt} DESC`);
+      } else {
+        return await db
+          .select()
+          .from(schema.coupons)
+          .orderBy(sql`${schema.coupons.createdAt} DESC`);
+      }
+    } catch (error) {
+      console.error('Error al obtener cupones:', error);
+      return [];
+    }
+  }
+
+  async getCoupon(id: number): Promise<any | undefined> {
+    try {
+      const [coupon] = await db
+        .select()
+        .from(schema.coupons)
+        .where(eq(schema.coupons.id, id));
+      
+      return coupon;
+    } catch (error) {
+      console.error('Error al obtener cupón:', error);
+      return undefined;
+    }
+  }
+
+  async getCouponByCode(code: string): Promise<any | undefined> {
+    try {
+      const [coupon] = await db
+        .select()
+        .from(schema.coupons)
+        .where(eq(schema.coupons.code, code));
+      
+      return coupon;
+    } catch (error) {
+      console.error('Error al obtener cupón por código:', error);
+      return undefined;
+    }
+  }
+
+  async updateCoupon(id: number, couponData: any): Promise<any | undefined> {
+    try {
+      const [coupon] = await db
+        .update(schema.coupons)
+        .set(couponData)
+        .where(eq(schema.coupons.id, id))
+        .returning();
+      
+      return coupon;
+    } catch (error) {
+      console.error('Error al actualizar cupón:', error);
+      return undefined;
+    }
+  }
+
+  async deleteCoupon(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(schema.coupons)
+        .where(eq(schema.coupons.id, id))
+        .returning({ id: schema.coupons.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error al eliminar cupón:', error);
+      return false;
+    }
+  }
+
+  async verifyCouponValidity(code: string): Promise<{ valid: boolean; message?: string; coupon?: any }> {
+    try {
+      const [coupon] = await db
+        .select()
+        .from(schema.coupons)
+        .where(eq(schema.coupons.code, code));
+
+      if (!coupon) {
+        return { valid: false, message: 'Cupón no encontrado' };
+      }
+
+      // Verificar si el cupón está activo
+      if (!coupon.isActive) {
+        return { valid: false, message: 'Cupón inactivo' };
+      }
+
+      // Verificar si el cupón ha expirado
+      const now = new Date();
+      if (coupon.expiresAt < now) {
+        return { valid: false, message: 'Cupón expirado' };
+      }
+
+      // Verificar si el cupón ha alcanzado su límite de uso
+      if (coupon.usageCount >= coupon.usageLimit) {
+        return { valid: false, message: 'Cupón agotado' };
+      }
+
+      return { valid: true, coupon };
+    } catch (error) {
+      console.error('Error al verificar cupón:', error);
+      return { valid: false, message: 'Error al verificar cupón' };
+    }
+  }
+
+  async incrementCouponUsage(couponId: number): Promise<void> {
+    try {
+      await db
+        .update(schema.coupons)
+        .set({ 
+          usageCount: sql`${schema.coupons.usageCount} + 1` 
+        })
+        .where(eq(schema.coupons.id, couponId));
+    } catch (error) {
+      console.error('Error al incrementar uso de cupón:', error);
+      throw error;
+    }
+  }
 }
