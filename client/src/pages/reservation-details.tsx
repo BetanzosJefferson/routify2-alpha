@@ -282,11 +282,11 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
               <div>
                 <div className="text-sm text-gray-500 font-medium">ORIGEN</div>
-                <div>{reservation.trip.segmentOrigin || reservation.trip.route?.origin}</div>
+                <div>{reservation.trip.origin}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-500 font-medium">DESTINO</div>
-                <div>{reservation.trip.segmentDestination || reservation.trip.route?.destination}</div>
+                <div>{reservation.trip.destination}</div>
               </div>
             </div>
             

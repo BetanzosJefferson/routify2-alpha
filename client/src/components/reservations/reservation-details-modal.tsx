@@ -385,8 +385,8 @@ export default function ReservationDetailsModal({
       doc.setFontSize(10);
       doc.setTextColor(...colors.muted);
 
-      const origin = reservation.segmentOrigin || reservation.trip.origin;
-      const destination = reservation.segmentDestination || reservation.trip.destination;
+      const origin = reservation.trip.origin;
+      const destination = reservation.trip.destination;
 
       doc.text('Origen:', col2X, infoY);
       doc.setTextColor(...colors.text);
@@ -732,7 +732,7 @@ export default function ReservationDetailsModal({
       doc.setFont("courier", "normal");
       
       // Origen - usar información del segmento específico
-      const origin = reservation.segmentOrigin || reservation.trip.origin || '';
+      const origin = reservation.trip.origin || '';
       doc.text("Origen:", 5, y);
       y += 3;
       if (origin.length > 25) {
@@ -747,7 +747,7 @@ export default function ReservationDetailsModal({
       }
       
       // Destino - usar información del segmento específico
-      const destination = reservation.segmentDestination || reservation.trip.destination || '';
+      const destination = reservation.trip.destination || '';
       doc.text("Destino:", 5, y);
       y += 3;
       if (destination.length > 25) {
@@ -945,14 +945,14 @@ export default function ReservationDetailsModal({
                       <div>
                         <div className="text-sm text-gray-500 font-medium">ORIGEN</div>
                         <div>
-                          {reservation.segmentOrigin || reservation.trip.origin}
+                          {reservation.trip.origin}
                         </div>
                       </div>
 
                       <div>
                         <div className="text-sm text-gray-500 font-medium">DESTINO</div>
                         <div>
-                          {reservation.segmentDestination || reservation.trip.destination}
+                          {reservation.trip.destination}
                         </div>
                       </div>
 
