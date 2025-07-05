@@ -77,11 +77,14 @@ export default function PackageDetailPage() {
   
   // Efecto para comprobar si el usuario pertenece a la misma compañía que el paquete
   useEffect(() => {
+    console.log("🔍 Verificando permisos de usuario:", { user: user?.email, role: user?.role, companyId: user?.companyId });
+    console.log("🔍 Datos del paquete:", packageQuery.data);
+    
     if (user && packageQuery.data) {
       // Si el usuario tiene rol superAdmin, siempre tiene acceso
       if (user.role === 'superAdmin') {
         setIsSameCompany(true);
-        console.log("¿Coincide la compañía?", true, "(superAdmin)");
+        console.log("✅ Acceso concedido (superAdmin)");
         return;
       }
       
@@ -90,7 +93,7 @@ export default function PackageDetailPage() {
       // si llegamos a ver este paquete, significa que tenemos acceso
       if (user.role === 'taquilla') {
         setIsSameCompany(true);
-        console.log("¿Coincide la compañía?", true, "(rol taquilla con acceso multi-empresa)");
+        console.log("✅ Acceso concedido (rol taquilla)");
         return;
       }
       
@@ -508,7 +511,7 @@ export default function PackageDetailPage() {
             <div className="border-t border-gray-200 bg-white p-4 space-y-3">
               
               {/* Botones de acción para usuarios autorizados */}
-              {user && isSameCompany && (
+              {user && isSameCompany ? (
                 <div className="space-y-2">
                   {!packageData.isPaid && (
                     <Button 
@@ -532,9 +535,15 @@ export default function PackageDetailPage() {
                     </Button>
                   )}
                 </div>
+              ) : (
+                <div className="bg-gray-100 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 text-center">
+                    {!user ? 'Inicia sesión para más opciones' : 'No tienes permisos para modificar este paquete'}
+                  </p>
+                </div>
               )}
               
-              {/* Botones secundarios */}
+              {/* Botones secundarios - siempre visibles */}
               <div className="grid grid-cols-2 gap-3">
                 <Button 
                   variant="outline" 
