@@ -31,133 +31,91 @@ export function PackageDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Detalles del Paquete #{packageData.id}</DialogTitle>
+      <DialogContent className="w-[95vw] max-w-[400px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-3">
+          <DialogTitle className="text-lg">Paquete #{packageData.id}</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <div className="space-y-4">
           {/* Información general */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Información General</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium">Fecha</p>
-                  <p>{packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : formatDate(new Date(packageData.createdAt))}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Precio</p>
-                  <p>{formatCurrency(packageData.price)}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Descripción</p>
-                  <p>{packageData.packageDescription}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Método de Pago</p>
-                  <p>{packageData.paymentMethod || "No especificado"}</p>
-                </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-semibold mb-3 text-sm">Información General</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Fecha:</span>
+                <span>{packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : formatDate(new Date(packageData.createdAt))}</span>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Origen y Destino */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Origen</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-2">{packageData.segmentOrigin || packageData.tripOrigin || "No disponible"}</p>
-                <div className="border-t pt-2">
-                  <p className="text-sm font-medium">Remitente</p>
-                  <p>{packageData.senderName} {packageData.senderLastName}</p>
-                  <p className="text-sm text-muted-foreground">{packageData.senderPhone}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Destino</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-2">{packageData.segmentDestination || packageData.tripDestination || "No disponible"}</p>
-                <div className="border-t pt-2">
-                  <p className="text-sm font-medium">Destinatario</p>
-                  <p>{packageData.recipientName} {packageData.recipientLastName}</p>
-                  <p className="text-sm text-muted-foreground">{packageData.recipientPhone}</p>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Precio:</span>
+                <span className="font-semibold text-green-600">{formatCurrency(packageData.price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Descripción:</span>
+                <span className="text-right">{packageData.packageDescription}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Método de pago:</span>
+                <span>{packageData.paymentMethod || "efectivo"}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Estados y seguimiento */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Estado y Seguimiento</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <div className="mr-2">
-                    {packageData.isPaid ? (
-                      <Badge className="bg-green-500 hover:bg-green-600">
-                        <Check className="mr-1 h-3 w-3" /> Pagado
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">
-                        <Clock className="mr-1 h-3 w-3" /> Pendiente de pago
-                      </Badge>
-                    )}
-                  </div>
-                  <div>
-                    {packageData.isPaid && packageData.paidBy && (
-                      <p className="text-xs text-muted-foreground">
-                        Marcado por: {packageData.paidByUser?.firstName || "Usuario"} {packageData.paidByUser?.lastName || `ID: ${packageData.paidBy}`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="mr-2">
-                    {packageData.deliveryStatus === "entregado" ? (
-                      <Badge className="bg-green-500 hover:bg-green-600">
-                        <Check className="mr-1 h-3 w-3" /> Entregado
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">
-                        <Clock className="mr-1 h-3 w-3" /> Pendiente de entrega
-                      </Badge>
-                    )}
-                  </div>
-                  <div>
-                    {packageData.deliveryStatus === "entregado" && packageData.deliveredBy && (
-                      <p className="text-xs text-muted-foreground">
-                        Entregado por: {packageData.deliveredByUser?.firstName || "Usuario"} {packageData.deliveredByUser?.lastName || `ID: ${packageData.deliveredBy}`}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="col-span-2">
-                  <p className="text-sm font-medium">Registrado por</p>
-                  <div className="flex items-center mt-1">
-                    <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span>
-                      {packageData.createdByUser?.firstName || "Usuario"} {packageData.createdByUser?.lastName || `ID: ${packageData.createdBy}`}
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {formatDate(new Date(packageData.createdAt))}
-                      </span>
-                    </span>
-                  </div>
-                </div>
+          {/* Remitente */}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-semibold mb-2 text-sm">Remitente</h3>
+            <div className="text-sm">
+              <p className="font-medium">{packageData.senderName} {packageData.senderLastName}</p>
+              <p className="text-gray-600">{packageData.senderPhone}</p>
+            </div>
+          </div>
+
+          {/* Destinatario */}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-semibold mb-2 text-sm">Destinatario</h3>
+            <div className="text-sm">
+              <p className="font-medium">{packageData.recipientName} {packageData.recipientLastName}</p>
+              <p className="text-gray-600">{packageData.recipientPhone}</p>
+            </div>
+          </div>
+
+          {/* Ruta */}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-semibold mb-2 text-sm">Ruta</h3>
+            <div className="text-sm space-y-1">
+              <div>
+                <span className="text-gray-600">Origen: </span>
+                <span>{packageData.segmentOrigin || packageData.tripOrigin || "No disponible"}</span>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <span className="text-gray-600">Destino: </span>
+                <span>{packageData.segmentDestination || packageData.tripDestination || "No disponible"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Estado */}
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <h3 className="font-semibold mb-3 text-sm">Estado</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Pago:</span>
+                <Badge className={packageData.isPaid ? "bg-green-500" : "bg-gray-500"}>
+                  {packageData.isPaid ? 'Pagado' : 'Pendiente'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Entrega:</span>
+                <Badge className={packageData.deliveryStatus === "entregado" ? "bg-green-500" : "bg-orange-500"}>
+                  {packageData.deliveryStatus === "entregado" ? 'Entregado' : 'Pendiente'}
+                </Badge>
+              </div>
+              {packageData.createdByUser && (
+                <div className="text-xs text-gray-600 pt-2 border-t">
+                  <span>Registrado por: {packageData.createdByUser.firstName} {packageData.createdByUser.lastName}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
