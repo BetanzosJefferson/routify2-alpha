@@ -89,6 +89,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
     origin: "",
     destination: "",
     date: "",
+    company: "",
   });
   const [showFilters, setShowFilters] = useState(false);
   
@@ -156,6 +157,13 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
         }
       }
       
+      // Filtro por empresa (solo para roles que pueden ver múltiples empresas)
+      if (filters.company && pkg.companyId) {
+        if (!pkg.companyId.toLowerCase().includes(filters.company.toLowerCase())) {
+          return false;
+        }
+      }
+      
       return true;
     });
   }, [packagesQuery.data, filters]);
@@ -166,6 +174,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       origin: "",
       destination: "",
       date: "",
+      company: "",
     });
   };
 
@@ -510,7 +519,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="filter-origin">Origen</Label>
                 <Input
@@ -538,6 +547,17 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                   onChange={(e) => setFilters(prev => ({ ...prev, date: e.target.value }))}
                 />
               </div>
+              {user?.role === UserRole.TICKET_OFFICE && (
+                <div className="space-y-2">
+                  <Label htmlFor="filter-company">Empresa</Label>
+                  <Input
+                    id="filter-company"
+                    placeholder="Buscar por empresa..."
+                    value={filters.company}
+                    onChange={(e) => setFilters(prev => ({ ...prev, company: e.target.value }))}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -589,6 +609,16 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                   {pkg.packageDescription || "Sin descripción"}
                 </p>
               </div>
+              
+              {/* Empresa - Solo para taquilla */}
+              {user?.role === UserRole.TICKET_OFFICE && pkg.companyId && (
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Empresa</p>
+                  <p className="text-sm font-medium text-orange-600 truncate">
+                    {pkg.companyId}
+                  </p>
+                </div>
+              )}
               
               {/* Detalles del Viaje */}
               <div>
