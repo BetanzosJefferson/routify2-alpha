@@ -882,6 +882,255 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.trips.id, recordId));
   }
   
+  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
+    console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
+    
+    try {
+      // Consulta única con todos los JOINs necesarios
+      const query = db
+        .select({
+          // Campos de reservación
+          reservationId: schema.reservations.id,
+          reservationCompanyId: schema.reservations.companyId,
+          reservationStatus: schema.reservations.status,
+          reservationTripDetails: schema.reservations.tripDetails,
+          reservationTotalAmount: schema.reservations.totalAmount,
+          reservationEmail: schema.reservations.email,
+          reservationPhone: schema.reservations.phone,
+          reservationNotes: schema.reservations.notes,
+          reservationPaymentMethod: schema.reservations.paymentMethod,
+          reservationPaymentStatus: schema.reservations.paymentStatus,
+          reservationCreatedBy: schema.reservations.createdBy,
+          reservationCreatedAt: schema.reservations.createdAt,
+          reservationUpdatedAt: schema.reservations.updatedAt,
+          reservationPickupLocation: schema.reservations.pickupLocation,
+          reservationDropoffLocation: schema.reservations.dropoffLocation,
+          reservationSeatNumbers: schema.reservations.seatNumbers,
+          reservationCheckInTime: schema.reservations.checkInTime,
+          reservationBoardingStatus: schema.reservations.boardingStatus,
+          reservationCancellationReason: schema.reservations.cancellationReason,
+          reservationAdvancePayment: schema.reservations.advancePayment,
+          reservationRemainingBalance: schema.reservations.remainingBalance,
+          reservationCommissionAmount: schema.reservations.commissionAmount,
+          reservationPaidBy: schema.reservations.paidBy,
+          reservationOriginalAmount: schema.reservations.originalAmount,
+          
+          // Campos de trip
+          tripId: schema.trips.id,
+          tripCompanyId: schema.trips.companyId,
+          tripData: schema.trips.tripData,
+          tripCapacity: schema.trips.capacity,
+          tripVehicleId: schema.trips.vehicleId,
+          tripDriverId: schema.trips.driverId,
+          tripVisibility: schema.trips.visibility,
+          tripRouteId: schema.trips.routeId,
+          
+          // Campos de ruta
+          routeId: schema.routes.id,
+          routeName: schema.routes.name,
+          routeOrigin: schema.routes.origin,
+          routeDestination: schema.routes.destination,
+          routeStops: schema.routes.stops,
+          routeCompanyId: schema.routes.companyId,
+          
+          // Campos de conductor
+          driverId: schema.users.id,
+          driverFirstName: schema.users.firstName,
+          driverLastName: schema.users.lastName,
+          driverEmail: schema.users.email,
+          driverPhone: schema.users.phone,
+          
+          // Campos de vehículo
+          vehicleId: schema.vehicles.id,
+          vehicleModel: schema.vehicles.model,
+          vehiclePlates: schema.vehicles.plates,
+          vehicleBrand: schema.vehicles.brand,
+          vehicleCapacity: schema.vehicles.capacity,
+          
+
+        })
+        .from(schema.reservations)
+        // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}
+        // En lugar de esto, obtendremos trip data por separado
+        .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
+        .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
+        .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
+      
+      // Aplicar filtros
+      if (companyId) {
+        console.log(`[getReservationsOptimized] Filtrando por compañía: ${companyId}`);
+        query.where(eq(schema.reservations.companyId, companyId));
+      }
+      
+      console.log("[getReservationsOptimized] Ejecutando consulta única con JOINs");
+      const results = await query;
+      console.log(`[getReservationsOptimized] Obtenidos ${results.length} resultados de la consulta`);
+      
+      // Transformar resultados
+      const reservationsWithDetails: ReservationWithDetails[] = [];
+      
+      for (const result of results) {
+        // Reconstruir tripDetails
+        let tripDetails = null;
+        try {
+          tripDetails = typeof result.reservationTripDetails === 'string' 
+            ? JSON.parse(result.reservationTripDetails) 
+            : result.reservationTripDetails;
+        } catch (error) {
+          console.warn(`Error parsing tripDetails for reservation ${result.reservationId}:`, error);
+          continue;
+        }
+        
+        if (!tripDetails || !tripDetails.recordId || !tripDetails.tripId) {
+          console.warn(`Invalid tripDetails for reservation ${result.reservationId}:`, tripDetails);
+          continue;
+        }
+        
+        // Filtro de rol conductor
+        if (userRole === 'chofer' && currentUserId && result.tripDriverId !== currentUserId) {
+          console.log(`[getReservationsOptimized] Omitiendo reservación ${result.reservationId} - no es del conductor ${currentUserId}`);
+          continue;
+        }
+        
+        // Parse tripData para obtener el segmento específico
+        let tripDataArray = [];
+        try {
+          tripDataArray = Array.isArray(result.tripData) ? result.tripData : JSON.parse(result.tripData as string);
+        } catch (error) {
+          console.warn(`Error parsing tripData for trip ${result.tripId}:`, error);
+          continue;
+        }
+        
+        const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+        const tripSegment = tripDataArray[segmentIndex];
+        
+        if (!tripSegment) {
+          console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${result.tripId}`);
+          continue;
+        }
+        
+        // Obtener pasajeros (aún requiere consulta separada pero optimizada)
+        const passengers = await this.getPassengers(result.reservationId);
+        
+        // Construir objetos de información
+        const route = result.routeId ? {
+          id: result.routeId,
+          name: result.routeName,
+          origin: result.routeOrigin,
+          destination: result.routeDestination,
+          stops: result.routeStops,
+          companyId: result.routeCompanyId,
+        } : null;
+        
+        const driverInfo = result.driverId ? {
+          id: result.driverId,
+          firstName: result.driverFirstName,
+          lastName: result.driverLastName,
+          email: result.driverEmail,
+          phone: result.driverPhone,
+        } : null;
+        
+        const vehicleInfo = result.vehicleId ? {
+          id: result.vehicleId,
+          model: result.vehicleModel,
+          plates: result.vehiclePlates,
+          brand: result.vehicleBrand,
+          capacity: result.vehicleCapacity,
+        } : null;
+        
+        // Obtener createdByUser con consulta separada (optimización posterior)
+        let createdByUser = null;
+        if (result.reservationCreatedBy) {
+          try {
+            const [user] = await db.select().from(schema.users).where(eq(schema.users.id, result.reservationCreatedBy));
+            if (user) {
+              createdByUser = {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+                commissionPercentage: user.commissionPercentage,
+              };
+            }
+          } catch (error) {
+            console.warn(`Error fetching created_by user ${result.reservationCreatedBy}:`, error);
+          }
+        }
+        
+        const mainTripSegment = tripDataArray.find(segment => segment.isMainTrip === true);
+        
+        // Construir objeto trip
+        const trip = {
+          id: tripDetails.tripId,
+          recordId: result.tripId,
+          routeId: result.tripRouteId,
+          route: route,
+          origin: tripSegment.origin,
+          destination: tripSegment.destination,
+          departureDate: tripSegment.departureDate,
+          departureTime: tripSegment.departureTime,
+          arrivalTime: tripSegment.arrivalTime,
+          price: tripSegment.price,
+          availableSeats: tripSegment.availableSeats,
+          capacity: result.tripCapacity,
+          companyId: result.tripCompanyId,
+          visibility: result.tripVisibility,
+          driver: driverInfo,
+          vehicle: vehicleInfo,
+          parentTrip: mainTripSegment ? {
+            origin: mainTripSegment.origin,
+            destination: mainTripSegment.destination,
+            departureDate: mainTripSegment.departureDate,
+            departureTime: mainTripSegment.departureTime,
+            arrivalTime: mainTripSegment.arrivalTime,
+            isMainTrip: true
+          } : null
+        };
+        
+        // Construir reservación completa
+        const reservation = {
+          id: result.reservationId,
+          companyId: result.reservationCompanyId,
+          status: result.reservationStatus,
+          tripDetails: result.reservationTripDetails,
+          totalAmount: result.reservationTotalAmount,
+          email: result.reservationEmail,
+          phone: result.reservationPhone,
+          notes: result.reservationNotes,
+          paymentMethod: result.reservationPaymentMethod,
+          paymentStatus: result.reservationPaymentStatus,
+          createdBy: result.reservationCreatedBy,
+          createdAt: result.reservationCreatedAt,
+          updatedAt: result.reservationUpdatedAt,
+          pickupLocation: result.reservationPickupLocation,
+          dropoffLocation: result.reservationDropoffLocation,
+          seatNumbers: result.reservationSeatNumbers,
+          checkInTime: result.reservationCheckInTime,
+          boardingStatus: result.reservationBoardingStatus,
+          cancellationReason: result.reservationCancellationReason,
+          advancePayment: result.reservationAdvancePayment,
+          remainingBalance: result.reservationRemainingBalance,
+          commissionAmount: result.reservationCommissionAmount,
+          paidBy: result.reservationPaidBy,
+          originalAmount: result.reservationOriginalAmount,
+          trip,
+          passengers,
+          createdByUser
+        };
+        
+        reservationsWithDetails.push(reservation);
+      }
+      
+      console.log(`[getReservationsOptimized] Procesadas ${reservationsWithDetails.length} reservaciones optimizadas`);
+      return reservationsWithDetails;
+      
+    } catch (error) {
+      console.error("[getReservationsOptimized] Error en consulta optimizada:", error);
+      throw error;
+    }
+  }
+
   async getReservations(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
     console.log("DB Storage: Consultando reservaciones");
     
