@@ -388,27 +388,27 @@ export function ReservationDetailsSidebar({
         boxShadow: "-10px 0 15px -3px rgba(0, 0, 0, 0.1), -4px 0 6px -2px rgba(0, 0, 0, 0.05)",
       }}
     >
-      <div className="flex justify-between items-center p-5 border-b sticky top-0 bg-white z-10">
-        <h2 className="text-xl font-semibold text-gray-800">Lista de Reservaciones</h2>
+      <div className="flex justify-between items-center p-4 md:p-5 border-b sticky top-0 bg-white z-10">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-800">Lista de Reservaciones</h2>
         <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-100">
           <X className="h-5 w-5" />
         </Button>
       </div>
       
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Información del viaje */}
-        <div className="mb-6 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-semibold mb-1">
+        <div className="mb-4 md:mb-6 bg-white p-3 md:p-5 rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="text-lg md:text-xl font-semibold mb-1">
             {tripInfo ? `${tripInfo.origin} - ${tripInfo.destination}` : `Viaje ${recordId}`}
           </h3>
-          <p className="text-gray-600 font-medium mb-3">
+          <p className="text-gray-600 font-medium mb-3 text-sm md:text-base">
             {tripInfo ? 
               `${tripInfo.origin} → ${tripInfo.destination}` :
               `Información del viaje ${recordId}`
             }
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-4">
             <div className="flex items-center bg-gray-50 p-3 rounded-lg">
               <div className="rounded-full bg-blue-100 p-2 mr-3">
                 <Calendar className="h-4 w-4 text-blue-600" />
@@ -467,8 +467,8 @@ export function ReservationDetailsSidebar({
         </div>
 
         {/* Lista de reservaciones */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Lista de Reservaciones</h3>
+        <div className="space-y-3 md:space-y-4">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4">Lista de Reservaciones</h3>
           
           {filteredReservations.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -482,71 +482,88 @@ export function ReservationDetailsSidebar({
               return (
                 <Card key={reservation.id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white hover:shadow-md transition-shadow">
                   {/* Equivalente a CardHeader con las clases del diseño original */}
-                  <CardHeader className="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
-                    <div className="flex justify-between items-center mb-1.5"> {/* Este div es clave para el layout superior */}
-                      <div className="flex items-center"> {/* Agrupamiento para cantidad de asientos y datos del pasajero principal */}
-                        <div className="bg-primary/10 text-primary font-medium px-3 py-1 rounded-md mr-3">
+                  <CardHeader className="border-b border-gray-100 bg-gray-50 px-3 md:px-4 py-2 md:py-2.5">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-1.5"> {/* Este div es clave para el layout superior */}
+                      <div className="flex items-center w-full sm:w-auto"> {/* Agrupamiento para cantidad de asientos y datos del pasajero principal */}
+                        <div className="bg-primary/10 text-primary font-medium px-2 md:px-3 py-1 rounded-md mr-2 md:mr-3 text-xs md:text-sm">
                           {passengerCount} asiento{passengerCount !== 1 ? 's' : ''}
                         </div>
-                        <div> {/* Contenedor para el nombre del pasajero principal y código */}
-                          <div className="font-medium">
+                        <div className="min-w-0 flex-1 sm:flex-none"> {/* Contenedor para el nombre del pasajero principal y código */}
+                          <div className="font-medium text-sm md:text-base truncate">
                             {reservation.passengers && reservation.passengers.length === 1
                               ? reservation.passengers[0]?.firstName + ' ' + reservation.passengers[0]?.lastName
                               : `${reservation.passengers[0]?.firstName || 'nombre'} ${reservation.passengers[0]?.lastName || 'del pasajero'}`}
                           </div>
                           <div className="text-xs text-gray-500">#{reservation.id}</div>
-                          {/* Indicador de Check basado en checkCount */}
-                          <div className="mt-1">
-                            {reservation.checkCount && reservation.checkCount > 0 ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                <CheckIcon className="h-3 w-3 mr-1" />
-                                Check
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                <X className="h-3 w-3 mr-1" />
-                                No check
-                              </span>
-                            )}
-                          </div>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end"> {/* Sección de precios y por cobrar */}
-                        <div className="text-xs text-gray-700 mb-1">
-                          Anticipo: {formatPrice(reservation.advanceAmount || 0)} ({reservation.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                      <div className="w-full sm:w-auto flex justify-between sm:block"> {/* Sección de precios y por cobrar */}
+                        {/* Indicador de Check basado en checkCount */}
+                        <div className="flex sm:hidden mb-2">
+                          {reservation.checkCount && reservation.checkCount > 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                              <CheckIcon className="h-3 w-3 mr-1" />
+                              Check
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              <X className="h-3 w-3 mr-1" />
+                              No check
+                            </span>
+                          )}
                         </div>
-
-                        {/* Mostrar "Pagó" solamente si está marcado como pagado */}
-                        {reservation.paymentStatus === 'pagado' && (reservation.advanceAmount || 0) < reservation.totalAmount && (
+                        <div className="text-right">
                           <div className="text-xs text-gray-700 mb-1">
-                            Pagó: {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))} ({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                            Anticipo: {formatPrice(reservation.advanceAmount || 0)} ({reservation.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
                           </div>
-                        )}
 
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium mr-2">Por cobrar</span>
-                          <span className="text-lg font-bold text-primary">
-                            {reservation.paymentStatus === 'pagado'
-                              ? '$ 0'
-                              : `$ ${(reservation.totalAmount - (reservation.advanceAmount || 0)).toFixed(0)}`
-                            }
-                          </span>
+                          {/* Mostrar "Pagó" solamente si está marcado como pagado */}
+                          {reservation.paymentStatus === 'pagado' && (reservation.advanceAmount || 0) < reservation.totalAmount && (
+                            <div className="text-xs text-gray-700 mb-1">
+                              Pagó: {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))} ({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                            </div>
+                          )}
+
+                          <div className="flex items-center">
+                            <span className="text-sm font-medium mr-2">Por cobrar</span>
+                            <span className="text-lg font-bold text-primary">
+                              {reservation.paymentStatus === 'pagado'
+                                ? '$ 0'
+                                : `$ ${(reservation.totalAmount - (reservation.advanceAmount || 0)).toFixed(0)}`
+                              }
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </CardHeader>
 
                   {/* Equivalente a CardContent con las clases del diseño original */}
-                  <CardContent className="p-4"> {/* Aseguramos el padding adecuado */}
+                  <CardContent className="p-3 md:p-4"> {/* Aseguramos el padding adecuado */}
+                    {/* Indicador de Check para pantallas más grandes */}
+                    <div className="hidden sm:flex mb-3">
+                      {reservation.checkCount && reservation.checkCount > 0 ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          <CheckIcon className="h-3 w-3 mr-1" />
+                          Check
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          <X className="h-3 w-3 mr-1" />
+                          No check
+                        </span>
+                      )}
+                    </div>
+
                     {/* Datos de pasajeros (si hay más de uno) */}
                     <div className="mb-3">
-                      <div className="text-sm font-medium text-gray-800">
+                      <div className="text-xs md:text-sm font-medium text-gray-800">
                         {reservation.passengers.length > 1
                           ? (
                             <>
                               <div className="mb-1">
                                 {reservation.passengers.map((passenger, idx) => (
-                                  <div key={idx}>
+                                  <div key={idx} className="text-xs md:text-sm">
                                     {passenger.firstName} {passenger.lastName}
                                   </div>
                                 ))}
@@ -558,7 +575,7 @@ export function ReservationDetailsSidebar({
                     </div>
 
                     {/* Origen y destino específicos del segmento */}
-                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-3">
                       <div>
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
@@ -638,10 +655,10 @@ export function ReservationDetailsSidebar({
         </div>
 
         {/* Sección de Paqueterías */}
-        <div className="space-y-4 mt-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <div className="rounded-full bg-orange-100 p-2">
-              <div className="h-4 w-4 bg-orange-600 rounded-sm"></div>
+        <div className="space-y-3 md:space-y-4 mt-6 md:mt-8">
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-3 md:mb-4 flex items-center gap-2">
+            <div className="rounded-full bg-orange-100 p-1.5 md:p-2">
+              <div className="h-3 w-3 md:h-4 md:w-4 bg-orange-600 rounded-sm"></div>
             </div>
             Paqueterías ({packages.length})
           </h3>
@@ -661,30 +678,30 @@ export function ReservationDetailsSidebar({
           ) : (
             packages.map((pkg: any) => (
               <Card key={pkg.id} className="border border-orange-200 rounded-xl overflow-hidden shadow-sm bg-orange-50 hover:shadow-md transition-shadow">
-                <CardHeader className="border-b border-orange-100 bg-orange-100 px-4 py-2.5">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <div className="bg-orange-200 text-orange-800 font-medium px-3 py-1 rounded-md mr-3">
+                <CardHeader className="border-b border-orange-100 bg-orange-100 px-3 md:px-4 py-2 md:py-2.5">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                    <div className="flex items-center w-full sm:w-auto">
+                      <div className="bg-orange-200 text-orange-800 font-medium px-2 md:px-3 py-1 rounded-md mr-2 md:mr-3 text-xs md:text-sm">
                         Paquete #{pkg.id}
                       </div>
-                      <div>
-                        <div className="font-medium">
+                      <div className="min-w-0 flex-1 sm:flex-none">
+                        <div className="font-medium text-sm md:text-base truncate">
                           {pkg.senderName} {pkg.senderLastName}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-gray-600 truncate">
                           → {pkg.recipientName} {pkg.recipientLastName}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-orange-700">
+                    <div className="text-right w-full sm:w-auto flex justify-between sm:block">
+                      <div className="text-base md:text-lg font-bold text-orange-700">
                         {formatPrice(pkg.price)}
                       </div>
                       <Badge
                         variant="outline"
-                        className={pkg.isPaid
+                        className={`text-xs ${pkg.isPaid
                           ? 'bg-green-100 text-green-800 border-green-200'
-                          : 'bg-yellow-100 text-yellow-800 border-yellow-200'}
+                          : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}
                       >
                         {pkg.isPaid ? 'PAGADO' : 'PENDIENTE'}
                       </Badge>
@@ -692,37 +709,37 @@ export function ReservationDetailsSidebar({
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   {/* Descripción del paquete */}
                   <div className="mb-3">
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="text-xs md:text-sm font-medium text-gray-800">
                       Descripción: {pkg.packageDescription || 'Sin descripción'}
                     </div>
                   </div>
 
                   {/* Origen y destino específicos del paquete */}
-                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm mb-3">
                     <div>
                       <div className="text-xs text-gray-500">Origen</div>
-                      <div className="font-medium">
+                      <div className="font-medium text-xs md:text-sm break-words">
                         {pkg.tripDetails?.origin || pkg.tripOrigin || 'No especificado'}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-500">Destino</div>
-                      <div className="font-medium">
+                      <div className="font-medium text-xs md:text-sm break-words">
                         {pkg.tripDetails?.destination || pkg.tripDestination || 'No especificado'}
                       </div>
                     </div>
                   </div>
 
                   {/* Información de contacto */}
-                  <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 text-sm mb-3">
                     <div>
                       <div className="text-xs text-gray-500">Remitente</div>
                       <div className="font-medium flex items-center">
-                        <Phone className="h-3 w-3 mr-1 text-gray-500" />
-                        <a href={`tel:${pkg.senderPhone}`} className="text-orange-600 hover:underline">
+                        <Phone className="h-3 w-3 mr-1 text-gray-500 flex-shrink-0" />
+                        <a href={`tel:${pkg.senderPhone}`} className="text-orange-600 hover:underline text-xs md:text-sm truncate">
                           {pkg.senderPhone}
                         </a>
                       </div>
@@ -730,8 +747,8 @@ export function ReservationDetailsSidebar({
                     <div>
                       <div className="text-xs text-gray-500">Destinatario</div>
                       <div className="font-medium flex items-center">
-                        <Phone className="h-3 w-3 mr-1 text-gray-500" />
-                        <a href={`tel:${pkg.recipientPhone}`} className="text-orange-600 hover:underline">
+                        <Phone className="h-3 w-3 mr-1 text-gray-500 flex-shrink-0" />
+                        <a href={`tel:${pkg.recipientPhone}`} className="text-orange-600 hover:underline text-xs md:text-sm truncate">
                           {pkg.recipientPhone}
                         </a>
                       </div>
@@ -739,17 +756,17 @@ export function ReservationDetailsSidebar({
                   </div>
 
                   {/* Estado de entrega y asientos */}
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm">
                     <div>
-                      <div className="text-xs text-gray-500">Estado de entrega</div>
-                      <Badge variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'}>
+                      <div className="text-xs text-gray-500 mb-1">Estado de entrega</div>
+                      <Badge variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'} className="text-xs">
                         {pkg.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente'}
                       </Badge>
                     </div>
                     {pkg.usesSeats && (
                       <div>
                         <div className="text-xs text-gray-500">Asientos ocupados</div>
-                        <div className="font-medium">{pkg.seatsQuantity || 0}</div>
+                        <div className="font-medium text-xs md:text-sm">{pkg.seatsQuantity || 0}</div>
                       </div>
                     )}
                   </div>
