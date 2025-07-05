@@ -91,7 +91,7 @@ export function setupAuthentication(app: Express) {
       cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Solo HTTPS en producción
+        secure: process.env.HTTPS === "true", // Solo usar secure si HTTPS está configurado
         sameSite: "lax",
       },
     })
