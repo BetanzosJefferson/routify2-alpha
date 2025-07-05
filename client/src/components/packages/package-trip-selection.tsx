@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { UserRole } from "@shared/schema";
 
 interface TripSegment {
   origin: string;
@@ -42,6 +44,8 @@ interface PackageTripSelectionProps {
 }
 
 export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelectionProps) {
+  const { user } = useAuth();
+  
   const [searchDate, setSearchDate] = useState(() => {
     const today = new Date();
     const year = today.getFullYear();
@@ -52,6 +56,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   
   const [searchOrigin, setSearchOrigin] = useState("");
   const [searchDestination, setSearchDestination] = useState("");
+  const [searchCompany, setSearchCompany] = useState("");
 
   // Construir la URL de búsqueda con parámetros
   const buildSearchUrl = () => {
@@ -66,7 +71,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
 
   // Query para obtener viajes - usando enfoque simplificado
   const { data: rawTrips = [], isLoading, error, refetch } = useQuery({
-    queryKey: ["package-trips", searchDate, searchOrigin, searchDestination],
+    queryKey: ["package-trips", searchDate, searchOrigin, searchDestination, searchCompany],
     queryFn: async () => {
       // Primero intentar obtener todos los viajes sin filtros complejos
       console.log(`[PackageTripSelection] Fetching all trips without complex filters`);
@@ -104,6 +109,14 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
           return trip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
         });
         console.log(`[PackageTripSelection] After destination filter (${searchDestination}): ${filteredTrips.length} trips`);
+      }
+      
+      // Filtrar por empresa si se especifica (solo para taquilla)
+      if (searchCompany.trim()) {
+        filteredTrips = filteredTrips.filter((trip: any) => {
+          return trip.companyId?.toLowerCase().includes(searchCompany.toLowerCase());
+        });
+        console.log(`[PackageTripSelection] After company filter (${searchCompany}): ${filteredTrips.length} trips`);
       }
       
       return filteredTrips;
@@ -206,6 +219,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const clearFilters = () => {
     setSearchOrigin("");
     setSearchDestination("");
+    setSearchCompany("");
     // Mantener la fecha actual
   };
 
@@ -234,7 +248,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search-date">Fecha</Label>
               <Input
@@ -269,6 +283,20 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                 className="w-full"
               />
             </div>
+            
+            {user?.role === UserRole.TICKET_OFFICE && (
+              <div className="space-y-2">
+                <Label htmlFor="search-company">Empresa (opcional)</Label>
+                <Input
+                  id="search-company"
+                  type="text"
+                  placeholder="Buscar por empresa..."
+                  value={searchCompany}
+                  onChange={(e) => setSearchCompany(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            )}
           </div>
           
           <div className="flex gap-2">
@@ -368,6 +396,15 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                           {segment.route?.name && `Ruta: ${segment.route.name}`}
                           {segment.capacity && ` • Capacidad total: ${segment.capacity} pasajeros`}
                         </div>
+                        
+                        {/* Información de la empresa (solo para taquilla) */}
+                        {user?.role === UserRole.TICKET_OFFICE && segment.companyId && (
+                          <div className="text-xs">
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                              Empresa: {segment.companyId}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Botón de selección */}
