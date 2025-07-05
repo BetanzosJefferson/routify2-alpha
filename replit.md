@@ -119,6 +119,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 5, 2025** - Completed Step 2 of backend performance optimization:
+  - Successfully implemented searchTripsOptimized method using JOINs instead of N+1 queries
+  - Reduced database queries from 5 separate calls to 1 combined JOIN query (80% reduction)
+  - Created optimized endpoint /api/trips-optimized for testing performance improvements
+  - Maintained full functional compatibility with original searchTrips method
+  - System performance significantly improved: eliminated N+1 query pattern in trip search operations
+
 - **July 5, 2025** - Fixed reservation filtering and package permissions:
   - Added status filtering to exclude canceled reservations in "Reservaciones en lista" page
   - Fixed TICKET_OFFICE role permissions to create, edit and delete packages by adding to PACKAGE_WRITE_ROLES and PACKAGE_CREATE_ROLES

@@ -473,6 +473,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ruta optimizada para buscar viajes (TESTING)
+  app.get(apiRouter("/trips-optimized"), async (req: Request, res: Response) => {
+    try {
+      // Obtener el usuario autenticado
+      const { user } = req as any;
+      
+      // Log para depuración
+      console.log(`[GET /trips-optimized] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      if (user) {
+        console.log(`[GET /trips-optimized] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+      }
+      
+      // Parámetros de búsqueda desde la query
+      const { origin, destination, date, dateRange, seats, driverId, visibility } = req.query;
+      const searchParams: any = {};
+      
+      // Agregar parámetros de búsqueda si existen
+      if (origin) searchParams.origin = origin as string;
+      if (destination) searchParams.destination = destination as string;
+      
+      // Manejar fecha o rango de fechas
+      if (dateRange) {
+        // Si se especifica un rango de fechas (ayer,hoy,mañana), usar ese rango
+        searchParams.dateRange = (dateRange as string).split(',');
+        console.log(`[GET /trips-optimized] Usando rango de fechas optimizado:`, searchParams.dateRange);
+      } else if (date) {
+        // Si se especifica una fecha específica
+        searchParams.date = date as string;
+        console.log(`[GET /trips-optimized] Usando fecha específica:`, searchParams.date);
+      }
+      
+      // Otros parámetros
+      if (seats) searchParams.seats = parseInt(seats as string);
+      if (driverId) searchParams.driverId = parseInt(driverId as string);
+      if (visibility) searchParams.visibility = visibility as string;
+      
+      // Configurar visibilidad basada en el rol del usuario
+      if (user && ['admin', 'superAdmin', 'dueño'].includes(user.role)) {
+        // Admins pueden ver todos los viajes
+        searchParams.includeAllVisibilities = true;
+      } else {
+        // Usuarios normales solo ven viajes publicados
+        searchParams.visibility = 'published';
+      }
+      
+      // Configurar filtros por compañía
+      if (user) {
+        if (user.role === 'superAdmin') {
+          // Super admin puede ver todos los viajes
+          console.log(`[GET /trips-optimized] Super admin - mostrando todos los viajes`);
+        } else if (user.role === 'taquilla') {
+          // Taquilla puede ver viajes de múltiples compañías
+          const userCompanies = await storage.getUserCompanies(user.id);
+          if (userCompanies.length > 0) {
+            searchParams.companyIds = userCompanies.map(uc => uc.companyId);
+            console.log(`[GET /trips-optimized] Taquilla - mostrando viajes de compañías:`, searchParams.companyIds);
+          }
+        } else if (user.companyId || user.company) {
+          // Otros roles ven solo su compañía
+          searchParams.companyId = user.companyId || user.company;
+          console.log(`[GET /trips-optimized] Usuario normal - mostrando viajes de compañía:`, searchParams.companyId);
+        }
+      }
+      
+      // Usar el método optimizado
+      const startTime = Date.now();
+      const trips = await storage.searchTripsOptimized(searchParams);
+      const queryTime = Date.now() - startTime;
+      
+      console.log(`[GET /trips-optimized] Encontrados ${trips.length} viajes en ${queryTime}ms`);
+      res.json(trips);
+    } catch (error: any) {
+      console.error("Error al obtener viajes optimizados:", error.message);
+      res.status(500).json({ error: "Error al obtener viajes" });
+    }
+  });
+
   // Ruta estándar para buscar viajes (solo muestra los publicados por defecto)
   app.get(apiRouter("/trips"), async (req: Request, res: Response) => {
     try {
