@@ -90,7 +90,7 @@ export interface IStorage {
   
   // Reservation methods
   getReservations(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
-  getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
+
   getReservation(id: number): Promise<Reservation | undefined>;
   getReservationWithDetails(id: number, companyId?: string): Promise<ReservationWithDetails | undefined>;
   createReservation(reservation: InsertReservation): Promise<Reservation>;
