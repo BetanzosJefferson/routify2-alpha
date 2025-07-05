@@ -29,6 +29,11 @@ function ReservationsListContent() {
 
   // Filtrar reservaciones por fecha seleccionada y término de búsqueda
   const filteredReservations = reservations.filter((reservation) => {
+    // Excluir reservaciones canceladas
+    if (reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') {
+      return false;
+    }
+    
     // Filtrar por fecha usando la fecha del viaje padre si está disponible
     let reservationDate = reservation.trip?.departureDate;
     
