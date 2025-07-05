@@ -326,244 +326,145 @@ export default function PackageDetailPage() {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-gray-50 overflow-x-hidden">
-      {/* Header fijo con navegación */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm w-full">
-        <div className="flex items-center justify-between p-3 max-w-full">
-          <Link href="/packages" className="flex items-center justify-center w-10 h-10">
-            <ChevronLeft className="h-5 w-5 text-gray-600" />
-          </Link>
-          <h1 className="text-base font-semibold text-gray-900 flex-1 text-center">Detalles del Paquete</h1>
-          <div className="w-10"></div>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header simple */}
+      <div className="bg-white border-b px-4 py-3 flex items-center">
+        <Link href="/packages" className="mr-3">
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-lg font-semibold">Paquete #{packageData.id}</h1>
       </div>
 
-      {/* Contenido principal responsive */}
-      <div className="w-full h-full">
-        <div className="px-3 py-3 pb-20">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            
-            {/* Header del paquete */}
-            <div className="bg-blue-50 px-4 py-3 border-b border-gray-200">
-              <div className="space-y-2">
-                <h2 className="text-lg font-bold text-gray-900">Paquete #{packageData.id}</h2>
-                <p className="text-sm text-gray-600">
-                  {packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
-                    (packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
-                     formatDate(new Date(packageData.createdAt)))}
-                </p>
-                <div className="flex">
-                  <Badge
-                    className={`text-xs px-3 py-1 ${
-                      packageData.deliveryStatus === 'entregado' 
-                        ? "bg-green-500 hover:bg-green-600" 
-                        : "bg-orange-500 hover:bg-orange-600"
-                    }`}
-                  >
-                    {packageData.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente de entrega'}
-                  </Badge>
-                </div>
-              </div>
+      {/* Contenido simple */}
+      <div className="p-4 space-y-4">
+        
+        {/* Información básica */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <h2 className="font-semibold mb-3">Información General</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Fecha:</span>
+              <span>{packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
+                (packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
+                 formatDate(new Date(packageData.createdAt)))}</span>
             </div>
-
-            {/* Contenido del paquete */}
-            <div className="p-4 space-y-4">
-              
-              {/* Información General */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
-                  <Package className="mr-2 h-4 w-4 text-blue-600" />
-                  Información General
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">Fecha</p>
-                    <p className="text-sm text-gray-900">
-                      {packageData.tripDate ? formatDate(new Date(packageData.tripDate)) : 
-                        (packageData.shippingDate ? formatDate(new Date(packageData.shippingDate)) : 
-                         formatDate(new Date(packageData.createdAt)))}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">Precio</p>
-                    <p className="text-sm font-semibold text-green-600">
-                      {formatCurrency(packageData.price)}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Descripción</p>
-                  <p className="text-sm text-gray-900">{packageData.packageDescription}</p>
-                </div>
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 mb-1">Método de Pago</p>
-                  <p className="text-sm text-gray-900">{packageData.paymentMethod || 'efectivo'}</p>
-                </div>
-              </div>
-
-              {/* Remitente */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
-                  <User className="mr-2 h-4 w-4 text-blue-600" />
-                  Remitente
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-900">
-                    {packageData.senderName} {packageData.senderLastName}
-                  </p>
-                  <p className="text-xs text-gray-600 flex items-center">
-                    <Phone className="mr-2 h-3 w-3" /> 
-                    <a href={`tel:${packageData.senderPhone}`} className="underline">
-                      {packageData.senderPhone}
-                    </a>
-                  </p>
-                </div>
-              </div>
-              
-              {/* Destinatario */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
-                  <User className="mr-2 h-4 w-4 text-blue-600" />
-                  Destinatario
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-900">
-                    {packageData.recipientName} {packageData.recipientLastName}
-                  </p>
-                  <p className="text-xs text-gray-600 flex items-center">
-                    <Phone className="mr-2 h-3 w-3" /> 
-                    <a href={`tel:${packageData.recipientPhone}`} className="underline">
-                      {packageData.recipientPhone}
-                    </a>
-                  </p>
-                </div>
-              </div>
-              
-              {/* Origen y Destino */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
-                  <Truck className="mr-2 h-4 w-4 text-blue-600" />
-                  Origen
-                </h3>
-                <p className="text-xs text-gray-600">
-                  {packageData.segmentOrigin || "No disponible"}
-                </p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
-                  <Truck className="mr-2 h-4 w-4 text-blue-600" />
-                  Destino
-                </h3>
-                <p className="text-xs text-gray-600">
-                  {packageData.segmentDestination || "No disponible"}
-                </p>
-              </div>
-
-              {/* Estado y Seguimiento */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3 flex items-center text-gray-900">
-                  <Clock className="mr-2 h-4 w-4 text-blue-600" />
-                  Estado y Seguimiento
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-xs font-medium text-gray-500 block mb-1">Estado de pago:</span>
-                    {packageData.isPaid ? (
-                      <Badge className="bg-green-500 hover:bg-green-600 text-xs">
-                        <CheckCircle className="mr-1 h-3 w-3" /> 
-                        Pagado
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        <Clock className="mr-1 h-3 w-3" /> 
-                        Pendiente de pago
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <span className="text-xs font-medium text-gray-500 block mb-1">Estado de entrega:</span>
-                    {packageData.deliveryStatus === 'entregado' ? (
-                      <Badge className="bg-green-500 hover:bg-green-600 text-xs">
-                        <Truck className="mr-1 h-3 w-3" /> 
-                        Entregado
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        <Clock className="mr-1 h-3 w-3" /> 
-                        Pendiente de entrega
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  {packageData.registeredBy && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-500 block mb-1">Registrado por:</span>
-                      <span className="text-xs text-gray-900">{packageData.registeredBy}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Precio:</span>
+              <span className="font-semibold text-green-600">{formatCurrency(packageData.price)}</span>
             </div>
-            
-            {/* Botones de acción fijos en la parte inferior */}
-            <div className="border-t border-gray-200 bg-white p-4 space-y-3">
-              
-              {/* Botones de acción para usuarios autorizados */}
-              {user && isSameCompany ? (
-                <div className="space-y-2">
-                  {!packageData.isPaid && (
-                    <Button 
-                      variant="default" 
-                      className="bg-green-600 hover:bg-green-700 w-full py-3 text-sm font-medium" 
-                      onClick={handleMarkAsPaid}
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Marcar como pagado
-                    </Button>
-                  )}
-                  
-                  {packageData.deliveryStatus !== 'entregado' && (
-                    <Button 
-                      variant="default" 
-                      className="bg-blue-600 hover:bg-blue-700 w-full py-3 text-sm font-medium" 
-                      onClick={handleMarkAsDelivered}
-                    >
-                      <Truck className="mr-2 h-4 w-4" />
-                      Marcar como entregado
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-gray-100 p-3 rounded-lg">
-                  <p className="text-xs text-gray-600 text-center">
-                    {!user ? 'Inicia sesión para más opciones' : 'No tienes permisos para modificar este paquete'}
-                  </p>
-                </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Descripción:</span>
+              <span>{packageData.packageDescription}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Método de pago:</span>
+              <span>{packageData.paymentMethod || 'efectivo'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Remitente */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <h2 className="font-semibold mb-3">Remitente</h2>
+          <div className="space-y-2 text-sm">
+            <p className="font-medium">{packageData.senderName} {packageData.senderLastName}</p>
+            <p className="text-gray-600">
+              <a href={`tel:${packageData.senderPhone}`} className="underline">
+                {packageData.senderPhone}
+              </a>
+            </p>
+          </div>
+        </div>
+
+        {/* Destinatario */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <h2 className="font-semibold mb-3">Destinatario</h2>
+          <div className="space-y-2 text-sm">
+            <p className="font-medium">{packageData.recipientName} {packageData.recipientLastName}</p>
+            <p className="text-gray-600">
+              <a href={`tel:${packageData.recipientPhone}`} className="underline">
+                {packageData.recipientPhone}
+              </a>
+            </p>
+          </div>
+        </div>
+
+        {/* Origen y Destino */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <h2 className="font-semibold mb-3">Ruta</h2>
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="text-gray-600">Origen: </span>
+              <span>{packageData.segmentOrigin || "No disponible"}</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Destino: </span>
+              <span>{packageData.segmentDestination || "No disponible"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Estado */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <h2 className="font-semibold mb-3">Estado</h2>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Estado de pago:</span>
+              <Badge className={packageData.isPaid ? "bg-green-500" : "bg-gray-500"}>
+                {packageData.isPaid ? 'Pagado' : 'Pendiente'}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Estado de entrega:</span>
+              <Badge className={packageData.deliveryStatus === 'entregado' ? "bg-green-500" : "bg-orange-500"}>
+                {packageData.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente'}
+              </Badge>
+            </div>
+            {packageData.registeredBy && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Registrado por:</span>
+                <span className="text-sm">{packageData.registeredBy}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Botones de acción */}
+        <div className="space-y-3 pb-6">
+          {user && isSameCompany && (
+            <div className="space-y-2">
+              {!packageData.isPaid && (
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700" 
+                  onClick={handleMarkAsPaid}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Marcar como pagado
+                </Button>
               )}
               
-              {/* Botones secundarios - siempre visibles */}
-              <div className="grid grid-cols-2 gap-3">
+              {packageData.deliveryStatus !== 'entregado' && (
                 <Button 
-                  variant="outline" 
-                  className="py-3 text-sm" 
-                  onClick={handlePrintTicket}
+                  className="w-full bg-blue-600 hover:bg-blue-700" 
+                  onClick={handleMarkAsDelivered}
                 >
-                  <Printer className="mr-2 h-3 w-3" />
-                  Imprimir
+                  <Truck className="mr-2 h-4 w-4" />
+                  Marcar como entregado
                 </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="py-3 text-sm" 
-                  onClick={handleSharePackage}
-                >
-                  <Share2 className="mr-2 h-3 w-3" />
-                  Compartir
-                </Button>
-              </div>
+              )}
             </div>
+          )}
+          
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" onClick={handlePrintTicket}>
+              <Printer className="mr-2 h-3 w-3" />
+              Imprimir
+            </Button>
+            
+            <Button variant="outline" onClick={handleSharePackage}>
+              <Share2 className="mr-2 h-3 w-3" />
+              Compartir
+            </Button>
           </div>
         </div>
       </div>
