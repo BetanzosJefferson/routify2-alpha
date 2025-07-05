@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
@@ -114,7 +115,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       // Filtrar por empresa si se especifica (solo para taquilla)
       if (searchCompany.trim()) {
         filteredTrips = filteredTrips.filter((trip: any) => {
-          return trip.companyId?.toLowerCase().includes(searchCompany.toLowerCase());
+          return trip.companyId === searchCompany;
         });
         console.log(`[PackageTripSelection] After company filter (${searchCompany}): ${filteredTrips.length} trips`);
       }
@@ -147,6 +148,14 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       route: trip.route
     };
   });
+
+  // Obtener empresas únicas para el dropdown (solo para taquilla)
+  const availableCompanies = rawTrips.reduce((companies: string[], trip: any) => {
+    if (trip.companyId && !companies.includes(trip.companyId)) {
+      companies.push(trip.companyId);
+    }
+    return companies;
+  }, []).sort();
 
   // Formatear fecha para mostrar - evitar problemas de zona horaria
   const formatDate = (dateString: string) => {
@@ -287,14 +296,22 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
             {user?.role === UserRole.TICKET_OFFICE && (
               <div className="space-y-2">
                 <Label htmlFor="search-company">Empresa (opcional)</Label>
-                <Input
-                  id="search-company"
-                  type="text"
-                  placeholder="Buscar por empresa..."
+                <Select
                   value={searchCompany}
-                  onChange={(e) => setSearchCompany(e.target.value)}
-                  className="w-full"
-                />
+                  onValueChange={setSearchCompany}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Todas las empresas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas las empresas</SelectItem>
+                    {availableCompanies.map((company) => (
+                      <SelectItem key={company} value={company}>
+                        {company}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
