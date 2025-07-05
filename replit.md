@@ -119,6 +119,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 5, 2025** - Fixed reservation filtering and package permissions:
+  - Added status filtering to exclude canceled reservations in "Reservaciones en lista" page
+  - Fixed TICKET_OFFICE role permissions to create, edit and delete packages by adding to PACKAGE_WRITE_ROLES and PACKAGE_CREATE_ROLES
+  - Resolved issue where canceled reservations still appeared in reservation list despite frontend filtering
+
 - **July 5, 2025** - Configured complete production deployment setup:
   - Fixed NODE_ENV detection in server/index.ts to use process.env.NODE_ENV correctly
   - Created production build script (build-production.sh) for complete deployment automation
