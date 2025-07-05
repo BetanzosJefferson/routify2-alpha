@@ -61,14 +61,7 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
-    // Serve static files from dist/public in production
-    const path = require("path");
-    const distPath = path.resolve(process.cwd(), "dist", "public");
-    
-    app.use(express.static(distPath));
-    app.use("*", (_req, res) => {
-      res.sendFile(path.resolve(distPath, "index.html"));
-    });
+    serveStatic(app);
   }
 
   // ALWAYS serve the app on port 5000
