@@ -132,6 +132,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
           )}
           
+          {/* Plantillas de Rutas */}
+          {canAccess("routes") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<FileTextIcon className="h-5 w-5" />} 
+                active={location === "/templates"}
+                onClick={() => setLocation("/templates")}
+              >
+                Plantillas
+              </NavItem>
+            </div>
+          )}
+          
           {/* Publicar Viajes */}
           {canAccess("publish-trip") && (
             <div className="space-y-1">

@@ -122,6 +122,81 @@ export class DatabaseStorage implements IStorage {
       segments
     };
   }
+
+  // Route Template methods
+  async getRouteTemplates(companyId?: string): Promise<schema.RouteTemplate[]> {
+    console.log(companyId ? `DB Storage: Consultando plantillas para la compañía: ${companyId}` : "DB Storage: Consultando todas las plantillas");
+    
+    try {
+      if (companyId) {
+        const templates = await this.db
+          .select()
+          .from(schema.routeTemplates)
+          .where(eq(schema.routeTemplates.companyId, companyId));
+        
+        console.log(`DB Storage: Plantillas filtradas encontradas: ${templates.length}`);
+        return templates;
+      } else {
+        const templates = await this.db.select().from(schema.routeTemplates);
+        console.log(`DB Storage: Total plantillas encontradas: ${templates.length}`);
+        return templates;
+      }
+    } catch (error) {
+      console.error("DB Storage: Error al obtener plantillas:", error);
+      return [];
+    }
+  }
+
+  async getRouteTemplate(id: number): Promise<schema.RouteTemplate | undefined> {
+    const result = await this.db
+      .select()
+      .from(schema.routeTemplates)
+      .where(eq(schema.routeTemplates.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async createRouteTemplate(template: schema.InsertRouteTemplate): Promise<schema.RouteTemplate> {
+    const result = await this.db
+      .insert(schema.routeTemplates)
+      .values({
+        ...template,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateRouteTemplate(id: number, templateUpdate: Partial<schema.RouteTemplate>): Promise<schema.RouteTemplate | undefined> {
+    const result = await this.db
+      .update(schema.routeTemplates)
+      .set({ ...templateUpdate, updatedAt: new Date() })
+      .where(eq(schema.routeTemplates.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRouteTemplate(id: number): Promise<boolean> {
+    const result = await this.db
+      .delete(schema.routeTemplates)
+      .where(eq(schema.routeTemplates.id, id))
+      .returning({ id: schema.routeTemplates.id });
+    return result.length > 0;
+  }
+
+  async getRouteTemplateWithRoute(id: number): Promise<(schema.RouteTemplate & { route: Route }) | undefined> {
+    const template = await this.getRouteTemplate(id);
+    if (!template) return undefined;
+    
+    const route = await this.getRoute(template.routeId);
+    if (!route) return undefined;
+    
+    return {
+      ...template,
+      route
+    };
+  }
   
   async getTrips(companyId?: string): Promise<TripWithRouteInfo[]> {
     console.log("DB Storage: Obteniendo viajes");

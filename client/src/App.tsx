@@ -38,6 +38,7 @@ import TripsPageRoute from "@/pages/trips-page";
 import UserCashBoxesPageRoute from "@/pages/user-cash-boxes-page";
 import ProfilePageRoute from "@/pages/profile-page";
 import { ReservationsListPage } from "@/pages/reservations-list";
+import { TemplatesPage } from "@/pages/templates-page";
 
 function Router() {
   return (
@@ -63,6 +64,7 @@ function Router() {
       <ProtectedRoute path="/reservations" component={ReservationsPageRoute} />
       <ProtectedRoute path="/reservations-list" component={ReservationsListPage} />
       <ProtectedRoute path="/routes" component={RoutesPageRoute} />
+      <ProtectedRoute path="/templates" component={TemplatesPage} />
       <ProtectedRoute path="/publish-trip" component={PublishTripPageRoute} />
       <ProtectedRoute path="/trips" component={TripsPageRoute} />
       <ProtectedRoute path="/user-cash-boxes" component={UserCashBoxesPageRoute} />

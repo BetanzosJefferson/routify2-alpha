@@ -40,6 +40,14 @@ export interface IStorage {
   deleteRoute(id: number): Promise<boolean>;
   getRouteWithSegments(id: number): Promise<RouteWithSegments | undefined>;
 
+  // Route Template methods
+  getRouteTemplates(companyId?: string): Promise<schema.RouteTemplate[]>;
+  getRouteTemplate(id: number): Promise<schema.RouteTemplate | undefined>;
+  createRouteTemplate(template: schema.InsertRouteTemplate): Promise<schema.RouteTemplate>;
+  updateRouteTemplate(id: number, template: Partial<schema.RouteTemplate>): Promise<schema.RouteTemplate | undefined>;
+  deleteRouteTemplate(id: number): Promise<boolean>;
+  getRouteTemplateWithRoute(id: number): Promise<(schema.RouteTemplate & { route: Route }) | undefined>;
+
   // Presupuestos de operadores
   getTripBudget(tripId: number): Promise<TripBudget | undefined>;
   createTripBudget(budget: InsertTripBudget): Promise<TripBudget>;

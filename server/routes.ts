@@ -394,6 +394,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ROUTE TEMPLATES ENDPOINTS
+  app.get(apiRouter("/route-templates"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      let companyId = null;
+      
+      if (user) {
+        companyId = user.companyId || user.company;
+      }
+      
+      const templates = await storage.getRouteTemplates(companyId);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching route templates:", error);
+      res.status(500).json({ error: "Failed to fetch route templates" });
+    }
+  });
+
+  app.get(apiRouter("/route-templates/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const templateWithRoute = await storage.getRouteTemplateWithRoute(id);
+      
+      if (!templateWithRoute) {
+        return res.status(404).json({ error: "Route template not found" });
+      }
+      
+      res.json(templateWithRoute);
+    } catch (error) {
+      console.error("Error fetching route template:", error);
+      res.status(500).json({ error: "Failed to fetch route template" });
+    }
+  });
+
+  app.post(apiRouter("/route-templates"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const companyId = user.companyId || user.company;
+      
+      const templateData = {
+        ...req.body,
+        companyId: companyId
+      };
+      
+      const template = await storage.createRouteTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating route template:", error);
+      res.status(500).json({ error: "Failed to create route template" });
+    }
+  });
+
+  app.put(apiRouter("/route-templates/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const { user } = req as any;
+      
+      // Verificar que la plantilla existe y pertenece a la compañía del usuario
+      const existingTemplate = await storage.getRouteTemplate(id);
+      if (!existingTemplate) {
+        return res.status(404).json({ error: "Route template not found" });
+      }
+      
+      if (user.role !== UserRole.SUPER_ADMIN) {
+        const userCompany = user.companyId || user.company;
+        if (existingTemplate.companyId && existingTemplate.companyId !== userCompany) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+      
+      const updatedTemplate = await storage.updateRouteTemplate(id, req.body);
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error("Error updating route template:", error);
+      res.status(500).json({ error: "Failed to update route template" });
+    }
+  });
+
+  app.delete(apiRouter("/route-templates/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const { user } = req as any;
+      
+      // Verificar que la plantilla existe y pertenece a la compañía del usuario
+      const existingTemplate = await storage.getRouteTemplate(id);
+      if (!existingTemplate) {
+        return res.status(404).json({ error: "Route template not found" });
+      }
+      
+      if (user.role !== UserRole.SUPER_ADMIN) {
+        const userCompany = user.companyId || user.company;
+        if (existingTemplate.companyId && existingTemplate.companyId !== userCompany) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+      
+      const success = await storage.deleteRouteTemplate(id);
+      if (!success) {
+        return res.status(500).json({ error: "Failed to delete route template" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting route template:", error);
+      res.status(500).json({ error: "Failed to delete route template" });
+    }
+  });
+
   // TRIPS ENDPOINTS
   
   // Ruta optimizada para obtener todos los viajes administrativos

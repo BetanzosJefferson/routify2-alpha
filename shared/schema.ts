@@ -34,6 +34,24 @@ export const insertRouteSchema = createInsertSchema(routes);
 export type InsertRoute = z.infer<typeof insertRouteSchema>;
 export type Route = typeof routes.$inferSelect;
 
+// ROUTE TEMPLATE SCHEMA
+export const routeTemplates = pgTable("route_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  routeId: integer("route_id").notNull(),
+  companyId: text("company_id"),
+  // Configuración de tiempos entre puntos (en minutos)
+  timeConfiguration: jsonb("time_configuration").notNull(), // { "0-1": 60, "1-2": 30, etc. }
+  // Configuración de precios por segmento  
+  priceConfiguration: jsonb("price_configuration").notNull(), // { "0-1": 100, "1-2": 50, etc. }
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertRouteTemplateSchema = createInsertSchema(routeTemplates);
+export type InsertRouteTemplate = z.infer<typeof insertRouteTemplateSchema>;
+export type RouteTemplate = typeof routeTemplates.$inferSelect;
+
 // TRIP SCHEMA - Actualizado para coincidir con la estructura real de la base de datos
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
@@ -455,6 +473,14 @@ export type Coupon = typeof coupons.$inferSelect;
 // RELACIONES ENTRE TABLAS
 export const routeRelations = relations(routes, ({ many }) => ({
   trips: many(trips),
+  templates: many(routeTemplates),
+}));
+
+export const routeTemplateRelations = relations(routeTemplates, ({ one }) => ({
+  route: one(routes, {
+    fields: [routeTemplates.routeId],
+    references: [routes.id]
+  }),
 }));
 
 export const tripRelations = relations(trips, ({ one, many }) => ({

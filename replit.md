@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 6, 2025** - Implemented comprehensive route template system:
+  - Created route_templates database table with timing and pricing configuration fields
+  - Added full CRUD operations in storage interface and database layer for template management
+  - Implemented API endpoints (/api/route-templates) with proper authentication and company isolation
+  - Built complete frontend interface with templates page, form components, and sidebar navigation
+  - Templates allow users to predefine route segment timings and prices for quick trip creation
+  - Users can create templates with time differences between stops and pricing for each segment
+  - Template-based trip creation will calculate all stop times automatically from departure time
+  - Added "Plantillas" navigation option accessible to users with route management permissions
+
 - **July 5, 2025** - Completed Step 2 of backend performance optimization:
   - Successfully implemented searchTripsOptimized method using JOINs instead of N+1 queries
   - Reduced database queries from 5 separate calls to 1 combined JOIN query (80% reduction)
