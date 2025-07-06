@@ -9,7 +9,7 @@ interface DefaultLayoutProps {
   onTabChange?: (tab: TabType) => void;
 }
 
-function DefaultLayout({ 
+export function DefaultLayout({ 
   children, 
   activeTab = "create-route", 
   onTabChange = () => {} 
