@@ -42,42 +42,7 @@ export async function prefetchCriticalData() {
   }
 }
 
-type QueryFnOptions = {
-  on401?: "throw" | "returnNull";
-};
-
-/**
- * Default fetch function for use with react-query
- */
-export function getQueryFn(options: QueryFnOptions = {}) {
-  return async function queryFn<T>({ queryKey }: { queryKey: string[] }): Promise<T> {
-    const path = queryKey[0];
-    const response = await fetch(path, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      if (response.status === 401 && options.on401 === "returnNull") {
-        return null as T;
-      }
-      
-      // Try to get error message from response
-      let errorMessage = `Error ${response.status}: ${response.statusText}`;
-      try {
-        const error = await response.json();
-        if (error.message || error.error) {
-          errorMessage = error.message || error.error;
-        }
-      } catch (e) {
-        // If we can't parse the error, just use the status text
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
-  };
-}
+// Remove duplicate function definition since it's already defined below
 
 /**
  * Helper function for API requests with proper error handling

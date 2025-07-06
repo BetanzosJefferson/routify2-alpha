@@ -20,7 +20,7 @@ export function TemplatesPage() {
   const queryClient = useQueryClient();
 
   // Fetch templates
-  const { data: templates = [], isLoading, error } = useQuery({
+  const { data: templates = [], isLoading, error } = useQuery<RouteTemplate[]>({
     queryKey: ['/api/route-templates'],
     enabled: !!user,
   });
@@ -33,10 +33,16 @@ export function TemplatesPage() {
 
   // Create template mutation
   const createTemplateMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('/api/route-templates', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/route-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to create template');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/route-templates'] });
       setView('list');
@@ -46,10 +52,16 @@ export function TemplatesPage() {
 
   // Update template mutation
   const updateTemplateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => apiRequest(`/api/route-templates/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`/api/route-templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update template');
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/route-templates'] });
       setView('list');
@@ -59,9 +71,13 @@ export function TemplatesPage() {
 
   // Delete template mutation
   const deleteTemplateMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/route-templates/${id}`, {
-      method: 'DELETE',
-    }),
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/route-templates/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to delete template');
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/route-templates'] });
       setDeleteDialog({ open: false, template: null });
@@ -119,6 +135,7 @@ export function TemplatesPage() {
   };
 
   if (error) {
+    console.error('Error loading templates:', error);
     return (
       <DefaultLayout>
         <Card>
@@ -128,6 +145,11 @@ export function TemplatesPage() {
               No se pudieron cargar las plantillas de rutas.
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              {error instanceof Error ? error.message : 'Error desconocido'}
+            </p>
+          </CardContent>
         </Card>
       </DefaultLayout>
     );
