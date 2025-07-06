@@ -22,6 +22,15 @@ export function TemplatesPage() {
   // Fetch templates
   const { data: templates = [], isLoading, error } = useQuery<RouteTemplate[]>({
     queryKey: ['/api/route-templates'],
+    queryFn: async () => {
+      const response = await fetch('/api/route-templates', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch templates');
+      }
+      return response.json();
+    },
     enabled: !!user,
   });
 
