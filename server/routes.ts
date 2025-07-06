@@ -36,6 +36,7 @@ const PACKAGE_ACCESS_ROLES = [
   UserRole.CALL_CENTER, 
   UserRole.CHECKER, 
   UserRole.DRIVER,
+  UserRole.TICKET_OFFICE,
   'superAdmin'
 ];
 
