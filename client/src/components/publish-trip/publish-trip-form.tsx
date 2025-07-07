@@ -220,19 +220,26 @@ export function PublishTripForm() {
           !isSameCity(segment.origin, segment.destination),
       );
 
-      // Aplicar precios desde la plantilla
-      const segmentPricesFromTemplate = validSegments.map((segment) => {
-        // Buscar el precio en priceConfiguration que coincida con el segmento
-        const templatePriceConfig = selectedTemplate.priceConfiguration?.find((config: any) => 
-          config.origin === segment.origin && config.destination === segment.destination
-        );
-        
-        return {
-          origin: segment.origin,
-          destination: segment.destination,
-          price: templatePriceConfig?.price || 0,
-        };
-      });
+      // Aplicar precios desde la plantilla - solo combinaciones habilitadas
+      const segmentPricesFromTemplate = validSegments
+        .map((segment) => {
+          // Buscar el precio en priceConfiguration que coincida con el segmento
+          const templatePriceConfig = selectedTemplate.priceConfiguration?.find((config: any) => 
+            getCityName(config.origin) === getCityName(segment.origin) && 
+            getCityName(config.destination) === getCityName(segment.destination)
+          );
+          
+          // Solo incluir si la configuración existe y está habilitada
+          if (templatePriceConfig && templatePriceConfig.enabled !== false) {
+            return {
+              origin: segment.origin,
+              destination: segment.destination,
+              price: templatePriceConfig?.price || 0,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean); // Filtrar elementos null
 
       console.log("Segmentos generados desde plantilla:", segmentPricesFromTemplate);
 
@@ -1165,6 +1172,11 @@ export function PublishTripForm() {
                             Configure el precio entre ciudades principales. Este
                             precio se aplicará automáticamente a todas las
                             combinaciones de paradas entre las mismas ciudades.
+                            {selectedTemplate && (
+                              <span className="inline-block ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                Solo combinaciones habilitadas en plantilla
+                              </span>
+                            )}
                           </p>
 
                           <table className="min-w-full divide-y divide-gray-200">

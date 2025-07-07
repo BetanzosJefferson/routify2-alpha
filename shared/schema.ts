@@ -42,8 +42,8 @@ export const routeTemplates = pgTable("route_templates", {
   companyId: text("company_id"),
   // Configuración de tiempos entre puntos (en minutos)
   timeConfiguration: jsonb("time_configuration").notNull(), // { "0-1": 60, "1-2": 30, etc. }
-  // Configuración de precios por segmento  
-  priceConfiguration: jsonb("price_configuration").notNull(), // { "0-1": 100, "1-2": 50, etc. }
+  // Configuración de precios por segmento con enabled flag
+  priceConfiguration: jsonb("price_configuration").notNull(), // [{ origin: "City A", destination: "City B", price: 100, enabled: true }, ...]
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -36,6 +36,7 @@ interface PriceSegment {
   origin: string;
   destination: string;
   price: number;
+  enabled: boolean;
 }
 
 export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }: TemplateFormProps) {
@@ -109,7 +110,8 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
     return cityPairs.map(pair => ({
       origin: pair.origin,
       destination: pair.destination,
-      price: 0
+      price: 0,
+      enabled: true // Default to enabled for new templates
     }));
   };
 
@@ -152,6 +154,13 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
   const updatePriceSegment = (index: number, newPrice: number) => {
     const updatedSegments = [...priceSegments];
     updatedSegments[index].price = newPrice;
+    setPriceSegments(updatedSegments);
+  };
+
+  // Toggle enabled state for a city pair
+  const toggleSegmentEnabled = (index: number) => {
+    const updatedSegments = [...priceSegments];
+    updatedSegments[index].enabled = !updatedSegments[index].enabled;
     setPriceSegments(updatedSegments);
   };
 
@@ -328,13 +337,17 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
             <CardContent>
               <div className="mb-4 p-4 bg-blue-50 rounded-lg">
                 <h4 className="font-semibold text-blue-900 mb-2">Configuración por ciudades</h4>
-                <p className="text-sm text-blue-700">
+                <p className="text-sm text-blue-700 mb-2">
                   Configure el precio entre ciudades principales. Este precio se aplicará automáticamente a todas las combinaciones de paradas entre las mismas ciudades.
+                </p>
+                <p className="text-xs text-blue-600">
+                  💡 Use los checkboxes para habilitar/deshabilitar combinaciones. Solo las habilitadas aparecerán en "Publicar Viaje".
                 </p>
               </div>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
+                <div className="grid grid-cols-5 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
+                  <div>Habilitado</div>
                   <div>Ciudad Origen</div>
                   <div>Ciudad Destino</div>
                   <div>Precio</div>
@@ -345,9 +358,21 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
                   const affectedCount = calculateAffectedCombinations(segment.origin, segment.destination);
                   
                   return (
-                    <div key={index} className="grid grid-cols-4 gap-4 items-center">
-                      <div className="text-sm font-medium">{segment.origin}</div>
-                      <div className="text-sm font-medium">{segment.destination}</div>
+                    <div key={index} className={`grid grid-cols-5 gap-4 items-center p-2 rounded ${segment.enabled ? 'bg-white' : 'bg-gray-50'}`}>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={segment.enabled}
+                          onChange={() => toggleSegmentEnabled(index)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className={`text-sm font-medium ${segment.enabled ? 'text-gray-900' : 'text-gray-500'}`}>
+                        {segment.origin}
+                      </div>
+                      <div className={`text-sm font-medium ${segment.enabled ? 'text-gray-900' : 'text-gray-500'}`}>
+                        {segment.destination}
+                      </div>
                       <div className="flex items-center space-x-2">
                         <span className="text-gray-500">$</span>
                         <Input
@@ -357,9 +382,10 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
                           value={segment.price}
                           onChange={(e) => updatePriceSegment(index, parseFloat(e.target.value) || 0)}
                           className="w-24"
+                          disabled={!segment.enabled}
                         />
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className={`text-sm ${segment.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
                         {affectedCount} combinaciones
                       </div>
                     </div>
