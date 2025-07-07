@@ -76,7 +76,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@shared/schema";
 import { EditTripForm } from "./edit-trip-form";
 
-// Define la estructura de un viaje
+// Define la estructura de un viaje (formato optimizado)
 interface Trip {
   id: number;
   routeId: number;
@@ -92,19 +92,9 @@ interface Trip {
   vehicleId?: number | null; 
   driverId?: number | null;
   visibility?: string;
-  // Información de ruta optimizada
-  route: {
-    id: number;
-    name: string;
-    origin: string;
-    destination: string;
-    stops: string[];
-    companyId: string;
-  };
-  numStops: number;
-  // Información de la compañía (sin logo para optimización)
+  routeName?: string;
   companyName?: string;
-  // Información de vehículo y conductor asignados (optimizada)
+  // Información de vehículo y conductor asignados (opcional)
   assignedVehicle?: {
     id: number;
     model: string;
@@ -363,7 +353,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       matchesSearch = 
         (trip.origin?.toLowerCase().includes(search) ?? false) ||
         (trip.destination?.toLowerCase().includes(search) ?? false) ||
-        (trip.route?.name?.toLowerCase().includes(search) ?? false);
+        (trip.routeName?.toLowerCase().includes(search) ?? false);
     }
 
     // Filtrar por fecha usando nuestras utilidades de normalización
@@ -389,6 +379,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
 
     return matchesSearch && matchesDate && matchesRoute;
   });
+  
+  console.log("TripList: Después del filtrado, viajes restantes:", filteredTrips.length);
+  console.log("TripList: Viajes filtrados:", filteredTrips.map(t => ({id: t.id, origin: t.origin, destination: t.destination, date: t.departureDate})));
 
   // Obtener y organizar viajes, separando actuales y archivados
   const { currentTrips, archivedTrips } = useMemo(() => {
