@@ -1409,18 +1409,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // If template is provided, check if this combination is enabled
         if (template && template.priceConfiguration) {
+          const originCity = getCityName(allPoints[i]);
+          const destCity = getCityName(allPoints[j]);
+          
+          console.log(`🔍 Buscando en plantilla: ${originCity} → ${destCity}`);
+          
           const templatePriceConfig = template.priceConfiguration.find((config: any) => 
-            getCityName(config.origin) === getCityName(allPoints[i]) && 
-            getCityName(config.destination) === getCityName(allPoints[j])
+            getCityName(config.origin) === originCity && 
+            getCityName(config.destination) === destCity
           );
+          
+          console.log(`📋 Configuración encontrada:`, templatePriceConfig);
           
           // Only include if configuration exists and is enabled (not explicitly disabled)
           if (!templatePriceConfig || templatePriceConfig.enabled === false) {
-            console.log(`❌ Saltando segmento deshabilitado en plantilla: ${allPoints[i]} -> ${allPoints[j]}`);
+            console.log(`❌ SALTANDO segmento deshabilitado: ${allPoints[i]} -> ${allPoints[j]}`);
+            console.log(`   Razón: ${!templatePriceConfig ? 'No encontrado en plantilla' : 'Marcado como disabled'}`);
             continue;
           }
           
-          console.log(`✅ Segmento habilitado en plantilla: ${allPoints[i]} -> ${allPoints[j]}`);
+          console.log(`✅ INCLUIDO segmento habilitado: ${allPoints[i]} -> ${allPoints[j]}`);
         }
         
         allSegments.push({
