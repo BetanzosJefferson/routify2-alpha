@@ -221,12 +221,16 @@ export function PublishTripForm() {
       );
 
       // Aplicar precios desde la plantilla
-      const segmentPricesFromTemplate = validSegments.map((segment, index) => {
-        const templatePrice = selectedTemplate.priceConfiguration?.[index] || 0;
+      const segmentPricesFromTemplate = validSegments.map((segment) => {
+        // Buscar el precio en priceConfiguration que coincida con el segmento
+        const templatePriceConfig = selectedTemplate.priceConfiguration?.find((config: any) => 
+          config.origin === segment.origin && config.destination === segment.destination
+        );
+        
         return {
           origin: segment.origin,
           destination: segment.destination,
-          price: templatePrice,
+          price: templatePriceConfig?.price || 0,
         };
       });
 
@@ -248,6 +252,13 @@ export function PublishTripForm() {
     let currentTimeMinutes = depHour * 60 + depMinute;
     const stopTimes: StopTime[] = [];
     
+    // Crear un array con todas las ubicaciones
+    const allLocations = [
+      route.origin,
+      ...(route.stops || []),
+      route.destination,
+    ];
+    
     // Agregar tiempo de salida
     stopTimes.push({
       hour: String(depHour).padStart(2, "0"),
@@ -256,59 +267,41 @@ export function PublishTripForm() {
       location: route.origin || "",
     });
     
-    // Calcular tiempos de paradas intermedias
-    if (route.stops) {
-      route.stops.forEach((stop, index) => {
-        const segmentKey = `${index}-${index + 1}`;
-        const timeConfig = template.timeConfiguration?.[segmentKey];
-        
-        if (timeConfig) {
-          let addMinutes = 0;
-          if (typeof timeConfig === 'object' && timeConfig.hours !== undefined) {
-            addMinutes = (timeConfig.hours * 60) + (timeConfig.minutes || 0);
-          } else {
-            addMinutes = timeConfig; // Legacy format
-          }
-          
-          currentTimeMinutes += addMinutes;
-          const hour = Math.floor(currentTimeMinutes / 60) % 24;
-          const minute = currentTimeMinutes % 60;
-          
-          stopTimes.push({
-            hour: String(hour).padStart(2, "0"),
-            minute: String(minute).padStart(2, "0"),
-            ampm: hour < 12 ? "AM" : "PM",
-            location: stop,
-          });
+    // Calcular tiempos para cada segmento basado en la configuración de la plantilla
+    for (let i = 0; i < allLocations.length - 1; i++) {
+      const fromLocation = allLocations[i];
+      const toLocation = allLocations[i + 1];
+      const segmentKey = `${fromLocation} → ${toLocation}`;
+      
+      console.log(`Buscando configuración de tiempo para: ${segmentKey}`);
+      const timeConfig = template.timeConfiguration?.[segmentKey];
+      
+      if (timeConfig) {
+        let addMinutes = 0;
+        if (typeof timeConfig === 'object' && timeConfig.hours !== undefined) {
+          addMinutes = (timeConfig.hours * 60) + (timeConfig.minutes || 0);
+          console.log(`Encontrado tiempo: ${timeConfig.hours}h ${timeConfig.minutes}min = ${addMinutes} minutos`);
+        } else {
+          addMinutes = timeConfig; // Legacy format
         }
-      });
-    }
-    
-    // Agregar tiempo de llegada
-    const finalSegmentIndex = route.stops ? route.stops.length : 0;
-    const finalSegmentKey = `${finalSegmentIndex}-${finalSegmentIndex + 1}`;
-    const finalTimeConfig = template.timeConfiguration?.[finalSegmentKey];
-    
-    if (finalTimeConfig) {
-      let addMinutes = 0;
-      if (typeof finalTimeConfig === 'object' && finalTimeConfig.hours !== undefined) {
-        addMinutes = (finalTimeConfig.hours * 60) + (finalTimeConfig.minutes || 0);
+        
+        currentTimeMinutes += addMinutes;
+        const hour = Math.floor(currentTimeMinutes / 60) % 24;
+        const minute = currentTimeMinutes % 60;
+        
+        stopTimes.push({
+          hour: String(hour).padStart(2, "0"),
+          minute: String(minute).padStart(2, "0"),
+          ampm: hour < 12 ? "AM" : "PM",
+          location: toLocation,
+        });
       } else {
-        addMinutes = finalTimeConfig; // Legacy format
+        console.log(`No se encontró configuración de tiempo para: ${segmentKey}`);
+        console.log("Configuración disponible:", Object.keys(template.timeConfiguration || {}));
       }
-      
-      currentTimeMinutes += addMinutes;
-      const hour = Math.floor(currentTimeMinutes / 60) % 24;
-      const minute = currentTimeMinutes % 60;
-      
-      stopTimes.push({
-        hour: String(hour).padStart(2, "0"),
-        minute: String(minute).padStart(2, "0"),
-        ampm: hour < 12 ? "AM" : "PM",
-        location: route.destination || "",
-      });
     }
     
+    console.log("Horarios calculados:", stopTimes);
     setStopTimes(stopTimes);
     form.setValue("stopTimes", stopTimes);
   };
