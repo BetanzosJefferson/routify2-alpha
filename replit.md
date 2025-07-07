@@ -132,6 +132,8 @@ Preferred communication style: Simple, everyday language.
   - Eliminates repetitive individual stop pricing - much cleaner and more intuitive interface
   - Template form now matches the exact workflow users expect from trip publishing
   - Added informative badges in publish trip form when using filtered template combinations
+  - **BACKEND FIX**: Modified generateAllPossibleSegments() to filter by template enabled combinations
+  - Trip creation now only generates segments for enabled combinations, preventing disabled routes from being created
 
 - **July 7, 2025** - Fixed critical issues with template-based trip creation and segment date calculation:
   - Fixed trips created with templates not appearing in trip lists due to missing routeId assignment

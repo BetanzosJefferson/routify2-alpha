@@ -1089,8 +1089,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = new Date(tripData.endDate);
       const createdTrips = [];
       
-      // Generate all possible segments (direct and intermediate segments)
-      const allSegments = generateAllPossibleSegments(route);
+      // Generate all possible segments (direct and intermediate segments) filtered by template enabled combinations
+      const allSegments = generateAllPossibleSegments(route, template);
       
       // Si hay stopTimes en la petición, agregarlo a los segmentos para usar tiempos personalizados
       const tripDataWithStopTimes = tripData as any;
@@ -1378,12 +1378,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Helper function to generate all possible segments between stops
-  function generateAllPossibleSegments(route: RouteWithSegments) {
+  function generateAllPossibleSegments(route: RouteWithSegments, template?: any) {
     const allPoints = [route.origin, ...route.stops, route.destination];
     const allSegments = [];
     
-    console.log(`Generando todos los segmentos para la ruta ${route.id}`);
+    console.log(`Generando segmentos para la ruta ${route.id} ${template ? 'con filtrado de plantilla' : 'sin filtrado'}`);
     console.log(`Puntos en la ruta: ${allPoints.join(' -> ')}`);
+    
+    // Helper function to get city name
+    function getCityName(location: string): string {
+      if (!location) return '';
+      const parts = location.split(' - ');
+      return parts[0]?.trim() || location;
+    }
     
     // Approach 1: Generate all possible combinations (not just consecutive stops)
     for (let i = 0; i < allPoints.length - 1; i++) {
@@ -1400,8 +1407,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // ACTUALIZACIÓN: Eliminamos el filtro de segmentos cortos no significativos
-        // para generar los mismos segmentos que se muestran en la interfaz de usuario
+        // If template is provided, check if this combination is enabled
+        if (template && template.priceConfiguration) {
+          const templatePriceConfig = template.priceConfiguration.find((config: any) => 
+            getCityName(config.origin) === getCityName(allPoints[i]) && 
+            getCityName(config.destination) === getCityName(allPoints[j])
+          );
+          
+          // Only include if configuration exists and is enabled (not explicitly disabled)
+          if (!templatePriceConfig || templatePriceConfig.enabled === false) {
+            console.log(`❌ Saltando segmento deshabilitado en plantilla: ${allPoints[i]} -> ${allPoints[j]}`);
+            continue;
+          }
+          
+          console.log(`✅ Segmento habilitado en plantilla: ${allPoints[i]} -> ${allPoints[j]}`);
+        }
         
         allSegments.push({
           origin: allPoints[i],
@@ -1409,11 +1429,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price: 0
         });
         
-        console.log(`  + Segmento: ${allPoints[i]} -> ${allPoints[j]}`);
+        console.log(`  + Segmento incluido: ${allPoints[i]} -> ${allPoints[j]}`);
       }
     }
     
-    console.log(`Generados ${allSegments.length} segmentos válidos para la ruta ${route.id} (coincidiendo con la cantidad mostrada en la interfaz)`);
+    console.log(`Generados ${allSegments.length} segmentos válidos para la ruta ${route.id} ${template ? '(filtrados por plantilla)' : ''}`);
     
     return allSegments;
   }
