@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Plus, Trash2, Clock, DollarSign } from "lucide-react";
+import { ArrowLeft, Clock, DollarSign, MapPin } from "lucide-react";
 import { PageTitle } from '@/components/ui/page-title';
 import { RouteTemplate, Route } from '@shared/schema';
 
@@ -15,8 +15,6 @@ import { RouteTemplate, Route } from '@shared/schema';
 const templateSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   routeId: z.number().min(1, "Debe seleccionar una ruta"),
-  timeConfiguration: z.record(z.number().min(1, "Los tiempos deben ser mayores a 0")),
-  priceConfiguration: z.record(z.number().min(0, "Los precios no pueden ser negativos")),
 });
 
 type TemplateFormData = z.infer<typeof templateSchema>;
@@ -24,102 +22,138 @@ type TemplateFormData = z.infer<typeof templateSchema>;
 interface TemplateFormProps {
   template?: RouteTemplate | null;
   routes: Route[];
-  onSubmit: (data: TemplateFormData) => void;
+  onSubmit: (data: any) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
+interface TimeConfig {
+  hours: number;
+  minutes: number;
+}
+
+interface PriceSegment {
+  origin: string;
+  destination: string;
+  price: number;
+}
+
 export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }: TemplateFormProps) {
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const [timeConfig, setTimeConfig] = useState<Record<string, number>>({});
-  const [priceConfig, setPriceConfig] = useState<Record<string, number>>({});
+  const [timeConfig, setTimeConfig] = useState<Record<string, TimeConfig>>({});
+  const [priceSegments, setPriceSegments] = useState<PriceSegment[]>([]);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
     defaultValues: {
       name: template?.name || '',
       routeId: template?.routeId || 0,
-      timeConfiguration: template?.timeConfiguration as Record<string, number> || {},
-      priceConfiguration: template?.priceConfiguration as Record<string, number> || {},
     }
   });
 
   const watchedRouteId = watch('routeId');
 
-  // Update selected route when routeId changes
-  useEffect(() => {
-    if (watchedRouteId && routes.length > 0) {
-      const route = routes.find(r => r.id === watchedRouteId);
-      setSelectedRoute(route || null);
-      
-      // If editing existing template, load its configurations
-      if (template && route) {
-        const timeConf = template.timeConfiguration as Record<string, number> || {};
-        const priceConf = template.priceConfiguration as Record<string, number> || {};
-        setTimeConfig(timeConf);
-        setPriceConfig(priceConf);
-      } else if (route) {
-        // Initialize with empty config for new template
-        const segments = generateSegments(route);
-        const newTimeConfig: Record<string, number> = {};
-        const newPriceConfig: Record<string, number> = {};
-        
-        segments.forEach(segment => {
-          newTimeConfig[segment] = 0;
-          newPriceConfig[segment] = 0;
-        });
-        
-        setTimeConfig(newTimeConfig);
-        setPriceConfig(newPriceConfig);
-      }
-    }
-  }, [watchedRouteId, routes, template]);
-
-  // Generate segment names from route stops
-  const generateSegments = (route: Route): string[] => {
-    const allStops = [route.origin, ...route.stops, route.destination];
-    const segments: string[] = [];
+  // Generate route segments for pricing (same logic as publish trip)
+  const generatePriceSegments = (route: Route): PriceSegment[] => {
+    const segments: PriceSegment[] = [];
+    const locations = [route.origin, ...route.stops, route.destination];
     
-    for (let i = 0; i < allStops.length - 1; i++) {
-      const origin = allStops[i].split(' - ')[0] || allStops[i];
-      const destination = allStops[i + 1].split(' - ')[0] || allStops[i + 1];
-      segments.push(`${origin} → ${destination}`);
+    // Generate all possible combinations
+    for (let i = 0; i < locations.length; i++) {
+      for (let j = i + 1; j < locations.length; j++) {
+        segments.push({
+          origin: locations[i],
+          destination: locations[j],
+          price: 0
+        });
+      }
     }
     
     return segments;
   };
 
-  const updateTimeConfig = (segment: string, value: number) => {
-    const newConfig = { ...timeConfig, [segment]: value };
-    setTimeConfig(newConfig);
-    setValue('timeConfiguration', newConfig);
+  // Generate time configuration for consecutive segments
+  const generateTimeSegments = (route: Route): Record<string, TimeConfig> => {
+    const timeSegments: Record<string, TimeConfig> = {};
+    const locations = [route.origin, ...route.stops, route.destination];
+    
+    // Generate segments between consecutive stops only
+    for (let i = 0; i < locations.length - 1; i++) {
+      const segmentKey = `${locations[i]} → ${locations[i + 1]}`;
+      timeSegments[segmentKey] = { hours: 0, minutes: 30 }; // Default 30 minutes
+    }
+    
+    return timeSegments;
   };
 
-  const updatePriceConfig = (segment: string, value: number) => {
-    const newConfig = { ...priceConfig, [segment]: value };
-    setPriceConfig(newConfig);
-    setValue('priceConfiguration', newConfig);
+  // Parse city name (remove terminal/location details)
+  const parseCityName = (fullLocation: string): string => {
+    return fullLocation.split(' - ')[0] || fullLocation;
+  };
+
+  // Update when route changes
+  useEffect(() => {
+    if (watchedRouteId && routes.length > 0) {
+      const route = routes.find(r => r.id === watchedRouteId);
+      if (route) {
+        setSelectedRoute(route);
+        
+        // Load existing configuration if editing template
+        if (template?.timeConfiguration && template?.priceConfiguration) {
+          setTimeConfig(template.timeConfiguration as Record<string, TimeConfig>);
+          setPriceSegments(template.priceConfiguration as PriceSegment[]);
+        } else {
+          // Initialize new configurations
+          setTimeConfig(generateTimeSegments(route));
+          setPriceSegments(generatePriceSegments(route));
+        }
+      }
+    }
+  }, [watchedRouteId, routes, template]);
+
+  // Update time configuration
+  const updateTimeConfig = (segmentKey: string, hours: number, minutes: number) => {
+    setTimeConfig(prev => ({
+      ...prev,
+      [segmentKey]: { hours, minutes }
+    }));
+  };
+
+  // Update price for a segment
+  const updatePriceSegment = (index: number, price: number) => {
+    setPriceSegments(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], price };
+      return updated;
+    });
   };
 
   const onFormSubmit = (data: TemplateFormData) => {
     onSubmit({
       ...data,
       timeConfiguration: timeConfig,
-      priceConfiguration: priceConfig,
+      priceConfiguration: priceSegments,
     });
   };
 
-  const segments = selectedRoute ? generateSegments(selectedRoute) : [];
+  const formatLocationName = (location: string) => {
+    const parts = location.split(' - ');
+    return parts.length > 1 ? `${parts[0]} - ${parts[1]}` : location;
+  };
 
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center mb-6">
-        <Button variant="ghost" className="mr-4" onClick={onCancel}>
+        <Button 
+          variant="ghost" 
+          onClick={onCancel}
+          className="mr-4"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Volver
         </Button>
         <PageTitle 
-          title={template ? "Editar Plantilla" : "Nueva Plantilla"} 
+          title={template ? "Editar Plantilla" : "Nueva Plantilla"}
           description="Configure tiempos y precios predefinidos para agilizar la creación de viajes" 
         />
       </div>
@@ -140,21 +174,18 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
                 id="name"
                 {...register('name')}
                 placeholder="Ej: Acapulco-CDMX Express"
-                className={errors.name ? 'border-red-500' : ''}
+                className="mt-1"
               />
               {errors.name && (
-                <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
+                <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
               )}
             </div>
 
             <div>
               <Label htmlFor="routeId">Ruta</Label>
-              <Select 
-                value={watchedRouteId?.toString() || ''} 
-                onValueChange={(value) => setValue('routeId', parseInt(value))}
-              >
-                <SelectTrigger className={errors.routeId ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Selecciona una ruta" />
+              <Select onValueChange={(value) => setValue('routeId', parseInt(value))}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Seleccione una ruta" />
                 </SelectTrigger>
                 <SelectContent>
                   {routes.map((route) => (
@@ -165,7 +196,7 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
                 </SelectContent>
               </Select>
               {errors.routeId && (
-                <p className="text-sm text-red-500 mt-1">{errors.routeId.message}</p>
+                <p className="text-sm text-red-600 mt-1">{errors.routeId.message}</p>
               )}
             </div>
           </CardContent>
@@ -175,31 +206,49 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
         {selectedRoute && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
+              <CardTitle className="flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
                 Configuración de Tiempos
               </CardTitle>
               <CardDescription>
-                Define el tiempo en minutos para cada segmento de la ruta
+                Define el tiempo de viaje entre cada parada consecutiva
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {segments.map((segment, index) => (
-                  <div key={segment} className="flex items-center space-x-4">
+                {Object.entries(timeConfig).map(([segmentKey, time]) => (
+                  <div key={segmentKey} className="flex items-center space-x-4 p-4 border rounded-lg">
                     <div className="flex-1">
-                      <Label className="text-sm font-medium">{segment}</Label>
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <span className="font-medium">{segmentKey}</span>
+                      </div>
                     </div>
-                    <div className="w-24">
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="min"
-                        value={timeConfig[segment] || ''}
-                        onChange={(e) => updateTimeConfig(segment, parseInt(e.target.value) || 0)}
-                      />
+                    <div className="flex items-center space-x-2">
+                      <div>
+                        <Label className="text-xs">Horas</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="23"
+                          value={time.hours}
+                          onChange={(e) => updateTimeConfig(segmentKey, parseInt(e.target.value) || 0, time.minutes)}
+                          className="w-16 text-center"
+                        />
+                      </div>
+                      <span className="text-gray-500">:</span>
+                      <div>
+                        <Label className="text-xs">Minutos</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="59"
+                          value={time.minutes}
+                          onChange={(e) => updateTimeConfig(segmentKey, time.hours, parseInt(e.target.value) || 0)}
+                          className="w-16 text-center"
+                        />
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-500 w-8">min</span>
                   </div>
                 ))}
               </div>
@@ -208,35 +257,39 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
         )}
 
         {/* Price Configuration */}
-        {selectedRoute && (
+        {selectedRoute && priceSegments.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
+              <CardTitle className="flex items-center">
+                <DollarSign className="w-5 h-5 mr-2" />
                 Configuración de Precios
               </CardTitle>
               <CardDescription>
-                Define el precio para cada segmento de la ruta
+                Define el precio para cada segmento del viaje
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {segments.map((segment, index) => (
-                  <div key={segment} className="flex items-center space-x-4">
-                    <div className="flex-1">
-                      <Label className="text-sm font-medium">{segment}</Label>
-                    </div>
-                    <div className="w-24">
+                <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
+                  <div>Ciudad Origen</div>
+                  <div>Ciudad Destino</div>
+                  <div>Precio</div>
+                </div>
+                {priceSegments.map((segment, index) => (
+                  <div key={index} className="grid grid-cols-3 gap-4 items-center">
+                    <div className="text-sm">{parseCityName(segment.origin)}</div>
+                    <div className="text-sm">{parseCityName(segment.destination)}</div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-gray-500">$</span>
                       <Input
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder="0.00"
-                        value={priceConfig[segment] || ''}
-                        onChange={(e) => updatePriceConfig(segment, parseFloat(e.target.value) || 0)}
+                        value={segment.price}
+                        onChange={(e) => updatePriceSegment(index, parseFloat(e.target.value) || 0)}
+                        className="w-20"
                       />
                     </div>
-                    <span className="text-sm text-gray-500 w-8">$</span>
                   </div>
                 ))}
               </div>
@@ -249,8 +302,8 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isLoading || !selectedRoute}>
-            {isLoading ? 'Guardando...' : (template ? 'Actualizar Plantilla' : 'Crear Plantilla')}
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Guardando...' : template ? 'Actualizar Plantilla' : 'Crear Plantilla'}
           </Button>
         </div>
       </form>

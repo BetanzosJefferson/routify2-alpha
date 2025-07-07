@@ -127,20 +127,29 @@ export function TemplatesPage() {
     const entries = Object.entries(timeConfig);
     if (entries.length === 0) return 'Sin configurar';
     
-    return entries.map(([segment, minutes]) => 
-      `${segment}: ${minutes}min`
-    ).join(', ');
+    return entries.map(([segment, time]: [string, any]) => {
+      if (typeof time === 'object' && time.hours !== undefined && time.minutes !== undefined) {
+        return `${segment}: ${time.hours}h ${time.minutes}min`;
+      }
+      // Legacy format (just minutes)
+      return `${segment}: ${time}min`;
+    }).join(', ');
   };
 
   const formatPriceConfig = (priceConfig: any) => {
-    if (!priceConfig || typeof priceConfig !== 'object') return 'Sin configurar';
+    if (!priceConfig) return 'Sin configurar';
     
+    if (Array.isArray(priceConfig)) {
+      // New format (array of segments)
+      if (priceConfig.length === 0) return 'Sin configurar';
+      return `${priceConfig.length} segmentos configurados`;
+    }
+    
+    // Legacy format (object)
+    if (typeof priceConfig !== 'object') return 'Sin configurar';
     const entries = Object.entries(priceConfig);
     if (entries.length === 0) return 'Sin configurar';
-    
-    return entries.map(([segment, price]) => 
-      `${segment}: $${price}`
-    ).join(', ');
+    return `${entries.length} segmentos configurados`;
   };
 
   if (error) {
