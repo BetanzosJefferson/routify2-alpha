@@ -1382,8 +1382,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const allPoints = [route.origin, ...route.stops, route.destination];
     const allSegments = [];
     
-    console.log(`Generando segmentos para la ruta ${route.id} ${template ? 'con filtrado de plantilla' : 'sin filtrado'}`);
-    console.log(`Puntos en la ruta: ${allPoints.join(' -> ')}`);
+    console.log(`\n🚀 INICIANDO generateAllPossibleSegments para ruta ${route.id}`);
+    console.log(`📍 Puntos en la ruta: ${allPoints.join(' -> ')}`);
+    console.log(`🔧 Template proporcionado: ${template ? 'SÍ' : 'NO'}`);
+    if (template) {
+      console.log(`📋 Template ID: ${template.id}, Configuraciones: ${template.priceConfiguration?.length || 0}`);
+    }
     
     // Helper function to get city name
     function getCityName(location: string): string {
@@ -1441,7 +1445,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    console.log(`Generados ${allSegments.length} segmentos válidos para la ruta ${route.id} ${template ? '(filtrados por plantilla)' : ''}`);
+    console.log(`\n✅ RESULTADO: Generados ${allSegments.length} segmentos válidos para la ruta ${route.id} ${template ? '(filtrados por plantilla)' : ''}`);
+    console.log(`🎯 Segmentos finales:`, allSegments.map(s => `${s.origin} → ${s.destination}`));
     
     return allSegments;
   }
