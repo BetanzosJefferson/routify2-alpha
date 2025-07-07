@@ -130,6 +130,11 @@ Preferred communication style: Simple, everyday language.
   - Segments departing between 12:00 AM - 6:59 AM are automatically assigned to the next day
   - Example: Trip starts July 9 at 11:00 PM, Chilpancingo→Coyoacán segment at 12:30 AM gets July 10 date
   - This ensures segments appear in correct date searches and prevents user confusion
+  - **LOCATION DATA UPDATE**: Fixed municipality dropdown limitations by updating static location data
+  - Updated client/src/lib/location-data.ts with complete municipality data from database
+  - Guerrero now shows all 81 municipalities instead of only 5 limited options
+  - All states now have their complete municipality lists (Chiapas: 123, Chihuahua: 67, etc.)
+  - System now uses authentic data from database in static format for better performance
 
 - **July 6, 2025** - Implemented comprehensive route template system:
   - Created route_templates database table with timing and pricing configuration fields
