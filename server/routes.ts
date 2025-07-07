@@ -1192,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           vehicleId: null,
           driverId: null,
           visibility: tripData.visibility || "publicado",
-          routeId: tripData.routeId,
+          routeId: template.routeId, // CORREGIDO: Usar routeId del template, no de tripData
           companyId: companyId
         };
         

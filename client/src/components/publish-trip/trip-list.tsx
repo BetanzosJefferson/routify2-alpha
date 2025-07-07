@@ -404,11 +404,12 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       if (tripDates.length > 0) {
         try {
           const firstDate = normalizeToStartOfDay(tripDates[0]);
-          const isPastTrip = firstDate.getTime() < today.getTime();
+          const isPastTrip = firstDate.getTime() <= today.getTime();
           
           console.log("TripList: Viaje", trip.id, "fecha:", tripDates[0], "normalizada:", firstDate, "hoy:", today, "¿es pasado?", isPastTrip);
           
-          if (isPastTrip) {
+          // CORRECCIÓN: Considerar viajes del día actual como "actuales", no "pasados"
+          if (isPastTrip && firstDate.getTime() < today.getTime()) {
             // Agregar a archivados (solo una vez)
             if (!archived.find(t => t.id === trip.id)) {
               archived.push(trip);
