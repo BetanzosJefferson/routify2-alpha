@@ -221,6 +221,8 @@ export function PublishTripForm() {
       );
 
       // Aplicar precios desde la plantilla - solo combinaciones habilitadas
+      console.log("Configuración de precios de la plantilla:", selectedTemplate.priceConfiguration);
+      
       const segmentPricesFromTemplate = validSegments
         .map((segment) => {
           // Buscar el precio en priceConfiguration que coincida con el segmento
@@ -229,7 +231,13 @@ export function PublishTripForm() {
             getCityName(config.destination) === getCityName(segment.destination)
           );
           
-          // Solo incluir si la configuración existe y está habilitada
+          console.log(`Segmento ${segment.origin} → ${segment.destination}:`, {
+            found: !!templatePriceConfig,
+            enabled: templatePriceConfig?.enabled,
+            price: templatePriceConfig?.price
+          });
+          
+          // Solo incluir si la configuración existe y está explícitamente habilitada o no tiene el campo enabled definido (backward compatibility)
           if (templatePriceConfig && templatePriceConfig.enabled !== false) {
             return {
               origin: segment.origin,
