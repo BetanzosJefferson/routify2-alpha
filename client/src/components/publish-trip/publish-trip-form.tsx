@@ -240,7 +240,7 @@ export function PublishTripForm() {
       form.setValue("segmentPrices", segmentPricesFromTemplate);
       
       // Calcular horarios de parada basados en la plantilla
-      calculateStopTimes(route, selectedTemplate);
+      calculateStopTimes(route, selectedTemplate, segmentPricesFromTemplate);
     }
   }, [selectedTemplate, templateRouteQuery.data, form]);
 
@@ -256,7 +256,7 @@ export function PublishTripForm() {
   }, [form.watch("departureTime"), selectedTemplate, templateRouteQuery.data]);
 
   // Calculate stop times from template configuration
-  const calculateStopTimes = (route: RouteWithSegments, template: any) => {
+  const calculateStopTimes = (route: RouteWithSegments, template: any, segmentPricesFromTemplate?: any[]) => {
     const departureTime = form.getValues("departureTime") || "08:00";
     const [depHour, depMinute] = departureTime.split(":").map(Number);
     
@@ -317,7 +317,9 @@ export function PublishTripForm() {
     form.setValue("stopTimes", stopTimes);
     
     // Actualizar los tiempos de segmentos basados en las paradas calculadas
-    updateSegmentTimesFromStops(stopTimes);
+    // Si se pasaron segmentos desde la plantilla, usarlos; sino usar los del estado
+    const segmentsToUpdate = segmentPricesFromTemplate || segmentPrices;
+    updateSegmentTimesFromStops(stopTimes, segmentsToUpdate);
   };
 
   // Handle template selection
@@ -466,8 +468,11 @@ export function PublishTripForm() {
   };
 
   // Función para calcular los tiempos de los segmentos basados en los tiempos de las paradas
-  const updateSegmentTimesFromStops = (stopTimeArray: StopTime[]) => {
+  const updateSegmentTimesFromStops = (stopTimeArray: StopTime[], segmentsToUpdate?: any[]) => {
     if (!templateRouteQuery.data) return;
+    
+    // Usar los segmentos pasados como parámetro o los del estado
+    const currentSegmentPrices = segmentsToUpdate || segmentPrices;
 
     // Obtener todas las ubicaciones (origen, paradas, destino)
     const allLocations = [
@@ -502,7 +507,7 @@ export function PublishTripForm() {
     }
 
     // Para cada segmento, encontrar el tiempo de salida y llegada correspondiente
-    const updatedSegmentPrices = segmentPrices.map((segment) => {
+    const updatedSegmentPrices = currentSegmentPrices.map((segment) => {
       // Encontrar índice del origen en allLocations
       const originIndex = allLocations.findIndex(
         (location) => location === segment.origin,
@@ -532,6 +537,7 @@ export function PublishTripForm() {
       return segment;
     });
 
+    console.log("Actualizando segmentos con horarios:", updatedSegmentPrices);
     setSegmentPrices(updatedSegmentPrices);
     form.setValue("segmentPrices", updatedSegmentPrices);
   };
