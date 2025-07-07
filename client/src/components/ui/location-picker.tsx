@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { State, Municipality, mexicoStates, getMunicipalitiesByState } from "@/lib/location-data";
+import { LocationState, Municipality, useLocationData, mexicoStates, getMunicipalitiesByState, State } from "@/lib/location-data";
 
 interface LocationData {
   stateCode: string;
