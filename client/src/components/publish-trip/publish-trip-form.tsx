@@ -374,12 +374,12 @@ export function PublishTripForm() {
 
   // Initialize the time arrays when the route is selected
   useEffect(() => {
-    if (routeSegmentsQuery.data) {
+    if (templateRouteQuery.data) {
       // Crear un array con el origen, las paradas y el destino
       const allLocations = [
-        routeSegmentsQuery.data.origin,
-        ...(routeSegmentsQuery.data.stops || []),
-        routeSegmentsQuery.data.destination,
+        templateRouteQuery.data.origin,
+        ...(templateRouteQuery.data.stops || []),
+        templateRouteQuery.data.destination,
       ];
       const totalStops = allLocations.length;
 
@@ -418,7 +418,7 @@ export function PublishTripForm() {
       // Asegurar que los valores son del tipo correcto antes de establecer el estado
       setStopTimes(ensureValidStopTimes(initialTimes));
     }
-  }, [routeSegmentsQuery.data]);
+  }, [templateRouteQuery.data]);
 
   // Actualizar el tiempo de parada directamente desde el input
   const updateStopTime = (index: number, timeString: string) => {
@@ -430,11 +430,11 @@ export function PublishTripForm() {
 
     // Obtener la ubicación para este índice
     let stopLocation = "";
-    if (routeSegmentsQuery.data) {
+    if (templateRouteQuery.data) {
       const allLocations = [
-        routeSegmentsQuery.data.origin,
-        ...(routeSegmentsQuery.data.stops || []),
-        routeSegmentsQuery.data.destination,
+        templateRouteQuery.data.origin,
+        ...(templateRouteQuery.data.stops || []),
+        templateRouteQuery.data.destination,
       ];
       stopLocation = allLocations[index] || "";
     }
@@ -460,13 +460,13 @@ export function PublishTripForm() {
 
   // Función para calcular los tiempos de los segmentos basados en los tiempos de las paradas
   const updateSegmentTimesFromStops = (stopTimeArray: StopTime[]) => {
-    if (!routeSegmentsQuery.data) return;
+    if (!templateRouteQuery.data) return;
 
     // Obtener todas las ubicaciones (origen, paradas, destino)
     const allLocations = [
-      routeSegmentsQuery.data.origin,
-      ...(routeSegmentsQuery.data.stops || []),
-      routeSegmentsQuery.data.destination,
+      templateRouteQuery.data.origin,
+      ...(templateRouteQuery.data.stops || []),
+      templateRouteQuery.data.destination,
     ];
 
     // Calcular los días relativos para cada parada
@@ -676,11 +676,11 @@ export function PublishTripForm() {
         form.setValue("driverId", tripData.driverId);
       }
 
-      // Esperar a que routeSegmentsQuery se complete después de cambiar routeId
+      // Esperar a que templateRouteQuery se complete después de cambiar routeId
       // Esto es necesario para asegurarnos de que los segmentos están cargados
       // antes de intentar establecer los precios
       const waitForRouteSegments = async () => {
-        if (routeSegmentsQuery.isLoading) {
+        if (templateRouteQuery.isLoading) {
           console.log("Esperando carga de segmentos...");
           // Esperar 100ms y volver a intentar
           await new Promise((resolve) => setTimeout(resolve, 100));
@@ -688,7 +688,7 @@ export function PublishTripForm() {
         }
 
         // Una vez que tenemos los segmentos, podemos cargar los precios y horarios
-        if (routeSegmentsQuery.data && tripData.segmentPrices) {
+        if (templateRouteQuery.data && tripData.segmentPrices) {
           console.log(
             "Cargando precios y horarios de segmentos...",
             tripData.segmentPrices,
@@ -733,7 +733,7 @@ export function PublishTripForm() {
     segmentPrices: SegmentTimePrice[],
   ) => {
     if (
-      !routeSegmentsQuery.data ||
+      !templateRouteQuery.data ||
       !segmentPrices ||
       segmentPrices.length === 0
     )
@@ -741,9 +741,9 @@ export function PublishTripForm() {
 
     // Obtener todas las ubicaciones de la ruta (origen, paradas, destino)
     const allLocations = [
-      routeSegmentsQuery.data.origin,
-      ...(routeSegmentsQuery.data.stops || []),
-      routeSegmentsQuery.data.destination,
+      templateRouteQuery.data.origin,
+      ...(templateRouteQuery.data.stops || []),
+      templateRouteQuery.data.destination,
     ];
 
     // Crear un mapa para almacenar los tiempos por ubicación
@@ -1321,11 +1321,11 @@ export function PublishTripForm() {
 
                     {/* Vista móvil */}
                     <div className="md:hidden space-y-4">
-                      {routeSegmentsQuery.data &&
+                      {templateRouteQuery.data &&
                         [
-                          routeSegmentsQuery.data.origin,
-                          ...(routeSegmentsQuery.data.stops || []),
-                          routeSegmentsQuery.data.destination,
+                          templateRouteQuery.data.origin,
+                          ...(templateRouteQuery.data.stops || []),
+                          templateRouteQuery.data.destination,
                         ].map((location, index) => (
                           <div
                             key={`stop-card-${index}`}
@@ -1336,12 +1336,12 @@ export function PublishTripForm() {
                                 <span className="text-primary">
                                   Origen: {location}
                                 </span>
-                              ) : routeSegmentsQuery.data?.origin &&
+                              ) : templateRouteQuery.data?.origin &&
                                 index ===
                                   [
-                                    routeSegmentsQuery.data.origin,
-                                    ...(routeSegmentsQuery.data.stops || []),
-                                    routeSegmentsQuery.data.destination,
+                                    templateRouteQuery.data.origin,
+                                    ...(templateRouteQuery.data.stops || []),
+                                    templateRouteQuery.data.destination,
                                   ].length -
                                     1 ? (
                                 <span className="text-primary">
@@ -1387,11 +1387,11 @@ export function PublishTripForm() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {routeSegmentsQuery.data &&
+                          {templateRouteQuery.data &&
                             [
-                              routeSegmentsQuery.data.origin,
-                              ...(routeSegmentsQuery.data.stops || []),
-                              routeSegmentsQuery.data.destination,
+                              templateRouteQuery.data.origin,
+                              ...(templateRouteQuery.data.stops || []),
+                              templateRouteQuery.data.destination,
                             ].map((location, index) => (
                               <tr
                                 key={`stop-${index}`}
@@ -1402,13 +1402,13 @@ export function PublishTripForm() {
                                     <span className="text-primary">
                                       Origen: {location}
                                     </span>
-                                  ) : routeSegmentsQuery.data?.origin &&
+                                  ) : templateRouteQuery.data?.origin &&
                                     index ===
                                       [
-                                        routeSegmentsQuery.data.origin,
-                                        ...(routeSegmentsQuery.data.stops ||
+                                        templateRouteQuery.data.origin,
+                                        ...(templateRouteQuery.data.stops ||
                                           []),
-                                        routeSegmentsQuery.data.destination,
+                                        templateRouteQuery.data.destination,
                                       ].length -
                                         1 ? (
                                     <span className="text-primary">
