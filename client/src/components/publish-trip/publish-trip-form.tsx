@@ -244,6 +244,17 @@ export function PublishTripForm() {
     }
   }, [selectedTemplate, templateRouteQuery.data, form]);
 
+  // Recalcular horarios cuando cambia la hora de salida
+  useEffect(() => {
+    if (selectedTemplate && templateRouteQuery.data && stopTimes.length > 0) {
+      const departureTime = form.watch("departureTime");
+      if (departureTime) {
+        console.log("Hora de salida cambió a:", departureTime);
+        calculateStopTimes(templateRouteQuery.data, selectedTemplate);
+      }
+    }
+  }, [form.watch("departureTime"), selectedTemplate, templateRouteQuery.data]);
+
   // Calculate stop times from template configuration
   const calculateStopTimes = (route: RouteWithSegments, template: any) => {
     const departureTime = form.getValues("departureTime") || "08:00";
@@ -304,6 +315,9 @@ export function PublishTripForm() {
     console.log("Horarios calculados:", stopTimes);
     setStopTimes(stopTimes);
     form.setValue("stopTimes", stopTimes);
+    
+    // Actualizar los tiempos de segmentos basados en las paradas calculadas
+    updateSegmentTimesFromStops(stopTimes);
   };
 
   // Handle template selection
