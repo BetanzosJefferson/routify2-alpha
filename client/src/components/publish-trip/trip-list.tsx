@@ -144,7 +144,10 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
     queryKey: ['/api/admin-trips', 'optimized'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/admin-trips?optimizedResponse=true');
-      return await res.json();
+      const data = await res.json();
+      console.log("TripList: Datos recibidos del backend:", data);
+      console.log("TripList: Número de viajes:", data.length);
+      return data;
     }
   });
 
@@ -348,6 +351,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   };
 
   // Filtrar los viajes
+  console.log("TripList: Filtrando viajes, total:", trips.length);
   const filteredTrips = trips.filter((trip: Trip) => {
     let matchesSearch = true;
     let matchesDate = true;
