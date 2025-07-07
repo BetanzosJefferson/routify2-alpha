@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 7, 2025** - Enhanced route template pricing system with city-based grouping:
+  - **MAJOR IMPROVEMENT**: Template pricing now groups by cities instead of individual stop combinations
+  - Implemented same logic as "Publicar Viaje" where users configure prices between main cities (e.g. Acapulco→Chilpancingo)
+  - Added "Paradas Afectadas" column showing how many stop combinations each city price affects
+  - Users now see "7 combinaciones" or "14 combinaciones" for each city pair price
+  - Price configuration automatically applies to all stop combinations within the same city pair
+  - Eliminates repetitive individual stop pricing - much cleaner and more intuitive interface
+  - Template form now matches the exact workflow users expect from trip publishing
+
 - **July 7, 2025** - Fixed critical issues with template-based trip creation and segment date calculation:
   - Fixed trips created with templates not appearing in trip lists due to missing routeId assignment
   - Corrected trip creation code to use template.routeId instead of tripData.routeId for proper database storage

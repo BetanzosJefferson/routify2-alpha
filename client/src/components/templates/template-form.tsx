@@ -53,23 +53,64 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
 
   const watchedRouteId = watch('routeId');
 
-  // Generate route segments for pricing (same logic as publish trip)
+  // Parse city name (remove terminal/location details)
+  const parseCityName = (fullLocation: string): string => {
+    return fullLocation.split(' - ')[0] || fullLocation;
+  };
+
+  // Check if two locations are in the same city
+  const isSameCity = (location1: string, location2: string): boolean => {
+    return parseCityName(location1) === parseCityName(location2);
+  };
+
+  // Generate route segments for pricing (grouped by cities like publish trip)
   const generatePriceSegments = (route: Route): PriceSegment[] => {
-    const segments: PriceSegment[] = [];
+    const allSegments: PriceSegment[] = [];
     const locations = [route.origin, ...route.stops, route.destination];
     
     // Generate all possible combinations
     for (let i = 0; i < locations.length; i++) {
       for (let j = i + 1; j < locations.length; j++) {
-        segments.push({
+        const segment = {
           origin: locations[i],
           destination: locations[j],
           price: 0
-        });
+        };
+        allSegments.push(segment);
       }
     }
+
+    // Filter out segments within the same city
+    const validSegments = allSegments.filter(segment => 
+      !isSameCity(segment.origin, segment.destination)
+    );
+
+    // Group segments by city pairs (like in publish trip)
+    const cityGroups: {[key: string]: PriceSegment[]} = {};
+    const cityPairs: {origin: string, destination: string}[] = [];
     
-    return segments;
+    validSegments.forEach(segment => {
+      const originCity = parseCityName(segment.origin);
+      const destCity = parseCityName(segment.destination);
+      const key = `${originCity}||${destCity}`;
+      
+      if (!cityGroups[key]) {
+        cityGroups[key] = [];
+        cityPairs.push({
+          origin: originCity,
+          destination: destCity
+        });
+      }
+      
+      cityGroups[key].push(segment);
+    });
+
+    // Return only one segment per city pair (for pricing configuration)
+    return cityPairs.map(pair => ({
+      origin: pair.origin,
+      destination: pair.destination,
+      price: 0
+    }));
   };
 
   // Generate time configuration for consecutive segments
@@ -86,9 +127,32 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
     return timeSegments;
   };
 
-  // Parse city name (remove terminal/location details)
-  const parseCityName = (fullLocation: string): string => {
-    return fullLocation.split(' - ')[0] || fullLocation;
+  // Calculate how many stop combinations are affected by a city price
+  const calculateAffectedCombinations = (originCity: string, destCity: string): number => {
+    if (!selectedRoute) return 0;
+    
+    const locations = [selectedRoute.origin, ...selectedRoute.stops, selectedRoute.destination];
+    let count = 0;
+    
+    for (let i = 0; i < locations.length; i++) {
+      for (let j = i + 1; j < locations.length; j++) {
+        const segmentOriginCity = parseCityName(locations[i]);
+        const segmentDestCity = parseCityName(locations[j]);
+        
+        if (segmentOriginCity === originCity && segmentDestCity === destCity) {
+          count++;
+        }
+      }
+    }
+    
+    return count;
+  };
+
+  // Update price for a city pair (affects all combinations in that city pair)
+  const updatePriceSegment = (index: number, newPrice: number) => {
+    const updatedSegments = [...priceSegments];
+    updatedSegments[index].price = newPrice;
+    setPriceSegments(updatedSegments);
   };
 
   // Update when route changes
@@ -119,14 +183,7 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
     }));
   };
 
-  // Update price for a segment
-  const updatePriceSegment = (index: number, price: number) => {
-    setPriceSegments(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], price };
-      return updated;
-    });
-  };
+
 
   const onFormSubmit = (data: TemplateFormData) => {
     onSubmit({
@@ -265,33 +322,49 @@ export function TemplateForm({ template, routes, onSubmit, onCancel, isLoading }
                 Configuración de Precios
               </CardTitle>
               <CardDescription>
-                Define el precio para cada segmento del viaje
+                Configure el precio entre ciudades principales. Este precio se aplicará automáticamente a todas las combinaciones de paradas entre las mismas ciudades.
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-2">Configuración por ciudades</h4>
+                <p className="text-sm text-blue-700">
+                  Configure el precio entre ciudades principales. Este precio se aplicará automáticamente a todas las combinaciones de paradas entre las mismas ciudades.
+                </p>
+              </div>
+              
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
+                <div className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 pb-2 border-b">
                   <div>Ciudad Origen</div>
                   <div>Ciudad Destino</div>
                   <div>Precio</div>
+                  <div>Paradas Afectadas</div>
                 </div>
-                {priceSegments.map((segment, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-4 items-center">
-                    <div className="text-sm">{parseCityName(segment.origin)}</div>
-                    <div className="text-sm">{parseCityName(segment.destination)}</div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-gray-500">$</span>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={segment.price}
-                        onChange={(e) => updatePriceSegment(index, parseFloat(e.target.value) || 0)}
-                        className="w-20"
-                      />
+                {priceSegments.map((segment, index) => {
+                  // Calculate affected combinations count
+                  const affectedCount = calculateAffectedCombinations(segment.origin, segment.destination);
+                  
+                  return (
+                    <div key={index} className="grid grid-cols-4 gap-4 items-center">
+                      <div className="text-sm font-medium">{segment.origin}</div>
+                      <div className="text-sm font-medium">{segment.destination}</div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-gray-500">$</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={segment.price}
+                          onChange={(e) => updatePriceSegment(index, parseFloat(e.target.value) || 0)}
+                          className="w-24"
+                        />
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {affectedCount} combinaciones
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

@@ -635,6 +635,7 @@ const staticMexicoStates: LocationState[] = [
       { name: "Cuautepec", code: "GRO029" },
       { name: "Cuetzala del Progreso", code: "GRO030" },
       { name: "Cutzamala de Pinzon", code: "GRO031" },
+      { name: "Dos arroyos", code: "GRO083" },
       { name: "Eduardo Neri", code: "GRO032" },
       { name: "Florencio Villarreal", code: "GRO033" },
       { name: "General Canuto A. Neri", code: "GRO034" },
@@ -656,7 +657,9 @@ const staticMexicoStates: LocationState[] = [
       { name: "Metlatonoc", code: "GRO050" },
       { name: "Mochitlan", code: "GRO051" },
       { name: "Olinala", code: "GRO052" },
+      { name: "Ocotito", code: "GRO084" },
       { name: "Ometepec", code: "GRO053" },
+      { name: "Paso Morelos", code: "GRO082" },
       { name: "Pedro Ascencio Alquisiras", code: "GRO054" },
       { name: "Petatlan", code: "GRO055" },
       { name: "Pilcaya", code: "GRO056" },
@@ -670,6 +673,7 @@ const staticMexicoStates: LocationState[] = [
       { name: "Tecpan de Galeana", code: "GRO064" },
       { name: "Teloloapan", code: "GRO065" },
       { name: "Tepecoacuilco de Trujano", code: "GRO066" },
+      { name: "Tuliman", code: "GRO085" },
       { name: "Tetipac", code: "GRO067" },
       { name: "Tixtla de Guerrero", code: "GRO068" },
       { name: "Tlacoachistlahuaca", code: "GRO069" },
@@ -684,7 +688,8 @@ const staticMexicoStates: LocationState[] = [
       { name: "Zapotitlan Tablas", code: "GRO078" },
       { name: "Zihuatanejo de Azueta", code: "GRO079" },
       { name: "Zirandaro", code: "GRO080" },
-      { name: "Zitlala", code: "GRO081" }
+      { name: "Zitlala", code: "GRO081" },
+      
     ]
   },
   {
@@ -810,6 +815,7 @@ const staticMexicoStates: LocationState[] = [
     name: "Morelos",
     code: "MOR",
     municipalities: [
+      { name: "Alpuyeca", code: "MOR035" },
       { name: "Amacuzac", code: "MOR001" },
       { name: "Atlatlahucan", code: "MOR002" },
       { name: "Axochiapan", code: "MOR003" },
@@ -828,6 +834,7 @@ const staticMexicoStates: LocationState[] = [
       { name: "Ocuituco", code: "MOR016" },
       { name: "Puente de Ixtla", code: "MOR017" },
       { name: "Temixco", code: "MOR018" },
+      {name: "Tequesquitengo", code: "MOR034" },
       { name: "Temoac", code: "MOR019" },
       { name: "Tepalcingo", code: "MOR020" },
       { name: "Tepoztlan", code: "MOR021" },
