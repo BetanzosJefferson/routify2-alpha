@@ -1142,12 +1142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (sp: any) => sp.origin === route.origin && sp.destination === route.destination
         );
         
-        // Calcular departureDate para el viaje principal
-        const mainDayOffset = extractDayIndicator(departureTime);
-        const mainDepartureDate = new Date(date);
-        if (mainDayOffset > 0) {
-          mainDepartureDate.setDate(mainDepartureDate.getDate() + mainDayOffset);
-        }
+        // LÓGICA MEJORADA: Calcular departureDate real del viaje principal
+        const mainDepartureDate = calculateSegmentDate(date, departureTime);
         
         tripCombinations.push({
           tripId: Date.now(),
@@ -1162,7 +1158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         console.log(`Viaje principal: ${route.origin} → ${route.destination}`);
-        console.log(`  departureDate: ${mainDepartureDate.toISOString().split('T')[0]} (offset: +${mainDayOffset}d)`);
+        console.log(`  departureTime: ${departureTime} → departureDate: ${mainDepartureDate.toISOString().split('T')[0]}`);
         
         // Agregar todos los segmentos parciales
         for (const segment of allSegments) {
@@ -1179,12 +1175,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let segmentDepartureTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.departureTime || departureTime;
           let segmentArrivalTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.arrivalTime || arrivalTime;
           
-          // Calcular departureDate para este segmento basándose en la fecha del viaje actual + offset
-          const segmentDayOffset = extractDayIndicator(segmentDepartureTime);
-          const segmentDepartureDate = new Date(date);
-          if (segmentDayOffset > 0) {
-            segmentDepartureDate.setDate(segmentDepartureDate.getDate() + segmentDayOffset);
-          }
+          // LÓGICA MEJORADA: Calcular departureDate real del segmento basándose en su horario específico
+          const segmentDepartureDate = calculateSegmentDate(date, segmentDepartureTime);
           
           tripCombinations.push({
             tripId: Math.floor(Date.now() + Math.random() * 1000),
@@ -1199,7 +1191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`Segmento: ${segment.origin} → ${segment.destination}`);
-          console.log(`  departureDate: ${segmentDepartureDate.toISOString().split('T')[0]} (offset: +${segmentDayOffset}d)`);
+          console.log(`  departureTime: ${segmentDepartureTime} → departureDate: ${segmentDepartureDate.toISOString().split('T')[0]}`);
         }
         
         console.log(`\nCreando viaje para ${currentDateStr} con ${tripCombinations.length} segmentos`);
@@ -1321,6 +1313,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const dayIndicatorMatch = timeString.match(/\+(\d+)d$/);
     return dayIndicatorMatch ? parseInt(dayIndicatorMatch[1], 10) : 0;
+  }
+  
+  // Función para calcular la fecha real de un segmento basándose en su horario
+  function calculateSegmentDate(baseDate: Date, timeString: string): Date {
+    if (!timeString) {
+      return new Date(baseDate);
+    }
+    
+    try {
+      // Primero, intentar extraer un indicador de día existente (+1d, +2d, etc.)
+      const dayOffset = extractDayIndicator(timeString);
+      
+      if (dayOffset > 0) {
+        // Si ya tiene indicador de día, usarlo directamente
+        const resultDate = new Date(baseDate);
+        resultDate.setDate(resultDate.getDate() + dayOffset);
+        console.log(`  [calculateSegmentDate] Usando indicador existente +${dayOffset}d: ${timeString} → ${resultDate.toISOString().split('T')[0]}`);
+        return resultDate;
+      }
+      
+      // Si no tiene indicador, verificar si es un horario nocturno (AM temprano)
+      const cleanTime = timeString.replace(/\s*\+\d+d$/, '').trim();
+      const timeParts = cleanTime.split(' ');
+      
+      if (timeParts.length >= 2) {
+        const timeStr = timeParts[0];
+        const amPm = timeParts[1].toUpperCase();
+        
+        if (amPm === 'AM' && timeStr) {
+          const [hourStr, minuteStr] = timeStr.split(':');
+          const hour = parseInt(hourStr, 10);
+          const minute = parseInt(minuteStr || '0', 10);
+          
+          // Convertir a formato 24 horas para verificar si es horario nocturno
+          let hour24 = hour;
+          if (hour === 12) hour24 = 0; // 12:xx AM = 00:xx en formato 24h
+          
+          // Si es entre 00:00 AM y 6:59 AM, asumir que es del día siguiente
+          if (!isNaN(hour24) && !isNaN(minute) && hour24 >= 0 && hour24 <= 6) {
+            const nextDay = new Date(baseDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            console.log(`  [calculateSegmentDate] Horario AM temprano detectado: ${timeString} (${hour24}:${minute.toString().padStart(2, '0')}) → ${nextDay.toISOString().split('T')[0]} (+1 día)`);
+            return nextDay;
+          }
+        }
+      }
+      
+      // Para otros casos, usar la fecha base
+      console.log(`  [calculateSegmentDate] Horario diurno: ${timeString} → ${baseDate.toISOString().split('T')[0]} (mismo día)`);
+      return new Date(baseDate);
+      
+    } catch (error) {
+      console.error(`[calculateSegmentDate] Error procesando tiempo ${timeString}:`, error);
+      return new Date(baseDate);
+    }
   }
   
   // Función para agregar el indicador de día a un horario

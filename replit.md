@@ -119,13 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 7, 2025** - Fixed critical issue with template-based trip creation and midnight crossing logic:
+- **July 7, 2025** - Fixed critical issues with template-based trip creation and segment date calculation:
   - Fixed trips created with templates not appearing in trip lists due to missing routeId assignment
   - Corrected trip creation code to use template.routeId instead of tripData.routeId for proper database storage
   - Enhanced midnight crossing detection to prevent duplicate trip creation for overnight journeys
   - Implemented logic to create single trips for overnight journeys (departing one day, arriving next day)
   - Fixed SQL filtering in searchTrips method that was excluding trips with NULL routeId values
-  - System now properly handles overnight trips like 11:00 PM → 5:00 AM the next day as single journey
+  - **MAJOR FIX**: Implemented intelligent segment date calculation for cross-midnight trips
+  - Each trip segment now gets its own accurate departureDate based on its actual departure time
+  - Segments departing between 12:00 AM - 6:59 AM are automatically assigned to the next day
+  - Example: Trip starts July 9 at 11:00 PM, Chilpancingo→Coyoacán segment at 12:30 AM gets July 10 date
+  - This ensures segments appear in correct date searches and prevents user confusion
 
 - **July 6, 2025** - Implemented comprehensive route template system:
   - Created route_templates database table with timing and pricing configuration fields
