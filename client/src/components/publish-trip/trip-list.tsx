@@ -406,6 +406,8 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
           const firstDate = normalizeToStartOfDay(tripDates[0]);
           const isPastTrip = firstDate.getTime() < today.getTime();
           
+          console.log("TripList: Viaje", trip.id, "fecha:", tripDates[0], "normalizada:", firstDate, "hoy:", today, "¿es pasado?", isPastTrip);
+          
           if (isPastTrip) {
             // Agregar a archivados (solo una vez)
             if (!archived.find(t => t.id === trip.id)) {
