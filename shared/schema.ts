@@ -271,11 +271,12 @@ const stopTimeSchema = z.object({
 });
 
 export const publishTripValidationSchema = z.object({
-  routeId: z.number().min(1, "Route selection is required"),
+  templateId: z.number().min(1, "Template selection is required"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
   capacity: z.number().min(1, "Capacity is required"),
   price: z.number().optional(),
+  departureTime: z.string().min(1, "Departure time is required"),
   segmentPrices: z.array(
     z.object({
       origin: z.string(),

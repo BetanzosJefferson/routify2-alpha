@@ -62,7 +62,7 @@ type SegmentTimePrice = SegmentPrice & {
 };
 
 type FormValues = {
-  routeId: number;
+  templateId: number;
   startDate: string;
   endDate: string;
   capacity: number;
@@ -73,12 +73,15 @@ type FormValues = {
   // Nuevos campos para vehículo y conductor
   vehicleId?: number | null;
   driverId?: number | null;
+  // Campo para hora de salida
+  departureTime: string;
 };
 
 export function PublishTripForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [segmentPrices, setSegmentPrices] = useState<SegmentTimePrice[]>([]);
 
   // Estado para controlar si mostrar campos de vehículo/conductor solo en modo edición
@@ -125,34 +128,34 @@ export function PublishTripForm() {
   const [showForm, setShowForm] = useState(false);
   const [editingTripId, setEditingTripId] = useState<number | null>(null);
 
-  // Fetch routes for dropdown
-  const routesQuery = useQuery({
-    queryKey: ["/api/routes"],
+  // Fetch templates for dropdown
+  const templatesQuery = useQuery({
+    queryKey: ["/api/route-templates"],
     placeholderData: [],
     enabled: true,
     queryFn: async () => {
-      console.log("Cargando rutas para formulario...");
-      const response = await fetch("/api/routes");
+      console.log("Cargando plantillas para formulario...");
+      const response = await fetch("/api/route-templates");
       if (!response.ok) {
-        throw new Error("Error al cargar las rutas");
+        throw new Error("Error al cargar las plantillas");
       }
       const data = await response.json();
-      console.log("Rutas cargadas para formulario:", data);
+      console.log("Plantillas cargadas para formulario:", data);
       return data;
     },
     retry: 3,
     retryDelay: 1000,
   });
 
-  // Fetch selected route segments when route changes
-  const routeSegmentsQuery = useQuery({
-    queryKey: ["/api/routes", selectedRouteId, "segments"],
+  // Fetch selected template route when template changes
+  const templateRouteQuery = useQuery({
+    queryKey: ["/api/routes", selectedTemplate?.routeId, "segments"],
     queryFn: async () => {
-      if (!selectedRouteId) return null;
-      const res = await fetch(`/api/routes/${selectedRouteId}/segments`);
+      if (!selectedTemplate?.routeId) return null;
+      const res = await fetch(`/api/routes/${selectedTemplate.routeId}/segments`);
       return (await res.json()) as RouteWithSegments;
     },
-    enabled: !!selectedRouteId,
+    enabled: !!selectedTemplate?.routeId,
   });
 
   // Consulta para obtener vehículos disponibles
@@ -185,7 +188,7 @@ export function PublishTripForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(publishTripValidationSchema),
     defaultValues: {
-      routeId: 0,
+      templateId: 0,
       startDate: format(new Date(), "yyyy-MM-dd"),
       endDate: format(new Date(), "yyyy-MM-dd"),
       capacity: 18,
@@ -194,15 +197,16 @@ export function PublishTripForm() {
       stopTimes: [], // Añadimos stopTimes para que no sea undefined
       vehicleId: null, // Valores iniciales para vehículo
       driverId: null, // y conductor
+      departureTime: "08:00", // Hora de salida por defecto
     },
     // Este modo nos ayuda a que el formulario muestre los valores actualizados
     mode: "onChange",
   });
 
-  // Update segment prices when route changes
+  // Update segment prices when template changes
   useEffect(() => {
-    if (routeSegmentsQuery.data) {
-      const route = routeSegmentsQuery.data;
+    if (selectedTemplate && templateRouteQuery.data) {
+      const route = templateRouteQuery.data;
 
       // Generar segmentos automáticamente desde la ruta usando la función utilitaria
       const generatedSegments = generateSegmentsFromRoute(route);
@@ -216,24 +220,107 @@ export function PublishTripForm() {
           !isSameCity(segment.origin, segment.destination),
       );
 
-      const segmentPricesWithDefaultValues = validSegments.map((segment) => ({
-        origin: segment.origin,
-        destination: segment.destination,
-        price: 0,
-      }));
+      // Aplicar precios desde la plantilla
+      const segmentPricesFromTemplate = validSegments.map((segment, index) => {
+        const templatePrice = selectedTemplate.priceConfiguration?.[index] || 0;
+        return {
+          origin: segment.origin,
+          destination: segment.destination,
+          price: templatePrice,
+        };
+      });
 
-      console.log("Segmentos generados para nuevo viaje:", segmentPricesWithDefaultValues);
+      console.log("Segmentos generados desde plantilla:", segmentPricesFromTemplate);
 
-      setSegmentPrices(segmentPricesWithDefaultValues);
-      form.setValue("segmentPrices", segmentPricesWithDefaultValues);
+      setSegmentPrices(segmentPricesFromTemplate);
+      form.setValue("segmentPrices", segmentPricesFromTemplate);
+      
+      // Calcular horarios de parada basados en la plantilla
+      calculateStopTimes(route, selectedTemplate);
     }
-  }, [routeSegmentsQuery.data, form]);
+  }, [selectedTemplate, templateRouteQuery.data, form]);
 
-  // Handle route selection
-  const handleRouteChange = (routeId: string) => {
-    const id = parseInt(routeId, 10);
-    setSelectedRouteId(id);
-    form.setValue("routeId", id);
+  // Calculate stop times from template configuration
+  const calculateStopTimes = (route: RouteWithSegments, template: any) => {
+    const departureTime = form.getValues("departureTime") || "08:00";
+    const [depHour, depMinute] = departureTime.split(":").map(Number);
+    
+    let currentTimeMinutes = depHour * 60 + depMinute;
+    const stopTimes: StopTime[] = [];
+    
+    // Agregar tiempo de salida
+    stopTimes.push({
+      hour: String(depHour).padStart(2, "0"),
+      minute: String(depMinute).padStart(2, "0"),
+      ampm: depHour < 12 ? "AM" : "PM",
+      location: route.origin || "",
+    });
+    
+    // Calcular tiempos de paradas intermedias
+    if (route.stops) {
+      route.stops.forEach((stop, index) => {
+        const segmentKey = `${index}-${index + 1}`;
+        const timeConfig = template.timeConfiguration?.[segmentKey];
+        
+        if (timeConfig) {
+          let addMinutes = 0;
+          if (typeof timeConfig === 'object' && timeConfig.hours !== undefined) {
+            addMinutes = (timeConfig.hours * 60) + (timeConfig.minutes || 0);
+          } else {
+            addMinutes = timeConfig; // Legacy format
+          }
+          
+          currentTimeMinutes += addMinutes;
+          const hour = Math.floor(currentTimeMinutes / 60) % 24;
+          const minute = currentTimeMinutes % 60;
+          
+          stopTimes.push({
+            hour: String(hour).padStart(2, "0"),
+            minute: String(minute).padStart(2, "0"),
+            ampm: hour < 12 ? "AM" : "PM",
+            location: stop,
+          });
+        }
+      });
+    }
+    
+    // Agregar tiempo de llegada
+    const finalSegmentIndex = route.stops ? route.stops.length : 0;
+    const finalSegmentKey = `${finalSegmentIndex}-${finalSegmentIndex + 1}`;
+    const finalTimeConfig = template.timeConfiguration?.[finalSegmentKey];
+    
+    if (finalTimeConfig) {
+      let addMinutes = 0;
+      if (typeof finalTimeConfig === 'object' && finalTimeConfig.hours !== undefined) {
+        addMinutes = (finalTimeConfig.hours * 60) + (finalTimeConfig.minutes || 0);
+      } else {
+        addMinutes = finalTimeConfig; // Legacy format
+      }
+      
+      currentTimeMinutes += addMinutes;
+      const hour = Math.floor(currentTimeMinutes / 60) % 24;
+      const minute = currentTimeMinutes % 60;
+      
+      stopTimes.push({
+        hour: String(hour).padStart(2, "0"),
+        minute: String(minute).padStart(2, "0"),
+        ampm: hour < 12 ? "AM" : "PM",
+        location: route.destination || "",
+      });
+    }
+    
+    setStopTimes(stopTimes);
+    form.setValue("stopTimes", stopTimes);
+  };
+
+  // Handle template selection
+  const handleTemplateChange = (templateId: string) => {
+    const id = parseInt(templateId, 10);
+    const template = templatesQuery.data?.find((t: any) => t.id === id);
+    
+    setSelectedTemplateId(id);
+    setSelectedTemplate(template);
+    form.setValue("templateId", id);
   };
 
   // Handle segment price updates
@@ -747,36 +834,35 @@ export function PublishTripForm() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Sección básica del formulario */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Selector de ruta */}
+                {/* Selector de plantilla */}
                 <FormField
                   control={form.control}
-                  name="routeId"
+                  name="templateId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ruta</FormLabel>
+                      <FormLabel>Plantilla</FormLabel>
                       <Select
                         disabled={
-                          routesQuery.isLoading || editingTripId !== null
+                          templatesQuery.isLoading || editingTripId !== null
                         }
-                        onValueChange={(value) => handleRouteChange(value)}
+                        onValueChange={(value) => handleTemplateChange(value)}
                         value={String(field.value) || ""}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Seleccione una ruta" />
+                            <SelectValue placeholder="Seleccione una plantilla" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {routesQuery.data?.map((route: Route) => (
-                            <SelectItem key={route.id} value={String(route.id)}>
-                              {route.name} ({route.origin} → {route.destination}
-                              )
+                          {templatesQuery.data?.map((template: any) => (
+                            <SelectItem key={template.id} value={String(template.id)}>
+                              {template.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Seleccione la ruta para este viaje.
+                        Seleccione la plantilla con precios y horarios preconfigurados.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -843,10 +929,38 @@ export function PublishTripForm() {
                     </FormItem>
                   )}
                 />
+
+                {/* Hora de salida */}
+                <FormField
+                  control={form.control}
+                  name="departureTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora de Salida</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e.target.value);
+                            // Recalcular horarios cuando cambia la hora de salida
+                            if (selectedTemplate && templateRouteQuery.data) {
+                              calculateStopTimes(templateRouteQuery.data, selectedTemplate);
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Hora de salida del viaje.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              {/* Detalles de precios y tiempos (cuando se selecciona una ruta) */}
-              {selectedRouteId && routeSegmentsQuery.data && (
+              {/* Detalles de precios y tiempos (cuando se selecciona una plantilla) */}
+              {selectedTemplateId && templateRouteQuery.data && (
                 <Tabs defaultValue="stop-times">
                   <TabsList className="mb-2 w-full flex flex-wrap justify-start">
                     <TabsTrigger

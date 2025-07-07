@@ -1036,6 +1036,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tripData = validationResult.data;
       
+      // Get template information
+      const template = await storage.getRouteTemplate(tripData.templateId);
+      if (!template) {
+        return res.status(400).json({
+          error: "Template not found",
+          details: "The selected template does not exist"
+        });
+      }
+      
+      // Get route information from template
+      const templateRoute = await storage.getRoute(template.routeId);
+      if (!templateRoute) {
+        return res.status(400).json({
+          error: "Route not found",
+          details: "The route associated with this template does not exist"
+        });
+      }
+      
       // Calculate departure/arrival time from stopTimes
       let departureTime = "";
       let arrivalTime = "";
@@ -1061,7 +1079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!arrivalTime) arrivalTime = "01:00 PM";
       
       // Get the route details to generate all possible sub-trips
-      const route = await storage.getRouteWithSegments(tripData.routeId);
+      const route = await storage.getRouteWithSegments(template.routeId);
       if (!route) {
         return res.status(404).json({ error: "Route not found" });
       }
