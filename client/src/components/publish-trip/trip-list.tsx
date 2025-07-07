@@ -457,6 +457,10 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       });
     });
     
+    console.log("TripList: Separación de viajes - Actuales:", Object.keys(current).length, "días, Archivados:", archived.length);
+    console.log("TripList: Viajes actuales por fecha:", current);
+    console.log("TripList: Viajes archivados:", archived.map(t => ({id: t.id, date: t.departureDate})));
+    
     return { currentTrips: current, archivedTrips: archived };
   }, [filteredTrips]);
 
