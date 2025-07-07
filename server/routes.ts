@@ -1110,8 +1110,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         route
       );
       
-      // Iterar por cada fecha del rango para crear viajes independientes
-      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      // Detectar si el viaje cruza medianoche
+      const crossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
+      console.log(`\n=== ANÁLISIS DE CRUCE DE MEDIANOCHE ===`);
+      console.log(`Viaje ${departureTime} -> ${arrivalTime}: ${crossesMidnight ? 'SÍ cruza medianoche' : 'NO cruza medianoche'}`);
+      
+      // Si cruza medianoche, solo crear el viaje para la fecha de salida
+      const datesToProcess = [];
+      if (crossesMidnight) {
+        // Solo procesar la fecha de salida para viajes nocturnos
+        datesToProcess.push(new Date(startDate));
+        console.log(`⚠️ Viaje nocturno detectado: Solo se creará para fecha de salida ${startDate.toISOString().split('T')[0]}`);
+      } else {
+        // Procesar todas las fechas del rango para viajes diurnos
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          datesToProcess.push(new Date(date));
+        }
+        console.log(`✅ Viaje diurno: Se creará para ${datesToProcess.length} fechas`);
+      }
+      
+      // Iterar por cada fecha a procesar
+      for (const date of datesToProcess) {
         const currentDateStr = date.toISOString().split('T')[0];
         console.log(`\n=== CREANDO VIAJE PARA FECHA: ${currentDateStr} ===`);
         

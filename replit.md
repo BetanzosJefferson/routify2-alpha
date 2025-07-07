@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 7, 2025** - Fixed critical issue with template-based trip creation and midnight crossing logic:
+  - Fixed trips created with templates not appearing in trip lists due to missing routeId assignment
+  - Corrected trip creation code to use template.routeId instead of tripData.routeId for proper database storage
+  - Enhanced midnight crossing detection to prevent duplicate trip creation for overnight journeys
+  - Implemented logic to create single trips for overnight journeys (departing one day, arriving next day)
+  - Fixed SQL filtering in searchTrips method that was excluding trips with NULL routeId values
+  - System now properly handles overnight trips like 11:00 PM → 5:00 AM the next day as single journey
+
 - **July 6, 2025** - Implemented comprehensive route template system:
   - Created route_templates database table with timing and pricing configuration fields
   - Added full CRUD operations in storage interface and database layer for template management
