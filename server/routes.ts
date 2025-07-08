@@ -6,6 +6,7 @@ import { eq, inArray, isNull, isNotNull, desc, gte, lte } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { WebSocketServer, WebSocket } from 'ws';
+import { serverTripCache } from "./lib/trip-cache";
 import { 
   insertRouteSchema, 
   insertTripSchema, 
@@ -716,6 +717,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Parámetros de búsqueda desde la query
       const { origin, destination, date, dateRange, seats, driverId, visibility, isSubTrip } = req.query;
+      
+      // Crear clave de caché incluyendo compañía del usuario para aislamiento
+      const userCompanyId = user?.companyId || user?.company;
+      const cacheKey = {
+        origin: origin as string,
+        destination: destination as string,
+        date: date as string,
+        dateRange: dateRange as string,
+        seats: seats as string,
+        driverId: driverId as string,
+        visibility: visibility as string,
+        isSubTrip: isSubTrip as string,
+        companyId: userCompanyId
+      };
+      
+      // Verificar caché del servidor primero
+      const cachedData = serverTripCache.get(cacheKey);
+      if (cachedData) {
+        console.log(`[GET /trips] Cache HIT - devolviendo ${cachedData.length} viajes desde caché`);
+        return res.json(cachedData);
+      }
+      
       const searchParams: any = {};
       
       // Agregar parámetros de búsqueda si existen
@@ -853,7 +876,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const viajesFiltradosConductor = trips.filter(t => t.driverId === user.id);
             console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltradosConductor.length} viajes asignados al conductor ${user.id}`);
             
-            // Reemplazar los resultados con solo los viajes asignados
+            // Guardar en caché y devolver resultados filtrados para conductor
+            serverTripCache.set(cacheKey, viajesFiltradosConductor);
             return res.json(viajesFiltradosConductor);
           }
         } else if (user.role === UserRole.TICKET_OFFICE) {
@@ -890,7 +914,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes de las compañías asignadas`);
             
-            // Reemplazar los resultados
+            // Guardar en caché y devolver resultados filtrados para taquillero
+            serverTripCache.set(cacheKey, viajesFiltrados);
             return res.json(viajesFiltrados);
           }
         } else {
@@ -909,12 +934,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const viajesFiltrados = trips.filter(t => t.companyId === userCompany);
               console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes de compañía ${userCompany}`);
               
-              // Reemplazar los resultados con solo los viajes de su compañía
+              // Guardar en caché y devolver resultados filtrados por compañía
+              serverTripCache.set(cacheKey, viajesFiltrados);
               return res.json(viajesFiltrados);
             }
           }
         }
       }
+      
+      // Guardar resultados en caché antes de devolverlos
+      serverTripCache.set(cacheKey, trips);
+      console.log(`[GET /trips] Resultados guardados en caché (${trips.length} viajes)`);
       
       return res.json(trips);
     } catch (error: any) {
@@ -1215,6 +1245,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`✅ Viaje creado para ${currentDateStr} con ID: ${mainTrip.id}`);
         createdTrips.push(mainTrip);
       }
+      
+      // Invalidar todo el caché cuando se crean nuevos viajes
+      serverTripCache.invalidateAll();
+      console.log(`[POST /trips] Caché invalidado después de crear ${createdTrips.length} viajes`);
       
       res.status(201).json(createdTrips);
     } catch (error) {
@@ -1954,6 +1988,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`[PUT /trips/${id}] Viaje actualizado exitosamente`);
+      
+      // Invalidar caché después de actualizar viaje
+      serverTripCache.invalidateAll();
+      console.log(`[PUT /trips/${id}] Caché invalidado después de actualizar viaje`);
       
       // Retornar el viaje actualizado
       res.json(updatedTrip);

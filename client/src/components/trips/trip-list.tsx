@@ -5,6 +5,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
 import { extractLocationsFromTrips, formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
+import { tripCache } from "@/lib/trip-cache";
 
 // Función para abreviar ubicaciones en móvil
 function abbreviateLocation(location: string): string {
@@ -129,6 +130,12 @@ export function TripList() {
   const { data: trips, isLoading, isError } = useQuery<TripWithRouteInfo[]>({
     queryKey: ["/api/trips", searchParams],
     queryFn: async () => {
+      // Verificar caché primero
+      const cachedData = tripCache.get(searchParams);
+      if (cachedData) {
+        return cachedData;
+      }
+
       // Construir URL con parámetros de búsqueda
       const params = new URLSearchParams();
       
@@ -150,7 +157,12 @@ export function TripList() {
       
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch trips");
-      return await response.json();
+      const data = await response.json();
+      
+      // Guardar en caché
+      tripCache.set(searchParams, data);
+      
+      return data;
     },
   });
 
