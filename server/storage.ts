@@ -94,7 +94,7 @@ export interface IStorage {
     includeAllVisibilities?: boolean;
     optimizedResponse?: boolean;
   }): Promise<TripWithRouteInfo[]>;
-  updateRelatedTripsAvailability(tripId: number, seatChange: number): Promise<void>;
+  updateRelatedTripsAvailability(recordId: number, tripId: string, seatChange: number): Promise<void>;
   
   // Reservation methods
   getReservations(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
