@@ -205,55 +205,23 @@ function processLocationGrouped(
 
 /**
  * Analiza una cadena de ubicación para extraer la ciudad y el lugar específico
+ * Formato esperado: "Ciudad, Estado - Lugar específico"
  */
 function parseLocationString(location: string): { city: string, place: string } {
-  // Patrones comunes en las ubicaciones
-  const cityPatterns = [
-    // Patrón: "Ciudad - Lugar Específico"
-    /^([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)\s*-\s*([\wáéíóúüñÁÉÍÓÚÜÑ\s,]+)$/,
-    
-    // Patrón: "Lugar Específico, Ciudad"
-    /^([\wáéíóúüñÁÉÍÓÚÜÑ\s]+),\s*([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)$/,
-    
-    // Patrón específico para "Acapulco de Juárez, Guerrero - Terminal Condesa"
-    /^([\wáéíóúüñÁÉÍÓÚÜÑ\s]+(?:, [\wáéíóúüñÁÉÍÓÚÜÑ\s]+)?)\s*-\s*([\wáéíóúüñÁÉÍÓÚÜÑ\s,]+)$/,
-  ];
+  // Formato principal: "Ciudad, Estado - Lugar específico"
+  const mainPattern = /^(.+?)\s*-\s*(.+)$/;
+  const match = location.match(mainPattern);
   
-  for (const pattern of cityPatterns) {
-    const match = location.match(pattern);
-    if (match) {
-      // El primer grupo suele ser la ciudad, el segundo el lugar específico
-      // pero a veces es al revés dependiendo del patrón
-      if (pattern.toString().includes(",\\s*([\\w")) {
-        // Para el patrón "Lugar, Ciudad"
-        return {
-          city: match[2].trim(),
-          place: match[1].trim()
-        };
-      } else {
-        // Para los patrones "Ciudad - Lugar"
-        return {
-          city: match[1].trim(),
-          place: match[2].trim()
-        };
-      }
-    }
+  if (match) {
+    const city = match[1].trim(); // "Acapulco de Juarez, Guerrero"
+    const place = match[2].trim(); // "Terminal condesa"
+    return { city, place };
   }
   
-  // Si no detectamos patrón, consideramos todo como el lugar y extraemos una posible ciudad
-  const words = location.split(/\s+/);
-  if (words.length > 1) {
-    const city = words[0]; // Primera palabra como ciudad
-    return {
-      city: city,
-      place: location
-    };
-  }
-  
-  // Si todo falla, usamos la ubicación completa para ambos campos
+  // Si no coincide con el patrón, usar toda la cadena como ciudad y "Todas las paradas" como lugar
   return {
-    city: location,
-    place: location
+    city: location.trim(),
+    place: "Todas las paradas"
   };
 }
 
