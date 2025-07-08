@@ -9,7 +9,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
 import { formatDateForInput, formatDateForApiQuery } from "@/lib/utils";
 import { TripWithRouteInfo } from "@shared/schema";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LocationAdapter } from "@/components/ui/location-adapter";
+import { LocationOption } from "@/components/ui/location-selector";
+import { extractLocationsFromTrips } from "@/lib/trip-utils";
 
 interface SearchParams {
   origin?: string;
@@ -38,8 +40,8 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [hasSearched, setHasSearched] = useState(false);
   
   // Form state
-  const [origin, setOrigin] = useState("all");
-  const [destination, setDestination] = useState("all");
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
   const [date, setDate] = useState(today);
 
   // Query principal usando la misma lógica que trip-list
@@ -67,38 +69,22 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       console.log(`[PackageTripSelection] Received ${data.length} trips`);
       return data;
     },
-    enabled: hasSearched || (origin === "all" && destination === "all"), // Cargar por defecto o después de búsqueda
+    enabled: hasSearched || (!origin.trim() && !destination.trim()), // Cargar por defecto o después de búsqueda
     staleTime: 30000,
   });
 
-  // Query para obtener ubicaciones (todos los segmentos para dropdowns completos)
+  // Query para obtener ubicaciones (usando viajes principales como en trip-list)
   const { data: allTripsForLocations } = useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", "locations-all-segments"],
+    queryKey: ["/api/trips", "locations-optimized"],
     queryFn: async () => {
-      const response = await fetch(`/api/trips?optimizedResponse=false`);
+      const response = await fetch(`/api/trips?isSubTrip=false`);
       if (!response.ok) throw new Error("Failed to fetch trips for locations");
       return await response.json();
     },
   });
 
-  // Función para extraer ubicaciones (simplificada)
-  const extractLocationsFromTrips = (trips: TripWithRouteInfo[]) => {
-    const origins = new Set<string>();
-    const destinations = new Set<string>();
-    
-    trips.forEach(trip => {
-      if (trip.origin) origins.add(trip.origin);
-      if (trip.destination) destinations.add(trip.destination);
-    });
-    
-    return {
-      origins: Array.from(origins).sort(),
-      destinations: Array.from(destinations).sort()
-    };
-  };
-
   const locationOptions = useMemo(() => {
-    if (!allTripsForLocations) return { origins: [], destinations: [] };
+    if (!allTripsForLocations) return [];
     return extractLocationsFromTrips(allTripsForLocations);
   }, [allTripsForLocations]);
 
@@ -116,17 +102,17 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       visibility: 'publicado'
     };
     
-    // Solo agregar filtros si tienen valores (excluyendo "all")
-    if (origin.trim() && origin !== "all") {
+    // Solo agregar filtros si tienen valores
+    if (origin.trim()) {
       newSearchParams.origin = origin.trim();
     }
     
-    if (destination.trim() && destination !== "all") {
+    if (destination.trim()) {
       newSearchParams.destination = destination.trim();
     }
     
     // Si hay filtros específicos, cargar todos los segmentos
-    if ((origin.trim() && origin !== "all") || (destination.trim() && destination !== "all")) {
+    if (origin.trim() || destination.trim()) {
       newSearchParams.optimizedResponse = 'false';
     } else {
       newSearchParams.isSubTrip = 'false'; // Solo viajes principales por defecto
@@ -138,8 +124,8 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
 
   // Limpiar filtros
   const clearFilters = () => {
-    setOrigin("all");
-    setDestination("all");
+    setOrigin("");
+    setDestination("");
     setDate(today);
     setSearchParams({ 
       date: today, 
@@ -193,36 +179,44 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
             
             <div className="space-y-2">
               <Label htmlFor="search-origin">Origen (opcional)</Label>
-              <Select value={origin} onValueChange={setOrigin}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar origen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Cualquier origen</SelectItem>
-                  {locationOptions.origins.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {locationOptions.length > 0 ? (
+                <LocationAdapter
+                  options={locationOptions}
+                  value={origin}
+                  onChange={setOrigin}
+                  placeholder="Selecciona origen"
+                  mode="grouped"
+                  className="w-full"
+                />
+              ) : (
+                <Input
+                  placeholder="Cargando ubicaciones..."
+                  value={origin}
+                  onChange={(e) => setOrigin(e.target.value)}
+                  disabled={true}
+                />
+              )}
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="search-destination">Destino (opcional)</Label>
-              <Select value={destination} onValueChange={setDestination}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar destino..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Cualquier destino</SelectItem>
-                  {locationOptions.destinations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {locationOptions.length > 0 ? (
+                <LocationAdapter
+                  options={locationOptions}
+                  value={destination}
+                  onChange={setDestination}
+                  placeholder="Selecciona destino"
+                  mode="grouped"
+                  className="w-full"
+                />
+              ) : (
+                <Input
+                  placeholder="Cargando ubicaciones..."
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  disabled={true}
+                />
+              )}
             </div>
           </div>
           
@@ -266,7 +260,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       {/* Trips List */}
       {!isLoading && !error && (
         <div className="space-y-4">
-          {!hasSearched && origin === "all" && destination === "all" ? (
+          {!hasSearched && !origin.trim() && !destination.trim() ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
