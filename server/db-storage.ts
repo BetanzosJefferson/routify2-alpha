@@ -737,9 +737,11 @@ export class DatabaseStorage implements IStorage {
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
     // Determinar el modo de respuesta basado en el flag optimizedResponse
-    const shouldReturnOptimized = params.optimizedResponse === true;
+    // NUEVA LÓGICA: Si se filtra por isSubTrip: false, también usar modo optimizado
+    const shouldReturnOptimized = params.optimizedResponse === true || params.isSubTrip === 'false';
     
     console.log(`[searchTrips] optimizedResponse flag: ${params.optimizedResponse}`);
+    console.log(`[searchTrips] isSubTrip filter: ${params.isSubTrip}`);
     console.log(`[searchTrips] shouldReturnOptimized: ${shouldReturnOptimized}`);
     console.log(`[searchTrips] Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
     
