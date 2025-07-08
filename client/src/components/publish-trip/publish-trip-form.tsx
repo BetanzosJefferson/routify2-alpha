@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { HelpCircleIcon } from "lucide-react";
+import { HelpCircleIcon, Info as InfoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -255,11 +255,35 @@ export function PublishTripForm() {
       setSegmentPrices(segmentPricesFromTemplate);
       form.setValue("segmentPrices", segmentPricesFromTemplate);
       
-      // Inicializar combinaciones habilitadas - por defecto todas están habilitadas
+      // Inicializar combinaciones habilitadas basándose en la configuración de la plantilla
       const { cityGroups, cityPairs } = groupSegmentsByCity(segmentPricesFromTemplate);
+      
+      // Heredar estado de habilitación desde la plantilla
       const initialEnabledCombinations = new Set(
-        cityPairs.map(pair => `${pair.origin}||${pair.destination}`)
+        cityPairs
+          .filter(pair => {
+            // Buscar la configuración de precio correspondiente en la plantilla
+            const templatePriceConfig = selectedTemplate.priceConfiguration?.find((config: any) => 
+              getCityName(config.origin) === getCityName(pair.origin) && 
+              getCityName(config.destination) === getCityName(pair.destination)
+            );
+            
+            // Si existe configuración y está explícitamente deshabilitada, no incluirla
+            // Si no hay configuración o está habilitada, incluirla
+            const isEnabled = templatePriceConfig && templatePriceConfig.enabled !== false;
+            
+            console.log(`Combinación ${pair.origin} → ${pair.destination}:`, {
+              hasConfig: !!templatePriceConfig,
+              enabled: templatePriceConfig?.enabled,
+              willBeEnabled: isEnabled
+            });
+            
+            return isEnabled;
+          })
+          .map(pair => `${pair.origin}||${pair.destination}`)
       );
+      
+      console.log("Combinaciones habilitadas heredadas de la plantilla:", initialEnabledCombinations);
       setEnabledCombinations(initialEnabledCombinations);
       
       // Calcular horarios de parada basados en la plantilla
@@ -1060,6 +1084,26 @@ export function PublishTripForm() {
                           </Tooltip>
                         </TooltipProvider>
                       </div>
+
+                      {/* Banner informativo sobre combinaciones heredadas */}
+                      {selectedTemplate && enabledCombinations.size > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                              <InfoIcon className="h-5 w-5 text-blue-400" />
+                            </div>
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-blue-800">
+                                Combinaciones heredadas de la plantilla
+                              </h3>
+                              <div className="mt-1 text-sm text-blue-700">
+                                <p>Se han cargado {enabledCombinations.size} combinaciones habilitadas desde la plantilla "{selectedTemplate.name}".</p>
+                                <p className="mt-1">Las combinaciones deshabilitadas en la plantilla no aparecen aquí.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Vista móvil - Configuración por ciudades */}
                       <div className="md:hidden space-y-4 mb-6">
