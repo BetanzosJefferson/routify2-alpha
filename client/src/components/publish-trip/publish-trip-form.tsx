@@ -286,6 +286,9 @@ export function PublishTripForm() {
       );
       
       console.log("Combinaciones habilitadas heredadas de la plantilla:", initialEnabledCombinations);
+      console.log("Total de combinaciones heredadas:", initialEnabledCombinations.size);
+      console.log("Configuración de precio de la plantilla:", selectedTemplate.priceConfiguration);
+      
       setEnabledCombinations(initialEnabledCombinations);
       
       // Calcular horarios de parada basados en la plantilla
