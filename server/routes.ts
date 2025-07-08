@@ -1321,8 +1321,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.status(201).json(createdTrips);
       }
-      
-      res.status(201).json(createdTrips);
     } catch (error) {
       console.error("Error creating trips:", error);
       res.status(500).json({ error: "Failed to create trip" });
