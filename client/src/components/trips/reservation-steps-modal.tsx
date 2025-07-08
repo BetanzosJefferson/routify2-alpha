@@ -357,8 +357,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     
     const reservationData: ReservationFormData = {
       tripDetails: {
-        recordId: parseInt(trip.id.split('_')[0]), // Extraer el recordId del tripId (ej: "10_0" -> 10)
-        tripId: trip.id, // El ID completo del viaje específico (ej: "10_0")
+        recordId: trip.id, // El ID del viaje es el recordId directamente
+        tripId: trip.id, // El ID completo del viaje específico
         seats: numPassengers
       },
       numPassengers,
