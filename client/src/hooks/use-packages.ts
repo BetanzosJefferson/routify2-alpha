@@ -24,10 +24,11 @@ export interface Package {
 interface UsePackagesOptions {
   tripId?: number;
   enabled?: boolean;
+  date?: string; // Formato YYYY-MM-DD
 }
 
 export function usePackages(options: UsePackagesOptions = {}) {
-  const { tripId, enabled = true } = options;
+  const { tripId, enabled = true, date } = options;
   const { user } = useAuth();
   
   // Usar endpoint específico para taquilla o endpoint general
@@ -40,11 +41,15 @@ export function usePackages(options: UsePackagesOptions = {}) {
     params.append('tripId', tripId.toString());
   }
   
+  if (date) {
+    params.append('date', date);
+  }
+  
   const queryString = params.toString();
   const fullUrl = queryString ? `${baseUrl}?${queryString}` : baseUrl;
   
   return useQuery<Package[]>({
-    queryKey: [baseUrl, tripId, user?.role],
+    queryKey: [baseUrl, tripId, date, user?.role],
     queryFn: async () => {
       const response = await fetch(fullUrl);
       

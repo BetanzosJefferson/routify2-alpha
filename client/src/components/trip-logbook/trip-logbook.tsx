@@ -31,10 +31,17 @@ export function TripLogbook() {
   });
   const [selectedTrip, setSelectedTrip] = useState<TripLogData | null>(null);
 
-  // Hooks para obtener datos
-  const { data: reservations = [], isLoading: isLoadingReservations } = useReservations();
-  const { data: packages = [], isLoading: isLoadingPackages } = usePackages();
-  const { data: trips = [], isLoading: isLoadingTrips } = useTrips();
+  // Hooks para obtener datos con filtros de fecha optimizados
+  const { data: reservations = [], isLoading: isLoadingReservations } = useReservations({
+    date: selectedDate // Filtrar reservaciones por fecha seleccionada
+  });
+  const { data: packages = [], isLoading: isLoadingPackages } = usePackages({
+    date: selectedDate // Filtrar paquetes por fecha seleccionada
+  });
+  const { data: trips = [], isLoading: isLoadingTrips } = useTrips({
+    date: selectedDate, // Filtrar viajes por fecha seleccionada
+    isSubTrip: false // Solo viajes principales para mejor rendimiento
+  });
 
   // Filtrar reservaciones válidas para bitácora
   const validReservations = useMemo(() => {

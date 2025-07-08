@@ -3005,7 +3005,8 @@ export class DatabaseStorage implements IStorage {
     companyId?: string; 
     companyIds?: string[]; 
     tripId?: number; 
-    tripIds?: number[] 
+    tripIds?: number[];
+    date?: string; // Formato YYYY-MM-DD
   }, currentUserId?: number, userRole?: string): Promise<any[]> {
     try {
       let query = this.db.select().from(schema.packages);
@@ -3032,6 +3033,13 @@ export class DatabaseStorage implements IStorage {
         const tripIdStrings = filters.tripIds.map(id => id.toString());
         const tripDetails = sql`${schema.packages.tripDetails}->>'tripId'`;
         conditions.push(inArray(tripDetails, tripIdStrings));
+      }
+
+      // Filtro por fecha
+      if (filters?.date) {
+        const dateCondition = sql`DATE(${schema.packages.createdAt}) = ${filters.date}`;
+        conditions.push(dateCondition);
+        console.log(`DB Storage: Aplicando filtro por fecha: ${filters.date}`);
       }
 
       // Aplicar condiciones si existen

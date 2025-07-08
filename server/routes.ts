@@ -5492,8 +5492,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(apiRouter("/taquilla/packages"), isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
+      const { date } = req.query;
       
       console.log(`[GET /taquilla/packages] Usuario: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
+      
+      // OPTIMIZACIÓN: Si no hay filtro de fecha específico, usar fecha actual por defecto
+      let dateFilter = date as string;
+      if (!date) {
+        dateFilter = new Date().toISOString().split('T')[0];
+        console.log(`[GET /taquilla/packages] Sin filtro de fecha - aplicando fecha actual: ${dateFilter}`);
+      }
       
       // Verificar que el usuario sea taquillero
       if (user.role !== 'taquilla') {
@@ -5515,10 +5523,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
       
-      // Obtener paqueterías con información del viaje de todas las empresas del taquillero
-      const packages = await storage.getPackagesWithTripInfo({ companyIds: companyIds });
+      // Obtener paqueterías con información del viaje de todas las empresas del taquillero con filtro de fecha
+      const packages = await storage.getPackagesWithTripInfo({ 
+        companyIds: companyIds,
+        date: dateFilter 
+      });
       
-      console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para las empresas del taquillero`);
+      console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para las empresas del taquillero (fecha: ${dateFilter})`);
       
       res.json(packages);
     } catch (error) {
@@ -5530,9 +5541,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(apiRouter("/packages"), validatePackageAccess, async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
-      const { tripId } = req.query;
+      const { tripId, date } = req.query;
       
       console.log(`[GET /packages] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // OPTIMIZACIÓN: Si no hay filtros específicos, usar fecha actual por defecto
+      let dateFilter = date as string;
+      if (!date && !tripId) {
+        dateFilter = new Date().toISOString().split('T')[0];
+        console.log(`[GET /packages] Sin filtros específicos - aplicando fecha actual: ${dateFilter}`);
+      }
       
       // Extraer companyId del usuario para aislamiento de datos
       const userCompanyId = user.companyId || user.company;
@@ -5554,6 +5572,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Aplicar filtro por viaje si se proporciona
       if (tripId && !isNaN(parseInt(tripId as string))) {
         filters.tripId = parseInt(tripId as string);
+      }
+      
+      // Aplicar filtro por fecha si se especifica
+      if (dateFilter) {
+        filters.date = dateFilter;
+        console.log(`[GET /packages] Aplicando filtro por fecha: ${dateFilter}`);
       }
       
       // CASO ESPECIAL: CONDUCTORES (CHOFER) - solo ven paqueterías de sus viajes asignados
