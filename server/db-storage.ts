@@ -343,30 +343,7 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTrip(trip: InsertTrip): Promise<Trip> {
-    console.log(`[DB Storage] 🚀 Creando viaje - Tipo: ${trip.templateId ? 'Template-based' : 'Legacy'}`);
-    
-    // Log de datos para debugging
-    if (trip.templateId) {
-      console.log(`[DB Storage] 📋 Datos template-based:`, {
-        templateId: trip.templateId,
-        departureDate: trip.departureDate,
-        departureTime: trip.departureTime,
-        seatOccupancy: trip.seatOccupancy,
-        capacity: trip.capacity
-      });
-    } else {
-      console.log(`[DB Storage] 📋 Datos legacy:`, {
-        tripDataLength: Array.isArray(trip.tripData) ? trip.tripData.length : 'N/A',
-        capacity: trip.capacity,
-        routeId: trip.routeId
-      });
-    }
-    
-    // Insertar viaje en la base de datos
     const [newTrip] = await db.insert(schema.trips).values(trip).returning();
-    
-    console.log(`[DB Storage] ✅ Viaje creado exitosamente con ID: ${newTrip.id}`);
-    
     return newTrip;
   }
   
@@ -648,21 +625,12 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // PASO 7: FILTRO DE FECHA HÍBRIDO (legacy + template-based)
+    // Aplicar filtro de fecha o rango de fechas usando JSONB
     if (params.dateRange && params.dateRange.length > 0) {
-      console.log(`[searchTrips] Filtro híbrido por rango de fechas:`, params.dateRange);
+      console.log(`[searchTrips] Filtro por rango de fechas:`, params.dateRange);
       
       const dateConditions = params.dateRange.map(date => {
-        // Combinar búsqueda en tripData (legacy) Y departure_date (template-based)
-        return or(
-          // Viajes legacy: Buscar en tripData JSON
-          sql`EXISTS (
-            SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
-            WHERE segment->>'departureDate' = ${date}
-          )`,
-          // Viajes template-based: Buscar en departure_date
-          eq(schema.trips.departureDate, date)
-        );
+        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
       });
       
       if (dateConditions.length === 1) {
@@ -671,19 +639,8 @@ export class DatabaseStorage implements IStorage {
         condiciones.push(or(...dateConditions));
       }
     } else if (params.date) {
-      console.log(`[searchTrips] Filtro híbrido de fecha individual: ${params.date}`);
-      // Combinar búsqueda en tripData (legacy) Y departure_date (template-based)
-      condiciones.push(
-        or(
-          // Viajes legacy: Buscar en tripData JSON
-          sql`EXISTS (
-            SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
-            WHERE segment->>'departureDate' = ${params.date}
-          )`,
-          // Viajes template-based: Buscar en departure_date
-          eq(schema.trips.departureDate, params.date)
-        )
-      );
+      console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
+      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -784,64 +741,14 @@ export class DatabaseStorage implements IStorage {
       const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      // PASO 7: MANEJO HÍBRIDO DE VIAJES (legacy vs template-based)
-      const isTemplateBased = trip.templateId != null;
-      console.log(`[searchTrips] Trip ${trip.id} - Tipo: ${isTemplateBased ? 'Template-based' : 'Legacy'}`);
-      
+      // Parse tripData JSON array
       let tripDataArray = [];
-      
-      if (isTemplateBased) {
-        // VIAJES TEMPLATE-BASED: Generar segmentos dinámicamente
-        console.log(`[searchTrips] Generando segmentos dinámicamente para trip ${trip.id} template-based`);
-        
-        try {
-          // Importar funciones de utilidad para generar segmentos
-          const { generateSegmentsFromTemplate } = await import('./utils/trip-utils.js');
-          
-          // Obtener template
-          const template = await this.getRouteTemplate(trip.templateId);
-          if (!template) {
-            console.warn(`[searchTrips] Template ${trip.templateId} no encontrado para trip ${trip.id}`);
-            continue;
-          }
-          
-          // Generar segmentos dinámicamente
-          const generatedSegments = await generateSegmentsFromTemplate(trip, template, route);
-          
-          // Convertir segmentos generados al formato esperado por el frontend
-          tripDataArray = generatedSegments.map((segment, index) => ({
-            tripId: `${trip.id}_${index}`,
-            origin: segment.origin,
-            destination: segment.destination,
-            departureDate: segment.departureDate,
-            departureTime: segment.departureTime,
-            arrivalTime: segment.arrivalTime,
-            price: segment.price,
-            availableSeats: segment.availableSeats,
-            isMainTrip: segment.isMainTrip
-          }));
-          
-          console.log(`[searchTrips] Trip ${trip.id} template-based generó ${tripDataArray.length} segmentos dinámicos`);
-          
-        } catch (error) {
-          console.error(`[searchTrips] Error generando segmentos para template trip ${trip.id}:`, error);
-          continue;
-        }
-        
-      } else {
-        // VIAJES LEGACY: Usar tripData JSON existente
-        try {
-          if (!trip.tripData) {
-            console.warn(`[searchTrips] Trip legacy ${trip.id} no tiene tripData`);
-            continue;
-          }
-          
-          tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
-          console.log(`[searchTrips] Trip ${trip.id} legacy tiene ${tripDataArray.length} segmentos en tripData`);
-        } catch (error) {
-          console.warn(`[searchTrips] Error parsing tripData para trip legacy ${trip.id}:`, error);
-          continue;
-        }
+      try {
+        tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+        console.log(`[searchTrips] Trip ${trip.id} has ${tripDataArray.length} segments in tripData`);
+      } catch (error) {
+        console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
+        continue;
       }
       
       // Buscar información de la compañía si existe
@@ -979,51 +886,75 @@ export class DatabaseStorage implements IStorage {
   async updateRelatedTripsAvailability(recordId: number, tripId: string, seatChange: number): Promise<void> {
     // Obtener el registro principal del viaje
     const tripRecord = await this.getTrip(recordId);
-    if (!tripRecord) return;
+    if (!tripRecord || !tripRecord.tripData || !Array.isArray(tripRecord.tripData)) return;
     
     // Extraer el índice del tripId específico (ej: "10_2" -> índice 2)
     const segmentIndex = parseInt(tripId.split('_')[1]);
-    if (isNaN(segmentIndex)) return;
+    if (isNaN(segmentIndex) || segmentIndex >= tripRecord.tripData.length) return;
     
     const isReducingSeats = seatChange < 0;
     const absoluteChange = Math.abs(seatChange);
     
     console.log(`[updateRelatedTripsAvailability] Actualizando registro ${recordId}, segmento ${tripId} con cambio de ${seatChange} asientos`);
     
-    // NUEVO: Determinar qué segmentos se superponen y actualizar seatOccupancy
-    const currentOccupancy = (tripRecord.seatOccupancy as Record<string, number[]>) || {};
+    // Obtener el segmento específico reservado
+    const reservedSegment = tripRecord.tripData[segmentIndex];
+    if (!reservedSegment) return;
     
-    // Si es una nueva reserva (seatChange < 0), generar asientos ocupados
-    if (isReducingSeats) {
-      const currentSeats = currentOccupancy[segmentIndex.toString()] || [];
-      const nextSeatNumber = currentSeats.length > 0 ? Math.max(...currentSeats) + 1 : 1;
+    // Obtener información de la ruta para determinar el orden de las paradas
+    const routeInfo = await this.getRouteWithSegments(tripRecord.routeId);
+    if (!routeInfo) return;
+    
+    // Crear array con todas las paradas en orden
+    const allStops = [routeInfo.origin, ...routeInfo.stops, routeInfo.destination];
+    
+    // Encontrar índices de las ubicaciones del segmento reservado
+    const reservedOriginIdx = allStops.indexOf(reservedSegment.origin);
+    const reservedDestinationIdx = allStops.indexOf(reservedSegment.destination);
+    
+    if (reservedOriginIdx === -1 || reservedDestinationIdx === -1) return;
+    
+    // Clonar el array tripData para modificarlo
+    const updatedTripData = [...tripRecord.tripData];
+    
+    // Actualizar todos los segmentos que se superponen con el reservado
+    for (let i = 0; i < updatedTripData.length; i++) {
+      const segment = updatedTripData[i];
       
-      // Agregar asientos ocupados a este segmento
-      const newSeats = [];
-      for (let i = 0; i < absoluteChange; i++) {
-        newSeats.push(nextSeatNumber + i);
+      // Encontrar índices de este segmento
+      const segmentOriginIdx = allStops.indexOf(segment.origin);
+      const segmentDestinationIdx = allStops.indexOf(segment.destination);
+      
+      if (segmentOriginIdx === -1 || segmentDestinationIdx === -1) continue;
+      
+      // Verificar si este segmento se superpone con el segmento reservado
+      const hasOverlap = reservedOriginIdx < segmentDestinationIdx && reservedDestinationIdx > segmentOriginIdx;
+      
+      if (hasOverlap) {
+        // Actualizar asientos disponibles del segmento superpuesto
+        const currentSeats = segment.availableSeats || tripRecord.capacity || 0;
+        let newSeats;
+        
+        if (isReducingSeats) {
+          newSeats = Math.max(currentSeats - absoluteChange, 0);
+        } else {
+          newSeats = Math.min(currentSeats + absoluteChange, tripRecord.capacity || currentSeats);
+        }
+        
+        updatedTripData[i] = {
+          ...segment,
+          availableSeats: newSeats
+        };
+        
+        console.log(`[updateRelatedTripsAvailability] Segmento ${recordId}_${i} (${segment.origin} → ${segment.destination}): ${currentSeats} → ${newSeats} asientos`);
       }
-      
-      currentOccupancy[segmentIndex.toString()] = [...currentSeats, ...newSeats];
-      
-      console.log(`[updateRelatedTripsAvailability] Asientos ${newSeats.join(', ')} ocupados en segmento ${segmentIndex}`);
-    } else {
-      // Es una cancelación (seatChange > 0), liberar asientos
-      const currentSeats = currentOccupancy[segmentIndex.toString()] || [];
-      const seatsToRemove = currentSeats.slice(-absoluteChange); // Remover últimos asientos
-      
-      currentOccupancy[segmentIndex.toString()] = currentSeats.slice(0, -absoluteChange);
-      
-      console.log(`[updateRelatedTripsAvailability] Asientos ${seatsToRemove.join(', ')} liberados en segmento ${segmentIndex}`);
     }
     
-    // Actualizar el registro en la base de datos con la nueva ocupación
+    // Actualizar el registro en la base de datos con el tripData modificado
     await db
       .update(schema.trips)
-      .set({ seatOccupancy: currentOccupancy })
+      .set({ tripData: updatedTripData })
       .where(eq(schema.trips.id, recordId));
-    
-    console.log(`[updateRelatedTripsAvailability] Registro ${recordId} actualizado correctamente`);
   }
   
   async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
@@ -1325,71 +1256,22 @@ export class DatabaseStorage implements IStorage {
         continue;
       }
       
-      let tripSegment = null;
+      // Parse tripData JSON array para encontrar el segmento específico
+      let tripDataArray = [];
+      try {
+        tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
+      } catch (error) {
+        console.warn(`Error parsing tripData for trip ${tripRecord.id}:`, error);
+        continue;
+      }
       
-      // MANEJO HÍBRIDO: Template-based vs Legacy trips
-      if (tripRecord.templateId) {
-        // VIAJE TEMPLATE-BASED: Generar segmento dinámicamente
-        console.log(`Processing template-based trip ${tripRecord.id} with template ${tripRecord.templateId}`);
-        
-        try {
-          // Obtener la plantilla para generar segmentos
-          const template = await this.getRouteTemplate(tripRecord.templateId);
-          if (!template) {
-            console.warn(`Template ${tripRecord.templateId} not found for trip ${tripRecord.id}`);
-            continue;
-          }
-          
-          // Obtener información de la ruta
-          const route = await this.getRoute(tripRecord.routeId);
-          if (!route) {
-            console.warn(`Route ${tripRecord.routeId} not found for template trip ${tripRecord.id}`);
-            continue;
-          }
-          
-          // Generar segmentos dinámicamente
-          const { generateSegmentsFromTemplate } = await import('./utils/trip-utils.js');
-          const segments = await generateSegmentsFromTemplate(tripRecord, template, route);
-          
-          // Extraer el índice del segmento desde tripId (formato: "recordId_segmentIndex")
-          const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-          tripSegment = segments[segmentIndex];
-          
-          if (!tripSegment) {
-            console.warn(`Generated segment ${segmentIndex} not found for template trip ${tripRecord.id}`);
-            continue;
-          }
-          
-          console.log(`Generated segment for template trip: ${tripSegment.origin} → ${tripSegment.destination}`);
-          
-        } catch (error) {
-          console.error(`Error generating segments for template trip ${tripRecord.id}:`, error);
-          continue;
-        }
-        
-      } else {
-        // VIAJE LEGACY: Usar tripData JSON existente
-        let tripDataArray = [];
-        try {
-          if (!tripRecord.tripData) {
-            console.warn(`No tripData found for legacy trip ${tripRecord.id}`);
-            continue;
-          }
-          
-          tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
-        } catch (error) {
-          console.warn(`Error parsing tripData for trip ${tripRecord.id}:`, error);
-          continue;
-        }
-        
-        // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
-        const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-        tripSegment = tripDataArray[segmentIndex];
-        
-        if (!tripSegment) {
-          console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
-          continue;
-        }
+      // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
+      const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+      const tripSegment = tripDataArray[segmentIndex];
+      
+      if (!tripSegment) {
+        console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
+        continue;
       }
       
       // Obtener información de la ruta
@@ -1685,121 +1567,7 @@ export class DatabaseStorage implements IStorage {
     
     console.log("Creando reservación con datos:", JSON.stringify(reservation, null, 2));
     const [newReservation] = await db.insert(schema.reservations).values(reservation).returning();
-    
-    // SINCRONIZACIÓN DE ASIENTOS PARA VIAJES TEMPLATE-BASED
-    await this.syncSeatOccupancyForTemplateTrips(reservation);
-    
     return newReservation;
-  }
-
-  /**
-   * Sincroniza la ocupación de asientos entre viajes template-based
-   * que comparten la misma plantilla y fecha
-   */
-  async syncSeatOccupancyForTemplateTrips(reservation: InsertReservation): Promise<void> {
-    console.log(`[SYNC] Iniciando sincronización de asientos para reservación en viaje ${reservation.tripId}`);
-    
-    try {
-      // Parsear tripDetails para obtener información del viaje
-      let tripDetails;
-      try {
-        tripDetails = typeof reservation.tripDetails === 'string' 
-          ? JSON.parse(reservation.tripDetails) 
-          : reservation.tripDetails;
-      } catch (error) {
-        console.warn(`[SYNC] Error al parsear tripDetails:`, error);
-        return;
-      }
-      
-      if (!tripDetails || !tripDetails.recordId) {
-        console.warn(`[SYNC] No se pudo obtener recordId de tripDetails`);
-        return;
-      }
-      
-      // Obtener el viaje base (trip record)
-      const baseTrip = await this.getTrip(tripDetails.recordId);
-      if (!baseTrip || !baseTrip.templateId) {
-        console.log(`[SYNC] Viaje ${tripDetails.recordId} no es template-based, omitiendo sincronización`);
-        return;
-      }
-      
-      console.log(`[SYNC] Viaje template-based detectado: ${baseTrip.id}, template: ${baseTrip.templateId}, fecha: ${baseTrip.departureDate}`);
-      
-      // Buscar todos los viajes que comparten la misma plantilla y fecha
-      const relatedTrips = await db
-        .select()
-        .from(schema.trips)
-        .where(
-          and(
-            eq(schema.trips.templateId, baseTrip.templateId),
-            eq(schema.trips.departureDate, baseTrip.departureDate),
-            eq(schema.trips.companyId, baseTrip.companyId)
-          )
-        );
-      
-      console.log(`[SYNC] Encontrados ${relatedTrips.length} viajes relacionados con la misma plantilla y fecha`);
-      
-      // Obtener todas las reservaciones de estos viajes relacionados
-      const tripIds = relatedTrips.map(trip => trip.id);
-      const allReservations = await db
-        .select()
-        .from(schema.reservations)
-        .where(
-          and(
-            inArray(schema.reservations.tripId, tripIds),
-            ne(schema.reservations.status, 'cancelled')
-          )
-        );
-      
-      console.log(`[SYNC] Encontradas ${allReservations.length} reservaciones activas en viajes relacionados`);
-      
-      // Construir mapa de ocupación de asientos por segmento
-      const seatOccupancyBySegment = new Map<string, number[]>();
-      
-      for (const res of allReservations) {
-        try {
-          const resDetails = typeof res.tripDetails === 'string' 
-            ? JSON.parse(res.tripDetails) 
-            : res.tripDetails;
-          
-          if (!resDetails || !resDetails.tripId) continue;
-          
-          // Extraer índice del segmento
-          const segmentIndex = resDetails.tripId.split('_')[1];
-          if (!segmentIndex) continue;
-          
-          // Obtener asientos reservados
-          const seatNumbers = res.seatNumbers || [];
-          const existingSeats = seatOccupancyBySegment.get(segmentIndex) || [];
-          
-          // Combinar asientos únicos
-          const combinedSeats = [...new Set([...existingSeats, ...seatNumbers])];
-          seatOccupancyBySegment.set(segmentIndex, combinedSeats);
-          
-        } catch (error) {
-          console.warn(`[SYNC] Error procesando reservación ${res.id}:`, error);
-        }
-      }
-      
-      console.log(`[SYNC] Mapa de ocupación construido:`, Object.fromEntries(seatOccupancyBySegment));
-      
-      // Actualizar seat_occupancy en todos los viajes relacionados
-      for (const trip of relatedTrips) {
-        const updatedOccupancy = Object.fromEntries(seatOccupancyBySegment);
-        
-        await db
-          .update(schema.trips)
-          .set({ seatOccupancy: updatedOccupancy })
-          .where(eq(schema.trips.id, trip.id));
-        
-        console.log(`[SYNC] Actualizada ocupación de asientos para viaje ${trip.id}`);
-      }
-      
-      console.log(`[SYNC] ✅ Sincronización completada para ${relatedTrips.length} viajes`);
-      
-    } catch (error) {
-      console.error(`[SYNC] Error en sincronización de asientos:`, error);
-    }
   }
   
   async updateReservation(id: number, reservationUpdate: Partial<Reservation>): Promise<Reservation | undefined> {
@@ -2610,7 +2378,13 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
-      // 3. Extraer y validar índice del segmento
+      // 3. Validar estructura de datos del viaje
+      if (!trip.tripData || !Array.isArray(trip.tripData)) {
+        console.log(`DB Storage: [validateSeatAvailability] Registro ${recordId} sin datos de segmentos válidos`);
+        return false;
+      }
+      
+      // 4. Extraer y validar índice del segmento
       const tripIdParts = tripId.split('_');
       if (tripIdParts.length !== 2) {
         console.log(`DB Storage: [validateSeatAvailability] Formato de tripId inválido: ${tripId}. Esperado: recordId_segmentIndex`);
@@ -2618,19 +2392,26 @@ export class DatabaseStorage implements IStorage {
       }
       
       const segmentIndex = parseInt(tripIdParts[1]);
-      if (isNaN(segmentIndex) || segmentIndex < 0) {
-        console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} inválido para ${tripId}`);
+      if (isNaN(segmentIndex) || segmentIndex < 0 || segmentIndex >= trip.tripData.length) {
+        console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} fuera de rango para ${tripId}. Segmentos disponibles: ${trip.tripData.length}`);
         return false;
       }
       
-      // 4. NUEVO: Calcular asientos disponibles desde seatOccupancy
-      const seatOccupancy = (trip.seatOccupancy as Record<string, number[]>) || {};
-      const occupiedSeats = seatOccupancy[segmentIndex.toString()] || [];
-      const availableSeats = trip.capacity - occupiedSeats.length;
+      // 5. Validar estructura del segmento específico
+      const segment = trip.tripData[segmentIndex];
+      if (!segment || typeof segment !== 'object') {
+        console.log(`DB Storage: [validateSeatAvailability] Segmento ${segmentIndex} no válido en registro ${recordId}`);
+        return false;
+      }
       
-      console.log(`DB Storage: [validateSeatAvailability] Segmento ${segmentIndex} - Capacidad: ${trip.capacity}, Ocupados: ${occupiedSeats.length}, Disponibles: ${availableSeats}`);
+      // 6. Verificar asientos disponibles
+      const availableSeats = segment.availableSeats;
+      if (typeof availableSeats !== 'number' || availableSeats < 0) {
+        console.log(`DB Storage: [validateSeatAvailability] Campo availableSeats inválido en segmento ${tripId}: ${availableSeats}`);
+        return false;
+      }
       
-      // 5. Verificar disponibilidad suficiente
+      // 7. Verificar disponibilidad suficiente
       const hasEnoughSeats = availableSeats >= seatsRequested;
       
       console.log(`DB Storage: [validateSeatAvailability] Resultado - Segmento: ${tripId}, Disponibles: ${availableSeats}, Solicitados: ${seatsRequested}, Suficientes: ${hasEnoughSeats}`);

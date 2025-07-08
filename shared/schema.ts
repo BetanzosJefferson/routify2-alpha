@@ -55,18 +55,13 @@ export type RouteTemplate = typeof routeTemplates.$inferSelect;
 // TRIP SCHEMA - Actualizado para coincidir con la estructura real de la base de datos
 export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
-  tripData: jsonb("trip_data").notNull(), // Contiene toda la información del viaje - LEGACY
+  tripData: jsonb("trip_data").notNull(), // Contiene toda la información del viaje
   capacity: integer("capacity").notNull(),
   vehicleId: integer("vehicle_id"),
   driverId: integer("driver_id"),
   visibility: text("visibility").default("publicado"),
   routeId: integer("route_id"),
   companyId: text("company_id"),
-  // Nuevos campos para solución basada en plantillas
-  templateId: integer("template_id").references(() => routeTemplates.id),
-  seatOccupancy: jsonb("seat_occupancy").$type<Record<string, number[]>>().default({}),
-  departureDate: varchar("departure_date", { length: 20 }),
-  departureTime: varchar("departure_time", { length: 20 }),
 });
 
 export const insertTripSchema = createInsertSchema(trips);

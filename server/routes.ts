@@ -904,31 +904,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes de compañía ${userCompany}`);
               
               // Reemplazar los resultados con solo los viajes de su compañía
-              console.log(`[GET /trips] Preparando respuesta filtrada con ${viajesFiltrados.length} viajes`);
-              
-              // Si hay demasiados viajes, usar paginación
-              if (viajesFiltrados.length > 50) {
-                console.log(`[GET /trips] Aplicando paginación a viajes filtrados: ${viajesFiltrados.length} viajes total`);
-                const limitedFilteredTrips = viajesFiltrados.slice(0, 50);
-                console.log(`[GET /trips] Devolviendo primeros 50 viajes filtrados`);
-                return res.json(limitedFilteredTrips);
-              }
-              
               return res.json(viajesFiltrados);
             }
           }
         }
-      }
-      
-      // SOLUCIÓN: Limitar datos para evitar "Invalid string length"
-      console.log(`[GET /trips] Preparando respuesta con ${trips.length} viajes`);
-      
-      // Si hay demasiados viajes, usar paginación
-      if (trips.length > 50) {
-        console.log(`[GET /trips] Aplicando paginación: ${trips.length} viajes total`);
-        const limitedTrips = trips.slice(0, 50);
-        console.log(`[GET /trips] Devolviendo primeros 50 viajes`);
-        return res.json(limitedTrips);
       }
       
       return res.json(trips);
@@ -1057,291 +1036,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tripData = validationResult.data;
       
-      // PASO 5: NUEVA LÓGICA TEMPLATE-BASED
-      // Verificar si la petición incluye templateId para determinar el modo de creación
+      // Get template information
+      const template = await storage.getRouteTemplate(tripData.templateId);
+      if (!template) {
+        return res.status(400).json({
+          error: "Template not found",
+          details: "The selected template does not exist"
+        });
+      }
       
-      if (tripData.templateId) {
-        // ==== MODO TEMPLATE-BASED (NUEVO) ====
-        console.log(`[POST /trips] 🔄 Modo template-based - templateId: ${tripData.templateId}`);
-        
-        // Obtener información del template
-        const template = await storage.getRouteTemplate(tripData.templateId);
-        if (!template) {
-          return res.status(400).json({
-            error: "Template not found",
-            details: "The selected template does not exist"
-          });
+      // Get route information from template
+      const templateRoute = await storage.getRoute(template.routeId);
+      if (!templateRoute) {
+        return res.status(400).json({
+          error: "Route not found",
+          details: "The route associated with this template does not exist"
+        });
+      }
+      
+      // Calculate departure/arrival time from stopTimes
+      let departureTime = "";
+      let arrivalTime = "";
+      
+      if (tripData.stopTimes && tripData.stopTimes.length > 0) {
+        const stopTimes = tripData.stopTimes;
+        // El primer tiempo de parada es la salida
+        if (stopTimes[0] && stopTimes[0].hour && stopTimes[0].minute && stopTimes[0].ampm) {
+          departureTime = `${stopTimes[0].hour.padStart(2, '0')}:${stopTimes[0].minute.padStart(2, '0')} ${stopTimes[0].ampm}`;
         }
         
-        // Obtener información de la ruta
-        const templateRoute = await storage.getRoute(template.routeId);
-        if (!templateRoute) {
-          return res.status(400).json({
-            error: "Route not found",
-            details: "The route associated with this template does not exist"
-          });
-        }
-        
-        // Calcular horarios de salida y llegada principales
-        let departureTime = "";
-        let arrivalTime = "";
-        
-        if (tripData.stopTimes && tripData.stopTimes.length > 0) {
-          const stopTimes = tripData.stopTimes;
-          if (stopTimes[0] && stopTimes[0].hour && stopTimes[0].minute && stopTimes[0].ampm) {
-            departureTime = `${stopTimes[0].hour.padStart(2, '0')}:${stopTimes[0].minute.padStart(2, '0')} ${stopTimes[0].ampm}`;
-          }
-          
-          if (stopTimes.length > 1) {
-            const lastStop = stopTimes[stopTimes.length - 1];
-            if (lastStop && lastStop.hour && lastStop.minute && lastStop.ampm) {
-              arrivalTime = `${lastStop.hour.padStart(2, '0')}:${lastStop.minute.padStart(2, '0')} ${lastStop.ampm}`;
-            }
+        // El último tiempo de parada es la llegada
+        if (stopTimes.length > 1) {
+          const lastStop = stopTimes[stopTimes.length - 1];
+          if (lastStop && lastStop.hour && lastStop.minute && lastStop.ampm) {
+            arrivalTime = `${lastStop.hour.padStart(2, '0')}:${lastStop.minute.padStart(2, '0')} ${lastStop.ampm}`;
           }
         }
-        
-        if (!departureTime) departureTime = "12:00 PM";
-        if (!arrivalTime) arrivalTime = "01:00 PM";
-        
-        // Crear viajes para cada fecha en el rango
-        const startDate = new Date(tripData.startDate);
-        const endDate = new Date(tripData.endDate);
-        const createdTrips = [];
-        
-        // Detectar si el viaje cruza medianoche
-        const crossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
-        console.log(`[POST /trips] Viaje ${departureTime} -> ${arrivalTime}: ${crossesMidnight ? 'cruza medianoche' : 'no cruza medianoche'}`);
-        
-        // Determinar fechas a procesar
-        const datesToProcess = [];
-        if (crossesMidnight) {
-          datesToProcess.push(new Date(startDate));
-          console.log(`[POST /trips] ⚠️ Viaje nocturno: Solo creando para fecha de salida ${startDate.toISOString().split('T')[0]}`);
-        } else {
-          for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-            datesToProcess.push(new Date(date));
-          }
-          console.log(`[POST /trips] ✅ Viaje diurno: Creando para ${datesToProcess.length} fechas`);
-        }
-        
-        // Crear viajes usando estructura template-based
-        for (const date of datesToProcess) {
-          const currentDateStr = date.toISOString().split('T')[0];
-          console.log(`[POST /trips] 🚀 Creando viaje template-based para fecha: ${currentDateStr}`);
-          
-          // NUEVA ESTRUCTURA: Solo datos principales + templateId
-          const templateTripToCreate = {
-            // tripData: NULL (no se almacena para template-based)
-            templateId: tripData.templateId,
-            capacity: tripData.capacity,
-            vehicleId: null,
-            driverId: null,
-            visibility: tripData.visibility || "publicado",
-            routeId: template.routeId,
-            companyId: companyId,
-            // NUEVOS CAMPOS:
-            seatOccupancy: {}, // Objeto vacío inicial
-            departureDate: currentDateStr,
-            departureTime: departureTime.replace(/\s*\+\d+d$/, '')
-          };
-          
-          console.log(`[POST /trips] 📋 Datos template-based:`, {
-            templateId: templateTripToCreate.templateId,
-            departureDate: templateTripToCreate.departureDate,
-            departureTime: templateTripToCreate.departureTime,
-            capacity: templateTripToCreate.capacity
-          });
-          
-          const createdTrip = await storage.createTrip(templateTripToCreate);
-          console.log(`[POST /trips] ✅ Viaje template-based creado con ID: ${createdTrip.id}`);
-          createdTrips.push(createdTrip);
-        }
-        
-        res.status(201).json(createdTrips);
-        
-      } else {
-        // ==== MODO LEGACY (PRESERVAR COMPATIBILIDAD) ====
-        console.log(`[POST /trips] 🔄 Modo legacy - sin templateId`);
-        
-        // Para modo legacy, asumir que el frontend envía todos los datos necesarios
-        // Sin templateId, el sistema funciona con la lógica tradicional
-        
-        // Necesitamos obtener la ruta de alguna manera - puede ser que el frontend envíe routeId
-        // o que tengamos que usar un template por defecto
-        if (!tripData.routeId && !tripData.templateId) {
-          return res.status(400).json({
-            error: "Route or template required",
-            details: "Either routeId or templateId must be provided"
-          });
-        }
-        
-        let template = null;
-        let routeId = tripData.routeId;
-        
-        // Si hay templateId, úsalo para obtener la ruta
-        if (tripData.templateId) {
-          template = await storage.getRouteTemplate(tripData.templateId);
-          if (!template) {
-            return res.status(400).json({
-              error: "Template not found",
-              details: "The selected template does not exist"
-            });
-          }
-          routeId = template.routeId;
-        }
-        
-        // Obtener información de la ruta
-        const templateRoute = await storage.getRoute(routeId);
-        if (!templateRoute) {
-          return res.status(400).json({
-            error: "Route not found",
-            details: "The route associated with this request does not exist"
-          });
-        }
-        
-        // Calcular horarios de salida y llegada
-        let departureTime = "";
-        let arrivalTime = "";
-        
-        if (tripData.stopTimes && tripData.stopTimes.length > 0) {
-          const stopTimes = tripData.stopTimes;
-          if (stopTimes[0] && stopTimes[0].hour && stopTimes[0].minute && stopTimes[0].ampm) {
-            departureTime = `${stopTimes[0].hour.padStart(2, '0')}:${stopTimes[0].minute.padStart(2, '0')} ${stopTimes[0].ampm}`;
-          }
-          
-          if (stopTimes.length > 1) {
-            const lastStop = stopTimes[stopTimes.length - 1];
-            if (lastStop && lastStop.hour && lastStop.minute && lastStop.ampm) {
-              arrivalTime = `${lastStop.hour.padStart(2, '0')}:${lastStop.minute.padStart(2, '0')} ${lastStop.ampm}`;
-            }
-          }
-        }
-        
-        if (!departureTime) departureTime = "12:00 PM";
-        if (!arrivalTime) arrivalTime = "01:00 PM";
-        
-        // Obtener detalles de la ruta para generar todos los sub-viajes posibles
-        const route = await storage.getRouteWithSegments(routeId);
-        if (!route) {
-          return res.status(404).json({ error: "Route not found" });
-        }
-        
-        // Crear viajes para cada fecha en el rango
-        const startDate = new Date(tripData.startDate);
-        const endDate = new Date(tripData.endDate);
-        const createdTrips = [];
-        
-        // Generar todos los segmentos posibles (directos e intermedios)
-        const allSegments = generateAllPossibleSegments(route);
-        
-        // Agregar stopTimes si están disponibles
-        const tripDataWithStopTimes = tripData as any;
-        if (tripDataWithStopTimes.stopTimes && Array.isArray(tripDataWithStopTimes.stopTimes)) {
-          console.log("stopTimes recibidos en la petición:", tripDataWithStopTimes.stopTimes);
-          allSegments.forEach(segment => {
-            (segment as any).stopTimes = tripDataWithStopTimes.stopTimes;
-          });
-        }
+      }
+      
+      // Si no pudimos extraer los tiempos, usar valores predeterminados
+      if (!departureTime) departureTime = "12:00 PM";
+      if (!arrivalTime) arrivalTime = "01:00 PM";
+      
+      // Get the route details to generate all possible sub-trips
+      const route = await storage.getRouteWithSegments(template.routeId);
+      if (!route) {
+        return res.status(404).json({ error: "Route not found" });
+      }
+      
+      // Create a trip for each date in the range
+      const startDate = new Date(tripData.startDate);
+      const endDate = new Date(tripData.endDate);
+      const createdTrips = [];
+      
+      // Generate all possible segments (direct and intermediate segments) - filtering now done in frontend
+      const allSegments = generateAllPossibleSegments(route);
+      
+      // Si hay stopTimes en la petición, agregarlo a los segmentos para usar tiempos personalizados
+      const tripDataWithStopTimes = tripData as any;
+      if (tripDataWithStopTimes.stopTimes && Array.isArray(tripDataWithStopTimes.stopTimes)) {
+        console.log("stopTimes recibidos en la petición:", tripDataWithStopTimes.stopTimes);
+        // Añadir stopTimes a todos los segmentos para que estén disponibles en calculateSegmentTimes
+        allSegments.forEach(segment => {
+          (segment as any).stopTimes = tripDataWithStopTimes.stopTimes;
+        });
+      }
 
-        // Calcular tiempos de segmento basados en el tiempo total del viaje
-        const segmentTimes = calculateSegmentTimes(
-          allSegments, 
-          departureTime, 
-          arrivalTime,
-          route
+      // Calculate segment times based on total journey time
+      const segmentTimes = calculateSegmentTimes(
+        allSegments, 
+        departureTime, 
+        arrivalTime,
+        route
+      );
+      
+      // Detectar si el viaje cruza medianoche
+      const crossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
+      console.log(`\n=== ANÁLISIS DE CRUCE DE MEDIANOCHE ===`);
+      console.log(`Viaje ${departureTime} -> ${arrivalTime}: ${crossesMidnight ? 'SÍ cruza medianoche' : 'NO cruza medianoche'}`);
+      
+      // Si cruza medianoche, solo crear el viaje para la fecha de salida
+      const datesToProcess = [];
+      if (crossesMidnight) {
+        // Solo procesar la fecha de salida para viajes nocturnos
+        datesToProcess.push(new Date(startDate));
+        console.log(`⚠️ Viaje nocturno detectado: Solo se creará para fecha de salida ${startDate.toISOString().split('T')[0]}`);
+      } else {
+        // Procesar todas las fechas del rango para viajes diurnos
+        for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+          datesToProcess.push(new Date(date));
+        }
+        console.log(`✅ Viaje diurno: Se creará para ${datesToProcess.length} fechas`);
+      }
+      
+      // Iterar por cada fecha a procesar
+      for (const date of datesToProcess) {
+        const currentDateStr = date.toISOString().split('T')[0];
+        console.log(`\n=== CREANDO VIAJE PARA FECHA: ${currentDateStr} ===`);
+        
+        // Crear el array de combinaciones para trip_data de esta fecha específica
+        const tripCombinations = [];
+        
+        // Agregar el viaje principal (origen a destino)
+        const mainSegmentPrice = tripData.segmentPrices.find(
+          (sp: any) => sp.origin === route.origin && sp.destination === route.destination
         );
         
-        // Detectar si el viaje cruza medianoche
-        const crossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
-        console.log(`[POST /trips] Viaje ${departureTime} -> ${arrivalTime}: ${crossesMidnight ? 'cruza medianoche' : 'no cruza medianoche'}`);
+        // LÓGICA MEJORADA: Calcular departureDate real del viaje principal
+        const mainDepartureDate = calculateSegmentDate(date, departureTime);
         
-        // Determinar fechas a procesar
-        const datesToProcess = [];
-        if (crossesMidnight) {
-          datesToProcess.push(new Date(startDate));
-          console.log(`[POST /trips] ⚠️ Viaje nocturno: Solo creando para fecha de salida ${startDate.toISOString().split('T')[0]}`);
-        } else {
-          for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-            datesToProcess.push(new Date(date));
+        tripCombinations.push({
+          tripId: Date.now(),
+          origin: route.origin,
+          destination: route.destination,
+          departureDate: mainDepartureDate.toISOString().split('T')[0],
+          departureTime: departureTime.replace(/\s*\+\d+d$/, ''),
+          arrivalTime: arrivalTime.replace(/\s*\+\d+d$/, ''),
+          price: mainSegmentPrice?.price || 450,
+          availableSeats: tripData.capacity,
+          isMainTrip: true
+        });
+        
+        console.log(`Viaje principal: ${route.origin} → ${route.destination}`);
+        console.log(`  departureTime: ${departureTime} → departureDate: ${mainDepartureDate.toISOString().split('T')[0]}`);
+        
+        // Agregar solo los segmentos que vienen desde el frontend (ya filtrados por combinaciones habilitadas)
+        for (const segmentFromFrontend of tripData.segmentPrices || []) {
+          // Saltar el viaje principal ya que ya lo agregamos arriba
+          if (segmentFromFrontend.origin === route.origin && segmentFromFrontend.destination === route.destination) {
+            continue;
           }
-          console.log(`[POST /trips] ✅ Viaje diurno: Creando para ${datesToProcess.length} fechas`);
-        }
-        
-        // Crear viajes usando estructura legacy
-        for (const date of datesToProcess) {
-          const currentDateStr = date.toISOString().split('T')[0];
-          console.log(`[POST /trips] 🚀 Creando viaje legacy para fecha: ${currentDateStr}`);
           
-          // Crear combinaciones para trip_data de esta fecha específica
-          const tripCombinations = [];
+          console.log(`🎯 Procesando segmento habilitado desde frontend: ${segmentFromFrontend.origin} → ${segmentFromFrontend.destination}`);
           
-          // Agregar el viaje principal (origen a destino)
-          const mainSegmentPrice = tripData.segmentPrices.find(
-            (sp: any) => sp.origin === route.origin && sp.destination === route.destination
-          );
+          let segmentPrice = segmentFromFrontend.price || 0;
+          let segmentDepartureTime = segmentTimes[`${segmentFromFrontend.origin}-${segmentFromFrontend.destination}`]?.departureTime || departureTime;
+          let segmentArrivalTime = segmentTimes[`${segmentFromFrontend.origin}-${segmentFromFrontend.destination}`]?.arrivalTime || arrivalTime;
           
-          const mainDepartureDate = calculateSegmentDate(date, departureTime);
+          // LÓGICA MEJORADA: Calcular departureDate real del segmento basándose en su horario específico
+          const segmentDepartureDate = calculateSegmentDate(date, segmentDepartureTime);
           
           tripCombinations.push({
-            tripId: Date.now(),
-            origin: route.origin,
-            destination: route.destination,
-            departureDate: mainDepartureDate.toISOString().split('T')[0],
-            departureTime: departureTime.replace(/\s*\+\d+d$/, ''),
-            arrivalTime: arrivalTime.replace(/\s*\+\d+d$/, ''),
-            price: mainSegmentPrice?.price || 450,
+            tripId: Math.floor(Date.now() + Math.random() * 1000),
+            origin: segmentFromFrontend.origin,
+            destination: segmentFromFrontend.destination,
+            departureDate: segmentDepartureDate.toISOString().split('T')[0],
+            departureTime: segmentDepartureTime.replace(/\s*\+\d+d$/, ''),
+            arrivalTime: segmentArrivalTime.replace(/\s*\+\d+d$/, ''),
+            price: segmentPrice,
             availableSeats: tripData.capacity,
-            isMainTrip: true
+            isMainTrip: false
           });
           
-          console.log(`[POST /trips] Viaje principal: ${route.origin} → ${route.destination}`);
-          
-          // Agregar solo los segmentos que vienen desde el frontend
-          for (const segmentFromFrontend of tripData.segmentPrices || []) {
-            if (segmentFromFrontend.origin === route.origin && segmentFromFrontend.destination === route.destination) {
-              continue;
-            }
-            
-            console.log(`[POST /trips] Procesando segmento: ${segmentFromFrontend.origin} → ${segmentFromFrontend.destination}`);
-            
-            let segmentPrice = segmentFromFrontend.price || 0;
-            let segmentDepartureTime = segmentTimes[`${segmentFromFrontend.origin}-${segmentFromFrontend.destination}`]?.departureTime || departureTime;
-            let segmentArrivalTime = segmentTimes[`${segmentFromFrontend.origin}-${segmentFromFrontend.destination}`]?.arrivalTime || arrivalTime;
-            
-            const segmentDepartureDate = calculateSegmentDate(date, segmentDepartureTime);
-            
-            tripCombinations.push({
-              tripId: Math.floor(Date.now() + Math.random() * 1000),
-              origin: segmentFromFrontend.origin,
-              destination: segmentFromFrontend.destination,
-              departureDate: segmentDepartureDate.toISOString().split('T')[0],
-              departureTime: segmentDepartureTime.replace(/\s*\+\d+d$/, ''),
-              arrivalTime: segmentArrivalTime.replace(/\s*\+\d+d$/, ''),
-              price: segmentPrice,
-              availableSeats: tripData.capacity,
-              isMainTrip: false
-            });
-          }
-          
-          console.log(`[POST /trips] Creando viaje legacy para ${currentDateStr} con ${tripCombinations.length} segmentos`);
-          
-          const legacyTripToCreate = {
-            tripData: tripCombinations,
-            capacity: tripData.capacity,
-            vehicleId: null,
-            driverId: null,
-            visibility: tripData.visibility || "publicado",
-            routeId: routeId,
-            companyId: companyId
-          };
-          
-          const legacyTrip = await storage.createTrip(legacyTripToCreate);
-          console.log(`[POST /trips] ✅ Viaje legacy creado con ID: ${legacyTrip.id}`);
-          createdTrips.push(legacyTrip);
+          console.log(`Segmento: ${segmentFromFrontend.origin} → ${segmentFromFrontend.destination}`);
+          console.log(`  departureTime: ${segmentDepartureTime} → departureDate: ${segmentDepartureDate.toISOString().split('T')[0]}`);
         }
         
-        res.status(201).json(createdTrips);
+        console.log(`\nCreando viaje para ${currentDateStr} con ${tripCombinations.length} segmentos`);
+        console.log("DEBUG: tripCombinations:", JSON.stringify(tripCombinations, null, 2));
+        
+        const mainTripToCreate = {
+          tripData: tripCombinations,
+          capacity: tripData.capacity,
+          vehicleId: null,
+          driverId: null,
+          visibility: tripData.visibility || "publicado",
+          routeId: template.routeId, // CORREGIDO: Usar routeId del template, no de tripData
+          companyId: companyId
+        };
+        
+        const mainTrip = await storage.createTrip(mainTripToCreate);
+        console.log(`✅ Viaje creado para ${currentDateStr} con ID: ${mainTrip.id}`);
+        createdTrips.push(mainTrip);
       }
+      
+      res.status(201).json(createdTrips);
     } catch (error) {
       console.error("Error creating trips:", error);
       res.status(500).json({ error: "Failed to create trip" });
