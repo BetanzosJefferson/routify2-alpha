@@ -343,7 +343,30 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createTrip(trip: InsertTrip): Promise<Trip> {
+    console.log(`[DB Storage] 🚀 Creando viaje - Tipo: ${trip.templateId ? 'Template-based' : 'Legacy'}`);
+    
+    // Log de datos para debugging
+    if (trip.templateId) {
+      console.log(`[DB Storage] 📋 Datos template-based:`, {
+        templateId: trip.templateId,
+        departureDate: trip.departureDate,
+        departureTime: trip.departureTime,
+        seatOccupancy: trip.seatOccupancy,
+        capacity: trip.capacity
+      });
+    } else {
+      console.log(`[DB Storage] 📋 Datos legacy:`, {
+        tripDataLength: Array.isArray(trip.tripData) ? trip.tripData.length : 'N/A',
+        capacity: trip.capacity,
+        routeId: trip.routeId
+      });
+    }
+    
+    // Insertar viaje en la base de datos
     const [newTrip] = await db.insert(schema.trips).values(trip).returning();
+    
+    console.log(`[DB Storage] ✅ Viaje creado exitosamente con ID: ${newTrip.id}`);
+    
     return newTrip;
   }
   
@@ -625,12 +648,21 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // Aplicar filtro de fecha o rango de fechas usando JSONB
+    // PASO 7: FILTRO DE FECHA HÍBRIDO (legacy + template-based)
     if (params.dateRange && params.dateRange.length > 0) {
-      console.log(`[searchTrips] Filtro por rango de fechas:`, params.dateRange);
+      console.log(`[searchTrips] Filtro híbrido por rango de fechas:`, params.dateRange);
       
       const dateConditions = params.dateRange.map(date => {
-        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
+        // Combinar búsqueda en tripData (legacy) Y departure_date (template-based)
+        return or(
+          // Viajes legacy: Buscar en tripData JSON
+          sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
+            WHERE segment->>'departureDate' = ${date}
+          )`,
+          // Viajes template-based: Buscar en departure_date
+          eq(schema.trips.departureDate, date)
+        );
       });
       
       if (dateConditions.length === 1) {
@@ -639,8 +671,19 @@ export class DatabaseStorage implements IStorage {
         condiciones.push(or(...dateConditions));
       }
     } else if (params.date) {
-      console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
-      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
+      console.log(`[searchTrips] Filtro híbrido de fecha individual: ${params.date}`);
+      // Combinar búsqueda en tripData (legacy) Y departure_date (template-based)
+      condiciones.push(
+        or(
+          // Viajes legacy: Buscar en tripData JSON
+          sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
+            WHERE segment->>'departureDate' = ${params.date}
+          )`,
+          // Viajes template-based: Buscar en departure_date
+          eq(schema.trips.departureDate, params.date)
+        )
+      );
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -741,14 +784,64 @@ export class DatabaseStorage implements IStorage {
       const route = routeMap.get(trip.routeId);
       if (!route) continue;
       
-      // Parse tripData JSON array
+      // PASO 7: MANEJO HÍBRIDO DE VIAJES (legacy vs template-based)
+      const isTemplateBased = trip.templateId != null;
+      console.log(`[searchTrips] Trip ${trip.id} - Tipo: ${isTemplateBased ? 'Template-based' : 'Legacy'}`);
+      
       let tripDataArray = [];
-      try {
-        tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
-        console.log(`[searchTrips] Trip ${trip.id} has ${tripDataArray.length} segments in tripData`);
-      } catch (error) {
-        console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
-        continue;
+      
+      if (isTemplateBased) {
+        // VIAJES TEMPLATE-BASED: Generar segmentos dinámicamente
+        console.log(`[searchTrips] Generando segmentos dinámicamente para trip ${trip.id} template-based`);
+        
+        try {
+          // Importar funciones de utilidad para generar segmentos
+          const { generateSegmentsFromTemplate } = await import('./utils/trip-utils.js');
+          
+          // Obtener template
+          const template = await this.getRouteTemplate(trip.templateId);
+          if (!template) {
+            console.warn(`[searchTrips] Template ${trip.templateId} no encontrado para trip ${trip.id}`);
+            continue;
+          }
+          
+          // Generar segmentos dinámicamente
+          const generatedSegments = await generateSegmentsFromTemplate(trip, template, route);
+          
+          // Convertir segmentos generados al formato esperado por el frontend
+          tripDataArray = generatedSegments.map((segment, index) => ({
+            tripId: `${trip.id}_${index}`,
+            origin: segment.origin,
+            destination: segment.destination,
+            departureDate: segment.departureDate,
+            departureTime: segment.departureTime,
+            arrivalTime: segment.arrivalTime,
+            price: segment.price,
+            availableSeats: segment.availableSeats,
+            isMainTrip: segment.isMainTrip
+          }));
+          
+          console.log(`[searchTrips] Trip ${trip.id} template-based generó ${tripDataArray.length} segmentos dinámicos`);
+          
+        } catch (error) {
+          console.error(`[searchTrips] Error generando segmentos para template trip ${trip.id}:`, error);
+          continue;
+        }
+        
+      } else {
+        // VIAJES LEGACY: Usar tripData JSON existente
+        try {
+          if (!trip.tripData) {
+            console.warn(`[searchTrips] Trip legacy ${trip.id} no tiene tripData`);
+            continue;
+          }
+          
+          tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+          console.log(`[searchTrips] Trip ${trip.id} legacy tiene ${tripDataArray.length} segmentos en tripData`);
+        } catch (error) {
+          console.warn(`[searchTrips] Error parsing tripData para trip legacy ${trip.id}:`, error);
+          continue;
+        }
       }
       
       // Buscar información de la compañía si existe
