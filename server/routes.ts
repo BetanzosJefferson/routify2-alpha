@@ -2832,7 +2832,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[PUT /reservations/${id}] Creando transacción para pago restante de $${remainingAmount}`);
               
               // Extraer información del viaje desde tripDetails
-              const { recordId, tripId } = originalReservation.tripDetails as { recordId: number, tripId: string };
+              const { recordId: rawRecordId, tripId } = originalReservation.tripDetails as { recordId: number | string, tripId: string };
+              
+              // Extraer el recordId numérico si es string (formato "85_118" -> 85)
+              let recordId: number | undefined;
+              if (rawRecordId) {
+                if (typeof rawRecordId === 'string') {
+                  if (rawRecordId.includes('_')) {
+                    recordId = parseInt(rawRecordId.split('_')[0]);
+                  } else {
+                    recordId = parseInt(rawRecordId);
+                  }
+                } else {
+                  recordId = rawRecordId;
+                }
+              }
               
               if (!recordId) {
                 console.log(`[PUT /reservations/${id}] No se encontró recordId en tripDetails`);
@@ -2979,10 +2993,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Extraer información del viaje desde tripDetails
-      const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
+      const { recordId: rawRecordId, tripId } = reservation.tripDetails as { recordId: number | string, tripId: string };
       
-      if (!recordId || !tripId) {
+      if (!rawRecordId || !tripId) {
         return res.status(400).json({ error: "Invalid trip details in reservation" });
+      }
+      
+      // Extraer el recordId numérico si es string (formato "85_118" -> 85)
+      let recordId: number;
+      if (typeof rawRecordId === 'string') {
+        if (rawRecordId.includes('_')) {
+          recordId = parseInt(rawRecordId.split('_')[0]);
+        } else {
+          recordId = parseInt(rawRecordId);
+        }
+      } else {
+        recordId = rawRecordId;
       }
       
       // Obtener el viaje asociado
@@ -3074,7 +3100,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         try {
           // Actualizar todos los viajes afectados usando la nueva función con tripDetails
-          const { recordId, tripId } = reservation.tripDetails as { recordId: number, tripId: string };
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
           console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
@@ -4151,8 +4176,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Extraer el recordId numérico si es string (formato "85_118" -> 85)
+      let numericRecordId: number;
+      if (typeof tripDetails.recordId === 'string') {
+        if (tripDetails.recordId.includes('_')) {
+          numericRecordId = parseInt(tripDetails.recordId.split('_')[0]);
+        } else {
+          numericRecordId = parseInt(tripDetails.recordId);
+        }
+      } else {
+        numericRecordId = tripDetails.recordId;
+      }
+      
       // Verificar que el viaje exista y sea de la misma compañía que el comisionista  
-      const trip = await storage.getTrip(tripDetails.recordId);
+      const trip = await storage.getTrip(numericRecordId);
       if (!trip) {
         return res.status(404).json({ message: "Viaje no encontrado" });
       }
@@ -4209,7 +4246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[Solicitud Reservación] Notificando a ${usersToNotify.length} usuarios de roles: ${approvalRoles.join(', ')}`);
 
         // Obtener información del viaje para la notificación
-        const tripInfo = await storage.getTripWithRouteInfo(parseInt(tripDetails.recordId.toString()));
+        const tripInfo = await storage.getTripWithRouteInfo(numericRecordId);
         const tripDescription = tripInfo ? 
           `${tripInfo.route?.origin} → ${tripInfo.route?.destination}` : 
           `Viaje ID: ${tripDetails.recordId}`;
