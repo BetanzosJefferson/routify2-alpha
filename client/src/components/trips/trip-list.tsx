@@ -140,8 +140,8 @@ export function TripList() {
       // Siempre incluir isSubTrip para optimización
       if (searchParams.isSubTrip) params.append('isSubTrip', searchParams.isSubTrip);
       
-      // Solo incluir fecha si no es la fecha de hoy por defecto
-      if (searchParams.date && searchParams.date !== today) {
+      // Incluir fecha si está especificada
+      if (searchParams.date) {
         params.append('date', searchParams.date);
       }
       
@@ -478,6 +478,9 @@ export function TripList() {
                   <div className="flex flex-col">
                     <div className="text-lg font-bold">
                       {formatTripTime((trip as any).departureTime, true, 'pretty')}
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium">
+                      {(trip as any).departureDate ? format(new Date((trip as any).departureDate), 'dd/MM/yyyy') : 'Fecha no disponible'}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
                       {(trip as any).origin || trip.route?.origin || 'Origen no disponible'}

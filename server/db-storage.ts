@@ -631,7 +631,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`[searchTrips] Filtro por rango de fechas:`, params.dateRange);
       
       const dateConditions = params.dateRange.map(date => {
-        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
+        return sql`${schema.trips.tripData}->0->>'departureDate' = ${date}`;
       });
       
       if (dateConditions.length === 1) {
@@ -641,7 +641,7 @@ export class DatabaseStorage implements IStorage {
       }
     } else if (params.date) {
       console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
-      condiciones.push(sql`DATE(${schema.trips.tripData}->>'departureDate') = ${params.date}`);
+      condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
