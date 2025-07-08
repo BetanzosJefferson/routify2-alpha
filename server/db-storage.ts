@@ -1274,9 +1274,21 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Obtener el trip record usando recordId desde tripDetails
-      const tripRecord = await this.getTrip(tripDetails.recordId);
+      // Extraer el recordId numérico si es string (formato "85_118" -> 85)
+      let numericRecordId: number;
+      if (typeof tripDetails.recordId === 'string') {
+        if (tripDetails.recordId.includes('_')) {
+          numericRecordId = parseInt(tripDetails.recordId.split('_')[0]);
+        } else {
+          numericRecordId = parseInt(tripDetails.recordId);
+        }
+      } else {
+        numericRecordId = tripDetails.recordId;
+      }
+      
+      const tripRecord = await this.getTrip(numericRecordId);
       if (!tripRecord) {
-        console.warn(`Trip record ${tripDetails.recordId} not found for reservation ${reservation.id}`);
+        console.warn(`Trip record ${numericRecordId} (original: ${tripDetails.recordId}) not found for reservation ${reservation.id}`);
         continue;
       }
       
@@ -1467,9 +1479,21 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Obtener el trip record usando recordId desde tripDetails
-    const tripRecord = await this.getTrip(tripDetails.recordId);
+    // Extraer el recordId numérico si es string (formato "85_118" -> 85)
+    let numericRecordId: number;
+    if (typeof tripDetails.recordId === 'string') {
+      if (tripDetails.recordId.includes('_')) {
+        numericRecordId = parseInt(tripDetails.recordId.split('_')[0]);
+      } else {
+        numericRecordId = parseInt(tripDetails.recordId);
+      }
+    } else {
+      numericRecordId = tripDetails.recordId;
+    }
+    
+    const tripRecord = await this.getTrip(numericRecordId);
     if (!tripRecord) {
-      console.warn(`Trip record ${tripDetails.recordId} not found for reservation ${reservation.id}`);
+      console.warn(`Trip record ${numericRecordId} (original: ${tripDetails.recordId}) not found for reservation ${reservation.id}`);
       return undefined;
     }
     
