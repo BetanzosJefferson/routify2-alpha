@@ -1325,22 +1325,71 @@ export class DatabaseStorage implements IStorage {
         continue;
       }
       
-      // Parse tripData JSON array para encontrar el segmento específico
-      let tripDataArray = [];
-      try {
-        tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
-      } catch (error) {
-        console.warn(`Error parsing tripData for trip ${tripRecord.id}:`, error);
-        continue;
-      }
+      let tripSegment = null;
       
-      // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
-      const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-      const tripSegment = tripDataArray[segmentIndex];
-      
-      if (!tripSegment) {
-        console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
-        continue;
+      // MANEJO HÍBRIDO: Template-based vs Legacy trips
+      if (tripRecord.templateId) {
+        // VIAJE TEMPLATE-BASED: Generar segmento dinámicamente
+        console.log(`Processing template-based trip ${tripRecord.id} with template ${tripRecord.templateId}`);
+        
+        try {
+          // Obtener la plantilla para generar segmentos
+          const template = await this.getRouteTemplate(tripRecord.templateId);
+          if (!template) {
+            console.warn(`Template ${tripRecord.templateId} not found for trip ${tripRecord.id}`);
+            continue;
+          }
+          
+          // Obtener información de la ruta
+          const route = await this.getRoute(tripRecord.routeId);
+          if (!route) {
+            console.warn(`Route ${tripRecord.routeId} not found for template trip ${tripRecord.id}`);
+            continue;
+          }
+          
+          // Generar segmentos dinámicamente
+          const { generateSegmentsFromTemplate } = await import('./utils/trip-utils.js');
+          const segments = await generateSegmentsFromTemplate(tripRecord, template, route);
+          
+          // Extraer el índice del segmento desde tripId (formato: "recordId_segmentIndex")
+          const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+          tripSegment = segments[segmentIndex];
+          
+          if (!tripSegment) {
+            console.warn(`Generated segment ${segmentIndex} not found for template trip ${tripRecord.id}`);
+            continue;
+          }
+          
+          console.log(`Generated segment for template trip: ${tripSegment.origin} → ${tripSegment.destination}`);
+          
+        } catch (error) {
+          console.error(`Error generating segments for template trip ${tripRecord.id}:`, error);
+          continue;
+        }
+        
+      } else {
+        // VIAJE LEGACY: Usar tripData JSON existente
+        let tripDataArray = [];
+        try {
+          if (!tripRecord.tripData) {
+            console.warn(`No tripData found for legacy trip ${tripRecord.id}`);
+            continue;
+          }
+          
+          tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
+        } catch (error) {
+          console.warn(`Error parsing tripData for trip ${tripRecord.id}:`, error);
+          continue;
+        }
+        
+        // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
+        const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+        tripSegment = tripDataArray[segmentIndex];
+        
+        if (!tripSegment) {
+          console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
+          continue;
+        }
       }
       
       // Obtener información de la ruta
