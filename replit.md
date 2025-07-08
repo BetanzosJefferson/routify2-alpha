@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 8, 2025** - FINAL FIX: Resolved critical date display and filtering issues:
+  - **DATE DISPLAY CORRECTED**: Fixed timezone conversion issue causing incorrect date display in frontend
+  - Replaced date-fns format with simple string manipulation to avoid timezone confusion (YYYY-MM-DD → DD/MM/YYYY)
+  - **BACKEND DATE FILTERING**: Fixed SQL query to use correct JSONB path `trip_data->0->>'departureDate'` instead of invalid path
+  - **DEFAULT BEHAVIOR RESTORED**: Trip list now shows only trips for current date by default (includes `date: today` in initial params)
+  - **SEARCH FUNCTIONALITY**: Date-specific searches now work correctly (9 de julio shows correct trip, 8 de julio shows correct trip)
+  - **PERFORMANCE MAINTAINED**: Still loads only main trips by default with `isSubTrip: false` for fast initial load
+  - **USER EXPERIENCE**: Users see correct dates in blue text below departure time in trip cards
+  - All date-related bugs resolved: frontend dates match backend data, filtering works perfectly
+
 - **July 8, 2025** - Optimized trip loading performance and implemented direct combination control:
   - **MAJOR PERFORMANCE IMPROVEMENT**: Modified trip list to load only main trips by default (isSubTrip: false)
   - Eliminated loading of 498+ trip combinations on initial page load, reducing to only 3-5 main trips

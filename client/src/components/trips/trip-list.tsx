@@ -113,7 +113,7 @@ export function TripList() {
 
   // Initialize searchParams. Default to isSubTrip: 'false' for initial load.
   // This will be conditionally removed if a specific search is performed.
-  const [searchParams, setSearchParams] = useState<SearchParams>({ isSubTrip: 'false' });
+  const [searchParams, setSearchParams] = useState<SearchParams>({ date: today, isSubTrip: 'false' });
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -480,7 +480,7 @@ export function TripList() {
                       {formatTripTime((trip as any).departureTime, true, 'pretty')}
                     </div>
                     <div className="text-xs text-blue-600 font-medium">
-                      {(trip as any).departureDate ? format(new Date((trip as any).departureDate), 'dd/MM/yyyy') : 'Fecha no disponible'}
+                      {(trip as any).departureDate ? (trip as any).departureDate.split('-').reverse().join('/') : 'Fecha no disponible'}
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
                       {(trip as any).origin || trip.route?.origin || 'Origen no disponible'}
