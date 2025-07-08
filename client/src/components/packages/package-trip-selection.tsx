@@ -57,70 +57,41 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [searchOrigin, setSearchOrigin] = useState("");
   const [searchDestination, setSearchDestination] = useState("");
   const [searchCompany, setSearchCompany] = useState("");
+  
+  // Estado para controlar si mostrar viajes
+  const [shouldLoadTrips, setShouldLoadTrips] = useState(false);
 
-  // Construir la URL de búsqueda con parámetros
-  const buildSearchUrl = () => {
-    const params = new URLSearchParams();
-    if (searchDate) params.append("date", searchDate);
-    if (searchOrigin.trim()) params.append("origin", searchOrigin.trim());
-    if (searchDestination.trim()) params.append("destination", searchDestination.trim());
-    // Forzar búsqueda expandida para obtener todos los segmentos
-    params.append("optimizedResponse", "false");
-    return `/api/trips?${params.toString()}`;
+  // Función para determinar si debe cargar viajes
+  const shouldFetchTrips = () => {
+    // Solo cargar si el usuario ha hecho una búsqueda específica
+    return shouldLoadTrips && (searchOrigin.trim() || searchDestination.trim());
   };
 
-  // Query para obtener viajes - usando enfoque simplificado
+  // Query para obtener viajes - solo se ejecuta cuando es necesario
   const { data: rawTrips = [], isLoading, error, refetch } = useQuery({
     queryKey: ["package-trips", searchDate, searchOrigin, searchDestination, searchCompany],
     queryFn: async () => {
-      // Primero intentar obtener todos los viajes sin filtros complejos
-      console.log(`[PackageTripSelection] Fetching all trips without complex filters`);
+      console.log(`[PackageTripSelection] Fetching trips with filters - Origin: ${searchOrigin}, Destination: ${searchDestination}`);
       
-      const response = await fetch('/api/trips?optimizedResponse=false');
+      // Construir parámetros de búsqueda
+      const params = new URLSearchParams();
+      if (searchDate) params.append("date", searchDate);
+      if (searchOrigin.trim()) params.append("origin", searchOrigin.trim());
+      if (searchDestination.trim()) params.append("destination", searchDestination.trim());
+      // Obtener todos los segmentos cuando se busca específicamente
+      params.append("optimizedResponse", "false");
+      
+      const response = await fetch(`/api/trips?${params.toString()}`);
       if (!response.ok) {
         throw new Error(`Error fetching trips: ${response.status}`);
       }
       
       const allTrips = await response.json();
-      console.log(`[PackageTripSelection] Received ${allTrips.length} trip segments`);
+      console.log(`[PackageTripSelection] Received ${allTrips.length} trip segments for search`);
       
-      // Filtrar en el frontend
-      let filteredTrips = allTrips;
-      
-      // Filtrar por fecha si se especifica
-      if (searchDate) {
-        filteredTrips = filteredTrips.filter((trip: any) => {
-          return trip.departureDate === searchDate;
-        });
-        console.log(`[PackageTripSelection] After date filter (${searchDate}): ${filteredTrips.length} trips`);
-      }
-      
-      // Filtrar por origen si se especifica
-      if (searchOrigin.trim()) {
-        filteredTrips = filteredTrips.filter((trip: any) => {
-          return trip.origin?.toLowerCase().includes(searchOrigin.toLowerCase());
-        });
-        console.log(`[PackageTripSelection] After origin filter (${searchOrigin}): ${filteredTrips.length} trips`);
-      }
-      
-      // Filtrar por destino si se especifica
-      if (searchDestination.trim()) {
-        filteredTrips = filteredTrips.filter((trip: any) => {
-          return trip.destination?.toLowerCase().includes(searchDestination.toLowerCase());
-        });
-        console.log(`[PackageTripSelection] After destination filter (${searchDestination}): ${filteredTrips.length} trips`);
-      }
-      
-      // Filtrar por empresa si se especifica (solo para taquilla)
-      if (searchCompany.trim()) {
-        filteredTrips = filteredTrips.filter((trip: any) => {
-          return trip.companyId?.toLowerCase().includes(searchCompany.toLowerCase());
-        });
-        console.log(`[PackageTripSelection] After company filter (${searchCompany}): ${filteredTrips.length} trips`);
-      }
-      
-      return filteredTrips;
+      return allTrips;
     },
+    enabled: shouldFetchTrips(), // Solo ejecutar la query cuando sea necesario
     staleTime: 30000, // 30 segundos
   });
 
@@ -212,7 +183,12 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       origin: searchOrigin,
       destination: searchDestination
     });
-    refetch();
+    
+    // Activar la búsqueda solo si hay filtros de origen o destino
+    if (searchOrigin.trim() || searchDestination.trim()) {
+      setShouldLoadTrips(true);
+      refetch();
+    }
   };
 
   // Limpiar filtros
@@ -220,6 +196,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     setSearchOrigin("");
     setSearchDestination("");
     setSearchCompany("");
+    setShouldLoadTrips(false); // Desactivar la búsqueda
     // Mantener la fecha actual
   };
 
@@ -339,7 +316,18 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       {/* Segments List */}
       {!isLoading && !error && (
         <div className="space-y-4">
-          {availableSegments.length === 0 ? (
+          {!shouldLoadTrips ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center space-y-2">
+                  <p className="text-lg font-medium">Para ver viajes disponibles</p>
+                  <p className="text-muted-foreground">
+                    Especifica el origen y/o destino en los filtros y presiona "Buscar Viajes"
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : availableSegments.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
