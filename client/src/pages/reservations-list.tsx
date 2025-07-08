@@ -9,8 +9,10 @@ import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDo
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
+import { useQueryClient } from "@tanstack/react-query";
 
 function ReservationsListContent() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
@@ -33,17 +35,23 @@ function ReservationsListContent() {
   // Log para depuración
   console.log(`[Reservaciones] Fecha búsqueda: ${searchDate}, Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
   
-  // Función para realizar búsqueda
-  const handleSearch = () => {
+  // Función para realizar búsqueda con invalidación de cache
+  const handleSearch = async () => {
     console.log(`[Reservaciones] Iniciando búsqueda para fecha: ${selectedDate}`);
+    
+    // Invalidar cache de reservaciones para forzar nueva consulta
+    await queryClient.invalidateQueries({
+      queryKey: ["/api/reservations"]
+    });
+    
     setSearchDate(selectedDate);
     setCurrentPage(1);
   };
   
   // Búsqueda con Enter
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      await handleSearch();
     }
   };
 
@@ -252,10 +260,10 @@ function ReservationsListContent() {
               <Button
                 onClick={handleSearch}
                 size="sm"
-                className="whitespace-nowrap"
+                className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
                 disabled={isLoading}
               >
-                {isLoading ? "Buscando..." : "Buscar"}
+                {isLoading ? "Buscando..." : "🔍 Buscar"}
               </Button>
             </div>
           </div>
