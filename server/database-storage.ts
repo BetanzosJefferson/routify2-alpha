@@ -142,14 +142,7 @@ export class DatabaseStorage implements IStorage {
     const owners = await db
       .select()
       .from(schema.users)
-      .where(
-        or(
-          eq(schema.users.role, schema.UserRole.OWNER),
-          eq(schema.users.role, 'dueño'),
-          eq(schema.users.role, 'DUEÑO'),
-          eq(schema.users.role, 'Dueño')
-        )
-      );
+      .where(eq(schema.users.role, schema.UserRole.OWNER));
     
     // Crear un mapa de compañía -> datos del dueño para buscar rápidamente
     const companyMap = new Map();
@@ -276,12 +269,7 @@ export class DatabaseStorage implements IStorage {
         .from(schema.users)
         .where(
           and(
-            or(
-              eq(schema.users.role, schema.UserRole.OWNER),
-              eq(schema.users.role, 'dueño'),
-              eq(schema.users.role, 'DUEÑO'),
-              eq(schema.users.role, 'Dueño')
-            ),
+            eq(schema.users.role, schema.UserRole.OWNER),
             or(
               eq(schema.users.companyId, trip.companyId),
               eq(schema.users.company, trip.companyId)
@@ -509,34 +497,18 @@ export class DatabaseStorage implements IStorage {
     const owners = await db
       .select()
       .from(schema.users)
-      .where(
-        or(
-          eq(schema.users.role, schema.UserRole.OWNER),
-          eq(schema.users.role, 'dueño'),
-          eq(schema.users.role, 'DUEÑO'),
-          eq(schema.users.role, 'Dueño')
-        )
-      );
+      .where(eq(schema.users.role, schema.UserRole.OWNER));
     
     // Crear un mapa de compañía -> datos del dueño para búsqueda rápida
     const companyMap = new Map();
-    console.log(`[searchTrips] Procesando ${owners.length} propietarios para construir mapa de compañías`);
     owners.forEach(owner => {
       const companyId = owner.companyId || owner.company;
       if (companyId) {
-        console.log(`[searchTrips] Mapeando compañía "${companyId}": nombre="${owner.company}", logo=${owner.profilePicture ? 'SÍ' : 'NO'}`);
         companyMap.set(companyId, {
           companyName: owner.company,
           companyLogo: owner.profilePicture
         });
-      } else {
-        console.log(`[searchTrips] Propietario sin companyId: ${owner.firstName} ${owner.lastName}`);
       }
-    });
-    
-    console.log(`[searchTrips] Mapa de compañías construido con ${companyMap.size} entradas`);
-    companyMap.forEach((data, id) => {
-      console.log(`[searchTrips] Compañía "${id}": ${data.companyName}, Logo: ${data.companyLogo ? 'SÍ' : 'NO'}`);
     });
     
     // Create map for quick lookups
@@ -592,13 +564,8 @@ export class DatabaseStorage implements IStorage {
       
       // Buscar información de la compañía si existe
       let companyData = { companyName: undefined, companyLogo: undefined };
-      console.log(`[searchTrips] Buscando datos de compañía para viaje ${trip.id} con companyId: "${trip.companyId}"`);
-      console.log(`[searchTrips] Claves disponibles en companyMap:`, Array.from(companyMap.keys()));
       if (trip.companyId && companyMap.has(trip.companyId)) {
         companyData = companyMap.get(trip.companyId);
-        console.log(`[searchTrips] ✅ Datos de compañía encontrados:`, companyData);
-      } else {
-        console.log(`[searchTrips] ❌ No se encontraron datos de compañía para "${trip.companyId}"`);
       }
       
       // Buscar vehículo asignado
@@ -652,7 +619,7 @@ export class DatabaseStorage implements IStorage {
             },
             numStops: route.stops.length,
             companyName: companyData.companyName,
-            companyLogo: companyData.companyLogo,
+            // NO incluir companyLogo para reducir payload
             assignedVehicle: assignedVehicle ? {
               id: assignedVehicle.id,
               model: assignedVehicle.model,
