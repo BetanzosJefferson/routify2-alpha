@@ -125,68 +125,48 @@ export function TripList() {
   const [date, setDate] = useState(today);
   const [seats, setSeats] = useState("");
 
-  // Query para traer TODOS los viajes de la base de datos sin filtros
+  // Query para traer viajes usando los parámetros de búsqueda
   const { data: trips, isLoading, isError } = useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", "all"],
+    queryKey: ["/api/trips", searchParams],
     queryFn: async () => {
-      // Fetch ALL trips without any filters
-      const response = await fetch(`/api/trips`);
+      // Construir URL con parámetros de búsqueda
+      const params = new URLSearchParams();
+      
+      if (searchParams.origin) params.append('origin', searchParams.origin);
+      if (searchParams.destination) params.append('destination', searchParams.destination);
+      if (searchParams.date) params.append('date', searchParams.date);
+      if (searchParams.seats) params.append('seats', searchParams.seats.toString());
+      if (searchParams.isSubTrip) params.append('isSubTrip', searchParams.isSubTrip);
+      
+      const url = `/api/trips${params.toString() ? '?' + params.toString() : ''}`;
+      console.log('TripList: Consultando URL:', url);
+      
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch trips");
       return await response.json();
     },
   });
 
-  // Extract unique locations for autocomplete
-  const locationOptions = useMemo(() => {
-    if (!trips) return [];
-    // Extract locations from ALL fetched trips, as a user might search for a subtrip origin/destination
-    return extractLocationsFromTrips(trips);
-  }, [trips]);
+  // Query separada para obtener todas las ubicaciones para autocompletado
+  const { data: allTripsForLocations } = useQuery<TripWithRouteInfo[]>({
+    queryKey: ["/api/trips", "locations"],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips`);
+      if (!response.ok) throw new Error("Failed to fetch trips for locations");
+      return await response.json();
+    },
+  });
 
-  // Filter trips based on search parameters
-  const filteredTrips = useMemo(() => {
-    if (!trips) return [];
-    
-    // If no search parameters, return all trips
-    if (Object.keys(searchParams).length === 0) {
-      return trips;
-    }
-    
-    return trips.filter((trip: any) => {
-      // Filter by origin
-      if (searchParams.origin) {
-        const tripOrigin = trip.origin || trip.route?.origin || '';
-        if (!tripOrigin.toLowerCase().includes(searchParams.origin.toLowerCase())) {
-          return false;
-        }
-      }
-      
-      // Filter by destination
-      if (searchParams.destination) {
-        const tripDestination = trip.destination || trip.route?.destination || '';
-        if (!tripDestination.toLowerCase().includes(searchParams.destination.toLowerCase())) {
-          return false;
-        }
-      }
-      
-      // Filter by date
-      if (searchParams.date) {
-        const tripDate = trip.date || trip.departureDate;
-        if (tripDate !== searchParams.date) {
-          return false;
-        }
-      }
-      
-      // Filter by available seats
-      if (searchParams.seats) {
-        if ((trip.availableSeats || 0) < searchParams.seats) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  }, [trips, searchParams]);
+  const locationOptions = useMemo(() => {
+    if (!allTripsForLocations) return [];
+    return extractLocationsFromTrips(allTripsForLocations);
+  }, [allTripsForLocations]);
+
+  // Los viajes ya vienen filtrados del backend, no necesitamos filtrar en el frontend
+  const filteredTrips = trips || [];
+  
+  console.log('TripList: Datos recibidos del backend:', filteredTrips);
+  console.log('TripList: Número de viajes:', filteredTrips.length);
 
   // Handler for search button click
   const handleSearch = () => {
