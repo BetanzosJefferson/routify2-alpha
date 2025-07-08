@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 8, 2025** - Optimized trip loading performance and implemented direct combination control:
+  - **MAJOR PERFORMANCE IMPROVEMENT**: Modified trip list to load only main trips by default (isSubTrip: false)
+  - Eliminated loading of 498+ trip combinations on initial page load, reducing to only 3-5 main trips
+  - Implemented direct combination control in "Publicar Viaje" form with enable/disable checkboxes
+  - Added visual information banner explaining default behavior (main trips only)
+  - Modified search logic: specific origin/destination searches now load all combinations as needed
+  - Simplified backend generateAllPossibleSegments() function, removing complex template filtering
+  - Backend now respects frontend-filtered segmentPrices instead of generating all possibilities
+  - Added isSubTrip parameter filtering in /api/trips endpoint for proper main/sub trip distinction
+  - Improved user experience: fast initial load + targeted searches when needed
+
 - **July 7, 2025** - Enhanced route template pricing system with city-based grouping and selective enablement:
   - **MAJOR IMPROVEMENT**: Template pricing now groups by cities instead of individual stop combinations
   - Implemented same logic as "Publicar Viaje" where users configure prices between main cities (e.g. Acapulco→Chilpancingo)

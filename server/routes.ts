@@ -715,7 +715,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Parámetros de búsqueda desde la query
-      const { origin, destination, date, dateRange, seats, driverId, visibility } = req.query;
+      const { origin, destination, date, dateRange, seats, driverId, visibility, isSubTrip } = req.query;
       const searchParams: any = {};
       
       // Agregar parámetros de búsqueda si existen
@@ -735,6 +735,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Agregar filtro de visibilidad si se especifica
       if (visibility) {
         searchParams.visibility = visibility as string;
+      }
+      
+      // Agregar filtro para viajes principales/secundarios
+      if (isSubTrip) {
+        searchParams.isSubTrip = isSubTrip as string;
+        console.log(`[GET /trips] Filtro isSubTrip: ${searchParams.isSubTrip}`);
       }
       
       if (seats && !isNaN(parseInt(seats as string, 10))) {

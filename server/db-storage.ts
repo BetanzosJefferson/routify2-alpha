@@ -592,6 +592,7 @@ export class DatabaseStorage implements IStorage {
     visibility?: string;
     includeAllVisibilities?: boolean;
     optimizedResponse?: boolean;
+    isSubTrip?: string;
   }): Promise<TripWithRouteInfo[]> {
     console.log(`[searchTrips] Iniciando búsqueda con parámetros:`, params);
     
@@ -653,6 +654,13 @@ export class DatabaseStorage implements IStorage {
     if (params.seats) {
       console.log(`[searchTrips] Filtro: Mínimo ${params.seats} asientos disponibles`);
       condiciones.push(gte(schema.trips.availableSeats, params.seats));
+    }
+    
+    // Aplicar filtro isSubTrip
+    if (params.isSubTrip) {
+      const isSubTripBool = params.isSubTrip === 'true';
+      console.log(`[searchTrips] Filtro isSubTrip: ${params.isSubTrip} (bool: ${isSubTripBool})`);
+      condiciones.push(eq(schema.trips.isSubTrip, isSubTripBool));
     }
     
     // Ejecutar consulta con todas las condiciones
