@@ -116,7 +116,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  // OPTIMIZACIÓN: Por defecto filtrar solo por fecha actual para evitar sobrecarga
+  const today = new Date();
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(today);
   const [showFilter, setShowFilter] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -129,11 +131,12 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [tripToEdit, setTripToEdit] = useState<number | null>(null);
 
-  // Consulta para obtener todos los viajes con respuesta optimizada
+  // Consulta para obtener viajes filtrados por fecha con respuesta optimizada
   const { data: trips = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/admin-trips', 'optimized'],
+    queryKey: ['/api/admin-trips', 'optimized', dateFilter?.toISOString().split('T')[0]],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/admin-trips?optimizedResponse=true');
+      const dateParam = dateFilter ? `&date=${dateFilter.toISOString().split('T')[0]}` : '';
+      const res = await apiRequest('GET', `/api/admin-trips?optimizedResponse=true${dateParam}`);
       const data = await res.json();
       console.log("TripList: Datos recibidos del backend:", data);
       console.log("TripList: Número de viajes:", data.length);

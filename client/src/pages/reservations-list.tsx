@@ -25,7 +25,9 @@ function ReservationsListContent() {
     data: reservations = [], 
     isLoading, 
     error 
-  } = useReservations({});
+  } = useReservations({
+    date: selectedDate // Usar fecha seleccionada para filtrar reservaciones
+  });
 
   // Filtrar reservaciones por fecha seleccionada y término de búsqueda
   const filteredReservations = reservations.filter((reservation) => {

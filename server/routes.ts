@@ -529,6 +529,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         optimizedResponse: true, // Flag para respuesta optimizada sin duplicaciones
       };
       
+      // OPTIMIZACIÓN: Si no hay filtro de fecha específico, usar fecha actual por defecto
+      if (!date && !origin && !destination) {
+        const today = new Date().toISOString().split('T')[0];
+        searchParams.date = today;
+        console.log(`[GET /api/admin-trips] Sin filtros específicos - aplicando fecha actual: ${today}`);
+      }
+      
       console.log(`[GET /api/admin-trips] searchParams con optimizedResponse:`, searchParams);
       
       // Aplicar filtros de búsqueda
@@ -732,11 +739,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyId: userCompanyId
       };
       
-      // Verificar caché del servidor primero
-      const cachedData = serverTripCache.get(cacheKey);
-      if (cachedData) {
-        console.log(`[GET /trips] Cache HIT - devolviendo ${cachedData.length} viajes desde caché`);
-        return res.json(cachedData);
+      // OPTIMIZACIÓN: Si no hay filtros específicos, aplicar fecha actual por defecto
+      if (!origin && !destination && !date && !dateRange && !isSubTrip) {
+        const today = new Date().toISOString().split('T')[0];
+        cacheKey.date = today;
+        console.log(`[GET /trips] Sin filtros específicos - aplicando fecha actual: ${today}`);
+      }
+      
+      // Verificar caché del servidor primero (solo para consultas pequeñas)
+      const shouldUseCache = origin || destination || date || dateRange || isSubTrip;
+      if (shouldUseCache) {
+        const cachedData = serverTripCache.get(cacheKey);
+        if (cachedData) {
+          console.log(`[GET /trips] Cache HIT - devolviendo ${cachedData.length} viajes desde caché`);
+          return res.json(cachedData);
+        }
       }
       
       const searchParams: any = {};
@@ -753,6 +770,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (date) {
         // Si solo se especifica una fecha, usar esa fecha
         searchParams.date = date as string;
+      } else if (cacheKey.date) {
+        // Usar fecha actual por defecto si no hay filtros específicos
+        searchParams.date = cacheKey.date;
       }
       
       // Agregar filtro de visibilidad si se especifica
@@ -942,9 +962,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Guardar resultados en caché antes de devolverlos
-      serverTripCache.set(cacheKey, trips);
-      console.log(`[GET /trips] Resultados guardados en caché (${trips.length} viajes)`);
+      // Cachear resultado solo si es una consulta específica y el resultado no es demasiado grande
+      if (shouldUseCache && trips.length < 1000) {
+        serverTripCache.set(cacheKey, trips);
+        console.log(`[GET /trips] Datos cacheados - total: ${trips.length} viajes`);
+      } else {
+        console.log(`[GET /trips] No cacheando - consulta demasiado grande: ${trips.length} viajes`);
+      }
       
       return res.json(trips);
     } catch (error: any) {
@@ -2245,10 +2269,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations] Filtrando por viaje ID: ${tripId}`);
       }
       
-      // Verificar si se solicita filtrar por fecha específica
+      // OPTIMIZACIÓN: Filtrar por fecha específica o usar fecha actual por defecto
       if (req.query.date) {
         dateFilter = req.query.date as string;
-        console.log(`[GET /reservations] Filtrando por fecha: ${dateFilter}`);
+        console.log(`[GET /reservations] Filtrando por fecha especificada: ${dateFilter}`);
+      } else if (!tripId) {
+        // Si no hay filtro específico de viaje, usar fecha actual por defecto
+        dateFilter = new Date().toISOString().split('T')[0];
+        console.log(`[GET /reservations] Sin filtros específicos - aplicando fecha actual: ${dateFilter}`);
       }
       
       // Determinar filtros de seguridad según el rol

@@ -98,7 +98,9 @@ export function ReservationList() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState(""); // Vacío por defecto = mostrar todas las reservaciones
+  // OPTIMIZACIÓN: Por defecto filtrar solo por fecha actual para evitar sobrecarga
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const [dateFilter, setDateFilter] = useState(today); // Fecha actual por defecto
   const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null);
   const [editingReservation, setEditingReservation] = useState<ReservationWithDetails | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
@@ -137,7 +139,7 @@ export function ReservationList() {
     isLoading,
     error: reservationsError
   } = useReservations({
-    date: dateFilter || undefined, // Solo usar filtro de fecha si el usuario lo especifica
+    date: dateFilter, // Usar filtro de fecha (incluyendo fecha actual por defecto)
     archived: activeTab === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
   });
 
