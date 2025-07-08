@@ -43,6 +43,9 @@ export function TripLogbook() {
     isSubTrip: false // Solo viajes principales para mejor rendimiento
   });
 
+  // Log para depuración de rendimiento
+  console.log(`[Bitácora] Datos cargados - Reservaciones: ${reservations.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
+
   // Filtrar reservaciones válidas para bitácora
   const validReservations = useMemo(() => {
     return reservations.filter((reservation: any) => {
@@ -64,27 +67,11 @@ export function TripLogbook() {
     return packages.filter((pkg: any) => pkg.isPaid === true);
   }, [packages]);
 
-  // Filtrar por fecha seleccionada
-  const dateFilteredReservations = useMemo(() => {
-    return validReservations.filter((reservation: any) => {
-      const tripDetails = reservation.tripDetails as any;
-      if (!tripDetails || !reservation.trip) return false;
-      
-      const tripDate = reservation.trip.departureDate;
-      return tripDate === selectedDate;
-    });
-  }, [validReservations, selectedDate]);
+  // Los datos ya vienen filtrados por fecha desde el backend
+  const dateFilteredReservations = validReservations;
 
-  const dateFilteredPackages = useMemo(() => {
-    return validPackages.filter((pkg: any) => {
-      const tripDetails = pkg.tripDetails as any;
-      if (!tripDetails) return false;
-      
-      // Extraer fecha del tripDetails
-      const tripDate = tripDetails.departureDate;
-      return tripDate === selectedDate;
-    });
-  }, [validPackages, selectedDate]);
+  // Los datos ya vienen filtrados por fecha desde el backend
+  const dateFilteredPackages = validPackages;
 
   // Agrupar por viajes
   const groupedTrips = useMemo(() => {

@@ -8,6 +8,8 @@ type UseTripsOptions = {
   routeId?: number;
   departureDate?: string;
   searchTerm?: string;
+  date?: string; // Formato YYYY-MM-DD
+  isSubTrip?: boolean; // Para filtrar solo viajes principales
 };
 
 /**
@@ -15,10 +17,10 @@ type UseTripsOptions = {
  */
 export function useTrips(options: UseTripsOptions = {}) {
   const { user } = useAuth();
-  const { routeId, departureDate, searchTerm, enabled = true } = options;
+  const { routeId, departureDate, searchTerm, enabled = true, date, isSubTrip } = options;
   
   return useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", { routeId, departureDate, searchTerm }],
+    queryKey: ["/api/trips", { routeId, departureDate, searchTerm, date, isSubTrip }],
     enabled: enabled, // Allow anonymous access to public trips
     staleTime: 5000,
     refetchInterval: 15000,
@@ -54,6 +56,15 @@ export function useTrips(options: UseTripsOptions = {}) {
         
         if (searchTerm) {
           params.append("search", searchTerm);
+        }
+        
+        // Parámetros específicos para bitácora y optimización
+        if (date) {
+          params.append("date", date);
+        }
+        
+        if (isSubTrip === false) {
+          params.append("isSubTrip", "false");
         }
         
         // Añadir los parámetros a la URL si hay alguno
