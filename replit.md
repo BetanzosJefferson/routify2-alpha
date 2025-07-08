@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 8, 2025** - CONFIRMED WORKING: Package seat reduction system is functioning correctly:
+  - **SEAT REDUCTION VERIFIED**: When packages use seats, available seats are properly reduced across all affected trip segments
+  - **Function updateRelatedTripsAvailability**: Working correctly, reduces seats for overlapping segments
+  - **Interface IStorage**: Corrected to match actual implementation (recordId, tripId, seatChange parameters)
+  - **Logs confirmation**: System shows seat updates from 17→12 when 5-seat package created
+  - **Overlap detection**: Function correctly identifies and updates all segments that share route portions
+  - **Database integrity**: Trip data properly updated with reduced seat availability
+  - Package creation with seat usage now properly integrates with trip capacity management
+
 - **July 8, 2025** - FINAL FIX: Resolved critical date display and filtering issues:
   - **DATE DISPLAY CORRECTED**: Fixed timezone conversion issue causing incorrect date display in frontend
   - Replaced date-fns format with simple string manipulation to avoid timezone confusion (YYYY-MM-DD → DD/MM/YYYY)

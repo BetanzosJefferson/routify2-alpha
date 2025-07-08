@@ -34,7 +34,7 @@ async function checkSeatUpdates() {
       FROM packages 
       WHERE uses_seats = true 
       AND seats_quantity > 0
-      AND trip_details->>'tripId' LIKE '84_%'
+      AND (trip_details->>'tripId' LIKE '84_%' OR trip_details->>'tripId' LIKE '%84%')
       ORDER BY created_at DESC
     `;
 
