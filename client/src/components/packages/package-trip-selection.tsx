@@ -62,10 +62,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [shouldLoadTrips, setShouldLoadTrips] = useState(false);
 
   // Función para determinar si debe cargar viajes
-  const shouldFetchTrips = () => {
-    // Solo cargar si el usuario ha hecho una búsqueda específica
-    return shouldLoadTrips && (searchOrigin.trim() || searchDestination.trim());
-  };
+  const shouldFetchTrips = shouldLoadTrips && (searchOrigin.trim() || searchDestination.trim());
 
   // Query para obtener viajes - solo se ejecuta cuando es necesario
   const { data: rawTrips = [], isLoading, error, refetch } = useQuery({
@@ -91,7 +88,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       
       return allTrips;
     },
-    enabled: shouldFetchTrips(), // Solo ejecutar la query cuando sea necesario
+    enabled: shouldFetchTrips, // Solo ejecutar la query cuando sea necesario
     staleTime: 30000, // 30 segundos
   });
 
