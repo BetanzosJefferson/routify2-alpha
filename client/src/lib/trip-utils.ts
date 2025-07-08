@@ -130,64 +130,74 @@ export function isCrossingMidnight(departure: string, arrival: string): boolean 
  */
 export function extractLocationsFromTrips(trips: TripWithRouteInfo[]): LocationOption[] {
   const locationMap = new Map<string, LocationOption>();
+  const cityGroups = new Map<string, Set<string>>();
   
   trips.forEach(trip => {
     const mainRoute = trip.route;
     
     // Procesar el origen principal de la ruta
     if (mainRoute && mainRoute.origin) {
-      processLocation(mainRoute.origin, locationMap);
+      processLocationGrouped(mainRoute.origin, locationMap, cityGroups);
     }
     
     // Procesar el destino principal de la ruta
     if (mainRoute && mainRoute.destination) {
-      processLocation(mainRoute.destination, locationMap);
+      processLocationGrouped(mainRoute.destination, locationMap, cityGroups);
     }
     
     // Procesar paradas intermedias
     if (mainRoute && mainRoute.stops && Array.isArray(mainRoute.stops)) {
       mainRoute.stops.forEach(stop => {
-        if (stop) processLocation(stop, locationMap);
+        if (stop) processLocationGrouped(stop, locationMap, cityGroups);
       });
     }
     
     // Si es un sub-viaje, procesar origen y destino del segmento
     if (trip.isSubTrip) {
-      if (trip.segmentOrigin) processLocation(trip.segmentOrigin, locationMap);
-      if (trip.segmentDestination) processLocation(trip.segmentDestination, locationMap);
+      if (trip.segmentOrigin) processLocationGrouped(trip.segmentOrigin, locationMap, cityGroups);
+      if (trip.segmentDestination) processLocationGrouped(trip.segmentDestination, locationMap, cityGroups);
     }
   });
   
-  // Convertir el mapa a un array de opciones
+  // Convertir el mapa a un array de opciones, manteniendo todas las paradas específicas
+  // pero organizadas para que el LocationSelector las agrupe correctamente
   return Array.from(locationMap.values());
 }
 
 /**
  * Procesa una ubicación y la añade al mapa, detectando ciudad y lugar específico
  */
-function processLocation(location: string, locationMap: Map<string, LocationOption>): void {
+function processLocationGrouped(
+  location: string, 
+  locationMap: Map<string, LocationOption>,
+  cityGroups: Map<string, Set<string>>
+): void {
   // Si ya existe esta ubicación exacta en el mapa, no la procesamos de nuevo
   if (locationMap.has(location)) return;
   
   // Intentamos extraer la ciudad y el lugar específico
   const parts = parseLocationString(location);
   
-  // Creamos la opción de ubicación
+  // Creamos la opción de ubicación específica
   const locationOption: LocationOption = {
     city: parts.city,
     place: parts.place,
     value: location
   };
   
-  // Añadimos opción "Todas las paradas" por ciudad si no existe
-  const cityKey = `${parts.city}:all`;
-  if (!locationMap.has(cityKey)) {
+  // Rastreamos las paradas por ciudad
+  if (!cityGroups.has(parts.city)) {
+    cityGroups.set(parts.city, new Set());
+    
+    // Añadimos opción "Todas las paradas" solo una vez por ciudad
+    const cityKey = `${parts.city}:all`;
     locationMap.set(cityKey, {
       city: parts.city,
       place: "Todas las paradas",
       value: parts.city
     });
   }
+  cityGroups.get(parts.city)!.add(parts.place);
   
   // Añadimos la ubicación específica
   locationMap.set(location, locationOption);
