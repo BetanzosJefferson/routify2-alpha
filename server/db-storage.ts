@@ -1685,7 +1685,121 @@ export class DatabaseStorage implements IStorage {
     
     console.log("Creando reservación con datos:", JSON.stringify(reservation, null, 2));
     const [newReservation] = await db.insert(schema.reservations).values(reservation).returning();
+    
+    // SINCRONIZACIÓN DE ASIENTOS PARA VIAJES TEMPLATE-BASED
+    await this.syncSeatOccupancyForTemplateTrips(reservation);
+    
     return newReservation;
+  }
+
+  /**
+   * Sincroniza la ocupación de asientos entre viajes template-based
+   * que comparten la misma plantilla y fecha
+   */
+  async syncSeatOccupancyForTemplateTrips(reservation: InsertReservation): Promise<void> {
+    console.log(`[SYNC] Iniciando sincronización de asientos para reservación en viaje ${reservation.tripId}`);
+    
+    try {
+      // Parsear tripDetails para obtener información del viaje
+      let tripDetails;
+      try {
+        tripDetails = typeof reservation.tripDetails === 'string' 
+          ? JSON.parse(reservation.tripDetails) 
+          : reservation.tripDetails;
+      } catch (error) {
+        console.warn(`[SYNC] Error al parsear tripDetails:`, error);
+        return;
+      }
+      
+      if (!tripDetails || !tripDetails.recordId) {
+        console.warn(`[SYNC] No se pudo obtener recordId de tripDetails`);
+        return;
+      }
+      
+      // Obtener el viaje base (trip record)
+      const baseTrip = await this.getTrip(tripDetails.recordId);
+      if (!baseTrip || !baseTrip.templateId) {
+        console.log(`[SYNC] Viaje ${tripDetails.recordId} no es template-based, omitiendo sincronización`);
+        return;
+      }
+      
+      console.log(`[SYNC] Viaje template-based detectado: ${baseTrip.id}, template: ${baseTrip.templateId}, fecha: ${baseTrip.departureDate}`);
+      
+      // Buscar todos los viajes que comparten la misma plantilla y fecha
+      const relatedTrips = await db
+        .select()
+        .from(schema.trips)
+        .where(
+          and(
+            eq(schema.trips.templateId, baseTrip.templateId),
+            eq(schema.trips.departureDate, baseTrip.departureDate),
+            eq(schema.trips.companyId, baseTrip.companyId)
+          )
+        );
+      
+      console.log(`[SYNC] Encontrados ${relatedTrips.length} viajes relacionados con la misma plantilla y fecha`);
+      
+      // Obtener todas las reservaciones de estos viajes relacionados
+      const tripIds = relatedTrips.map(trip => trip.id);
+      const allReservations = await db
+        .select()
+        .from(schema.reservations)
+        .where(
+          and(
+            inArray(schema.reservations.tripId, tripIds),
+            ne(schema.reservations.status, 'cancelled')
+          )
+        );
+      
+      console.log(`[SYNC] Encontradas ${allReservations.length} reservaciones activas en viajes relacionados`);
+      
+      // Construir mapa de ocupación de asientos por segmento
+      const seatOccupancyBySegment = new Map<string, number[]>();
+      
+      for (const res of allReservations) {
+        try {
+          const resDetails = typeof res.tripDetails === 'string' 
+            ? JSON.parse(res.tripDetails) 
+            : res.tripDetails;
+          
+          if (!resDetails || !resDetails.tripId) continue;
+          
+          // Extraer índice del segmento
+          const segmentIndex = resDetails.tripId.split('_')[1];
+          if (!segmentIndex) continue;
+          
+          // Obtener asientos reservados
+          const seatNumbers = res.seatNumbers || [];
+          const existingSeats = seatOccupancyBySegment.get(segmentIndex) || [];
+          
+          // Combinar asientos únicos
+          const combinedSeats = [...new Set([...existingSeats, ...seatNumbers])];
+          seatOccupancyBySegment.set(segmentIndex, combinedSeats);
+          
+        } catch (error) {
+          console.warn(`[SYNC] Error procesando reservación ${res.id}:`, error);
+        }
+      }
+      
+      console.log(`[SYNC] Mapa de ocupación construido:`, Object.fromEntries(seatOccupancyBySegment));
+      
+      // Actualizar seat_occupancy en todos los viajes relacionados
+      for (const trip of relatedTrips) {
+        const updatedOccupancy = Object.fromEntries(seatOccupancyBySegment);
+        
+        await db
+          .update(schema.trips)
+          .set({ seatOccupancy: updatedOccupancy })
+          .where(eq(schema.trips.id, trip.id));
+        
+        console.log(`[SYNC] Actualizada ocupación de asientos para viaje ${trip.id}`);
+      }
+      
+      console.log(`[SYNC] ✅ Sincronización completada para ${relatedTrips.length} viajes`);
+      
+    } catch (error) {
+      console.error(`[SYNC] Error en sincronización de asientos:`, error);
+    }
   }
   
   async updateReservation(id: number, reservationUpdate: Partial<Reservation>): Promise<Reservation | undefined> {

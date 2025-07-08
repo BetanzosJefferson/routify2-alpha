@@ -904,10 +904,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[CORRECCIÓN] Devolviendo solo ${viajesFiltrados.length} viajes de compañía ${userCompany}`);
               
               // Reemplazar los resultados con solo los viajes de su compañía
+              console.log(`[GET /trips] Preparando respuesta filtrada con ${viajesFiltrados.length} viajes`);
+              
+              // Si hay demasiados viajes, usar paginación
+              if (viajesFiltrados.length > 50) {
+                console.log(`[GET /trips] Aplicando paginación a viajes filtrados: ${viajesFiltrados.length} viajes total`);
+                const limitedFilteredTrips = viajesFiltrados.slice(0, 50);
+                console.log(`[GET /trips] Devolviendo primeros 50 viajes filtrados`);
+                return res.json(limitedFilteredTrips);
+              }
+              
               return res.json(viajesFiltrados);
             }
           }
         }
+      }
+      
+      // SOLUCIÓN: Limitar datos para evitar "Invalid string length"
+      console.log(`[GET /trips] Preparando respuesta con ${trips.length} viajes`);
+      
+      // Si hay demasiados viajes, usar paginación
+      if (trips.length > 50) {
+        console.log(`[GET /trips] Aplicando paginación: ${trips.length} viajes total`);
+        const limitedTrips = trips.slice(0, 50);
+        console.log(`[GET /trips] Devolviendo primeros 50 viajes`);
+        return res.json(limitedTrips);
       }
       
       return res.json(trips);
