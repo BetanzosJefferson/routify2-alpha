@@ -7,196 +7,151 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
+import { formatDateForInput, formatDateForApiQuery } from "@/lib/utils";
+import { TripWithRouteInfo } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface TripSegment {
-  origin: string;
-  destination: string;
-  departureDate: string;
-  departureTime: string;
-  arrivalTime: string;
-  price: number;
-  availableSeats: number;
-  tripId: number;
-  isMainTrip: boolean;
-}
-
-interface Trip {
-  id: string;
-  tripData: TripSegment[];
-  capacity: number;
-  vehicleId?: number;
-  driverId?: number;
-  visibility: string;
-  routeId?: number;
-  companyId: string;
-  route?: {
-    id: number;
-    name: string;
-    origin: string;
-    destination: string;
-    stops: string[];
-  };
+interface SearchParams {
+  origin?: string;
+  destination?: string;
+  date?: string;
+  seats?: number;
+  isSubTrip?: 'true' | 'false';
+  visibility?: 'publicado';
 }
 
 interface PackageTripSelectionProps {
-  onTripSelect: (trip: Trip) => void;
+  onTripSelect: (trip: TripWithRouteInfo) => void;
   onBack: () => void;
 }
 
 export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelectionProps) {
   const { user } = useAuth();
   
-  const [searchDate, setSearchDate] = useState(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  // Usar la misma lógica que trip-list.tsx
+  const today = formatDateForInput(new Date());
+  
+  const [searchParams, setSearchParams] = useState<SearchParams>({ 
+    date: today, 
+    isSubTrip: 'false' // Por defecto solo viajes principales
   });
+  const [hasSearched, setHasSearched] = useState(false);
   
-  const [searchOrigin, setSearchOrigin] = useState("");
-  const [searchDestination, setSearchDestination] = useState("");
-  const [searchCompany, setSearchCompany] = useState("");
-  
-  // Estado para controlar si mostrar viajes
-  const [shouldLoadTrips, setShouldLoadTrips] = useState(false);
+  // Form state
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [date, setDate] = useState(today);
 
-  // Función para determinar si debe cargar viajes
-  const shouldFetchTrips = useMemo(() => {
-    return shouldLoadTrips && (searchOrigin.trim() !== "" || searchDestination.trim() !== "");
-  }, [shouldLoadTrips, searchOrigin, searchDestination]);
-
-  // Query para obtener viajes - solo se ejecuta cuando es necesario
-  const { data: rawTrips = [], isLoading, error, refetch } = useQuery({
-    queryKey: ["package-trips", searchDate, searchOrigin, searchDestination, searchCompany],
+  // Query principal usando la misma lógica que trip-list
+  const { data: trips = [], isLoading, error, refetch } = useQuery<TripWithRouteInfo[]>({
+    queryKey: ["/api/trips", searchParams],
     queryFn: async () => {
-      console.log(`[PackageTripSelection] Fetching trips with filters - Origin: ${searchOrigin}, Destination: ${searchDestination}`);
-      
-      // Construir parámetros de búsqueda
       const params = new URLSearchParams();
-      if (searchDate) params.append("date", searchDate);
-      if (searchOrigin.trim()) params.append("origin", searchOrigin.trim());
-      if (searchDestination.trim()) params.append("destination", searchDestination.trim());
-      // Obtener todos los segmentos cuando se busca específicamente
-      params.append("optimizedResponse", "false");
       
-      const response = await fetch(`/api/trips?${params.toString()}`);
+      // Agregar parámetros de búsqueda
+      Object.entries(searchParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
+        }
+      });
+      
+      const url = `/api/trips?${params.toString()}`;
+      console.log(`[PackageTripSelection] Fetching: ${url}`);
+      
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Error fetching trips: ${response.status}`);
       }
       
-      const allTrips = await response.json();
-      console.log(`[PackageTripSelection] Received ${allTrips.length} trip segments for search`);
-      
-      return allTrips;
+      const data = await response.json();
+      console.log(`[PackageTripSelection] Received ${data.length} trips`);
+      return data;
     },
-    enabled: shouldFetchTrips, // Solo ejecutar la query cuando sea necesario
-    staleTime: 30000, // 30 segundos
+    enabled: hasSearched || !origin.trim() && !destination.trim(), // Cargar por defecto o después de búsqueda
+    staleTime: 30000,
   });
 
-  // Procesar los viajes para crear segmentos individuales seleccionables
-  const availableSegments = rawTrips.map((trip: any) => {
-    return {
-      id: trip.id, // Mantener el ID completo (ej: "28_1")
-      baseId: trip.id.toString().split('_')[0], // ID base del viaje (ej: "28")
-      segmentIndex: parseInt(trip.id.toString().split('_')[1]) || 0,
-      origin: trip.origin,
-      destination: trip.destination,
-      departureDate: trip.departureDate,
-      departureTime: trip.departureTime,
-      arrivalTime: trip.arrivalTime,
-      availableSeats: trip.availableSeats,
-      tripId: trip.tripId || 0,
-      isMainTrip: trip.isMainTrip || false,
-      capacity: trip.capacity || 0,
-      vehicleId: trip.vehicleId,
-      driverId: trip.driverId,
-      visibility: trip.visibility || 'publicado',
-      routeId: trip.routeId,
-      companyId: trip.companyId,
-      route: trip.route
-    };
+  // Query para obtener ubicaciones (igual que trip-list)
+  const { data: allTripsForLocations } = useQuery<TripWithRouteInfo[]>({
+    queryKey: ["/api/trips", "locations-optimized"],
+    queryFn: async () => {
+      const response = await fetch(`/api/trips?isSubTrip=false`);
+      if (!response.ok) throw new Error("Failed to fetch trips for locations");
+      return await response.json();
+    },
   });
 
-  // Formatear fecha para mostrar - evitar problemas de zona horaria
-  const formatDate = (dateString: string) => {
-    // Si la fecha está en formato YYYY-MM-DD, crear la fecha localmente
-    if (dateString && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateString.split('-').map(Number);
-      const date = new Date(year, month - 1, day); // month - 1 porque JavaScript cuenta meses desde 0
-      return date.toLocaleDateString('es-MX', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
+  // Función para extraer ubicaciones (simplificada)
+  const extractLocationsFromTrips = (trips: TripWithRouteInfo[]) => {
+    const origins = new Set<string>();
+    const destinations = new Set<string>();
     
-    // Para otros formatos, usar el método original
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    trips.forEach(trip => {
+      if (trip.origin) origins.add(trip.origin);
+      if (trip.destination) destinations.add(trip.destination);
     });
-  };
-
-  // Formatear hora
-  const formatTime = (timeString: string) => {
-    return timeString;
-  };
-
-  // Manejar selección de segmento individual
-  const handleSegmentSelect = (segment: any) => {
-    console.log(`[PackageTripSelection] Segment selected:`, segment);
-    // Crear un objeto Trip compatible con el resto del sistema
-    const tripForPackage: Trip = {
-      id: segment.id,
-      tripData: [{
-        origin: segment.origin,
-        destination: segment.destination,
-        departureDate: segment.departureDate,
-        departureTime: segment.departureTime,
-        arrivalTime: segment.arrivalTime,
-        price: 0, // No relevante para paqueterías
-        availableSeats: segment.availableSeats,
-        tripId: segment.tripId,
-        isMainTrip: segment.isMainTrip
-      }],
-      capacity: segment.capacity,
-      vehicleId: segment.vehicleId,
-      driverId: segment.driverId,
-      visibility: segment.visibility,
-      routeId: segment.routeId,
-      companyId: segment.companyId,
-      route: segment.route
+    
+    return {
+      origins: Array.from(origins).sort(),
+      destinations: Array.from(destinations).sort()
     };
-    onTripSelect(tripForPackage);
   };
+
+  const locationOptions = useMemo(() => {
+    if (!allTripsForLocations) return { origins: [], destinations: [] };
+    return extractLocationsFromTrips(allTripsForLocations);
+  }, [allTripsForLocations]);
 
   // Manejar búsqueda
   const handleSearch = () => {
     console.log(`[PackageTripSelection] Searching with filters:`, {
-      date: searchDate,
-      origin: searchOrigin,
-      destination: searchDestination
+      date,
+      origin,
+      destination
     });
     
-    // Activar la búsqueda solo si hay filtros de origen o destino
-    if (searchOrigin.trim() || searchDestination.trim()) {
-      setShouldLoadTrips(true);
-      refetch();
+    // Construir nuevos parámetros de búsqueda
+    const newSearchParams: SearchParams = {
+      date: formatDateForApiQuery(new Date(date)),
+      visibility: 'publicado'
+    };
+    
+    // Solo agregar filtros si tienen valores
+    if (origin.trim()) {
+      newSearchParams.origin = origin.trim();
     }
+    
+    if (destination.trim()) {
+      newSearchParams.destination = destination.trim();
+    }
+    
+    // Si hay filtros específicos, cargar todos los segmentos
+    if (origin.trim() || destination.trim()) {
+      newSearchParams.optimizedResponse = 'false';
+    } else {
+      newSearchParams.isSubTrip = 'false'; // Solo viajes principales por defecto
+    }
+    
+    setSearchParams(newSearchParams);
+    setHasSearched(true);
   };
 
   // Limpiar filtros
   const clearFilters = () => {
-    setSearchOrigin("");
-    setSearchDestination("");
-    setSearchCompany("");
-    setShouldLoadTrips(false); // Desactivar la búsqueda
-    // Mantener la fecha actual
+    setOrigin("");
+    setDestination("");
+    setDate(today);
+    setSearchParams({ 
+      date: today, 
+      isSubTrip: 'false' 
+    });
+    setHasSearched(false);
+  };
+
+  // Manejar selección de viaje
+  const handleTripSelect = (trip: TripWithRouteInfo) => {
+    console.log(`[PackageTripSelection] Trip selected:`, trip);
+    onTripSelect(trip);
   };
 
   return (
@@ -224,55 +179,51 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search-date">Fecha</Label>
               <Input
                 id="search-date"
                 type="date"
-                value={searchDate}
-                onChange={(e) => setSearchDate(e.target.value)}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
                 className="w-full"
               />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="search-origin">Origen (opcional)</Label>
-              <Input
-                id="search-origin"
-                type="text"
-                placeholder="Ciudad de origen..."
-                value={searchOrigin}
-                onChange={(e) => setSearchOrigin(e.target.value)}
-                className="w-full"
-              />
+              <Select value={origin} onValueChange={setOrigin}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar origen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Cualquier origen</SelectItem>
+                  {locationOptions.origins.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="search-destination">Destino (opcional)</Label>
-              <Input
-                id="search-destination"
-                type="text"
-                placeholder="Ciudad de destino..."
-                value={searchDestination}
-                onChange={(e) => setSearchDestination(e.target.value)}
-                className="w-full"
-              />
+              <Select value={destination} onValueChange={setDestination}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar destino..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Cualquier destino</SelectItem>
+                  {locationOptions.destinations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            
-            {user?.role === UserRole.TICKET_OFFICE && (
-              <div className="space-y-2">
-                <Label htmlFor="search-company">Empresa (opcional)</Label>
-                <Input
-                  id="search-company"
-                  type="text"
-                  placeholder="Buscar por empresa..."
-                  value={searchCompany}
-                  onChange={(e) => setSearchCompany(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-            )}
           </div>
           
           <div className="flex gap-2">
@@ -312,10 +263,10 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
         </Card>
       )}
 
-      {/* Segments List */}
+      {/* Trips List */}
       {!isLoading && !error && (
         <div className="space-y-4">
-          {!shouldLoadTrips ? (
+          {!hasSearched && !origin.trim() && !destination.trim() ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
@@ -326,7 +277,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                 </div>
               </CardContent>
             </Card>
-          ) : availableSegments.length === 0 ? (
+          ) : trips.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
@@ -339,72 +290,66 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="space-y-4">
               <h3 className="text-lg font-semibold">
-                {availableSegments.length} combinación{availableSegments.length !== 1 ? 'es' : ''} de viaje disponible{availableSegments.length !== 1 ? 's' : ''}
+                {trips.length} viaje{trips.length !== 1 ? 's' : ''} disponible{trips.length !== 1 ? 's' : ''}
               </h3>
-              {availableSegments.map((segment: any) => (
-                <Card key={segment.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-center">
-                      <div className="space-y-3 flex-1">
-                        {/* Ruta del segmento */}
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-green-600" />
-                          <span className="font-medium text-lg">{segment.origin}</span>
-                          <span className="text-muted-foreground text-lg">→</span>
-                          <MapPin className="h-4 w-4 text-red-600" />
-                          <span className="font-medium text-lg">{segment.destination}</span>
-                          {segment.isMainTrip && (
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                              Principal
-                            </span>
-                          )}
+              <div className="grid gap-4">
+                {trips.map((trip) => (
+                  <Card key={trip.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-center">
+                        <div className="space-y-3 flex-1">
+                          {/* Ruta del viaje */}
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-lg">{trip.origin}</span>
+                            <span className="text-muted-foreground text-lg">→</span>
+                            <MapPin className="h-4 w-4 text-red-600" />
+                            <span className="font-medium text-lg">{trip.destination}</span>
+                            {trip.route?.name && (
+                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                {trip.route.name}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Fecha y horarios */}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{new Date(trip.departureDate).toLocaleDateString('es-MX')}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{trip.departureTime} - {trip.arrivalTime}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              <span>{trip.availableSeats} asientos disponibles</span>
+                            </div>
+                          </div>
+
+                          {/* Información adicional del viaje */}
+                          <div className="text-xs text-muted-foreground">
+                            {trip.capacity && `Capacidad total: ${trip.capacity} pasajeros`}
+                            {trip.vehicleId && ` • Vehículo: ${trip.vehicleId}`}
+                            {trip.driverId && ` • Conductor: ${trip.driverId}`}
+                          </div>
                         </div>
 
-                        {/* Fecha y horarios */}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{formatDate(segment.departureDate)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{formatTime(segment.departureTime)} - {formatTime(segment.arrivalTime)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            <span>{segment.availableSeats} asientos disponibles</span>
-                          </div>
-                        </div>
-
-                        {/* Información adicional del viaje */}
-                        <div className="text-xs text-muted-foreground">
-                          {segment.route?.name && `Ruta: ${segment.route.name}`}
-                          {segment.capacity && ` • Capacidad total: ${segment.capacity} pasajeros`}
-                        </div>
-                        
-                        {/* Información de la empresa (solo para taquilla) */}
-                        {user?.role === UserRole.TICKET_OFFICE && segment.companyId && (
-                          <div className="text-xs">
-                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                              Empresa: {segment.companyId}
-                            </span>
-                          </div>
-                        )}
+                        {/* Botón de selección */}
+                        <Button 
+                          onClick={() => handleTripSelect(trip)}
+                          className="ml-4"
+                        >
+                          Seleccionar
+                        </Button>
                       </div>
-
-                      {/* Botón de selección */}
-                      <Button 
-                        onClick={() => handleSegmentSelect(segment)}
-                        className="ml-4"
-                      >
-                        Seleccionar
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </div>
