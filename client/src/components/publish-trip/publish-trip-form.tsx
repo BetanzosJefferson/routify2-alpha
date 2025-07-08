@@ -268,9 +268,11 @@ export function PublishTripForm() {
               getCityName(config.destination) === getCityName(pair.destination)
             );
             
-            // Si existe configuración y está explícitamente deshabilitada, no incluirla
-            // Si no hay configuración o está habilitada, incluirla
-            const isEnabled = templatePriceConfig && templatePriceConfig.enabled !== false;
+            // Lógica de herencia:
+            // - Si no hay configuración para esta combinación, no incluirla 
+            // - Si hay configuración y enabled === false, no incluirla
+            // - Si hay configuración y enabled !== false (true o undefined), incluirla
+            const isEnabled = templatePriceConfig ? (templatePriceConfig.enabled !== false) : false;
             
             console.log(`Combinación ${pair.origin} → ${pair.destination}:`, {
               hasConfig: !!templatePriceConfig,
