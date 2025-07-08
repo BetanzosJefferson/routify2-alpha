@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +62,9 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [shouldLoadTrips, setShouldLoadTrips] = useState(false);
 
   // Función para determinar si debe cargar viajes
-  const shouldFetchTrips = shouldLoadTrips && (searchOrigin.trim() || searchDestination.trim());
+  const shouldFetchTrips = useMemo(() => {
+    return shouldLoadTrips && (searchOrigin.trim() !== "" || searchDestination.trim() !== "");
+  }, [shouldLoadTrips, searchOrigin, searchDestination]);
 
   // Query para obtener viajes - solo se ejecuta cuando es necesario
   const { data: rawTrips = [], isLoading, error, refetch } = useQuery({
