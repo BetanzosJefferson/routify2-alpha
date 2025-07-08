@@ -896,7 +896,17 @@ export class DatabaseStorage implements IStorage {
     if (!tripRecord || !tripRecord.tripData || !Array.isArray(tripRecord.tripData)) return;
     
     // Extraer el índice del tripId específico (ej: "10_2" -> índice 2)
-    const segmentIndex = parseInt(tripId.split('_')[1]);
+    let segmentIndex = 0;
+    
+    if (typeof tripId === 'string' && tripId.includes('_')) {
+      segmentIndex = parseInt(tripId.split('_')[1]);
+    } else {
+      // Para tripIds que son números, buscar el índice del segmento correspondiente
+      const tripIdAsNumber = typeof tripId === 'string' ? parseInt(tripId) : tripId;
+      segmentIndex = tripRecord.tripData.findIndex(segment => segment.tripId === tripIdAsNumber);
+      if (segmentIndex === -1) segmentIndex = 0; // Usar el primer segmento como fallback
+    }
+    
     if (isNaN(segmentIndex) || segmentIndex >= tripRecord.tripData.length) return;
     
     const isReducingSeats = seatChange < 0;
@@ -1083,8 +1093,21 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
         
-        const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-        const tripSegment = tripDataArray[segmentIndex];
+        // Manejar tanto el formato antiguo (número) como el nuevo formato (string con '_')
+        let tripSegment;
+        
+        if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+          // Formato nuevo: "recordId_segmentIndex"
+          const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+          tripSegment = tripDataArray[segmentIndex];
+        } else {
+          // Formato antiguo: buscar por tripId
+          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+          // Si no se encuentra, usar el primer segmento
+          if (!tripSegment && tripDataArray.length > 0) {
+            tripSegment = tripDataArray[0];
+          }
+        }
         
         if (!tripSegment) {
           console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${result.tripId}`);
@@ -1272,9 +1295,25 @@ export class DatabaseStorage implements IStorage {
         continue;
       }
       
-      // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
-      const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-      const tripSegment = tripDataArray[segmentIndex];
+      // Manejar tanto el formato antiguo (número) como el nuevo formato (string con '_')
+      let tripSegment;
+      
+      if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+        // Formato nuevo: "recordId_segmentIndex"
+        const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+        tripSegment = tripDataArray[segmentIndex];
+      } else {
+        // Formato antiguo: usar el primer segmento (main trip) o buscar por tripId
+        if (tripDataArray.length > 0) {
+          // Intentar encontrar el segmento por tripId
+          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+          
+          // Si no se encuentra, usar el primer segmento (main trip)
+          if (!tripSegment) {
+            tripSegment = tripDataArray[0];
+          }
+        }
+      }
       
       if (!tripSegment) {
         console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
@@ -1443,9 +1482,21 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
     
-    // Encontrar el segmento específico usando tripId (formato: "recordId_segmentIndex")
-    const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-    const tripSegment = tripDataArray[segmentIndex];
+    // Manejar tanto el formato antiguo (número) como el nuevo formato (string con '_')
+    let tripSegment;
+    
+    if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+      // Formato nuevo: "recordId_segmentIndex"
+      const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+      tripSegment = tripDataArray[segmentIndex];
+    } else {
+      // Formato antiguo: buscar por tripId
+      tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+      // Si no se encuentra, usar el primer segmento
+      if (!tripSegment && tripDataArray.length > 0) {
+        tripSegment = tripDataArray[0];
+      }
+    }
     
     if (!tripSegment) {
       console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
@@ -2392,13 +2443,24 @@ export class DatabaseStorage implements IStorage {
       }
       
       // 4. Extraer y validar índice del segmento
-      const tripIdParts = tripId.split('_');
-      if (tripIdParts.length !== 2) {
-        console.log(`DB Storage: [validateSeatAvailability] Formato de tripId inválido: ${tripId}. Esperado: recordId_segmentIndex`);
-        return false;
-      }
+      let segmentIndex = 0;
       
-      const segmentIndex = parseInt(tripIdParts[1]);
+      if (typeof tripId === 'string' && tripId.includes('_')) {
+        const tripIdParts = tripId.split('_');
+        if (tripIdParts.length !== 2) {
+          console.log(`DB Storage: [validateSeatAvailability] Formato de tripId inválido: ${tripId}. Esperado: recordId_segmentIndex`);
+          return false;
+        }
+        segmentIndex = parseInt(tripIdParts[1]);
+      } else {
+        // Para tripIds que son números, buscar el índice del segmento correspondiente
+        const tripIdAsNumber = typeof tripId === 'string' ? parseInt(tripId) : tripId;
+        const tripRecord = await this.getTrip(recordId);
+        if (tripRecord && tripRecord.tripData) {
+          segmentIndex = tripRecord.tripData.findIndex(segment => segment.tripId === tripIdAsNumber);
+          if (segmentIndex === -1) segmentIndex = 0; // Usar el primer segmento como fallback
+        }
+      }
       if (isNaN(segmentIndex) || segmentIndex < 0 || segmentIndex >= trip.tripData.length) {
         console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} fuera de rango para ${tripId}. Segmentos disponibles: ${trip.tripData.length}`);
         return false;
@@ -2689,9 +2751,17 @@ export class DatabaseStorage implements IStorage {
       const tripId = requestData.trip_details?.tripId;
       if (tripId) {
         try {
-          // Extraer recordId y subTripId del tripId (formato: "recordId_subTripIndex")
-          const [recordIdStr, subTripIndex] = tripId.split('_');
-          const recordId = parseInt(recordIdStr);
+          // Extraer recordId del tripId 
+          let recordId;
+          
+          if (typeof tripId === 'string' && tripId.includes('_')) {
+            // Formato: "recordId_subTripIndex"
+            const [recordIdStr, subTripIndex] = tripId.split('_');
+            recordId = parseInt(recordIdStr);
+          } else {
+            // Formato antiguo: número directo
+            recordId = typeof tripId === 'string' ? parseInt(tripId) : tripId;
+          }
           
           if (!isNaN(recordId)) {
             // Buscar el viaje en la base de datos
@@ -2964,8 +3034,15 @@ export class DatabaseStorage implements IStorage {
           
           if (tripDetails?.tripId) {
             // Extraer recordId del tripId (ej: "31_0" -> recordId = 31)
-            const tripIdParts = tripDetails.tripId.split('_');
-            const recordId = parseInt(tripIdParts[0]);
+            let recordId;
+            
+            if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+              const tripIdParts = tripDetails.tripId.split('_');
+              recordId = parseInt(tripIdParts[0]);
+            } else {
+              // Formato antiguo: número directo
+              recordId = typeof tripDetails.tripId === 'string' ? parseInt(tripDetails.tripId) : tripDetails.tripId;
+            }
             
             console.log(`DB Storage: Paquete ${pkg.id} - Extrayendo recordId ${recordId} de tripId ${tripDetails.tripId}`);
             
@@ -3047,7 +3124,15 @@ export class DatabaseStorage implements IStorage {
       // Si el paquete tiene tripId, obtener información del viaje
       let trip: TripWithRouteInfo | undefined;
       if (packageData.tripId) {
-        const tripId = parseInt(packageData.tripId.toString().split('_')[0]);
+        // Extraer recordId del tripId 
+        let tripId;
+        const tripIdStr = packageData.tripId.toString();
+        
+        if (tripIdStr.includes('_')) {
+          tripId = parseInt(tripIdStr.split('_')[0]);
+        } else {
+          tripId = parseInt(tripIdStr);
+        }
         trip = await this.getTripWithRouteInfo(tripId);
       }
 
