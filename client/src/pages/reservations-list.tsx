@@ -14,6 +14,7 @@ function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
+  const [searchDate, setSearchDate] = useState(formatDateForInput(new Date())); // Fecha para búsqueda
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
     tripInfo: any;
@@ -26,11 +27,25 @@ function ReservationsListContent() {
     isLoading, 
     error 
   } = useReservations({
-    date: selectedDate // Usar fecha seleccionada para filtrar reservaciones
+    date: searchDate // Usar fecha de búsqueda para filtrar reservaciones
   });
 
   // Log para depuración
-  console.log(`[Reservaciones] Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
+  console.log(`[Reservaciones] Fecha búsqueda: ${searchDate}, Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
+  
+  // Función para realizar búsqueda
+  const handleSearch = () => {
+    console.log(`[Reservaciones] Iniciando búsqueda para fecha: ${selectedDate}`);
+    setSearchDate(selectedDate);
+    setCurrentPage(1);
+  };
+  
+  // Búsqueda con Enter
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   // Filtrar reservaciones solo por término de búsqueda (fecha ya filtrada en backend)
   const filteredReservations = reservations.filter((reservation) => {
@@ -213,10 +228,15 @@ function ReservationsListContent() {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Reservaciones en Lista</h1>
               <div className="text-sm text-gray-600 mt-1">
                 Total: {filteredReservations.length} reservaciones en {Object.keys(groupedReservations).length} viajes
+                {searchDate !== formatDateForInput(new Date()) && (
+                  <span className="ml-2 text-blue-600">
+                    (Fecha: {formatDate(searchDate)})
+                  </span>
+                )}
               </div>
             </div>
             
-            {/* Selector de fecha compacto */}
+            {/* Selector de fecha con botón buscar */}
             <div className="flex items-center gap-2 w-full md:w-auto">
               <Calendar className="h-4 w-4 text-gray-400" />
               <Input
@@ -225,10 +245,18 @@ function ReservationsListContent() {
                 onChange={(e) => {
                   console.log(`[Reservaciones] Cambiando fecha de ${selectedDate} a ${e.target.value}`);
                   setSelectedDate(e.target.value);
-                  setCurrentPage(1);
                 }}
-                className="w-full md:w-48 text-sm"
+                onKeyPress={handleKeyPress}
+                className="w-full md:w-32 text-sm"
               />
+              <Button
+                onClick={handleSearch}
+                size="sm"
+                className="whitespace-nowrap"
+                disabled={isLoading}
+              >
+                {isLoading ? "Buscando..." : "Buscar"}
+              </Button>
             </div>
           </div>
         </div>
