@@ -113,7 +113,7 @@ export function TripList() {
 
   // Initialize searchParams. Default to isSubTrip: 'false' for initial load.
   // This will be conditionally removed if a specific search is performed.
-  const [searchParams, setSearchParams] = useState<SearchParams>({ date: today, isSubTrip: 'false' });
+  const [searchParams, setSearchParams] = useState<SearchParams>({ isSubTrip: 'false' });
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -132,11 +132,18 @@ export function TripList() {
       // Construir URL con parámetros de búsqueda
       const params = new URLSearchParams();
       
-      if (searchParams.origin) params.append('origin', searchParams.origin);
-      if (searchParams.destination) params.append('destination', searchParams.destination);
-      if (searchParams.date) params.append('date', searchParams.date);
-      if (searchParams.seats) params.append('seats', searchParams.seats.toString());
+      // Solo agregar filtros específicos si el usuario los ha especificado
+      if (searchParams.origin && searchParams.origin.trim()) params.append('origin', searchParams.origin);
+      if (searchParams.destination && searchParams.destination.trim()) params.append('destination', searchParams.destination);
+      if (searchParams.seats && searchParams.seats > 0) params.append('seats', searchParams.seats.toString());
+      
+      // Siempre incluir isSubTrip para optimización
       if (searchParams.isSubTrip) params.append('isSubTrip', searchParams.isSubTrip);
+      
+      // Solo incluir fecha si no es la fecha de hoy por defecto
+      if (searchParams.date && searchParams.date !== today) {
+        params.append('date', searchParams.date);
+      }
       
       const url = `/api/trips${params.toString() ? '?' + params.toString() : ''}`;
       console.log('TripList: Consultando URL:', url);
@@ -147,11 +154,12 @@ export function TripList() {
     },
   });
 
-  // Query separada para obtener todas las ubicaciones para autocompletado
+  // Query separada para obtener ubicaciones optimizada
   const { data: allTripsForLocations } = useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", "locations"],
+    queryKey: ["/api/trips", "locations-optimized"],
     queryFn: async () => {
-      const response = await fetch(`/api/trips`);
+      // Usar endpoint optimizado para obtener solo viajes principales para ubicaciones
+      const response = await fetch(`/api/trips?isSubTrip=false`);
       if (!response.ok) throw new Error("Failed to fetch trips for locations");
       return await response.json();
     },
