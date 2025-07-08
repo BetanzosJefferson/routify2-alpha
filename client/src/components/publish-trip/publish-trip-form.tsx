@@ -83,6 +83,7 @@ export function PublishTripForm() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [segmentPrices, setSegmentPrices] = useState<SegmentTimePrice[]>([]);
+  const [enabledCombinations, setEnabledCombinations] = useState<Set<string>>(new Set());
 
   // Estado para controlar si mostrar campos de vehículo/conductor solo en modo edición
   const [showAssignmentFields, setShowAssignmentFields] = useState(false);
@@ -253,6 +254,13 @@ export function PublishTripForm() {
 
       setSegmentPrices(segmentPricesFromTemplate);
       form.setValue("segmentPrices", segmentPricesFromTemplate);
+      
+      // Inicializar combinaciones habilitadas - por defecto todas están habilitadas
+      const { cityGroups, cityPairs } = groupSegmentsByCity(segmentPricesFromTemplate);
+      const initialEnabledCombinations = new Set(
+        cityPairs.map(pair => `${pair.origin}||${pair.destination}`)
+      );
+      setEnabledCombinations(initialEnabledCombinations);
       
       // Calcular horarios de parada basados en la plantilla
       calculateStopTimes(route, selectedTemplate, segmentPricesFromTemplate);
@@ -660,6 +668,18 @@ export function PublishTripForm() {
     console.log("Datos de formulario enviados:", data);
     // Incluir los tiempos de parada en los datos del formulario
     data.stopTimes = stopTimes;
+    
+    // Filtrar segmentPrices para incluir solo las combinaciones habilitadas
+    const enabledSegmentPrices = data.segmentPrices?.filter(segment => {
+      const cityPairKey = `${getCityName(segment.origin)}||${getCityName(segment.destination)}`;
+      return enabledCombinations.has(cityPairKey);
+    }) || [];
+    
+    console.log("Combinaciones habilitadas:", Array.from(enabledCombinations));
+    console.log("Segmentos filtrados (solo habilitados):", enabledSegmentPrices);
+    
+    // Actualizar los datos con solo los segmentos habilitados
+    data.segmentPrices = enabledSegmentPrices;
 
     // Llamar a la mutación para publicar o actualizar el viaje
     if (editingTripId) {
@@ -1191,6 +1211,9 @@ export function PublishTripForm() {
                             <thead className="bg-gray-50">
                               <tr>
                                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Habilitado
+                                </th>
+                                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Ciudad Origen
                                 </th>
                                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1222,16 +1245,33 @@ export function PublishTripForm() {
                                     const firstSegment = groupSegments[0] || {
                                       price: 0,
                                     };
+                                    const isEnabled = enabledCombinations.has(key);
 
                                     return (
                                       <tr
                                         key={`city-${idx}`}
-                                        className="hover:bg-gray-50 bg-gray-50"
+                                        className={`hover:bg-gray-50 ${isEnabled ? 'bg-white' : 'bg-gray-100'}`}
                                       >
-                                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                          <input
+                                            type="checkbox"
+                                            checked={isEnabled}
+                                            onChange={() => {
+                                              const newEnabledCombinations = new Set(enabledCombinations);
+                                              if (isEnabled) {
+                                                newEnabledCombinations.delete(key);
+                                              } else {
+                                                newEnabledCombinations.add(key);
+                                              }
+                                              setEnabledCombinations(newEnabledCombinations);
+                                            }}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                          />
+                                        </td>
+                                        <td className={`px-3 py-2 whitespace-nowrap text-sm font-medium ${isEnabled ? 'text-gray-900' : 'text-gray-500'}`}>
                                           {cityPair.origin}
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td className={`px-3 py-2 whitespace-nowrap text-sm font-medium ${isEnabled ? 'text-gray-900' : 'text-gray-500'}`}>
                                           {cityPair.destination}
                                         </td>
                                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
@@ -1253,9 +1293,10 @@ export function PublishTripForm() {
                                               );
                                             }}
                                             className="w-24"
+                                            disabled={!isEnabled}
                                           />
                                         </td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                        <td className={`px-3 py-2 whitespace-nowrap text-sm ${isEnabled ? 'text-gray-500' : 'text-gray-400'}`}>
                                           {groupSegments.length} combinaciones
                                         </td>
                                       </tr>

@@ -1089,8 +1089,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDate = new Date(tripData.endDate);
       const createdTrips = [];
       
-      // Generate all possible segments (direct and intermediate segments) filtered by template enabled combinations
-      const allSegments = generateAllPossibleSegments(route, template);
+      // Generate all possible segments (direct and intermediate segments) - filtering now done in frontend
+      const allSegments = generateAllPossibleSegments(route);
       
       // Si hay stopTimes en la petición, agregarlo a los segmentos para usar tiempos personalizados
       const tripDataWithStopTimes = tripData as any;
@@ -1160,28 +1160,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Viaje principal: ${route.origin} → ${route.destination}`);
         console.log(`  departureTime: ${departureTime} → departureDate: ${mainDepartureDate.toISOString().split('T')[0]}`);
         
-        // Agregar todos los segmentos parciales
-        for (const segment of allSegments) {
+        // Agregar solo los segmentos que vienen desde el frontend (ya filtrados por combinaciones habilitadas)
+        for (const segmentFromFrontend of tripData.segmentPrices || []) {
           // Saltar el viaje principal ya que ya lo agregamos arriba
-          if (segment.origin === route.origin && segment.destination === route.destination) {
+          if (segmentFromFrontend.origin === route.origin && segmentFromFrontend.destination === route.destination) {
             continue;
           }
           
-          const segmentData = tripData.segmentPrices.find(
-            (sp: any) => sp.origin === segment.origin && sp.destination === segment.destination
-          );
+          console.log(`🎯 Procesando segmento habilitado desde frontend: ${segmentFromFrontend.origin} → ${segmentFromFrontend.destination}`);
           
-          let segmentPrice = segmentData?.price || calculateProportionalPrice(segment, route, tripData.price || 0);
-          let segmentDepartureTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.departureTime || departureTime;
-          let segmentArrivalTime = segmentTimes[`${segment.origin}-${segment.destination}`]?.arrivalTime || arrivalTime;
+          let segmentPrice = segmentFromFrontend.price || 0;
+          let segmentDepartureTime = segmentTimes[`${segmentFromFrontend.origin}-${segmentFromFrontend.destination}`]?.departureTime || departureTime;
+          let segmentArrivalTime = segmentTimes[`${segmentFromFrontend.origin}-${segmentFromFrontend.destination}`]?.arrivalTime || arrivalTime;
           
           // LÓGICA MEJORADA: Calcular departureDate real del segmento basándose en su horario específico
           const segmentDepartureDate = calculateSegmentDate(date, segmentDepartureTime);
           
           tripCombinations.push({
             tripId: Math.floor(Date.now() + Math.random() * 1000),
-            origin: segment.origin,
-            destination: segment.destination,
+            origin: segmentFromFrontend.origin,
+            destination: segmentFromFrontend.destination,
             departureDate: segmentDepartureDate.toISOString().split('T')[0],
             departureTime: segmentDepartureTime.replace(/\s*\+\d+d$/, ''),
             arrivalTime: segmentArrivalTime.replace(/\s*\+\d+d$/, ''),
@@ -1190,7 +1188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isMainTrip: false
           });
           
-          console.log(`Segmento: ${segment.origin} → ${segment.destination}`);
+          console.log(`Segmento: ${segmentFromFrontend.origin} → ${segmentFromFrontend.destination}`);
           console.log(`  departureTime: ${segmentDepartureTime} → departureDate: ${segmentDepartureDate.toISOString().split('T')[0]}`);
         }
         
@@ -1378,25 +1376,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   // Helper function to generate all possible segments between stops
-  function generateAllPossibleSegments(route: RouteWithSegments, template?: any) {
+  function generateAllPossibleSegments(route: RouteWithSegments) {
     const allPoints = [route.origin, ...route.stops, route.destination];
     const allSegments = [];
     
-    console.log(`\n🚀 INICIANDO generateAllPossibleSegments para ruta ${route.id}`);
+    console.log(`\n🚀 Generando segmentos para la ruta ${route.id}`);
     console.log(`📍 Puntos en la ruta: ${allPoints.join(' -> ')}`);
-    console.log(`🔧 Template proporcionado: ${template ? 'SÍ' : 'NO'}`);
-    if (template) {
-      console.log(`📋 Template ID: ${template.id}, Configuraciones: ${template.priceConfiguration?.length || 0}`);
-    }
     
-    // Helper function to get city name
-    function getCityName(location: string): string {
-      if (!location) return '';
-      const parts = location.split(' - ');
-      return parts[0]?.trim() || location;
-    }
-    
-    // Approach 1: Generate all possible combinations (not just consecutive stops)
+    // Generate all possible combinations (not just consecutive stops)
     for (let i = 0; i < allPoints.length - 1; i++) {
       for (let j = i + 1; j < allPoints.length; j++) {
         // Skip the main route (origin to destination) as it's already created separately
@@ -1411,30 +1398,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // If template is provided, check if this combination is enabled
-        if (template && template.priceConfiguration) {
-          const originCity = getCityName(allPoints[i]);
-          const destCity = getCityName(allPoints[j]);
-          
-          console.log(`🔍 Buscando en plantilla: ${originCity} → ${destCity}`);
-          
-          const templatePriceConfig = template.priceConfiguration.find((config: any) => 
-            getCityName(config.origin) === originCity && 
-            getCityName(config.destination) === destCity
-          );
-          
-          console.log(`📋 Configuración encontrada:`, templatePriceConfig);
-          
-          // Only include if configuration exists and is enabled (not explicitly disabled)
-          if (!templatePriceConfig || templatePriceConfig.enabled === false) {
-            console.log(`❌ SALTANDO segmento deshabilitado: ${allPoints[i]} -> ${allPoints[j]}`);
-            console.log(`   Razón: ${!templatePriceConfig ? 'No encontrado en plantilla' : 'Marcado como disabled'}`);
-            continue;
-          }
-          
-          console.log(`✅ INCLUIDO segmento habilitado: ${allPoints[i]} -> ${allPoints[j]}`);
-        }
-        
         allSegments.push({
           origin: allPoints[i],
           destination: allPoints[j],
@@ -1445,8 +1408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    console.log(`\n✅ RESULTADO: Generados ${allSegments.length} segmentos válidos para la ruta ${route.id} ${template ? '(filtrados por plantilla)' : ''}`);
-    console.log(`🎯 Segmentos finales:`, allSegments.map(s => `${s.origin} → ${s.destination}`));
+    console.log(`\n✅ Generados ${allSegments.length} segmentos válidos para la ruta ${route.id}`);
     
     return allSegments;
   }
