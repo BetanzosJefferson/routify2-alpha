@@ -719,6 +719,33 @@ export function ReservationList() {
                 Hora
               </Button>
 
+              {/* Selector de fecha */}
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <Input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => {
+                    console.log(`[ReservationList] Cambiando fecha de ${dateFilter} a ${e.target.value}`);
+                    setDateFilter(e.target.value);
+                  }}
+                  className="w-32 text-sm"
+                />
+                <Button
+                  onClick={async () => {
+                    console.log(`[ReservationList] Invalidando cache para nueva consulta`);
+                    await queryClient.invalidateQueries({
+                      queryKey: ["/api/reservations"]
+                    });
+                  }}
+                  size="sm"
+                  className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Buscando..." : "🔍 Buscar"}
+                </Button>
+              </div>
+
               {/* Filtro general */}
               <Button
                 variant="outline"
