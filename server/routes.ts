@@ -573,7 +573,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vehicleId: trip.vehicleId,
         // Solo metadatos esenciales
         routeName: trip.routeName || '',
-        companyName: trip.companyName || ''
+        companyName: trip.companyName || '',
+        companyLogo: trip.companyLogo || undefined
       }));
       
       res.json(optimizedTrips);

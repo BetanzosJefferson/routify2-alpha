@@ -619,7 +619,7 @@ export class DatabaseStorage implements IStorage {
             },
             numStops: route.stops.length,
             companyName: companyData.companyName,
-            // NO incluir companyLogo para reducir payload
+            companyLogo: companyData.companyLogo,
             assignedVehicle: assignedVehicle ? {
               id: assignedVehicle.id,
               model: assignedVehicle.model,
