@@ -38,8 +38,8 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [hasSearched, setHasSearched] = useState(false);
   
   // Form state
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
+  const [origin, setOrigin] = useState("all");
+  const [destination, setDestination] = useState("all");
   const [date, setDate] = useState(today);
 
   // Query principal usando la misma lógica que trip-list
@@ -67,7 +67,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       console.log(`[PackageTripSelection] Received ${data.length} trips`);
       return data;
     },
-    enabled: hasSearched || !origin.trim() && !destination.trim(), // Cargar por defecto o después de búsqueda
+    enabled: hasSearched || (origin === "all" && destination === "all"), // Cargar por defecto o después de búsqueda
     staleTime: 30000,
   });
 
@@ -116,17 +116,17 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       visibility: 'publicado'
     };
     
-    // Solo agregar filtros si tienen valores
-    if (origin.trim()) {
+    // Solo agregar filtros si tienen valores (excluyendo "all")
+    if (origin.trim() && origin !== "all") {
       newSearchParams.origin = origin.trim();
     }
     
-    if (destination.trim()) {
+    if (destination.trim() && destination !== "all") {
       newSearchParams.destination = destination.trim();
     }
     
     // Si hay filtros específicos, cargar todos los segmentos
-    if (origin.trim() || destination.trim()) {
+    if ((origin.trim() && origin !== "all") || (destination.trim() && destination !== "all")) {
       newSearchParams.optimizedResponse = 'false';
     } else {
       newSearchParams.isSubTrip = 'false'; // Solo viajes principales por defecto
@@ -138,8 +138,8 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
 
   // Limpiar filtros
   const clearFilters = () => {
-    setOrigin("");
-    setDestination("");
+    setOrigin("all");
+    setDestination("all");
     setDate(today);
     setSearchParams({ 
       date: today, 
@@ -198,7 +198,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                   <SelectValue placeholder="Seleccionar origen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cualquier origen</SelectItem>
+                  <SelectItem value="all">Cualquier origen</SelectItem>
                   {locationOptions.origins.map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
@@ -215,7 +215,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                   <SelectValue placeholder="Seleccionar destino..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cualquier destino</SelectItem>
+                  <SelectItem value="all">Cualquier destino</SelectItem>
                   {locationOptions.destinations.map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
@@ -266,7 +266,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       {/* Trips List */}
       {!isLoading && !error && (
         <div className="space-y-4">
-          {!hasSearched && !origin.trim() && !destination.trim() ? (
+          {!hasSearched && origin === "all" && destination === "all" ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
