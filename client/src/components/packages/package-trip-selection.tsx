@@ -71,11 +71,11 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     staleTime: 30000,
   });
 
-  // Query para obtener ubicaciones (igual que trip-list)
+  // Query para obtener ubicaciones (todos los segmentos para dropdowns completos)
   const { data: allTripsForLocations } = useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", "locations-optimized"],
+    queryKey: ["/api/trips", "locations-all-segments"],
     queryFn: async () => {
-      const response = await fetch(`/api/trips?isSubTrip=false`);
+      const response = await fetch(`/api/trips?optimizedResponse=false`);
       if (!response.ok) throw new Error("Failed to fetch trips for locations");
       return await response.json();
     },
