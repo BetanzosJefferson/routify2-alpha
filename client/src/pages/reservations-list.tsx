@@ -29,28 +29,14 @@ function ReservationsListContent() {
     date: selectedDate // Usar fecha seleccionada para filtrar reservaciones
   });
 
-  // Filtrar reservaciones por fecha seleccionada y término de búsqueda
+  // Log para depuración
+  console.log(`[Reservaciones] Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
+
+  // Filtrar reservaciones solo por término de búsqueda (fecha ya filtrada en backend)
   const filteredReservations = reservations.filter((reservation) => {
     // Excluir reservaciones canceladas
     if (reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') {
       return false;
-    }
-    
-    // Filtrar por fecha usando la fecha del viaje padre si está disponible
-    let reservationDate = reservation.trip?.departureDate;
-    
-    // Si hay información del viaje padre, usar su fecha en lugar del segmento específico
-    if (reservation.trip?.parentTrip?.departureDate) {
-      reservationDate = reservation.trip.parentTrip.departureDate;
-    }
-    
-    if (reservationDate) {
-      const tripDateNormalized = normalizeToStartOfDay(reservationDate);
-      const selectedDateNormalized = normalizeToStartOfDay(selectedDate);
-      
-      if (!isSameLocalDay(tripDateNormalized, selectedDateNormalized)) {
-        return false;
-      }
     }
     
     // Filtrar por término de búsqueda
@@ -237,6 +223,7 @@ function ReservationsListContent() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => {
+                  console.log(`[Reservaciones] Cambiando fecha de ${selectedDate} a ${e.target.value}`);
                   setSelectedDate(e.target.value);
                   setCurrentPage(1);
                 }}
