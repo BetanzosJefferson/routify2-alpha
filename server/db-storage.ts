@@ -886,75 +886,51 @@ export class DatabaseStorage implements IStorage {
   async updateRelatedTripsAvailability(recordId: number, tripId: string, seatChange: number): Promise<void> {
     // Obtener el registro principal del viaje
     const tripRecord = await this.getTrip(recordId);
-    if (!tripRecord || !tripRecord.tripData || !Array.isArray(tripRecord.tripData)) return;
+    if (!tripRecord) return;
     
     // Extraer el índice del tripId específico (ej: "10_2" -> índice 2)
     const segmentIndex = parseInt(tripId.split('_')[1]);
-    if (isNaN(segmentIndex) || segmentIndex >= tripRecord.tripData.length) return;
+    if (isNaN(segmentIndex)) return;
     
     const isReducingSeats = seatChange < 0;
     const absoluteChange = Math.abs(seatChange);
     
     console.log(`[updateRelatedTripsAvailability] Actualizando registro ${recordId}, segmento ${tripId} con cambio de ${seatChange} asientos`);
     
-    // Obtener el segmento específico reservado
-    const reservedSegment = tripRecord.tripData[segmentIndex];
-    if (!reservedSegment) return;
+    // NUEVO: Determinar qué segmentos se superponen y actualizar seatOccupancy
+    const currentOccupancy = (tripRecord.seatOccupancy as Record<string, number[]>) || {};
     
-    // Obtener información de la ruta para determinar el orden de las paradas
-    const routeInfo = await this.getRouteWithSegments(tripRecord.routeId);
-    if (!routeInfo) return;
-    
-    // Crear array con todas las paradas en orden
-    const allStops = [routeInfo.origin, ...routeInfo.stops, routeInfo.destination];
-    
-    // Encontrar índices de las ubicaciones del segmento reservado
-    const reservedOriginIdx = allStops.indexOf(reservedSegment.origin);
-    const reservedDestinationIdx = allStops.indexOf(reservedSegment.destination);
-    
-    if (reservedOriginIdx === -1 || reservedDestinationIdx === -1) return;
-    
-    // Clonar el array tripData para modificarlo
-    const updatedTripData = [...tripRecord.tripData];
-    
-    // Actualizar todos los segmentos que se superponen con el reservado
-    for (let i = 0; i < updatedTripData.length; i++) {
-      const segment = updatedTripData[i];
+    // Si es una nueva reserva (seatChange < 0), generar asientos ocupados
+    if (isReducingSeats) {
+      const currentSeats = currentOccupancy[segmentIndex.toString()] || [];
+      const nextSeatNumber = currentSeats.length > 0 ? Math.max(...currentSeats) + 1 : 1;
       
-      // Encontrar índices de este segmento
-      const segmentOriginIdx = allStops.indexOf(segment.origin);
-      const segmentDestinationIdx = allStops.indexOf(segment.destination);
-      
-      if (segmentOriginIdx === -1 || segmentDestinationIdx === -1) continue;
-      
-      // Verificar si este segmento se superpone con el segmento reservado
-      const hasOverlap = reservedOriginIdx < segmentDestinationIdx && reservedDestinationIdx > segmentOriginIdx;
-      
-      if (hasOverlap) {
-        // Actualizar asientos disponibles del segmento superpuesto
-        const currentSeats = segment.availableSeats || tripRecord.capacity || 0;
-        let newSeats;
-        
-        if (isReducingSeats) {
-          newSeats = Math.max(currentSeats - absoluteChange, 0);
-        } else {
-          newSeats = Math.min(currentSeats + absoluteChange, tripRecord.capacity || currentSeats);
-        }
-        
-        updatedTripData[i] = {
-          ...segment,
-          availableSeats: newSeats
-        };
-        
-        console.log(`[updateRelatedTripsAvailability] Segmento ${recordId}_${i} (${segment.origin} → ${segment.destination}): ${currentSeats} → ${newSeats} asientos`);
+      // Agregar asientos ocupados a este segmento
+      const newSeats = [];
+      for (let i = 0; i < absoluteChange; i++) {
+        newSeats.push(nextSeatNumber + i);
       }
+      
+      currentOccupancy[segmentIndex.toString()] = [...currentSeats, ...newSeats];
+      
+      console.log(`[updateRelatedTripsAvailability] Asientos ${newSeats.join(', ')} ocupados en segmento ${segmentIndex}`);
+    } else {
+      // Es una cancelación (seatChange > 0), liberar asientos
+      const currentSeats = currentOccupancy[segmentIndex.toString()] || [];
+      const seatsToRemove = currentSeats.slice(-absoluteChange); // Remover últimos asientos
+      
+      currentOccupancy[segmentIndex.toString()] = currentSeats.slice(0, -absoluteChange);
+      
+      console.log(`[updateRelatedTripsAvailability] Asientos ${seatsToRemove.join(', ')} liberados en segmento ${segmentIndex}`);
     }
     
-    // Actualizar el registro en la base de datos con el tripData modificado
+    // Actualizar el registro en la base de datos con la nueva ocupación
     await db
       .update(schema.trips)
-      .set({ tripData: updatedTripData })
+      .set({ seatOccupancy: currentOccupancy })
       .where(eq(schema.trips.id, recordId));
+    
+    console.log(`[updateRelatedTripsAvailability] Registro ${recordId} actualizado correctamente`);
   }
   
   async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
@@ -2378,13 +2354,7 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
-      // 3. Validar estructura de datos del viaje
-      if (!trip.tripData || !Array.isArray(trip.tripData)) {
-        console.log(`DB Storage: [validateSeatAvailability] Registro ${recordId} sin datos de segmentos válidos`);
-        return false;
-      }
-      
-      // 4. Extraer y validar índice del segmento
+      // 3. Extraer y validar índice del segmento
       const tripIdParts = tripId.split('_');
       if (tripIdParts.length !== 2) {
         console.log(`DB Storage: [validateSeatAvailability] Formato de tripId inválido: ${tripId}. Esperado: recordId_segmentIndex`);
@@ -2392,26 +2362,19 @@ export class DatabaseStorage implements IStorage {
       }
       
       const segmentIndex = parseInt(tripIdParts[1]);
-      if (isNaN(segmentIndex) || segmentIndex < 0 || segmentIndex >= trip.tripData.length) {
-        console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} fuera de rango para ${tripId}. Segmentos disponibles: ${trip.tripData.length}`);
+      if (isNaN(segmentIndex) || segmentIndex < 0) {
+        console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} inválido para ${tripId}`);
         return false;
       }
       
-      // 5. Validar estructura del segmento específico
-      const segment = trip.tripData[segmentIndex];
-      if (!segment || typeof segment !== 'object') {
-        console.log(`DB Storage: [validateSeatAvailability] Segmento ${segmentIndex} no válido en registro ${recordId}`);
-        return false;
-      }
+      // 4. NUEVO: Calcular asientos disponibles desde seatOccupancy
+      const seatOccupancy = (trip.seatOccupancy as Record<string, number[]>) || {};
+      const occupiedSeats = seatOccupancy[segmentIndex.toString()] || [];
+      const availableSeats = trip.capacity - occupiedSeats.length;
       
-      // 6. Verificar asientos disponibles
-      const availableSeats = segment.availableSeats;
-      if (typeof availableSeats !== 'number' || availableSeats < 0) {
-        console.log(`DB Storage: [validateSeatAvailability] Campo availableSeats inválido en segmento ${tripId}: ${availableSeats}`);
-        return false;
-      }
+      console.log(`DB Storage: [validateSeatAvailability] Segmento ${segmentIndex} - Capacidad: ${trip.capacity}, Ocupados: ${occupiedSeats.length}, Disponibles: ${availableSeats}`);
       
-      // 7. Verificar disponibilidad suficiente
+      // 5. Verificar disponibilidad suficiente
       const hasEnoughSeats = availableSeats >= seatsRequested;
       
       console.log(`DB Storage: [validateSeatAvailability] Resultado - Segmento: ${tripId}, Disponibles: ${availableSeats}, Solicitados: ${seatsRequested}, Suficientes: ${hasEnoughSeats}`);
