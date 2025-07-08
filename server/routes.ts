@@ -2522,8 +2522,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const reservationData = validationResult.data;
       
+      // Extraer el recordId numérico del tripDetails.recordId (puede ser "84_118" o 84)
+      let numericRecordId: number;
+      
+      if (typeof reservationData.tripDetails.recordId === 'string') {
+        if (reservationData.tripDetails.recordId.includes('_')) {
+          numericRecordId = parseInt(reservationData.tripDetails.recordId.split('_')[0]);
+        } else {
+          numericRecordId = parseInt(reservationData.tripDetails.recordId);
+        }
+      } else {
+        numericRecordId = reservationData.tripDetails.recordId;
+      }
+      
+      console.log(`[POST /reservations] RecordId extraído: ${numericRecordId} (original: ${reservationData.tripDetails.recordId})`);
+      
       // Get the trip using recordId from tripDetails
-      const trip = await storage.getTrip(reservationData.tripDetails.recordId);
+      const trip = await storage.getTrip(numericRecordId);
       
       if (!trip) {
         return res.status(404).json({ error: "Trip record not found" });
@@ -2643,11 +2658,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Actualizar asientos disponibles usando la nueva función con tripDetails
       try {
-        const { recordId, tripId } = reservationData.tripDetails as { recordId: number, tripId: string };
-        console.log(`[POST /reservations] Actualizando registro ${recordId}, segmento ${tripId} y viajes relacionados con cambio de -${passengerCount} asientos`);
+        const { tripId } = reservationData.tripDetails;
+        console.log(`[POST /reservations] Actualizando registro ${numericRecordId}, segmento ${tripId} y viajes relacionados con cambio de -${passengerCount} asientos`);
         
-        await storage.updateRelatedTripsAvailability(recordId, tripId, -passengerCount);
-        console.log(`[POST /reservations] Asientos actualizados exitosamente para el registro ${recordId}, segmento ${tripId}`);
+        await storage.updateRelatedTripsAvailability(numericRecordId, tripId, -passengerCount);
+        console.log(`[POST /reservations] Asientos actualizados exitosamente para el registro ${numericRecordId}, segmento ${tripId}`);
       } catch (e) {
         console.error("[POST /reservations] Error al actualizar viajes relacionados:", e);
         // No fallamos si esto falla, podemos seguir con la operación principal
@@ -2662,11 +2677,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[POST /reservations] Creando transacción para anticipo de $${reservationData.advanceAmount}`);
           
           // Obtener información del viaje usando el recordId y tripId específicos
-          const { recordId, tripId } = reservationData.tripDetails as { recordId: number, tripId: string };
-          console.log(`[POST /reservations] DEPURACIÓN - Obteniendo información para recordId=${recordId}, tripId=${tripId}`);
+          const { tripId } = reservationData.tripDetails;
+          console.log(`[POST /reservations] DEPURACIÓN - Obteniendo información para recordId=${numericRecordId}, tripId=${tripId}`);
           
           // Obtener la información específica del segmento del viaje
-          const tripWithRouteInfo = await storage.getTripWithRouteInfo(recordId);
+          const tripWithRouteInfo = await storage.getTripWithRouteInfo(numericRecordId);
           console.log(`[POST /reservations] DEPURACIÓN - Información del viaje obtenida:`, JSON.stringify(tripWithRouteInfo, null, 2));
           
           // Extraer origen y destino del segmento específico usando tripId
