@@ -114,6 +114,7 @@ export function TripList() {
   // Initialize searchParams. Default to isSubTrip: 'false' for initial load.
   // This will be conditionally removed if a specific search is performed.
   const [searchParams, setSearchParams] = useState<SearchParams>({ date: today, isSubTrip: 'false' });
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [sortMethod, setSortMethod] = useState<"departure" | "price" | "duration">("departure");
@@ -207,7 +208,16 @@ export function TripList() {
       newSearchParams.seats = parseInt(seats);
     }
     
+    // Solo incluir isSubTrip='false' si no se ha especificado origen y destino
+    // Si se especifica origen y destino, permitir que se busquen todas las combinaciones
+    if (!origin.trim() && !destination.trim()) {
+      newSearchParams.isSubTrip = 'false';
+    }
+    
     setSearchParams(newSearchParams);
+    setHasSearched(true); // Marcar que se ha realizado una búsqueda
+    
+    console.log('Búsqueda realizada:', newSearchParams);
   };
 
   // Handler for reservation button click
@@ -407,6 +417,22 @@ export function TripList() {
           </div>
         </div>
       </div>
+
+      {/* Información sobre el tipo de búsqueda */}
+      {!hasSearched && !origin && !destination && (
+        <div className="mb-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <p className="text-blue-700 text-sm">
+                <strong>Mostrando viajes principales.</strong> Para buscar rutas específicas entre ciudades, selecciona origen y destino, luego haz clic en "Buscar viaje".
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center p-8">
