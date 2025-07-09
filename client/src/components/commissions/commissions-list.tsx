@@ -99,8 +99,8 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
   };
 
   // Filtrar comisiones según el estado
-  const pendingCommissions = commissionsData?.filter((comm: any) => !comm.createdByUser?.commissionPaid) || [];
-  const paidCommissions = commissionsData?.filter((comm: any) => comm.createdByUser?.commissionPaid) || [];
+  const pendingCommissions = commissionsData?.filter((comm: any) => !comm.commissionPaid) || [];
+  const paidCommissions = commissionsData?.filter((comm: any) => comm.commissionPaid) || [];
 
   if (isLoading) {
     return (
@@ -254,14 +254,14 @@ function CommissionItems({
             </div>
             
             <Badge 
-              variant={commission.createdByUser?.commissionPaid ? "default" : "outline"}
+              variant={commission.commissionPaid ? "default" : "outline"}
               className={cn(
-                commission.createdByUser?.commissionPaid 
+                commission.commissionPaid 
                   ? "bg-green-100 text-green-800 hover:bg-green-200" 
                   : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
               )}
             >
-              {commission.createdByUser?.commissionPaid ? (
+              {commission.commissionPaid ? (
                 <>
                   <CheckCircle className="mr-1 h-3 w-3" /> Pagada
                 </>

@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 9, 2025** - FIXED: Commission payment status persistence issue completely resolved:
+  - **FRONTEND BUG FIXED**: CommissionsList component was incorrectly checking `commission.createdByUser?.commissionPaid` instead of `commission.commissionPaid`
+  - **BACKEND WORKING**: PUT /api/commissions/pay endpoint was already functioning correctly, updating the right field
+  - **FILTERING CORRECTED**: Pending/paid commission filtering now works properly with the correct field reference
+  - **BADGE DISPLAY FIXED**: Status badges now show correct paid/pending state based on actual database value
+  - **TESTING CONFIRMED**: API endpoints tested successfully - commission status updates and persists correctly
+  - **USER EXPERIENCE**: Users can now mark commissions as paid and see immediate feedback with proper state persistence
+  - Commission management interface now displays and updates payment status correctly across all views
+
 - **July 8, 2025** - CONFIRMED WORKING: Package seat reduction system is functioning correctly:
   - **SEAT REDUCTION VERIFIED**: When packages use seats, available seats are properly reduced across all affected trip segments
   - **Function updateRelatedTripsAvailability**: Working correctly, reduces seats for overlapping segments
