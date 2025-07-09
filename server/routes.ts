@@ -4030,10 +4030,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let specificDestination = reservation.trip?.route?.destination || "Destino no especificado";
         
         if (reservation.tripDetails && reservation.tripDetails.tripId) {
-          const tripId = reservation.tripDetails.tripId; // formato: "recordId_index"
-          const [recordIdStr, indexStr] = tripId.split('_');
-          const recordId = parseInt(recordIdStr);
-          const tripIndex = parseInt(indexStr);
+          const tripId = reservation.tripDetails.tripId; // formato: "recordId_index" o solo recordId
+          let recordId: number;
+          let tripIndex: number;
+          
+          // Verificar si tripId es un string con formato "recordId_index" o solo un número
+          if (typeof tripId === 'string' && tripId.includes('_')) {
+            // Formato: "recordId_index"
+            const [recordIdStr, indexStr] = tripId.split('_');
+            recordId = parseInt(recordIdStr);
+            tripIndex = parseInt(indexStr);
+          } else {
+            // Formato: número directo (solo recordId)
+            recordId = typeof tripId === 'number' ? tripId : parseInt(tripId.toString());
+            tripIndex = 0; // Usar el primer segmento por defecto
+          }
           
           console.log(`[GET /commissions/reservations] Procesando tripId: ${tripId}, recordId: ${recordId}, tripIndex: ${tripIndex}`);
           
@@ -4041,7 +4052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Obtener el viaje específico usando recordId
             const tripRecord = await storage.getTrip(recordId);
             if (tripRecord && tripRecord.tripData && Array.isArray(tripRecord.tripData)) {
-              const specificTrip = tripRecord.tripData[tripIndex];
+              const specificTrip = tripRecord.tripData[tripIndex] || tripRecord.tripData[0];
               if (specificTrip) {
                 specificOrigin = specificTrip.origin || specificOrigin;
                 specificDestination = specificTrip.destination || specificDestination;

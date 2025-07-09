@@ -263,7 +263,7 @@ function ReservationsListContent() {
                 className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
                 disabled={isLoading}
               >
-                {isLoading ? "Buscando..." : "🔍 Buscar"}
+                {isLoading ? "Buscando..." : "Buscar"}
               </Button>
             </div>
           </div>

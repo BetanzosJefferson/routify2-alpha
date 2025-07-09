@@ -731,19 +731,7 @@ export function ReservationList() {
                   }}
                   className="w-32 text-sm"
                 />
-                <Button
-                  onClick={async () => {
-                    console.log(`[ReservationList] Invalidando cache para nueva consulta`);
-                    await queryClient.invalidateQueries({
-                      queryKey: ["/api/reservations"]
-                    });
-                  }}
-                  size="sm"
-                  className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Buscando..." : "🔍 Buscar"}
-                </Button>
+             
               </div>
 
               {/* Filtro general */}
