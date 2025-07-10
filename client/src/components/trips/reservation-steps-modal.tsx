@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -193,8 +194,17 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         const totalPrice = trip.price * numPassengers;
         const finalPrice = couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice;
         
+        console.log('DEBUG: Modal confirmation check:', {
+          advanceAmount,
+          finalPrice,
+          totalPrice,
+          couponDiscount,
+          shouldShowModal: advanceAmount < finalPrice
+        });
+        
         if (advanceAmount < finalPrice) {
           // Mostrar modal de confirmación si el anticipo es menor al total
+          console.log('DEBUG: Showing payment confirmation modal');
           setShowPaymentConfirmation(true);
         } else {
           // Continuar normalmente si el anticipo cubre el total
@@ -1821,10 +1831,10 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         )}
       </DialogContent>
       
-      {/* Modal de confirmación de pago */}
-      {showPaymentConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+      {/* Modal de confirmación de pago usando Portal */}
+      {showPaymentConfirmation && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6 shadow-2xl">
             <div className="text-center mb-4">
               <CreditCardIcon className="w-12 h-12 text-amber-500 mx-auto mb-2" />
               <h3 className="text-lg font-semibold text-gray-800">
@@ -1896,7 +1906,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </Dialog>
   );
