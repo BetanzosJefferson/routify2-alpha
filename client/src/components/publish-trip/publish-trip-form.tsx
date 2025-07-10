@@ -76,6 +76,8 @@ type FormValues = {
   driverId?: number | null;
   // Campo para hora de salida
   departureTime: string;
+  // Campo para visibilidad
+  visibility?: string;
 };
 
 export function PublishTripForm() {
@@ -200,6 +202,7 @@ export function PublishTripForm() {
       vehicleId: null, // Valores iniciales para vehículo
       driverId: null, // y conductor
       departureTime: "08:00", // Hora de salida por defecto
+      visibility: "publicado", // Estado por defecto
     },
     // Este modo nos ayuda a que el formulario muestre los valores actualizados
     mode: "onChange",
@@ -692,12 +695,33 @@ export function PublishTripForm() {
     mutationFn: async (data: FormValues) => {
       if (!editingTripId) throw new Error("No hay ID de viaje para actualizar");
 
+      // Preparar solo los campos que pueden ser actualizados por PATCH
+      const updateData: Record<string, any> = {};
+      
+      // Campos que el endpoint PATCH puede actualizar
+      if (data.vehicleId !== undefined) {
+        updateData.vehicleId = data.vehicleId;
+      }
+      if (data.driverId !== undefined) {
+        updateData.driverId = data.driverId;
+      }
+      if (data.capacity !== undefined) {
+        updateData.capacity = data.capacity;
+      }
+      // visibility está definido en el formulario pero no veo este campo en el UI
+      // Lo agregamos por si acaso
+      if (data.visibility !== undefined) {
+        updateData.visibility = data.visibility;
+      }
+
+      console.log("Datos a enviar al endpoint PATCH:", updateData);
+
       const response = await fetch(`/api/trips/${editingTripId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
@@ -1733,6 +1757,36 @@ export function PublishTripForm() {
                             )}
                           />
                         </div>
+                        
+                        {/* Visibilidad */}
+                        <FormField
+                          control={form.control}
+                          name="visibility"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Visibilidad</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || "publicado"}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione la visibilidad" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="publicado">Publicado</SelectItem>
+                                  <SelectItem value="borrador">Borrador</SelectItem>
+                                  <SelectItem value="oculto">Oculto</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Controla si el viaje es visible para reservar.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </TabsContent>
                   )}
