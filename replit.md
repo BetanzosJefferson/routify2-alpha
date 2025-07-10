@@ -119,15 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 10, 2025** - FIXED: Automatic schedule configurations now respected when publishing trips:
-  - **ROOT CAUSE IDENTIFIED**: System was using proportional calculation instead of template time configurations
-  - **NEW FUNCTION**: Added `calculateSegmentTimesFromTemplate()` to process automatic schedule configurations
-  - **INTELLIGENT SELECTION**: Backend now checks for template timeConfiguration and uses it when available
-  - **ACCURATE TIMING**: Horarios automáticos now calculated based on template settings (hours + minutes between stops)
-  - **FALLBACK MAINTAINED**: Still uses proportional calculation when template has no time configuration
-  - **COMPREHENSIVE LOGGING**: Added detailed console output to track which method is being used
-  - **USER EXPERIENCE**: Published trips now show exact times configured in templates instead of calculated approximations
-  - Fixed issue where trips showed random times like 02:26 AM instead of configured times like 10:00 PM
+- **July 10, 2025** - FIXED: Manual schedule modifications now respected when publishing trips:
+  - **ROOT CAUSE IDENTIFIED**: Backend was prioritizing template configurations over user-modified stop times
+  - **NEW PRIORITY SYSTEM**: Backend now uses 1) Frontend segmentPrices with custom times, 2) Template configurations, 3) Proportional fallback
+  - **MANUAL TIMING PRESERVED**: When users modify stop times in frontend, these changes are now preserved in published trips
+  - **CHAIN MODIFICATION SUPPORT**: System correctly handles when users modify one stop time and subsequent times update automatically
+  - **INTELLIGENT DETECTION**: Backend detects when segmentPrices contain custom departureTime/arrivalTime values
+  - **COMPREHENSIVE LOGGING**: Added detailed console output to track which time calculation method is being used
+  - **USER EXPERIENCE**: Published trips now show exact times users configured manually instead of reverting to template defaults
+  - Fixed issue where manual time modifications (like 11:50 PM, 12:20 AM) were ignored and replaced with template times
 
 - **July 10, 2025** - ENHANCED: Payment confirmation modal implementation completed:
   - **MODAL FUNCTIONALITY**: Added payment confirmation modal that appears when advance payment < total amount

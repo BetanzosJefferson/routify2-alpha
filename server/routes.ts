@@ -1170,15 +1170,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Calculate segment times based on template configuration or total journey time
+      // Calculate segment times with priority: 1) SegmentPrices from frontend, 2) Template config, 3) Proportional
       console.log("\n=== CALCULANDO HORARIOS DE SEGMENTOS ===");
       console.log(`Plantilla ID: ${template.id}, Configuración de tiempo disponible: ${template.timeConfiguration ? 'SÍ' : 'NO'}`);
+      console.log(`segmentPrices del frontend disponibles: ${tripData.segmentPrices ? 'SÍ' : 'NO'}`);
+      console.log(`stopTimes manuales disponibles: ${tripDataWithStopTimes.stopTimes ? 'SÍ' : 'NO'}`);
       
       let segmentTimes;
       
-      if (template.timeConfiguration && typeof template.timeConfiguration === 'object') {
-        // Usar configuración automática de la plantilla
-        console.log("✅ Usando configuración automática de horarios de la plantilla");
+      // Verificar si hay horarios personalizados en segmentPrices del frontend
+      const hasCustomTimes = tripData.segmentPrices?.some(
+        (sp: any) => sp.departureTime || sp.arrivalTime
+      );
+      
+      if (hasCustomTimes) {
+        // PRIORIDAD 1: Usar horarios personalizados del frontend (segmentPrices)
+        console.log("🎯 PRIORIDAD 1: Usando horarios personalizados del frontend (segmentPrices)");
+        console.log("segmentPrices con horarios personalizados:", tripData.segmentPrices);
+        
+        // Crear mapa de horarios directamente de segmentPrices
+        segmentTimes = {};
+        tripData.segmentPrices.forEach((sp: any) => {
+          if (sp.departureTime && sp.arrivalTime) {
+            const key = `${sp.origin}-${sp.destination}`;
+            segmentTimes[key] = {
+              departureTime: sp.departureTime,
+              arrivalTime: sp.arrivalTime
+            };
+            console.log(`✅ Horario personalizado para ${sp.origin} → ${sp.destination}: ${sp.departureTime} - ${sp.arrivalTime}`);
+          }
+        });
+      } else if (template.timeConfiguration && typeof template.timeConfiguration === 'object') {
+        // PRIORIDAD 2: Usar configuración automática de la plantilla
+        console.log("🔧 PRIORIDAD 2: Usando configuración automática de horarios de la plantilla");
         console.log("Configuración de tiempo:", template.timeConfiguration);
         
         segmentTimes = calculateSegmentTimesFromTemplate(
@@ -1188,8 +1212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           template.timeConfiguration
         );
       } else {
-        // Usar cálculo proporcional como fallback
-        console.log("⚠️ Usando cálculo proporcional (fallback) - no hay configuración de plantilla");
+        // PRIORIDAD 3: Usar cálculo proporcional como fallback
+        console.log("⚠️ PRIORIDAD 3: Usando cálculo proporcional (fallback) - no hay configuración disponible");
         segmentTimes = calculateSegmentTimes(
           allSegments, 
           departureTime, 
