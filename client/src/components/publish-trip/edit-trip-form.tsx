@@ -45,7 +45,7 @@ type SegmentTimePrice = SegmentPrice & {
 };
 
 type FormValues = {
-  routeId: number;
+  templateId: number;
   startDate: string;
   endDate: string;
   capacity: number;
@@ -67,7 +67,8 @@ interface EditTripFormProps {
 export function EditTripForm({ tripId }: EditTripFormProps) {
   const { toast } = useToast();
   const [segmentPrices, setSegmentPrices] = useState<SegmentTimePrice[]>([]);
-  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
   // Helper para validar y asegurar formato correcto de stopTimes
   const ensureValidStopTimes = (times: any[]): StopTime[] => {
@@ -104,34 +105,34 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     }
   });
 
-  // Fetch routes for dropdown
-  const routesQuery = useQuery({
-    queryKey: ["/api/routes"],
+  // Fetch templates for dropdown
+  const templatesQuery = useQuery({
+    queryKey: ["/api/route-templates"],
     placeholderData: [],
     enabled: true,
     queryFn: async () => {
-      console.log("Cargando rutas para formulario...");
-      const response = await fetch("/api/routes");
+      console.log("Cargando plantillas para formulario...");
+      const response = await fetch("/api/route-templates");
       if (!response.ok) {
-        throw new Error("Error al cargar las rutas");
+        throw new Error("Error al cargar las plantillas");
       }
       const data = await response.json();
-      console.log("Rutas cargadas para formulario:", data);
+      console.log("Plantillas cargadas para formulario:", data);
       return data;
     },
     retry: 3,
     retryDelay: 1000,
   });
 
-  // Fetch selected route segments when route changes
-  const routeSegmentsQuery = useQuery({
-    queryKey: ["/api/routes", selectedRouteId, "segments"],
+  // Fetch selected template route when template changes
+  const templateRouteQuery = useQuery({
+    queryKey: ["/api/routes", selectedTemplate?.routeId, "segments"],
     queryFn: async () => {
-      if (!selectedRouteId) return null;
-      const res = await fetch(`/api/routes/${selectedRouteId}/segments`);
-      return await res.json() as RouteWithSegments;
+      if (!selectedTemplate?.routeId) return null;
+      const res = await fetch(`/api/routes/${selectedTemplate.routeId}/segments`);
+      return (await res.json()) as RouteWithSegments;
     },
-    enabled: !!selectedRouteId,
+    enabled: !!selectedTemplate?.routeId,
   });
   
   // Consulta para obtener vehículos disponibles
@@ -171,7 +172,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(publishTripValidationSchema),
     defaultValues: {
-      routeId: 0,
+      templateId: 0,
       startDate: "",
       endDate: "",
       capacity: 18,
@@ -184,10 +185,10 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     mode: "onChange",
   });
 
-  // Update segment prices when route changes
+  // Update segment prices when template route changes
   useEffect(() => {
-    if (routeSegmentsQuery.data) {
-      const route = routeSegmentsQuery.data;
+    if (templateRouteQuery.data) {
+      const route = templateRouteQuery.data;
       
       // Verificar que route.segments existe antes de usar filter
       if (route.segments && Array.isArray(route.segments)) {
@@ -213,13 +214,16 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         console.warn("No se encontraron segmentos en la ruta seleccionada o la estructura es incorrecta", route);
       }
     }
-  }, [routeSegmentsQuery.data, form]);
+  }, [templateRouteQuery.data, form]);
 
-  // Handle route selection
-  const handleRouteChange = (routeId: string) => {
-    const id = parseInt(routeId, 10);
-    setSelectedRouteId(id);
-    form.setValue("routeId", id);
+  // Handle template selection
+  const handleTemplateChange = (templateId: string) => {
+    const id = parseInt(templateId, 10);
+    const template = templatesQuery.data?.find((t: any) => t.id === id);
+    
+    setSelectedTemplateId(id);
+    setSelectedTemplate(template);
+    form.setValue("templateId", id);
   };
 
   // Cargar los datos del viaje cuando se obtienen de la API
@@ -228,9 +232,28 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       const tripData = tripQuery.data;
       console.log("Datos de viaje cargados para edición:", tripData);
       
-      // Establecer routeId y seleccionar la ruta
-      setSelectedRouteId(tripData.routeId);
-      form.setValue("routeId", tripData.routeId);
+      // Buscar template para esta ruta
+      const templateForRoute = templatesQuery.data?.find(
+        (template: any) => template.routeId === tripData.routeId
+      );
+      
+      if (templateForRoute) {
+        console.log("Template encontrado para la ruta:", templateForRoute);
+        form.setValue("templateId", templateForRoute.id);
+        setSelectedTemplateId(templateForRoute.id);
+        setSelectedTemplate(templateForRoute);
+      } else {
+        console.warn("No se encontró template para routeId:", tripData.routeId);
+        // En modo edición, usar el primer template disponible como fallback
+        if (templatesQuery.data && templatesQuery.data.length > 0) {
+          console.log("Usando primer template disponible como fallback");
+          form.setValue("templateId", templatesQuery.data[0].id);
+          setSelectedTemplateId(templatesQuery.data[0].id);
+          setSelectedTemplate(templatesQuery.data[0]);
+        } else {
+          form.setValue("templateId", 0);
+        }
+      }
       
       // Convertir la fecha a formato YYYY-MM-DD para el input type="date"
       const formatDateForInput = (dateString: string) => {
@@ -272,11 +295,11 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         form.setValue("visibility", TripVisibility.PUBLISHED);
       }
     }
-  }, [tripQuery.data, form]);
+  }, [tripQuery.data, templatesQuery.data, form]);
 
   // Cargar precios de segmentos y tiempos de parada una vez que la ruta está cargada
   useEffect(() => {
-    if (tripQuery.data && routeSegmentsQuery.data && !form.formState.isDirty) {
+    if (tripQuery.data && templateRouteQuery.data && !form.formState.isDirty) {
       const tripData = tripQuery.data;
       console.log("🔧 Procesando tripData para edición:", tripData);
       
@@ -323,17 +346,17 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         }
       }
     }
-  }, [tripQuery.data, routeSegmentsQuery.data, form]);
+  }, [tripQuery.data, templateRouteQuery.data, form]);
 
   // Función para reconstruir los tiempos de parada a partir de tripData segments
   const reconstructStopTimesFromTripDataSegments = (segmentPrices: SegmentTimePrice[]) => {
-    if (!routeSegmentsQuery.data || !segmentPrices || segmentPrices.length === 0) return;
+    if (!templateRouteQuery.data || !segmentPrices || segmentPrices.length === 0) return;
     
     // Obtener todas las ubicaciones de la ruta (origen, paradas, destino)
     const allLocations = [
-      routeSegmentsQuery.data.origin,
-      ...(routeSegmentsQuery.data.stops || []),
-      routeSegmentsQuery.data.destination
+      templateRouteQuery.data.origin,
+      ...(templateRouteQuery.data.stops || []),
+      templateRouteQuery.data.destination
     ];
     
     // Crear un mapa para almacenar los tiempos por ubicación
@@ -384,13 +407,13 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
 
   // Función para reconstruir los tiempos de parada a partir de los tiempos de segmentos
   const reconstructStopTimesFromSegments = (segmentPrices: SegmentTimePrice[]) => {
-    if (!routeSegmentsQuery.data || !segmentPrices || segmentPrices.length === 0) return;
+    if (!templateRouteQuery.data || !segmentPrices || segmentPrices.length === 0) return;
     
     // Obtener todas las ubicaciones de la ruta (origen, paradas, destino)
     const allLocations = [
-      routeSegmentsQuery.data.origin,
-      ...(routeSegmentsQuery.data.stops || []),
-      routeSegmentsQuery.data.destination
+      templateRouteQuery.data.origin,
+      ...(templateRouteQuery.data.stops || []),
+      templateRouteQuery.data.destination
     ];
     
     // Crear un mapa para almacenar los tiempos por ubicación
@@ -511,11 +534,11 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     
     // Obtener la ubicación para este índice
     let stopLocation = "";
-    if (routeSegmentsQuery.data) {
+    if (templateRouteQuery.data) {
       const allLocations = [
-        routeSegmentsQuery.data.origin,
-        ...(routeSegmentsQuery.data.stops || []),
-        routeSegmentsQuery.data.destination
+        templateRouteQuery.data.origin,
+        ...(templateRouteQuery.data.stops || []),
+        templateRouteQuery.data.destination
       ];
       stopLocation = allLocations[index] || "";
     }
@@ -541,13 +564,13 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
 
   // Función para calcular los tiempos de los segmentos basados en los tiempos de las paradas
   const updateSegmentTimesFromStops = (stopTimeArray: StopTime[]) => {
-    if (!routeSegmentsQuery.data) return;
+    if (!templateRouteQuery.data) return;
     
     // Obtener todas las ubicaciones (origen, paradas, destino)
     const allLocations = [
-      routeSegmentsQuery.data.origin,
-      ...(routeSegmentsQuery.data.stops || []),
-      routeSegmentsQuery.data.destination
+      templateRouteQuery.data.origin,
+      ...(templateRouteQuery.data.stops || []),
+      templateRouteQuery.data.destination
     ];
     
     // Para cada segmento, encontrar el tiempo de salida y llegada correspondiente
@@ -584,7 +607,17 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   const updateTripMutation = useMutation({
     mutationFn: async (data: FormValues) => {
       console.log("Enviando datos para actualizar viaje:", data);
-      const res = await apiRequest("PUT", `/api/trips/${tripId}`, data);
+      
+      // Preparar datos de actualización - solo campos permitidos
+      const updateData = {
+        vehicleId: data.vehicleId === 0 ? null : data.vehicleId,
+        driverId: data.driverId === 0 ? null : data.driverId,
+        capacity: data.capacity,
+        visibility: data.visibility,
+      };
+      
+      console.log("Datos de actualización procesados:", updateData);
+      const res = await apiRequest("PATCH", `/api/trips/${tripId}`, updateData);
       return await res.json();
     },
     onSuccess: () => {
@@ -630,7 +663,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   };
 
   // Si está cargando datos, mostrar un spinner
-  if (tripQuery.isLoading || routesQuery.isLoading) {
+  if (tripQuery.isLoading || templatesQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -648,13 +681,13 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Sección básica del formulario */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Selector de ruta (deshabilitado en edición) */}
+            {/* Selector de plantilla (deshabilitado en edición) */}
             <FormField
               control={form.control}
-              name="routeId"
+              name="templateId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Ruta</FormLabel>
+                  <FormLabel>Plantilla</FormLabel>
                   <Select
                     disabled={true} // Siempre deshabilitado en modo edición
                     value={String(field.value) || ""}
@@ -662,19 +695,19 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione una ruta" />
+                        <SelectValue placeholder="Seleccione una plantilla" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {routesQuery.data?.map((route: Route) => (
-                        <SelectItem key={route.id} value={String(route.id)}>
-                          {route.name} ({route.origin} → {route.destination})
+                      {templatesQuery.data?.map((template: any) => (
+                        <SelectItem key={template.id} value={String(template.id)}>
+                          {template.name} ({template.route?.origin} → {template.route?.destination})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    La ruta no se puede cambiar al editar un viaje.
+                    La plantilla no se puede cambiar al editar un viaje.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -821,7 +854,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
           </div>
           
           {/* Detalles de precios y tiempos */}
-          {selectedRouteId && routeSegmentsQuery.data && (
+          {selectedTemplate && templateRouteQuery.data && (
             <Tabs defaultValue="segments">
               <TabsList className="mb-2 w-full flex flex-wrap justify-start">
                 <TabsTrigger value="segments" className="flex-grow text-xs sm:text-sm">
@@ -1040,17 +1073,17 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
                   
                   {/* Vista móvil de tiempos de parada */}
                   <div className="md:hidden space-y-4">
-                    {routeSegmentsQuery.data && (
+                    {templateRouteQuery.data && (
                       <>
                         {[
-                          routeSegmentsQuery.data.origin,
-                          ...(routeSegmentsQuery.data.stops || []),
-                          routeSegmentsQuery.data.destination
+                          templateRouteQuery.data.origin,
+                          ...(templateRouteQuery.data.stops || []),
+                          templateRouteQuery.data.destination
                         ].map((location, index) => (
                           <div key={index} className="bg-white p-3 border rounded-md space-y-2">
                             <div className="flex flex-col space-y-1">
                               <div className="text-xs font-medium text-gray-500">
-                                {index === 0 ? "Origen" : index === ([routeSegmentsQuery.data.origin, ...(routeSegmentsQuery.data.stops || []), routeSegmentsQuery.data.destination].length - 1) ? "Destino" : `Parada ${index}`}
+                                {index === 0 ? "Origen" : index === ([templateRouteQuery.data.origin, ...(templateRouteQuery.data.stops || []), templateRouteQuery.data.destination].length - 1) ? "Destino" : `Parada ${index}`}
                               </div>
                               <div className="text-sm">{location}</div>
                             </div>
@@ -1084,16 +1117,16 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {routeSegmentsQuery.data && [
-                          routeSegmentsQuery.data.origin,
-                          ...(routeSegmentsQuery.data.stops || []),
-                          routeSegmentsQuery.data.destination
+                        {templateRouteQuery.data && [
+                          templateRouteQuery.data.origin,
+                          ...(templateRouteQuery.data.stops || []),
+                          templateRouteQuery.data.destination
                         ].map((location, index) => (
                           <tr key={index}>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                               {index === 0 ? (
                                 <span className="font-medium">Origen: {location}</span>
-                              ) : index === ([routeSegmentsQuery.data.origin, ...(routeSegmentsQuery.data.stops || []), routeSegmentsQuery.data.destination].length - 1) ? (
+                              ) : index === ([templateRouteQuery.data.origin, ...(templateRouteQuery.data.stops || []), templateRouteQuery.data.destination].length - 1) ? (
                                 <span className="font-medium">Destino: {location}</span>
                               ) : (
                                 <span>Parada {index}: {location}</span>
