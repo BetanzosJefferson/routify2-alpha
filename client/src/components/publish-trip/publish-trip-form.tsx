@@ -724,7 +724,10 @@ export function PublishTripForm() {
   });
 
   const onSubmit = (data: FormValues) => {
+    console.log("=== EJECUTANDO onSubmit ===");
     console.log("Datos de formulario enviados:", data);
+    console.log("editingTripId:", editingTripId);
+    
     // Incluir los tiempos de parada en los datos del formulario
     data.stopTimes = stopTimes;
     
@@ -742,8 +745,10 @@ export function PublishTripForm() {
 
     // Llamar a la mutación para publicar o actualizar el viaje
     if (editingTripId) {
+      console.log("🔄 Ejecutando actualización de viaje...");
       updateTripMutation.mutate(data);
     } else {
+      console.log("📝 Ejecutando publicación de viaje...");
       publishTripMutation.mutate(data);
     }
   };
@@ -1710,6 +1715,12 @@ export function PublishTripForm() {
                     publishTripMutation.isPending ||
                     updateTripMutation.isPending
                   }
+                  onClick={() => {
+                    console.log("🔘 Botón presionado!");
+                    console.log("editingTripId en click:", editingTripId);
+                    console.log("Form valid:", form.formState.isValid);
+                    console.log("Form errors:", form.formState.errors);
+                  }}
                 >
                   {(publishTripMutation.isPending ||
                     updateTripMutation.isPending) && (
