@@ -234,9 +234,11 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     setCurrentStep(currentStep + 1);
   };
   
-  const handlePaymentConfirmationBack = () => {
+  const handlePaymentConfirmationBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setShowPaymentConfirmation(false);
-    // Permanecer en el mismo paso (paso 2)
+    // Permanecer en el mismo paso (paso 2) sin cerrar el formulario principal
   };
   
   // Reservation mutation
@@ -1874,18 +1876,21 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                   </div>
                   
                   <div className="border-t pt-3">
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <span className="text-gray-500">Anticipo:</span>
-                        <div className="font-medium">{formatPrice(advanceAmount)}</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Método anticipo:</span>
-                        <div className="font-medium text-blue-600">
-                          {advancePaymentMethod === PaymentMethod.CASH ? "Efectivo" : "Transferencia"}
+                    {/* Solo mostrar información de anticipo si es mayor a 0 */}
+                    {advanceAmount > 0 && (
+                      <div className="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                          <span className="text-gray-500">Anticipo:</span>
+                          <div className="font-medium">{formatPrice(advanceAmount)}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Método anticipo:</span>
+                          <div className="font-medium text-blue-600">
+                            {advancePaymentMethod === PaymentMethod.CASH ? "Efectivo" : "Transferencia"}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1929,12 +1934,14 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                 variant="outline" 
                 onClick={handlePaymentConfirmationBack}
                 className="flex-1"
+                type="button"
               >
                 Atrás
               </Button>
               <Button 
                 onClick={handlePaymentConfirmationContinue}
                 className="flex-1"
+                type="button"
               >
                 Continuar
               </Button>
