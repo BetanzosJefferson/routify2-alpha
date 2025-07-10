@@ -296,6 +296,34 @@ export const publishTripValidationSchema = z.object({
     .default(TripVisibility.PUBLISHED).optional(), // Estado de visibilidad (publicado, oculto, cancelado)
 });
 
+// Esquema de validación para edición de viajes - campos menos estrictos
+export const updateTripValidationSchema = z.object({
+  templateId: z.number().optional(), // Opcional en edición
+  routeId: z.number().optional(), // Opcional en edición
+  startDate: z.string().optional(), // Opcional en edición
+  endDate: z.string().optional(), // Opcional en edición
+  capacity: z.number().min(1, "Capacity is required"), // Requerido
+  price: z.number().optional(),
+  departureTime: z.string().optional(), // Opcional en edición
+  segmentPrices: z.array(
+    z.object({
+      origin: z.string(),
+      destination: z.string(),
+      price: z.number().min(0, "Price must be a positive number"),
+      departureTime: z.string().optional(),
+      arrivalTime: z.string().optional()
+    })
+  ).optional(),
+  // Campo opcional para tiempos de parada personalizados
+  stopTimes: z.array(stopTimeSchema).optional(),
+  // Campos para asignación de vehículos y conductores
+  vehicleId: z.number().optional().nullable(), // ID del vehículo asignado
+  driverId: z.number().optional().nullable(),  // ID del conductor asignado
+  // Campos para visibilidad y estado del viaje
+  visibility: z.enum([TripVisibility.PUBLISHED, TripVisibility.HIDDEN, TripVisibility.CANCELLED])
+    .default(TripVisibility.PUBLISHED).optional(), // Estado de visibilidad (publicado, oculto, cancelado)
+});
+
 export const createReservationValidationSchema = z.object({
   tripDetails: z.object({
     recordId: z.union([z.number(), z.string()]).refine(val => val != null, "ID del registro del viaje es requerido"),

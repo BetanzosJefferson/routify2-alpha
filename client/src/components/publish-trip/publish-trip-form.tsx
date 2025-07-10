@@ -37,6 +37,7 @@ import {
 import { TimeInput } from "@/components/ui/time-input";
 import {
   publishTripValidationSchema,
+  updateTripValidationSchema,
   type Route,
   type RouteWithSegments,
   type SegmentPrice,
@@ -185,9 +186,9 @@ export function PublishTripForm() {
     enabled: showAssignmentFields, // Solo se ejecuta cuando showAssignmentFields es true
   });
 
-  // Form validation and handling
+  // Form validation and handling - usar esquema diferente según modo
   const form = useForm<FormValues>({
-    resolver: zodResolver(publishTripValidationSchema),
+    resolver: zodResolver(editingTripId ? updateTripValidationSchema : publishTripValidationSchema),
     defaultValues: {
       templateId: 0,
       startDate: format(new Date(), "yyyy-MM-dd"),
@@ -203,6 +204,14 @@ export function PublishTripForm() {
     // Este modo nos ayuda a que el formulario muestre los valores actualizados
     mode: "onChange",
   });
+
+  // Efecto para actualizar el resolver cuando cambie el modo edición
+  useEffect(() => {
+    const newResolver = zodResolver(editingTripId ? updateTripValidationSchema : publishTripValidationSchema);
+    form.clearErrors(); // Limpiar errores existentes
+    // Reasignar el resolver no es directamente posible, pero podemos forzar la revalidación
+    form.trigger(); // Triggerar validación con el nuevo contexto
+  }, [editingTripId, form]);
 
   // Update segment prices when template changes
   useEffect(() => {
@@ -1720,6 +1729,8 @@ export function PublishTripForm() {
                     console.log("editingTripId en click:", editingTripId);
                     console.log("Form valid:", form.formState.isValid);
                     console.log("Form errors:", form.formState.errors);
+                    console.log("Form values:", form.getValues());
+                    console.log("Usando esquema:", editingTripId ? "updateTripValidationSchema" : "publishTripValidationSchema");
                   }}
                 >
                   {(publishTripMutation.isPending ||
