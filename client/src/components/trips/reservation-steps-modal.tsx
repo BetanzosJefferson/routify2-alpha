@@ -1902,5 +1902,6 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
