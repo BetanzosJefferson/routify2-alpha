@@ -31,8 +31,8 @@ export function usePackages(options: UsePackagesOptions = {}) {
   const { tripId, enabled = true, date } = options;
   const { user } = useAuth();
   
-  // Usar endpoint específico para taquilla o endpoint general
-  const baseUrl = user?.role === 'taquilla' ? '/api/taquilla/packages' : '/api/packages';
+  // Usar endpoint específico para taquilla, chofer o endpoint general
+  const baseUrl = (user?.role === 'taquilla' || user?.role === 'chofer') ? '/api/taquilla/packages' : '/api/packages';
   
   // Construir la URL con los parámetros de consulta si existen
   const params = new URLSearchParams();

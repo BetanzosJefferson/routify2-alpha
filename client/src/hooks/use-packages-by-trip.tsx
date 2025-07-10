@@ -15,8 +15,8 @@ export function usePackagesByTrip({ recordId, tripInfo, enabled = true }: Packag
     queryFn: async () => {
       console.log(`[usePackagesByTrip] Fetching packages for trip:`, { recordId, tripInfo });
       
-      // Usar endpoint específico para taquilla o endpoint general
-      const endpoint = user?.role === 'taquilla' ? '/api/taquilla/packages' : '/api/packages';
+      // Usar endpoint específico para taquilla, chofer o endpoint general
+      const endpoint = (user?.role === 'taquilla' || user?.role === 'chofer') ? '/api/taquilla/packages' : '/api/packages';
       
       const response = await fetch(endpoint);
       if (!response.ok) {

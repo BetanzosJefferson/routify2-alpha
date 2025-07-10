@@ -5804,33 +5804,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /taquilla/packages] Sin filtro de fecha - aplicando fecha actual: ${dateFilter}`);
       }
       
-      // Verificar que el usuario sea taquillero
-      if (user.role !== 'taquilla') {
-        console.log(`[GET /taquilla/packages] ACCESO DENEGADO: El usuario tiene rol ${user.role}, se requiere rol taquilla`);
-        return res.status(403).json({ error: "Acceso denegado. Solo usuarios con rol taquilla pueden usar este endpoint." });
+      // Verificar que el usuario sea taquillero o chofer
+      if (user.role !== 'taquilla' && user.role !== 'chofer') {
+        console.log(`[GET /taquilla/packages] ACCESO DENEGADO: El usuario tiene rol ${user.role}, se requiere rol taquilla o chofer`);
+        return res.status(403).json({ error: "Acceso denegado. Solo usuarios con rol taquilla o chofer pueden usar este endpoint." });
       }
       
-      // Obtener todas las empresas asociadas al taquillero
-      const userCompanies = await db
-        .select()
-        .from(schema.userCompanies)
-        .where(eq(schema.userCompanies.userId, user.id));
+      // Lógica específica para cada rol
+      let packages;
       
-      const companyIds = userCompanies.map(uc => uc.companyId);
-      console.log(`[GET /taquilla/packages] Taquillero tiene acceso a ${companyIds.length} empresas: [${companyIds.join(', ')}]`);
-      
-      if (companyIds.length === 0) {
-        console.log(`[GET /taquilla/packages] ADVERTENCIA: Taquillero no tiene empresas asociadas`);
-        return res.json([]);
+      if (user.role === 'chofer') {
+        // CASO ESPECIAL: CONDUCTORES (CHOFER) - solo ven paqueterías de sus viajes asignados
+        console.log(`[GET /taquilla/packages] CONDUCTOR solicitando paqueterías - verificando viajes asignados`);
+        
+        // Obtener los viajes asignados al conductor
+        const userCompanyId = user.companyId || user.company;
+        const assignedTrips = await storage.searchTrips({ driverId: user.id, companyId: userCompanyId });
+        
+        if (assignedTrips.length === 0) {
+          console.log(`[GET /taquilla/packages] Conductor ${user.id} no tiene viajes asignados`);
+          return res.json([]);
+        }
+        
+        // Obtener IDs de viajes asignados al conductor
+        const assignedTripIds = assignedTrips.map(trip => trip.id);
+        console.log(`[GET /taquilla/packages] Conductor ${user.id} tiene ${assignedTripIds.length} viajes asignados: [${assignedTripIds.join(', ')}]`);
+        
+        // Obtener paqueterías solo de los viajes asignados
+        packages = await storage.getPackagesWithTripInfo({ 
+          tripIds: assignedTripIds,
+          date: dateFilter 
+        });
+      } else {
+        // Para taquilleros: obtener todas las empresas asociadas al taquillero
+        const userCompanies = await db
+          .select()
+          .from(schema.userCompanies)
+          .where(eq(schema.userCompanies.userId, user.id));
+        
+        const companyIds = userCompanies.map(uc => uc.companyId);
+        console.log(`[GET /taquilla/packages] Taquillero tiene acceso a ${companyIds.length} empresas: [${companyIds.join(', ')}]`);
+        
+        if (companyIds.length === 0) {
+          console.log(`[GET /taquilla/packages] ADVERTENCIA: Taquillero no tiene empresas asociadas`);
+          return res.json([]);
+        }
+        
+        // Obtener paqueterías con información del viaje de todas las empresas del taquillero con filtro de fecha
+        packages = await storage.getPackagesWithTripInfo({ 
+          companyIds: companyIds,
+          date: dateFilter 
+        });
       }
       
-      // Obtener paqueterías con información del viaje de todas las empresas del taquillero con filtro de fecha
-      const packages = await storage.getPackagesWithTripInfo({ 
-        companyIds: companyIds,
-        date: dateFilter 
-      });
-      
-      console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para las empresas del taquillero (fecha: ${dateFilter})`);
+      console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para el usuario ${user.role} (fecha: ${dateFilter})`);
       
       res.json(packages);
     } catch (error) {
