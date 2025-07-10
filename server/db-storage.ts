@@ -626,22 +626,12 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // Aplicar filtro de fecha o rango de fechas usando JSONB
+    // CAMBIO: Remover filtro de fecha SQL inicial para permitir filtrado por segmento individual
+    // El filtro de fecha se aplicará en el procesamiento posterior de cada segmento
     if (params.dateRange && params.dateRange.length > 0) {
-      console.log(`[searchTrips] Filtro por rango de fechas:`, params.dateRange);
-      
-      const dateConditions = params.dateRange.map(date => {
-        return sql`${schema.trips.tripData}->0->>'departureDate' = ${date}`;
-      });
-      
-      if (dateConditions.length === 1) {
-        condiciones.push(dateConditions[0]);
-      } else {
-        condiciones.push(or(...dateConditions));
-      }
+      console.log(`[searchTrips] Filtro por rango de fechas será aplicado en procesamiento posterior:`, params.dateRange);
     } else if (params.date) {
-      console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
-      condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
+      console.log(`[searchTrips] Filtro de fecha individual será aplicado en procesamiento posterior: ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -849,8 +839,18 @@ export class DatabaseStorage implements IStorage {
         
         console.log(`[searchTrips] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
         
-        // Only include segment if it matches all filters
-        if (originMatch && destMatch && seatMatch) {
+        // NUEVO: Aplicar filtro de fecha por segmento individual
+        let dateMatch = true;
+        if (params.date) {
+          dateMatch = segment.departureDate === params.date;
+          console.log(`[searchTrips] Filtro de fecha - Segmento ${segmentIndex}: ${segment.departureDate} === ${params.date} => ${dateMatch}`);
+        } else if (params.dateRange && params.dateRange.length > 0) {
+          dateMatch = params.dateRange.includes(segment.departureDate);
+          console.log(`[searchTrips] Filtro de rango de fechas - Segmento ${segmentIndex}: ${segment.departureDate} en [${params.dateRange.join(', ')}] => ${dateMatch}`);
+        }
+        
+        // Only include segment if it matches all filters INCLUDING date
+        if (originMatch && destMatch && seatMatch && dateMatch) {
           // Create a unique identifier for this segment using recordId_segmentIndex format
           const uniqueTripId = `${trip.id}_${segmentIndex}`;
           
@@ -880,7 +880,7 @@ export class DatabaseStorage implements IStorage {
             assignedDriver
           };
           
-          console.log(`[searchTrips] Adding expanded trip ${uniqueTripId} with origin: ${expandedTrip.origin}, destination: ${expandedTrip.destination}`);
+          console.log(`[searchTrips] Adding expanded trip ${uniqueTripId} with origin: ${expandedTrip.origin}, destination: ${expandedTrip.destination}, departureDate: ${expandedTrip.departureDate}`);
           tripsWithRouteInfo.push(expandedTrip as TripWithRouteInfo);
         }
         }

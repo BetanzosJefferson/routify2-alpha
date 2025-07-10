@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - FIXED: Date filtering issue for midnight-crossing trip segments completely resolved:
+  - **CRITICAL BUG FIXED**: Segments that cross midnight now appear in correct date searches
+  - **BACKEND CORRECTION**: Removed SQL-level date filtering that only checked first segment (`tripData->0->>'departureDate'`)
+  - **SEGMENT-LEVEL FILTERING**: Implemented individual date filtering for each segment based on its own `departureDate`
+  - **MIDNIGHT CROSSING LOGIC**: Segments departing after midnight (e.g., 12:30 AM) now correctly appear in next-day searches
+  - **EXAMPLE FIXED**: Trip starting July 9 at 11:50 PM → Acapulco→Taxqueña segment at 6:00 AM on July 10 now appears only in July 10 searches
+  - **CACHE CLEARED**: Server-side trip cache properly invalidated to reflect new filtering logic
+  - **USER EXPERIENCE**: Users now find trip segments in the correct date when searching by departure date
+  - Date filtering now works correctly for all trip combinations, including overnight journeys
+
 - **July 9, 2025** - FIXED: Commission payment status persistence issue completely resolved:
   - **FRONTEND BUG FIXED**: CommissionsList component was incorrectly checking `commission.createdByUser?.commissionPaid` instead of `commission.commissionPaid`
   - **BACKEND WORKING**: PUT /api/commissions/pay endpoint was already functioning correctly, updating the right field
