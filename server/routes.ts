@@ -5826,15 +5826,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json([]);
         }
         
-        // Obtener IDs de viajes asignados al conductor
+        // Obtener IDs de viajes asignados al conductor - solo los recordIds base
         const assignedTripIds = assignedTrips.map(trip => trip.id);
-        console.log(`[GET /taquilla/packages] Conductor ${user.id} tiene ${assignedTripIds.length} viajes asignados: [${assignedTripIds.join(', ')}]`);
         
-        // Obtener paqueterías solo de los viajes asignados
+        // Extraer solo los recordIds únicos (base) de los tripIds con sufijos
+        const uniqueRecordIds = [...new Set(assignedTripIds.map(tripId => {
+          const tripIdStr = tripId.toString();
+          if (tripIdStr.includes('_')) {
+            return parseInt(tripIdStr.split('_')[0]);
+          }
+          return parseInt(tripIdStr);
+        }))];
+        
+        console.log(`[GET /taquilla/packages] Conductor ${user.id} tiene ${assignedTripIds.length} viajes asignados`);
+        console.log(`[GET /taquilla/packages] RecordIds únicos: [${uniqueRecordIds.join(', ')}]`);
+        
+        // Obtener paqueterías solo de los viajes asignados - usar método específico para conductor
         packages = await storage.getPackagesWithTripInfo({ 
-          tripIds: assignedTripIds,
           date: dateFilter 
-        });
+        }, user.id, 'chofer');
       } else {
         // Para taquilleros: obtener todas las empresas asociadas al taquillero
         const userCompanies = await db
