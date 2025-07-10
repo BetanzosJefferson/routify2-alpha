@@ -1833,8 +1833,22 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       
       {/* Modal de confirmación de pago usando Portal */}
       {showPaymentConfirmation && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6 shadow-2xl">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[99999]"
+          style={{ pointerEvents: 'all' }}
+          onClick={(e) => {
+            // Prevenir clicks en el overlay
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-md w-full mx-4 p-6 shadow-2xl"
+            onClick={(e) => {
+              // Prevenir que clicks en el modal se propaguen al overlay
+              e.stopPropagation();
+            }}
+          >
             <div className="text-center mb-4">
               <CreditCardIcon className="w-12 h-12 text-amber-500 mx-auto mb-2" />
               <h3 className="text-lg font-semibold text-gray-800">
@@ -1844,28 +1858,48 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
             
             <div className="space-y-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Total del viaje:</span>
-                    <div className="font-medium">{formatPrice(trip.price * numPassengers)}</div>
-                  </div>
-                  
-                  {couponVerified && couponDiscount > 0 && (
+                <div className="space-y-4 text-sm">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <span className="text-gray-500">Descuento:</span>
-                      <div className="font-medium text-green-600">-{formatPrice(couponDiscount)}</div>
+                      <span className="text-gray-500">Total del viaje:</span>
+                      <div className="font-medium">{formatPrice(trip.price * numPassengers)}</div>
                     </div>
-                  )}
-                  
-                  <div>
-                    <span className="text-gray-500">Anticipo:</span>
-                    <div className="font-medium">{formatPrice(advanceAmount)}</div>
+                    
+                    {couponVerified && couponDiscount > 0 && (
+                      <div>
+                        <span className="text-gray-500">Descuento:</span>
+                        <div className="font-medium text-green-600">-{formatPrice(couponDiscount)}</div>
+                      </div>
+                    )}
                   </div>
                   
-                  <div>
-                    <span className="text-gray-500">Pendiente:</span>
-                    <div className="font-medium text-amber-600">
-                      {formatPrice((couponVerified && couponDiscount > 0 ? trip.price * numPassengers - couponDiscount : trip.price * numPassengers) - advanceAmount)}
+                  <div className="border-t pt-3">
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <span className="text-gray-500">Anticipo:</span>
+                        <div className="font-medium">{formatPrice(advanceAmount)}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Método anticipo:</span>
+                        <div className="font-medium text-blue-600">
+                          {advancePaymentMethod === PaymentMethod.CASH ? "Efectivo" : "Transferencia"}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-gray-500">Al abordar:</span>
+                        <div className="font-medium text-amber-600">
+                          {formatPrice((couponVerified && couponDiscount > 0 ? trip.price * numPassengers - couponDiscount : trip.price * numPassengers) - advanceAmount)}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Método al abordar:</span>
+                        <div className="font-medium text-orange-600">
+                          {paymentMethod === PaymentMethod.CASH ? "Efectivo" : "Transferencia"}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
