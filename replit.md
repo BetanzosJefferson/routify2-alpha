@@ -119,12 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 10, 2025** - FIXED: Reservation filtering and grouping system completely redesigned:
+- **July 10, 2025** - ENHANCED: Driver package management permissions and reservation grouping fixed:
+  - **PACKAGE PERMISSIONS**: Added DRIVER role to PACKAGE_WRITE_ROLES to allow drivers to mark packages as paid or delivered
   - **CORE LOGIC REDESIGN**: Reservations now grouped by `recordId` instead of individual `tripId` for proper midnight-crossing trip handling
   - **BACKEND ENHANCEMENT**: Implemented intelligent recordId-based grouping that associates all reservations to parent trip date
   - **FRONTEND GROUPING**: Modified grouping logic to use recordId as key for consistent trip association
   - **DATE FILTERING LOGIC**: When filtering by date, system now includes all reservations from recordId groups whose parent trip matches the date
   - **MIDNIGHT-CROSSING SUPPORT**: Reservations from segments crossing midnight now properly associated with parent trip date
+  - **RECORDID NORMALIZATION**: System now normalizes recordId values (214_122 → 214) to prevent duplicate grouping
   - **USER EXPERIENCE**: Filtering by date now works correctly for complex trip structures with multiple segments
   - **EXAMPLE**: Filtering by 2025-07-10 now includes all reservations from recordId 214 (parent trip date) regardless of individual segment dates
   - Fixed core architectural issue where date filtering failed for multi-segment overnight journeys

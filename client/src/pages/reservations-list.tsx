@@ -210,11 +210,6 @@ function ReservationsListContent() {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Reservaciones en Lista</h1>
               <div className="text-sm text-gray-600 mt-1">
                 Total: {filteredReservations.length} reservaciones en {Object.keys(groupedReservations).length} viajes
-                {searchDate !== formatDateForInput(new Date()) && (
-                  <span className="ml-2 text-blue-600">
-                    (Fecha: {formatDate(searchDate)})
-                  </span>
-                )}
               </div>
             </div>
             

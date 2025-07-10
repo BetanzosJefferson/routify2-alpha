@@ -45,7 +45,8 @@ const PACKAGE_WRITE_ROLES = [
   UserRole.OWNER,
   UserRole.ADMIN,
   UserRole.CALL_CENTER,
-  UserRole.TICKET_OFFICE
+  UserRole.TICKET_OFFICE,
+  UserRole.DRIVER // Añadido para permitir a conductores marcar paquetes como pagados/entregados
 ];
 
 const PACKAGE_CREATE_ROLES = [
