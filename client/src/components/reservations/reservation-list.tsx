@@ -98,9 +98,9 @@ export function ReservationList() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  // OPTIMIZACIÓN: Por defecto filtrar solo por fecha actual para evitar sobrecarga
+  // OPTIMIZACIÓN: Por defecto mostrar todas las reservaciones relevantes (incluyendo viajes que cruzan medianoche)
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const [dateFilter, setDateFilter] = useState(today); // Fecha actual por defecto
+  const [dateFilter, setDateFilter] = useState(""); // Sin filtro por defecto para incluir viajes que cruzan medianoche
   const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null);
   const [editingReservation, setEditingReservation] = useState<ReservationWithDetails | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
@@ -139,7 +139,7 @@ export function ReservationList() {
     isLoading,
     error: reservationsError
   } = useReservations({
-    date: dateFilter, // Usar filtro de fecha (incluyendo fecha actual por defecto)
+    date: dateFilter || undefined, // Solo usar filtro de fecha si está especificado
     archived: activeTab === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
   });
 

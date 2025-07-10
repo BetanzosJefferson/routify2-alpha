@@ -2497,14 +2497,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations] Filtrando por viaje ID: ${tripId}`);
       }
       
-      // OPTIMIZACIÓN: Filtrar por fecha específica o usar fecha actual por defecto
+      // OPTIMIZACIÓN: Filtrar por fecha específica si se proporciona
       if (req.query.date) {
         dateFilter = req.query.date as string;
         console.log(`[GET /reservations] Filtrando por fecha especificada: ${dateFilter}`);
-      } else if (!tripId) {
-        // Si no hay filtro específico de viaje, usar fecha actual por defecto
-        dateFilter = new Date().toISOString().split('T')[0];
-        console.log(`[GET /reservations] Sin filtros específicos - aplicando fecha actual: ${dateFilter}`);
+      } else {
+        // Sin filtro por defecto - esto permite incluir reservaciones de viajes que cruzan medianoche
+        console.log(`[GET /reservations] Sin filtro de fecha - incluir reservaciones de viajes que cruzan medianoche`);
       }
       
       // Determinar filtros de seguridad según el rol
@@ -2549,14 +2548,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Apply additional filtering if needed
         let filteredReservations = reservations;
         
-        // Filter by date if provided
+        // Filter by date if provided (includes midnight-crossing logic)
         if (dateFilter) {
-          console.log(`[GET /reservations] Filtering by date: ${dateFilter}`);
+          console.log(`[GET /reservations] Filtering by date with midnight-crossing support: ${dateFilter}`);
           filteredReservations = reservations.filter(reservation => {
             if (!reservation.trip?.departureDate) return false;
+            
+            // Incluir reservaciones cuyo viaje tiene la fecha exacta solicitada
             const reservationDate = new Date(reservation.trip.departureDate);
             const targetDate = new Date(dateFilter);
-            return reservationDate.toDateString() === targetDate.toDateString();
+            const exactDateMatch = reservationDate.toDateString() === targetDate.toDateString();
+            
+            if (exactDateMatch) {
+              return true;
+            }
+            
+            // LÓGICA ADICIONAL: Incluir reservaciones que pertenecen al mismo viaje base
+            // pero pueden tener fechas posteriores debido a cruce de medianoche
+            const tripDetails = reservation.tripDetails;
+            if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
+              // Buscar si existe alguna reservación del mismo viaje base (recordId) que coincida con la fecha
+              const sameBaseTrip = reservations.find(otherReservation => {
+                if (!otherReservation.tripDetails || !otherReservation.trip?.departureDate) return false;
+                const otherTripDetails = otherReservation.tripDetails;
+                if (typeof otherTripDetails === 'object' && otherTripDetails.recordId === tripDetails.recordId) {
+                  const otherDate = new Date(otherReservation.trip.departureDate);
+                  return otherDate.toDateString() === targetDate.toDateString();
+                }
+                return false;
+              });
+              
+              if (sameBaseTrip) {
+                console.log(`[GET /reservations] Incluir reservación ${reservation.id} por mismo viaje base ${tripDetails.recordId}`);
+                return true;
+              }
+            }
+            
+            return false;
           });
         } else {
           // Without date filter: return ALL reservations to let frontend handle filtering
