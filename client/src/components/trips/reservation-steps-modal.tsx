@@ -202,14 +202,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
           shouldShowModal: advanceAmount < finalPrice
         });
         
-        if (advanceAmount < finalPrice) {
-          // Mostrar modal de confirmación si el anticipo es menor al total
-          console.log('DEBUG: Showing payment confirmation modal');
-          setShowPaymentConfirmation(true);
-        } else {
-          // Continuar normalmente si el anticipo cubre el total
-          setCurrentStep(currentStep + 1);
-        }
+        // Siempre continuar al siguiente paso, sin mostrar modal
+        setCurrentStep(currentStep + 1);
       } else {
         setCurrentStep(currentStep + 1);
       }
@@ -228,24 +222,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     }
   };
   
-  // Funciones para manejar el modal de confirmación de pago
-  const handlePaymentConfirmationContinue = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    console.log('DEBUG: Closing payment confirmation modal and continuing to next step');
-    setShowPaymentConfirmation(false);
-    setCurrentStep(currentStep + 1);
-  };
-  
-  const handlePaymentConfirmationBack = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    console.log('DEBUG: Only closing payment confirmation modal');
-    setShowPaymentConfirmation(false);
-    // Permanecer en el mismo paso (paso 2) sin cerrar el formulario principal
-  };
+  // Funciones eliminadas - ya no se usa el modal de confirmación
   
   // Reservation mutation
   const createReservationMutation = useMutation({
@@ -1457,6 +1434,22 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                           </div>
                         )}
                       </div>
+                      
+                      {/* Información importante sobre el pago - mostrar solo si el anticipo no cubre el total */}
+                      {advanceAmount < (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) && (
+                        <div className="p-3 bg-amber-50 rounded border border-amber-200 text-amber-800 text-sm mt-4">
+                          <div className="flex items-start gap-2">
+                            <InfoIcon className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" />
+                            <div>
+                              <div className="font-medium mb-1">Información importante sobre el pago:</div>
+                              <ul className="list-disc list-inside space-y-1 text-xs">
+                                <li>El método de pago al abordar <strong>no se puede modificar</strong> después de confirmar</li>
+                                <li>Deberá completar el pago restante al momento de abordar</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="p-3 bg-blue-50 rounded border border-blue-200 text-blue-800 text-sm mt-4">
                         {/* Calcular el precio final considerando el descuento del cupón */}
