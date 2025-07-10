@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - FIXED: Automatic schedule configurations now respected when publishing trips:
+  - **ROOT CAUSE IDENTIFIED**: System was using proportional calculation instead of template time configurations
+  - **NEW FUNCTION**: Added `calculateSegmentTimesFromTemplate()` to process automatic schedule configurations
+  - **INTELLIGENT SELECTION**: Backend now checks for template timeConfiguration and uses it when available
+  - **ACCURATE TIMING**: Horarios automáticos now calculated based on template settings (hours + minutes between stops)
+  - **FALLBACK MAINTAINED**: Still uses proportional calculation when template has no time configuration
+  - **COMPREHENSIVE LOGGING**: Added detailed console output to track which method is being used
+  - **USER EXPERIENCE**: Published trips now show exact times configured in templates instead of calculated approximations
+  - Fixed issue where trips showed random times like 02:26 AM instead of configured times like 10:00 PM
+
 - **July 10, 2025** - ENHANCED: Payment confirmation modal implementation completed:
   - **MODAL FUNCTIONALITY**: Added payment confirmation modal that appears when advance payment < total amount
   - **IMPROVED UI**: Shows detailed payment breakdown with methods for both advance and boarding payments

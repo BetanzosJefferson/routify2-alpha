@@ -1170,13 +1170,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Calculate segment times based on total journey time
-      const segmentTimes = calculateSegmentTimes(
-        allSegments, 
-        departureTime, 
-        arrivalTime,
-        route
-      );
+      // Calculate segment times based on template configuration or total journey time
+      console.log("\n=== CALCULANDO HORARIOS DE SEGMENTOS ===");
+      console.log(`Plantilla ID: ${template.id}, Configuración de tiempo disponible: ${template.timeConfiguration ? 'SÍ' : 'NO'}`);
+      
+      let segmentTimes;
+      
+      if (template.timeConfiguration && typeof template.timeConfiguration === 'object') {
+        // Usar configuración automática de la plantilla
+        console.log("✅ Usando configuración automática de horarios de la plantilla");
+        console.log("Configuración de tiempo:", template.timeConfiguration);
+        
+        segmentTimes = calculateSegmentTimesFromTemplate(
+          allSegments,
+          departureTime,
+          route,
+          template.timeConfiguration
+        );
+      } else {
+        // Usar cálculo proporcional como fallback
+        console.log("⚠️ Usando cálculo proporcional (fallback) - no hay configuración de plantilla");
+        segmentTimes = calculateSegmentTimes(
+          allSegments, 
+          departureTime, 
+          arrivalTime,
+          route
+        );
+      }
       
       // Detectar si el viaje cruza medianoche
       const crossesMidnight = isCrossingMidnight(departureTime, arrivalTime);
@@ -1485,6 +1505,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return allSegments;
   }
   
+  // Helper function to calculate segment times based on template configuration
+  function calculateSegmentTimesFromTemplate(
+    segments: { origin: string; destination: string }[],
+    departureTime: string,
+    route: RouteWithSegments,
+    timeConfiguration: Record<string, { hours: number; minutes: number }>
+  ): Record<string, { departureTime: string; arrivalTime: string; dayOffset?: number }> {
+    console.log("🚀 Calculando horarios basados en configuración de plantilla");
+    console.log("Configuración de tiempo recibida:", timeConfiguration);
+    
+    const segmentTimes: Record<string, { departureTime: string; arrivalTime: string; dayOffset?: number }> = {};
+    const allPoints = [route.origin, ...route.stops, route.destination];
+    
+    // Crear un mapa de ubicaciones a tiempos calculados
+    const locationTimes: Record<string, { time: string; totalMinutes: number; dayOffset: number }> = {};
+    
+    // Parsear el tiempo de salida inicial
+    const [depTime, depPeriod] = departureTime.split(' ');
+    const [depHour, depMinute] = depTime.split(':').map(Number);
+    let dep24Hour = depHour;
+    if (depPeriod === 'PM' && depHour < 12) dep24Hour += 12;
+    if (depPeriod === 'AM' && depHour === 12) dep24Hour = 0;
+    
+    const startMinutes = dep24Hour * 60 + depMinute;
+    
+    // Establecer tiempo inicial
+    locationTimes[route.origin] = {
+      time: departureTime,
+      totalMinutes: startMinutes,
+      dayOffset: 0
+    };
+    
+    console.log(`Tiempo inicial: ${route.origin} = ${departureTime} (${startMinutes} minutos)`);
+    
+    // Calcular tiempos acumulativos siguiendo la configuración de la plantilla
+    let currentMinutes = startMinutes;
+    let currentDayOffset = 0;
+    
+    for (let i = 0; i < allPoints.length - 1; i++) {
+      const fromLocation = allPoints[i];
+      const toLocation = allPoints[i + 1];
+      const segmentKey = `${fromLocation} → ${toLocation}`;
+      
+      console.log(`\n📍 Procesando segmento: ${segmentKey}`);
+      
+      // Buscar la configuración de tiempo para este segmento
+      const timeConfig = timeConfiguration[segmentKey];
+      
+      if (timeConfig && typeof timeConfig === 'object') {
+        const additionalMinutes = (timeConfig.hours || 0) * 60 + (timeConfig.minutes || 0);
+        currentMinutes += additionalMinutes;
+        
+        // Verificar si cruzamos medianoche
+        if (currentMinutes >= 24 * 60) {
+          currentDayOffset++;
+          currentMinutes = currentMinutes % (24 * 60);
+          console.log(`⚠️ Cruzando medianoche: nuevo día offset = ${currentDayOffset}`);
+        }
+        
+        // Convertir minutos a formato 12 horas
+        const hour24 = Math.floor(currentMinutes / 60);
+        const minute = currentMinutes % 60;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
+        
+        const timeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+        
+        locationTimes[toLocation] = {
+          time: timeString,
+          totalMinutes: currentMinutes,
+          dayOffset: currentDayOffset
+        };
+        
+        console.log(`✅ ${toLocation} = ${timeString} (+${additionalMinutes} min, día +${currentDayOffset})`);
+      } else {
+        console.log(`⚠️ No se encontró configuración para ${segmentKey}, usando tiempo predeterminado`);
+        // Usar un tiempo predeterminado de 30 minutos
+        currentMinutes += 30;
+        
+        if (currentMinutes >= 24 * 60) {
+          currentDayOffset++;
+          currentMinutes = currentMinutes % (24 * 60);
+        }
+        
+        const hour24 = Math.floor(currentMinutes / 60);
+        const minute = currentMinutes % 60;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
+        
+        const timeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+        
+        locationTimes[toLocation] = {
+          time: timeString,
+          totalMinutes: currentMinutes,
+          dayOffset: currentDayOffset
+        };
+      }
+    }
+    
+    console.log("\n🎯 Tiempos calculados por ubicación:");
+    Object.entries(locationTimes).forEach(([location, timeInfo]) => {
+      console.log(`  ${location}: ${timeInfo.time} (día +${timeInfo.dayOffset})`);
+    });
+    
+    // Generar tiempos para todos los segmentos solicitados
+    segments.forEach(segment => {
+      const originTime = locationTimes[segment.origin];
+      const destinationTime = locationTimes[segment.destination];
+      
+      if (originTime && destinationTime) {
+        let departureTimeStr = originTime.time;
+        let arrivalTimeStr = destinationTime.time;
+        
+        // Agregar indicador de día si es necesario
+        if (originTime.dayOffset > 0) {
+          departureTimeStr += ` +${originTime.dayOffset}d`;
+        }
+        if (destinationTime.dayOffset > 0) {
+          arrivalTimeStr += ` +${destinationTime.dayOffset}d`;
+        }
+        
+        const key = `${segment.origin}-${segment.destination}`;
+        segmentTimes[key] = {
+          departureTime: departureTimeStr,
+          arrivalTime: arrivalTimeStr,
+          dayOffset: destinationTime.dayOffset - originTime.dayOffset
+        };
+        
+        console.log(`📝 Segmento ${segment.origin} → ${segment.destination}: ${departureTimeStr} - ${arrivalTimeStr}`);
+      } else {
+        console.log(`❌ No se pudieron calcular tiempos para ${segment.origin} → ${segment.destination}`);
+      }
+    });
+    
+    return segmentTimes;
+  }
+
   // Helper function to calculate segment departure and arrival times
   function calculateSegmentTimes(
     segments: { origin: string; destination: string; price: number; stopTimes?: any[]; segmentPrices?: any[] }[],
