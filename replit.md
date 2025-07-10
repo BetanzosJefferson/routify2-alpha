@@ -119,6 +119,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - ENHANCED: Reservation form UI improvements for better user experience:
+  - **FORM CLARITY**: Modified step-by-step reservation form to show origin and destination instead of route name
+  - **PAYMENT LABELS**: Changed "Método de Pago" to "Método de pago al abordar" for better clarity
+  - **CONDITIONAL DISPLAY**: Second payment method completely hidden when advance payment equals total amount
+  - **USER EXPERIENCE**: Eliminates confusion by showing only relevant payment options based on advance amount
+  - Form now displays specific segment locations (e.g., "Acapulco Gas de la giovanna → Taxqueña") instead of generic route names
+
 - **July 10, 2025** - FIXED: Date filtering issue for midnight-crossing trip segments completely resolved:
   - **CRITICAL BUG FIXED**: Segments that cross midnight now appear in correct date searches
   - **BACKEND CORRECTION**: Removed SQL-level date filtering that only checked first segment (`tripData->0->>'departureDate'`)

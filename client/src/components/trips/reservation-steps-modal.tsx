@@ -1328,27 +1328,24 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                         </Select>
                       </div>
                       
-                      <div>
-                        <Label htmlFor="payment-method">Método de Pago</Label>
-                        <Select
-                          value={paymentMethod}
-                          onValueChange={(value: typeof PaymentMethod.CASH | typeof PaymentMethod.TRANSFER) => setPaymentMethod(value)}
-                          disabled={advanceAmount >= (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice)}
-                        >
-                          <SelectTrigger id="payment-method">
-                            <SelectValue placeholder="Seleccione método de pago" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={PaymentMethod.CASH}>Efectivo</SelectItem>
-                            <SelectItem value={PaymentMethod.TRANSFER}>Transferencia Bancaria</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {advanceAmount >= (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            No es necesario método de pago adicional ya que el anticipo cubre el monto total.
-                          </p>
-                        )}
-                      </div>
+                      {/* Solo mostrar método de pago final si el anticipo no cubre el total */}
+                      {advanceAmount < (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) && (
+                        <div>
+                          <Label htmlFor="payment-method">Método de pago al abordar</Label>
+                          <Select
+                            value={paymentMethod}
+                            onValueChange={(value: typeof PaymentMethod.CASH | typeof PaymentMethod.TRANSFER) => setPaymentMethod(value)}
+                          >
+                            <SelectTrigger id="payment-method">
+                              <SelectValue placeholder="Seleccione método de pago" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={PaymentMethod.CASH}>Efectivo</SelectItem>
+                              <SelectItem value={PaymentMethod.TRANSFER}>Transferencia Bancaria</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                       
                       {/* Sección de cupón - Movida aquí después del método de pago */}
                       <div className="border-t border-gray-200 pt-4 mt-2">
