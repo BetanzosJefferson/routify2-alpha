@@ -493,20 +493,21 @@ export class DatabaseStorage implements IStorage {
     // Get all routes in a single query for better performance
     const routes = await db.select().from(schema.routes);
     
-    // Obtener todas las compañías para obtener sus logos
-    const companies = await db.select().from(schema.companies);
+    // Obtener todos los usuarios dueños (Owner) para relacionar con las compañías
+    const owners = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.role, schema.UserRole.OWNER));
     
-    console.log(`[searchTrips] Encontradas ${companies.length} compañías`);
-    
-    // Crear un mapa de compañía -> datos de la empresa para búsqueda rápida
+    // Crear un mapa de compañía -> datos del dueño para búsqueda rápida
     const companyMap = new Map();
-    companies.forEach(company => {
-      if (company.identifier) {
-        companyMap.set(company.identifier, {
-          companyName: company.name,
-          companyLogo: company.logo
+    owners.forEach(owner => {
+      const companyId = owner.companyId || owner.company;
+      if (companyId) {
+        companyMap.set(companyId, {
+          companyName: owner.company,
+          companyLogo: owner.profilePicture
         });
-        console.log(`[searchTrips] Mapeado compañía ${company.identifier}: ${company.name}, logo: ${company.logo ? 'SÍ' : 'NO'}`);
       }
     });
     
@@ -607,7 +608,7 @@ export class DatabaseStorage implements IStorage {
             arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || firstSegment.arrivalTime,
             price: firstSegment.price,
             availableSeats: firstSegment.availableSeats,
-            // Solo metadatos esenciales, NO incluir tripData completo
+            // Solo metadatos esenciales, NO incluir tripData completo ni logos
             route: {
               id: route.id,
               name: route.name,
@@ -618,8 +619,7 @@ export class DatabaseStorage implements IStorage {
             },
             numStops: route.stops.length,
             companyName: companyData.companyName,
-            // INCLUIR companyLogo para mostrar avatar de empresa
-            companyLogo: companyData.companyLogo,
+            // NO incluir companyLogo para reducir payload
             assignedVehicle: assignedVehicle ? {
               id: assignedVehicle.id,
               model: assignedVehicle.model,
