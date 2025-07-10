@@ -460,10 +460,11 @@ export function PublishTripForm() {
     const [hour, minute] = time.split(":");
     const ampm = period as "AM" | "PM";
 
-    // Obtener la ubicación para este índice
+    // Obtener las ubicaciones para este índice
     let stopLocation = "";
+    let allLocations: string[] = [];
     if (templateRouteQuery.data) {
-      const allLocations = [
+      allLocations = [
         templateRouteQuery.data.origin,
         ...(templateRouteQuery.data.stops || []),
         templateRouteQuery.data.destination,
@@ -479,6 +480,64 @@ export function PublishTripForm() {
       ampm,
       location: stopLocation,
     };
+
+    // NUEVA FUNCIONALIDAD: Recalcular automáticamente las paradas posteriores
+    // si hay una plantilla seleccionada y configuración de tiempos
+    if (selectedTemplate && selectedTemplate.timeConfiguration && index < allLocations.length - 1) {
+      console.log(`🔄 Recalculando paradas posteriores a partir de la parada ${index + 1}`);
+      
+      // Convertir el tiempo modificado a minutos desde medianoche
+      let currentTimeMinutes = parseInt(hour) * 60 + parseInt(minute);
+      if (ampm === "PM" && parseInt(hour) !== 12) {
+        currentTimeMinutes += 12 * 60;
+      } else if (ampm === "AM" && parseInt(hour) === 12) {
+        currentTimeMinutes -= 12 * 60;
+      }
+
+      // Recalcular todas las paradas posteriores
+      for (let i = index + 1; i < allLocations.length; i++) {
+        const fromLocation = allLocations[i - 1];
+        const toLocation = allLocations[i];
+        const segmentKey = `${fromLocation} → ${toLocation}`;
+        
+        console.log(`🔍 Buscando tiempo para segmento: ${segmentKey}`);
+        const timeConfig = selectedTemplate.timeConfiguration?.[segmentKey];
+        
+        if (timeConfig) {
+          let addMinutes = 0;
+          if (typeof timeConfig === 'object' && timeConfig.hours !== undefined) {
+            addMinutes = (timeConfig.hours * 60) + (timeConfig.minutes || 0);
+            console.log(`⏱️ Añadiendo ${timeConfig.hours}h ${timeConfig.minutes}min = ${addMinutes} minutos`);
+          } else {
+            addMinutes = timeConfig; // Legacy format
+            console.log(`⏱️ Añadiendo ${addMinutes} minutos (formato legacy)`);
+          }
+          
+          // Calcular el nuevo tiempo
+          currentTimeMinutes += addMinutes;
+          const newHour = Math.floor(currentTimeMinutes / 60) % 24;
+          const newMinute = currentTimeMinutes % 60;
+          
+          // Formatear el nuevo tiempo
+          const formattedHour = newHour === 0 ? 12 : newHour > 12 ? newHour - 12 : newHour;
+          const newAmpm = newHour < 12 ? "AM" : "PM";
+          
+          // Actualizar la parada
+          newStopTimes[i] = {
+            hour: String(formattedHour).padStart(2, "0"),
+            minute: String(newMinute).padStart(2, "0"),
+            ampm: newAmpm,
+            location: toLocation,
+          };
+          
+          console.log(`✅ Parada ${i} actualizada: ${toLocation} → ${String(formattedHour).padStart(2, "0")}:${String(newMinute).padStart(2, "0")} ${newAmpm}`);
+        } else {
+          console.log(`⚠️ No se encontró configuración de tiempo para: ${segmentKey}`);
+          // Si no hay configuración, mantener el tiempo actual para esta parada
+          // y continuar con las siguientes usando el tiempo anterior
+        }
+      }
+    }
 
     // Validar el array para asegurar los tipos correctos
     const validatedStopTimes = ensureValidStopTimes(newStopTimes);
