@@ -95,22 +95,38 @@ function ReservationsListContent() {
     
     groups[groupKey].reservations.push(reservation);
     
-    // Establecer información del viaje padre usando la información del trip asociado
-    if (!groups[groupKey].tripInfo && reservation.trip) {
-      groups[groupKey].tripInfo = {
-        origin: reservation.trip.origin,
-        destination: reservation.trip.destination,
-        departureDate: reservation.trip.departureDate,
-        departureTime: reservation.trip.departureTime,
-        arrivalTime: reservation.trip.arrivalTime,
-        recordId: recordId,
-        route: reservation.trip.route,
-        driver: reservation.trip.driver,
-        vehicle: reservation.trip.vehicle
-      };
-      
-      // Guardar la fecha del viaje padre para filtrado
-      groups[groupKey].parentTripDate = reservation.trip.departureDate;
+    // Establecer información del viaje padre usando la información del viaje padre (recordId)
+    if (!groups[groupKey].tripInfo) {
+      // Buscar información del viaje padre si está disponible
+      const parentTripInfo = reservation.trip?.parentTrip;
+      if (parentTripInfo) {
+        groups[groupKey].tripInfo = {
+          origin: parentTripInfo.origin,
+          destination: parentTripInfo.destination,
+          departureDate: parentTripInfo.departureDate,
+          departureTime: parentTripInfo.departureTime,
+          arrivalTime: parentTripInfo.arrivalTime,
+          recordId: recordId,
+          route: parentTripInfo.route,
+          driver: parentTripInfo.driver,
+          vehicle: parentTripInfo.vehicle
+        };
+        groups[groupKey].parentTripDate = parentTripInfo.departureDate;
+      } else if (reservation.trip) {
+        // Fallback: usar información del trip asociado
+        groups[groupKey].tripInfo = {
+          origin: reservation.trip.origin,
+          destination: reservation.trip.destination,
+          departureDate: reservation.trip.departureDate,
+          departureTime: reservation.trip.departureTime,
+          arrivalTime: reservation.trip.arrivalTime,
+          recordId: recordId,
+          route: reservation.trip.route,
+          driver: reservation.trip.driver,
+          vehicle: reservation.trip.vehicle
+        };
+        groups[groupKey].parentTripDate = reservation.trip.departureDate;
+      }
     }
     
     return groups;
