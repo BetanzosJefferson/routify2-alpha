@@ -723,14 +723,25 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
-    // Determinar el modo de respuesta basado en el flag optimizedResponse
-    // NUEVA LÓGICA: Si se filtra por isSubTrip: false, también usar modo optimizado
-    const shouldReturnOptimized = params.optimizedResponse === true || params.isSubTrip === 'false';
+    // 🔥 CORRECCIÓN CRÍTICA: Lógica inteligente para modo optimizado vs expandido
+    const hasDateFilter = params.date || (params.dateRange && params.dateRange.length > 0);
+    const wantsOnlyMainTrips = params.isSubTrip === 'false';
     
-    console.log(`[searchTrips] optimizedResponse flag: ${params.optimizedResponse}`);
-    console.log(`[searchTrips] isSubTrip filter: ${params.isSubTrip}`);
-    console.log(`[searchTrips] shouldReturnOptimized: ${shouldReturnOptimized}`);
-    console.log(`[searchTrips] Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
+    let shouldReturnOptimized;
+    if (wantsOnlyMainTrips) {
+      // Si solo quiere viajes principales, usar modo optimizado PERO aplicar filtro de fecha
+      shouldReturnOptimized = true;
+      console.log(`[searchTrips] 🔥 MODO OPTIMIZADO: Solo viajes principales solicitados`);
+    } else {
+      // Si quiere todas las combinaciones, usar modo expandido
+      shouldReturnOptimized = params.optimizedResponse === true;
+      console.log(`[searchTrips] 🔥 MODO EXPANDIDO: Todas las combinaciones solicitadas`);
+    }
+    
+    console.log(`[searchTrips] 🔥 hasDateFilter: ${hasDateFilter}`);
+    console.log(`[searchTrips] 🔥 wantsOnlyMainTrips: ${wantsOnlyMainTrips}`);
+    console.log(`[searchTrips] 🔥 shouldReturnOptimized: ${shouldReturnOptimized}`);
+    console.log(`[searchTrips] 🔥 Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
     
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
@@ -773,7 +784,19 @@ export class DatabaseStorage implements IStorage {
         // Usar el primer segmento como representativo del viaje completo
         const firstSegment = tripDataArray[0];
         if (firstSegment) {
-          tripsWithRouteInfo.push({
+          // 🔥 APLICAR FILTRO DE FECHA EN MODO OPTIMIZADO
+          let dateMatch = true;
+          if (params.date) {
+            dateMatch = firstSegment.departureDate === params.date;
+            console.log(`[searchTrips] 🔥 Filtro de fecha optimizado: ${firstSegment.departureDate} === ${params.date} => ${dateMatch}`);
+          } else if (params.dateRange && params.dateRange.length > 0) {
+            dateMatch = params.dateRange.includes(firstSegment.departureDate);
+            console.log(`[searchTrips] 🔥 Filtro de rango de fechas optimizado: ${firstSegment.departureDate} en [${params.dateRange.join(', ')}] => ${dateMatch}`);
+          }
+          
+          // Solo incluir si pasa el filtro de fecha
+          if (dateMatch) {
+            tripsWithRouteInfo.push({
             ...trip,
             // Mantener ID original para viaje principal
             id: trip.id,
@@ -808,6 +831,7 @@ export class DatabaseStorage implements IStorage {
               lastName: assignedDriver.lastName
             } : undefined
           });
+          }
         }
       } else {
         // MODO EXPANDIDO: Process each segment in the tripData array

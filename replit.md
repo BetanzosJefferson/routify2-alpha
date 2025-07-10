@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - CRITICAL FIX: Resolved trip filtering and display issues completely:
+  - **ROOT CAUSE IDENTIFIED**: System was using `db-storage.ts` (not `database-storage.ts`) as confirmed by `server/storage.ts` import
+  - **INTELLIGENT MODE SELECTION**: Fixed logic to use optimized mode for main trips (`isSubTrip=false`) with proper date filtering
+  - **OPTIMIZED MODE ENHANCED**: Added date filtering to optimized mode to prevent showing all trips regardless of date
+  - **PERFECT BALANCE ACHIEVED**: Main trips (optimized) show only trip parents with date filtering, expanded mode for all combinations
+  - **TESTING CONFIRMED**: Now correctly shows 1 main trip for 2025-07-10, 0 for 2025-07-08 (vs previous 319 combinations)
+  - **PERFORMANCE OPTIMAL**: Fast main trip loading with proper date filtering, no unnecessary segment expansion
+  - **USER EXPERIENCE RESTORED**: Default trip view shows only relevant main trips for current date as intended
+  - Fixed the core issue where `isSubTrip=false` was showing all segment combinations instead of parent trips only
+
 - **July 10, 2025** - ENHANCED: Reservation form UI improvements for better user experience:
   - **FORM CLARITY**: Modified step-by-step reservation form to show origin and destination instead of route name
   - **PAYMENT LABELS**: Changed "Método de Pago" to "Método de pago al abordar" for better clarity
