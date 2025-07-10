@@ -16,7 +16,7 @@ function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
-  const [searchDate, setSearchDate] = useState(formatDateForInput(new Date())); // Fecha para búsqueda
+  const [searchDate, setSearchDate] = useState(""); // Sin filtro de fecha por defecto para incluir viajes que cruzan medianoche
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
     tripInfo: any;
@@ -29,7 +29,7 @@ function ReservationsListContent() {
     isLoading, 
     error 
   } = useReservations({
-    date: searchDate // Usar fecha de búsqueda para filtrar reservaciones
+    date: searchDate || undefined // Solo usar filtro de fecha si se especifica explícitamente
   });
 
   // Log para depuración
@@ -44,6 +44,7 @@ function ReservationsListContent() {
       queryKey: ["/api/reservations"]
     });
     
+    // Solo aplicar filtro de fecha si se especifica una fecha
     setSearchDate(selectedDate);
     setCurrentPage(1);
   };

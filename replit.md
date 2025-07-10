@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - FIXED: Reservation filtering issue for midnight-crossing trips completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: Frontend was applying restrictive date filter by default that excluded reservations from trips crossing midnight
+  - **CORRECTED FILE**: Fixed filtering logic in `client/src/pages/reservations-list.tsx` (not the component file)
+  - **BACKEND ENHANCEMENT**: Added intelligent midnight-crossing logic to include reservations from same base trip (recordId)
+  - **FRONTEND CORRECTION**: Removed default date filter, now only applies when user explicitly searches by date
+  - **COMPREHENSIVE FIX**: System now shows all relevant reservations including those from overnight journeys
+  - **USER EXPERIENCE**: Reservation list now displays complete booking information without arbitrary date restrictions
+  - Fixed issue where reservations from midnight-crossing trips were invisible due to overly restrictive date filtering
+
 - **July 10, 2025** - FIXED: Trip update functionality now working properly:
   - **ROOT CAUSE IDENTIFIED**: PATCH endpoint was limited to only vehicleId and driverId updates
   - **EXPANDED ENDPOINT**: Added support for capacity and visibility updates in PATCH /api/trips/:id
