@@ -739,6 +739,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         companyId: userCompanyId
       };
       
+      // CRÍTICO: Asegurar que la fecha SIEMPRE esté presente en la clave del cache
+      if (!cacheKey.date && !cacheKey.dateRange) {
+        // Si no hay fecha específica, usar fecha actual
+        const today = new Date().toISOString().split('T')[0];
+        cacheKey.date = today;
+        console.log(`[GET /trips] Fecha no especificada, usando fecha actual: ${today}`);
+      }
+      
       // OPTIMIZACIÓN: Si no hay filtros específicos, aplicar fecha actual por defecto
       if (!origin && !destination && !date && !dateRange && !isSubTrip) {
         const today = new Date().toISOString().split('T')[0];
@@ -7512,6 +7520,17 @@ function setupPackageRoutes(app: Express) {
     } catch (error) {
       console.error(`[GET /api/test-optimization] Error:`, error);
       res.status(500).json({ error: 'Error en prueba de optimización' });
+    }
+  });
+
+  // Endpoint temporal para limpiar cache
+  app.delete(apiRouter("/cache/clear"), async (req: Request, res: Response) => {
+    try {
+      serverTripCache.invalidateAll();
+      res.json({ message: "Cache limpiado exitosamente" });
+    } catch (error) {
+      console.error("Error al limpiar cache:", error);
+      res.status(500).json({ error: "Error al limpiar cache" });
     }
   });
 }

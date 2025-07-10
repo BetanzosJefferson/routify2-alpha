@@ -409,7 +409,8 @@ export class DatabaseStorage implements IStorage {
     includeAllVisibilities?: boolean;
     optimizedResponse?: boolean;
   }): Promise<TripWithRouteInfo[]> {
-    console.log(`[searchTrips] Iniciando búsqueda con parámetros:`, params);
+    console.log(`[searchTrips] ⭐ INICIANDO BÚSQUEDA - FECHA: ${params.date || 'No especificada'}`);
+    console.log(`[searchTrips] ⭐ PARÁMETROS COMPLETOS:`, params);
     
     // Construir los filtros como un array de condiciones 
     const condiciones = [];
@@ -546,12 +547,32 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`Cargados ${vehicles.length} vehículos y ${drivers.length} conductores para búsqueda rápida`);
     
-    // Determinar el modo de respuesta basado en el flag optimizedResponse
-    const shouldReturnOptimized = params.optimizedResponse === true;
+    // ⭐ NUEVA LÓGICA: Cuando se especifica fecha, FORZAR modo expandido para revisar todos los segmentos
+    const hasSpecificFilters = params.date || params.origin || params.destination;
     
-    console.log(`[searchTrips] optimizedResponse flag: ${params.optimizedResponse}`);
-    console.log(`[searchTrips] shouldReturnOptimized: ${shouldReturnOptimized}`);
-    console.log(`[searchTrips] Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
+    console.log(`[searchTrips] 🔍 ANÁLISIS DE MODO DE RESPUESTA:`);
+    console.log(`[searchTrips] 🔍 params.optimizedResponse: ${params.optimizedResponse} (tipo: ${typeof params.optimizedResponse})`);
+    console.log(`[searchTrips] 🔍 hasSpecificFilters: ${hasSpecificFilters}`);
+    console.log(`[searchTrips] 🔍 params.date: ${params.date} (existe: ${!!params.date})`);
+    console.log(`[searchTrips] 🔍 params.origin: ${params.origin} (existe: ${!!params.origin})`);
+    console.log(`[searchTrips] 🔍 params.destination: ${params.destination} (existe: ${!!params.destination})`);
+    
+    // DECISIÓN: Si hay filtro de fecha, SIEMPRE usar modo expandido para revisar todos los segmentos
+    let shouldReturnOptimized;
+    if (params.date) {
+      shouldReturnOptimized = false;
+      console.log(`[searchTrips] 🔍 FORZANDO MODO EXPANDIDO debido a filtro de fecha: ${params.date}`);
+    } else if (params.origin || params.destination) {
+      shouldReturnOptimized = false;
+      console.log(`[searchTrips] 🔍 FORZANDO MODO EXPANDIDO debido a filtros origen/destino`);
+    } else {
+      // Sin filtros específicos, usar la configuración por defecto (optimizado)
+      shouldReturnOptimized = params.optimizedResponse !== false;
+      console.log(`[searchTrips] 🔍 SIN FILTROS ESPECÍFICOS - usando modo: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
+    }
+    
+    console.log(`[searchTrips] 🔍 DECISIÓN FINAL: shouldReturnOptimized = ${shouldReturnOptimized}`);
+    console.log(`[searchTrips] 🔍 Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
     
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
@@ -594,6 +615,7 @@ export class DatabaseStorage implements IStorage {
         const firstSegment = tripDataArray[0];
         if (firstSegment) {
           // Aplicar filtro de fecha si está especificado
+          console.log(`[searchTrips] Viaje ${trip.id} - Fecha del primer segmento: ${firstSegment.departureDate}, Fecha buscada: ${params.date || 'No especificada'}`);
           if (params.date && firstSegment.departureDate !== params.date) {
             console.log(`[searchTrips] Viaje ${trip.id} excluido por fecha: ${firstSegment.departureDate} != ${params.date}`);
             continue;
