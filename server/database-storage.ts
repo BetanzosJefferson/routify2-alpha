@@ -455,12 +455,9 @@ export class DatabaseStorage implements IStorage {
         condiciones.push(or(...dateConditions));
       }
     } else if (params.date) {
-      console.log(`[searchTrips] Filtro de fecha individual: ${params.date}`);
-      // Buscar la fecha en cualquier segmento del array tripData usando SQL directo
-      condiciones.push(sql`EXISTS (
-        SELECT 1 FROM jsonb_array_elements(trip_data) AS segment
-        WHERE segment->>'departureDate' = ${params.date}
-      )`);
+      console.log(`[searchTrips] Filtro de fecha individual será aplicado en procesamiento posterior: ${params.date}`);
+      // No aplicar filtro SQL de fecha aquí - lo haremos en el procesamiento posterior
+      // para tener control sobre qué segmentos usar para el filtro
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -596,6 +593,12 @@ export class DatabaseStorage implements IStorage {
         // Usar el primer segmento como representativo del viaje completo
         const firstSegment = tripDataArray[0];
         if (firstSegment) {
+          // Aplicar filtro de fecha si está especificado
+          if (params.date && firstSegment.departureDate !== params.date) {
+            console.log(`[searchTrips] Viaje ${trip.id} excluido por fecha: ${firstSegment.departureDate} != ${params.date}`);
+            continue;
+          }
+          
           tripsWithRouteInfo.push({
             ...trip,
             // Mantener ID original para viaje principal
@@ -669,7 +672,10 @@ export class DatabaseStorage implements IStorage {
           // Check seat availability filter
           let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
           
-          console.log(`[searchTrips] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
+          // Check date filter
+          let dateMatch = !params.date || (segment.departureDate === params.date);
+          
+          console.log(`[searchTrips] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}, date: ${dateMatch}`);
           console.log(`[searchTrips] Segment ${segmentIndex} data:`, {
             origin: segment.origin,
             destination: segment.destination,
@@ -678,7 +684,7 @@ export class DatabaseStorage implements IStorage {
           });
           
           // Only include segment if it matches all filters
-          if (originMatch && destMatch && seatMatch) {
+          if (originMatch && destMatch && seatMatch && dateMatch) {
             // Create a unique identifier for this segment using recordId_segmentIndex format
             const uniqueTripId = `${trip.id}_${segmentIndex}`;
             
