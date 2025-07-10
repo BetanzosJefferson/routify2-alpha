@@ -89,6 +89,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   ],
   [UserRole.CHECKER]: [
     "trips",
+    "reservations-list",
     "notifications",
     "packages",
     "cash-register",

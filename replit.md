@@ -119,6 +119,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - FIXED: Added reservations-list access for CHECKER role:
+  - **ROLE PERMISSIONS**: Added "reservations-list" permission to CHECKER role
+  - **ACCESS RESTORED**: Checkers now have access to reservation list view for their work functions
+  - **USER EXPERIENCE**: Checker role can now properly access and manage reservation lists
+
 - **July 10, 2025** - STREAMLINED: Driver interface optimized by removing redundant package section:
   - **UI SIMPLIFICATION**: Removed "packages" permission from DRIVER role to eliminate redundant navigation option
   - **INTEGRATED ACCESS**: Drivers can now access packages exclusively through "Reservaciones en lista" sidebar
