@@ -1158,8 +1158,10 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                 
                 <div className="bg-gray-50 p-4 rounded-md">
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-gray-500">Ruta:</div>
-                    <div className="font-medium">{trip.route.name}</div>
+                    <div className="text-gray-500">Origen:</div>
+                    <div className="font-medium">{trip.origin}</div>
+                    <div className="text-gray-500">Destino:</div>
+                    <div className="font-medium">{trip.destination}</div>
                     <div className="text-gray-500">Fecha:</div>
                     <div className="font-medium">{formatDate(trip.departureDate)}</div>
                     <div className="text-gray-500">Salida:</div>
