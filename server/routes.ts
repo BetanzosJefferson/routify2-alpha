@@ -2382,7 +2382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Limpiar caché de viajes si se actualizó la capacidad
       if (req.body.capacity !== undefined) {
         console.log(`Limpiando caché de viajes después de actualizar capacidad del viaje ${id}`);
-        serverTripCache.clear();
+        serverTripCache.invalidateAll();
       }
       
       console.log(`Viaje ${id} actualizado correctamente:`, updatedTrip);
