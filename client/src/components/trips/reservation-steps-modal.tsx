@@ -104,7 +104,6 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
   const [currentStep, setCurrentStep] = useState(0);
   const [submittedReservation, setSubmittedReservation] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
-  const [showPaymentConfirmModal, setShowPaymentConfirmModal] = useState(false);
   
   // Update passengers array when number of passengers changes
   const handlePassengersChange = (value: string) => {
@@ -186,9 +185,6 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       if (currentStep === 3) {
         // Last step - submit reservation
         handleCompleteReservation();
-      } else if (currentStep === 2) {
-        // Show payment confirmation modal before proceeding to confirmation step
-        setShowPaymentConfirmModal(true);
       } else {
         setCurrentStep(currentStep + 1);
       }
@@ -205,16 +201,6 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  // Handle payment confirmation modal
-  const handlePaymentConfirmation = () => {
-    setShowPaymentConfirmModal(false);
-    setCurrentStep(currentStep + 1);
-  };
-
-  const handlePaymentConfirmationCancel = () => {
-    setShowPaymentConfirmModal(false);
   };
   
   // Reservation mutation
@@ -1809,99 +1795,5 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         )}
       </DialogContent>
     </Dialog>
-    
-    {/* Payment Confirmation Modal */}
-    <Dialog open={showPaymentConfirmModal} onOpenChange={setShowPaymentConfirmModal}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Confirmar Información de Pago</DialogTitle>
-          <DialogDescription>
-            Revise los detalles de pago antes de continuar
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {/* Resumen de pago */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium mb-3">Resumen de Pago</h4>
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span className="font-medium">{formatPrice(totalPrice)}</span>
-              </div>
-              
-              {couponVerified && couponDiscount > 0 && (
-                <>
-                  <div className="flex justify-between text-green-600">
-                    <span>Descuento ({couponCode}):</span>
-                    <span>-{formatPrice(couponDiscount)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Total con descuento:</span>
-                    <span>{formatPrice(totalPrice - couponDiscount)}</span>
-                  </div>
-                </>
-              )}
-              
-              {advanceAmount > 0 && (
-                <>
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between">
-                      <span>Anticipo ({advancePaymentMethod === PaymentMethod.CASH ? 'Efectivo' : 'Transferencia'}):</span>
-                      <span className="font-medium">{formatPrice(advanceAmount)}</span>
-                    </div>
-                  </div>
-                  
-                  {advanceAmount < (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) && (
-                    <div className="flex justify-between">
-                      <span>Saldo al abordar ({paymentMethod === PaymentMethod.CASH ? 'Efectivo' : 'Transferencia'}):</span>
-                      <span className="font-medium">{formatPrice((couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) - advanceAmount)}</span>
-                    </div>
-                  )}
-                </>
-              )}
-              
-              {!advanceAmount && (
-                <div className="flex justify-between border-t pt-2">
-                  <span>Pago total al abordar ({paymentMethod === PaymentMethod.CASH ? 'Efectivo' : 'Transferencia'}):</span>
-                  <span className="font-medium">{formatPrice(couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Advertencias */}
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-800 mb-2">Información Importante</h4>
-            <ul className="text-sm text-amber-700 space-y-1">
-              <li>• El método de pago al abordar no se puede cambiar después de confirmar</li>
-              {((advanceAmount > 0 && advanceAmount < (couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice) && paymentMethod === PaymentMethod.TRANSFER) || 
-                (!advanceAmount && paymentMethod === PaymentMethod.TRANSFER)) && (
-                <li>• <strong>Para transferencias:</strong> El pago debe realizarse antes de la hora de salida del viaje</li>
-              )}
-              <li>• Conserve el comprobante de pago para presentarlo al conductor</li>
-            </ul>
-          </div>
-        </div>
-        
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handlePaymentConfirmationCancel}
-            className="w-full sm:w-auto"
-          >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handlePaymentConfirmation}
-            className="w-full sm:w-auto"
-          >
-            Confirmar y Continuar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    </>
   );
 }
