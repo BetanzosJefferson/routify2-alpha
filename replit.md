@@ -119,11 +119,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 10, 2025** - CRITICAL FIX: Driver package access completely resolved:
-  - **PACKAGE PERMISSIONS**: Added DRIVER role to PACKAGE_WRITE_ROLES to allow drivers to mark packages as paid or delivered
-  - **ENDPOINT ACCESS**: Added 'chofer' role to /api/taquilla/packages endpoint alongside 'taquilla' role
-  - **FILTERING LOGIC**: Implemented conductor-specific filtering using recordId extraction from tripId suffixes
-  - **FRONTEND HOOKS**: Updated usePackagesByTrip and usePackages to use correct endpoints for conductor role
+- **July 10, 2025** - STREAMLINED: Driver interface optimized by removing redundant package section:
+  - **UI SIMPLIFICATION**: Removed "packages" permission from DRIVER role to eliminate redundant navigation option
+  - **INTEGRATED ACCESS**: Drivers can now access packages exclusively through "Reservaciones en lista" sidebar
+  - **PACKAGE PERMISSIONS**: Maintained DRIVER role in PACKAGE_WRITE_ROLES to allow drivers to mark packages as paid or delivered
+  - **ENDPOINT ACCESS**: Kept 'chofer' role support in /api/taquilla/packages endpoint for sidebar functionality
+  - **FILTERING LOGIC**: Maintained conductor-specific filtering using recordId extraction from tripId suffixes
+  - **FRONTEND HOOKS**: Preserved usePackagesByTrip functionality for reservation sidebar integration
   - **DATABASE FILTERING**: Enhanced getPackagesWithTripInfo to properly filter packages by conductor's assigned trips
   - **RECORDID EXTRACTION**: Fixed tripId parsing to extract base recordId from suffixed IDs (214_0 → 214)
   - **CORE LOGIC REDESIGN**: Reservations now grouped by `recordId` instead of individual `tripId` for proper midnight-crossing trip handling

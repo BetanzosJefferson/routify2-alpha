@@ -99,8 +99,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.DRIVER]: [
     "dashboard",
     "notifications",
-    "packages",
-    "reservations-list", // Vista específica de reservaciones para sus viajes asignados
+    "reservations-list", // Vista específica de reservaciones para sus viajes asignados (incluye paqueterías)
     "cash-register",
     "cash-box",
     "cutoff-history"
