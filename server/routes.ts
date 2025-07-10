@@ -2338,9 +2338,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Procesar capacity (si está presente)
       if (req.body.capacity !== undefined) {
         console.log(`Actualizando capacidad a ${req.body.capacity} para viaje ${id}`);
-        updateData.capacity = typeof req.body.capacity === 'string' 
+        const newCapacity = typeof req.body.capacity === 'string' 
           ? parseInt(req.body.capacity, 10) 
           : req.body.capacity;
+        
+        updateData.capacity = newCapacity;
+        
+        // IMPORTANTE: También actualizar availableSeats en todos los segmentos del trip_data
+        if (currentTrip.tripData && Array.isArray(currentTrip.tripData)) {
+          console.log(`Actualizando availableSeats de ${currentTrip.tripData.length} segmentos a ${newCapacity}`);
+          
+          const updatedTripData = currentTrip.tripData.map((segment: any) => ({
+            ...segment,
+            availableSeats: newCapacity
+          }));
+          
+          updateData.tripData = updatedTripData;
+          console.log(`Trip data actualizado con nueva capacidad para ${updatedTripData.length} segmentos`);
+        }
       }
       
       // Procesar visibility (si está presente)
@@ -2362,6 +2377,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!updatedTrip) {
         console.error(`Error al actualizar viaje ${id}`);
         return res.status(500).json({ error: "Failed to update trip" });
+      }
+      
+      // Limpiar caché de viajes si se actualizó la capacidad
+      if (req.body.capacity !== undefined) {
+        console.log(`Limpiando caché de viajes después de actualizar capacidad del viaje ${id}`);
+        serverTripCache.clear();
       }
       
       console.log(`Viaje ${id} actualizado correctamente:`, updatedTrip);
