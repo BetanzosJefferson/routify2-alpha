@@ -237,6 +237,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
   const handlePaymentConfirmationBack = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    console.log('DEBUG: Only closing payment confirmation modal');
     setShowPaymentConfirmation(false);
     // Permanecer en el mismo paso (paso 2) sin cerrar el formulario principal
   };
@@ -1838,10 +1840,12 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         <div 
           className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[99999]"
           style={{ pointerEvents: 'all' }}
-          onClick={(e) => {
-            // Prevenir clicks en el overlay
-            e.stopPropagation();
-            e.preventDefault();
+          onClickCapture={(e) => {
+            // Prevenir clicks en el overlay solo si no es un botón del modal
+            if (e.target === e.currentTarget) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
           }}
         >
           <div 
@@ -1930,21 +1934,20 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
             </div>
             
             <div className="flex space-x-3">
-              <Button 
-                variant="outline" 
+              <button 
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={handlePaymentConfirmationBack}
-                className="flex-1"
                 type="button"
               >
                 Atrás
-              </Button>
-              <Button 
+              </button>
+              <button 
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={handlePaymentConfirmationContinue}
-                className="flex-1"
                 type="button"
               >
                 Continuar
-              </Button>
+              </button>
             </div>
           </div>
         </div>,
