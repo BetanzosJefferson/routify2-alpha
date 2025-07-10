@@ -229,7 +229,11 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
   };
   
   // Funciones para manejar el modal de confirmación de pago
-  const handlePaymentConfirmationContinue = () => {
+  const handlePaymentConfirmationContinue = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    console.log('DEBUG: Closing payment confirmation modal and continuing to next step');
     setShowPaymentConfirmation(false);
     setCurrentStep(currentStep + 1);
   };
@@ -1845,6 +1849,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
             if (e.target === e.currentTarget) {
               e.stopPropagation();
               e.preventDefault();
+              // No cerrar el modal automáticamente, solo prevenir propagación
+              console.log('DEBUG: Overlay click prevented');
             }
           }}
         >
