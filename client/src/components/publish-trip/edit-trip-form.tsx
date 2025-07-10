@@ -29,8 +29,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TimeInput } from "@/components/ui/time-input";
 import { publishTripValidationSchema, type Route, type RouteWithSegments, type SegmentPrice, TripVisibility } from "@shared/schema";
+import { z } from "zod";
 import { generateSegmentsFromRoute, isSameCity, getCityName, groupSegmentsByCity } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Esquema de validación específico para edición (solo campos editables)
+const editTripValidationSchema = z.object({
+  templateId: z.number().min(1, "Template selection is required"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+  capacity: z.number().min(1, "Capacity is required"),
+  vehicleId: z.number().nullable().optional(),
+  driverId: z.number().nullable().optional(),
+  visibility: z.string().optional(),
+  price: z.number().optional(),
+  segmentPrices: z.array(z.any()).optional(),
+  stopTimes: z.array(z.any()).optional(),
+  availableSeats: z.number().optional(),
+});
 
 type StopTime = {
   hour: string;
@@ -170,12 +186,13 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
 
   // Form validation and handling
   const form = useForm<FormValues>({
-    resolver: zodResolver(publishTripValidationSchema),
+    resolver: zodResolver(editTripValidationSchema),
     defaultValues: {
-      templateId: 0,
+      templateId: 1, // Valor por defecto válido
       startDate: "",
       endDate: "",
       capacity: 18,
+      price: 0,
       segmentPrices: [],
       stopTimes: [],
       vehicleId: null,
@@ -651,6 +668,27 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     });
     console.log("🔄 StopTimes disponibles:", stopTimes);
     console.log("🔄 SegmentPrices disponibles:", segmentPrices);
+    
+    // Validar que los campos requeridos estén presentes
+    if (!data.templateId || data.templateId === 0) {
+      console.error("❌ Error: templateId no válido:", data.templateId);
+      toast({
+        variant: "destructive",
+        title: "Error de validación",
+        description: "La plantilla no está seleccionada correctamente."
+      });
+      return;
+    }
+    
+    if (!data.startDate || !data.endDate) {
+      console.error("❌ Error: fechas no válidas:", { startDate: data.startDate, endDate: data.endDate });
+      toast({
+        variant: "destructive",
+        title: "Error de validación",
+        description: "Las fechas no están configuradas correctamente."
+      });
+      return;
+    }
     
     // Incluir los tiempos de parada en los datos del formulario
     data.stopTimes = stopTimes;
