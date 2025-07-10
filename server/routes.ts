@@ -2270,7 +2270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(apiRouter("/trips/:id"), isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
-      console.log(`PATCH /trips/${id} - Datos recibidos:`, req.body);
+      console.log(`PATCH /trips/${id} - Datos recibidos:`, JSON.stringify(req.body, null, 2));
       
       // Validación de datos
       const validationResult = insertTripSchema.partial().safeParse(req.body);
@@ -2310,25 +2310,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Datos a actualizar - solo permitir vehicleId y driverId en PATCH
+      // Datos a actualizar - permitir múltiples campos en PATCH
       const updateData: Partial<any> = {};
       
       // Procesar vehicleId (si está presente)
       if (req.body.vehicleId !== undefined) {
         console.log(`Asignando vehículo ${req.body.vehicleId} al viaje ${id}`);
-        // Convertir a número si viene como string
-        updateData.vehicleId = typeof req.body.vehicleId === 'string' 
-          ? parseInt(req.body.vehicleId, 10) 
-          : req.body.vehicleId;
+        // Convertir a número si viene como string, null para "0" o valores falsy
+        updateData.vehicleId = (req.body.vehicleId === "0" || req.body.vehicleId === 0) 
+          ? null 
+          : (typeof req.body.vehicleId === 'string' 
+            ? parseInt(req.body.vehicleId, 10) 
+            : req.body.vehicleId);
       }
       
       // Procesar driverId (si está presente)
       if (req.body.driverId !== undefined) {
         console.log(`Asignando conductor ${req.body.driverId} al viaje ${id}`);
-        // Convertir a número si viene como string
-        updateData.driverId = typeof req.body.driverId === 'string' 
-          ? parseInt(req.body.driverId, 10) 
-          : req.body.driverId;
+        // Convertir a número si viene como string, null para "0" o valores falsy
+        updateData.driverId = (req.body.driverId === "0" || req.body.driverId === 0) 
+          ? null 
+          : (typeof req.body.driverId === 'string' 
+            ? parseInt(req.body.driverId, 10) 
+            : req.body.driverId);
+      }
+      
+      // Procesar capacity (si está presente)
+      if (req.body.capacity !== undefined) {
+        console.log(`Actualizando capacidad a ${req.body.capacity} para viaje ${id}`);
+        updateData.capacity = typeof req.body.capacity === 'string' 
+          ? parseInt(req.body.capacity, 10) 
+          : req.body.capacity;
+      }
+      
+      // Procesar visibility (si está presente)
+      if (req.body.visibility !== undefined) {
+        console.log(`Actualizando visibilidad a ${req.body.visibility} para viaje ${id}`);
+        updateData.visibility = req.body.visibility;
       }
       
       // Si no hay datos para actualizar, devolver el trip actual

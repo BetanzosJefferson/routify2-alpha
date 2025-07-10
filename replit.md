@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - FIXED: Trip update functionality now working properly:
+  - **ROOT CAUSE IDENTIFIED**: PATCH endpoint was limited to only vehicleId and driverId updates
+  - **EXPANDED ENDPOINT**: Added support for capacity and visibility updates in PATCH /api/trips/:id
+  - **PROPER HANDLING**: Added null value conversion for "0" vehicle/driver selections (unassign feature)
+  - **COMPREHENSIVE LOGGING**: Enhanced debugging output to track all update data being received
+  - **USER EXPERIENCE**: "Actualizar Viaje" button now functions correctly and updates trip data
+  - Fixed issue where trip updates appeared to do nothing due to limited backend processing
+
 - **July 10, 2025** - FIXED: Manual schedule modifications now respected when publishing trips:
   - **ROOT CAUSE IDENTIFIED**: Backend was prioritizing template configurations over user-modified stop times
   - **NEW PRIORITY SYSTEM**: Backend now uses 1) Frontend segmentPrices with custom times, 2) Template configurations, 3) Proportional fallback
