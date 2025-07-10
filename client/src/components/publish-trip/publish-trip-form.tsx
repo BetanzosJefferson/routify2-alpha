@@ -797,6 +797,29 @@ export function PublishTripForm() {
         form.setValue("driverId", tripData.driverId);
       }
 
+      // Buscar template para esta ruta
+      const templateForRoute = templatesQuery.data?.find(
+        (template: any) => template.routeId === tripData.routeId
+      );
+      
+      if (templateForRoute) {
+        console.log("Template encontrado para la ruta:", templateForRoute);
+        form.setValue("templateId", templateForRoute.id);
+        setSelectedTemplateId(templateForRoute.id);
+        setSelectedTemplate(templateForRoute);
+      } else {
+        console.warn("No se encontró template para routeId:", tripData.routeId);
+        // En modo edición, permitir usar el primer template disponible o usar valor 0
+        if (templatesQuery.data && templatesQuery.data.length > 0) {
+          console.log("Usando primer template disponible como fallback");
+          form.setValue("templateId", templatesQuery.data[0].id);
+          setSelectedTemplateId(templatesQuery.data[0].id);
+          setSelectedTemplate(templatesQuery.data[0]);
+        } else {
+          form.setValue("templateId", 0);
+        }
+      }
+
       // Esperar a que templateRouteQuery se complete después de cambiar routeId
       // Esto es necesario para asegurarnos de que los segmentos están cargados
       // antes de intentar establecer los precios
