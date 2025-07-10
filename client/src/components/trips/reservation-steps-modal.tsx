@@ -105,6 +105,9 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
   const [submittedReservation, setSubmittedReservation] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   
+  // Modal de confirmación de pago
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
+  
   // Update passengers array when number of passengers changes
   const handlePassengersChange = (value: string) => {
     const count = parseInt(value, 10);
@@ -185,6 +188,18 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       if (currentStep === 3) {
         // Last step - submit reservation
         handleCompleteReservation();
+      } else if (currentStep === 2) {
+        // Paso 2 (información de contacto y pago) - verificar si necesita confirmación
+        const totalPrice = trip.price * numPassengers;
+        const finalPrice = couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice;
+        
+        if (advanceAmount < finalPrice) {
+          // Mostrar modal de confirmación si el anticipo es menor al total
+          setShowPaymentConfirmation(true);
+        } else {
+          // Continuar normalmente si el anticipo cubre el total
+          setCurrentStep(currentStep + 1);
+        }
       } else {
         setCurrentStep(currentStep + 1);
       }
@@ -201,6 +216,17 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  };
+  
+  // Funciones para manejar el modal de confirmación de pago
+  const handlePaymentConfirmationContinue = () => {
+    setShowPaymentConfirmation(false);
+    setCurrentStep(currentStep + 1);
+  };
+  
+  const handlePaymentConfirmationBack = () => {
+    setShowPaymentConfirmation(false);
+    // Permanecer en el mismo paso (paso 2)
   };
   
   // Reservation mutation
@@ -1794,6 +1820,84 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
           </>
         )}
       </DialogContent>
+      
+      {/* Modal de confirmación de pago */}
+      {showPaymentConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <div className="text-center mb-4">
+              <CreditCardIcon className="w-12 h-12 text-amber-500 mx-auto mb-2" />
+              <h3 className="text-lg font-semibold text-gray-800">
+                Resumen de Información de Pago
+              </h3>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Total del viaje:</span>
+                    <div className="font-medium">{formatPrice(trip.price * numPassengers)}</div>
+                  </div>
+                  
+                  {couponVerified && couponDiscount > 0 && (
+                    <div>
+                      <span className="text-gray-500">Descuento:</span>
+                      <div className="font-medium text-green-600">-{formatPrice(couponDiscount)}</div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <span className="text-gray-500">Anticipo:</span>
+                    <div className="font-medium">{formatPrice(advanceAmount)}</div>
+                  </div>
+                  
+                  <div>
+                    <span className="text-gray-500">Pendiente:</span>
+                    <div className="font-medium text-amber-600">
+                      {formatPrice((couponVerified && couponDiscount > 0 ? trip.price * numPassengers - couponDiscount : trip.price * numPassengers) - advanceAmount)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <InfoIcon className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800 mb-2">
+                      Información importante sobre el pago:
+                    </p>
+                    <ul className="space-y-1 text-amber-700">
+                      <li>• El método de pago al abordar <strong>no se puede modificar</strong> después de confirmar</li>
+                      {paymentMethod === PaymentMethod.TRANSFER && (
+                        <li>• La transferencia se debe realizar <strong>antes del abordaje</strong></li>
+                      )}
+                      <li>• Deberá completar el pago restante al momento de abordar</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <Button 
+                variant="outline" 
+                onClick={handlePaymentConfirmationBack}
+                className="flex-1"
+              >
+                Atrás
+              </Button>
+              <Button 
+                onClick={handlePaymentConfirmationContinue}
+                className="flex-1"
+              >
+                Continuar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Dialog>
   );
 }
