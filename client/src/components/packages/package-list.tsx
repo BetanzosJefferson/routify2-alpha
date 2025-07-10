@@ -704,19 +704,22 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                             Ver/Imprimir Ticket
                           </DropdownMenuItem>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
+                        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Ticket de Paquete</DialogTitle>
                           </DialogHeader>
                           {packageToView && (
-                            <div className="flex flex-col items-center">
-                              <PackageTicket 
-                                packageData={packageToView} 
-                                companyName={user?.company || "TransRoute"} 
-                              />
+                            <div className="flex flex-col items-center space-y-4 pb-4">
+                              <div className="w-full max-w-sm">
+                                <PackageTicket 
+                                  packageData={packageToView} 
+                                  companyName={user?.company || "TransRoute"} 
+                                />
+                              </div>
                               <Button 
                                 onClick={handlePrintTicket} 
-                                className="mt-4"
+                                className="w-full max-w-sm"
+                                size="lg"
                               >
                                 <Printer className="mr-2 h-4 w-4" />
                                 Imprimir Ticket

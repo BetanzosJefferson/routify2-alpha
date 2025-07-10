@@ -119,6 +119,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - FIXED: Package ticket modal mobile responsiveness:
+  - **MOBILE OPTIMIZATION**: Fixed PackageTicket modal to be scrollable on mobile devices
+  - **VIEWPORT CONSTRAINTS**: Added max-height (90vh) and overflow-y-auto to DialogContent
+  - **BUTTON VISIBILITY**: Ensured "Imprimir Ticket" button is always visible and accessible
+  - **RESPONSIVE DESIGN**: Improved button sizing and spacing for mobile devices
+  - **USER EXPERIENCE**: Users can now scroll within modal to access all content on mobile
+
 - **July 10, 2025** - FIXED: Added reservations-list access for CHECKER role:
   - **ROLE PERMISSIONS**: Added "reservations-list" permission to CHECKER role
   - **ACCESS RESTORED**: Checkers now have access to reservation list view for their work functions
