@@ -2559,7 +2559,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (const reservation of reservations) {
             const tripDetails = reservation.tripDetails;
             if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
-              const recordId = tripDetails.recordId.toString();
+              // IMPORTANTE: Usar solo el recordId base, sin sufijos como _122
+              let recordId = tripDetails.recordId.toString();
+              // Si el recordId contiene un guión bajo, tomar solo la parte antes del guión
+              if (recordId.includes('_')) {
+                recordId = recordId.split('_')[0];
+                console.log(`[GET /reservations] Normalizando recordId de ${tripDetails.recordId} a ${recordId}`);
+              }
               
               if (!recordIdGroups.has(recordId)) {
                 // Buscar el viaje padre en la base de datos al crear el grupo
@@ -2567,7 +2573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 let parentTripDate: string | null = null;
                 
                 try {
-                  const parentTrip = await dbStorage.getTrip(parentTripId);
+                  const parentTrip = await storage.getTrip(parentTripId);
                   if (parentTrip && parentTrip.tripData && parentTrip.tripData.length > 0) {
                     parentTripDate = parentTrip.tripData[0].departureDate;
                     console.log(`[GET /reservations] Fecha del viaje padre para recordId ${recordId}: ${parentTripDate}`);

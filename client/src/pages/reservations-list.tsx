@@ -80,9 +80,15 @@ function ReservationsListContent() {
   const groupedReservations = filteredReservations.reduce((groups, reservation) => {
     // Extraer recordId del tripDetails
     const tripDetails = reservation.tripDetails as any;
-    const recordId = tripDetails?.recordId?.toString() || 'sin-record-id';
+    let recordId = tripDetails?.recordId?.toString() || 'sin-record-id';
     
-    // Usar recordId como clave de agrupación
+    // IMPORTANTE: Normalizar recordId - usar solo la parte base sin sufijos como _122
+    if (recordId.includes('_')) {
+      recordId = recordId.split('_')[0];
+      console.log(`[Frontend] Normalizando recordId de ${tripDetails.recordId} a ${recordId}`);
+    }
+    
+    // Usar recordId normalizado como clave de agrupación
     const groupKey = recordId;
     
     if (!groups[groupKey]) {
