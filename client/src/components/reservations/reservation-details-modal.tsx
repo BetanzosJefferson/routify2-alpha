@@ -445,23 +445,10 @@ export default function ReservationDetailsModal({
         let originalPrice = reservation.totalAmount;
         let finalPrice = reservation.totalAmount;
         
-        // Debug: Verificar datos de cupón
-        console.log('DEBUG PDF - Datos de cupón:', {
-          couponCode: reservation.couponCode,
-          couponDiscount: reservation.couponDiscount,
-          totalAmount: reservation.totalAmount
-        });
-        
         // Si hay descuento, el precio original es el total + descuento
         if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
           originalPrice = reservation.totalAmount + reservation.couponDiscount;
           finalPrice = reservation.totalAmount; // El totalAmount ya tiene el descuento aplicado
-          
-          console.log('DEBUG PDF - Precios calculados:', {
-            originalPrice,
-            finalPrice,
-            discount: reservation.couponDiscount
-          });
         }
 
         // Precio original
@@ -828,8 +815,18 @@ export default function ReservationDetailsModal({
       doc.setFontSize(8);
       doc.setFont("courier", "normal");
       
-      // Subtotal
-      doc.text(`Subtotal: ${formatPrice(reservation.totalAmount)}`, 5, y);
+      // Calcular precio original y final
+      let originalPrice = reservation.totalAmount;
+      let finalPrice = reservation.totalAmount;
+      
+      // Si hay descuento, el precio original es el total + descuento
+      if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
+        originalPrice = reservation.totalAmount + reservation.couponDiscount;
+        finalPrice = reservation.totalAmount; // El totalAmount ya tiene el descuento aplicado
+      }
+      
+      // Precio original
+      doc.text(`Precio original: ${formatPrice(originalPrice)}`, 5, y);
       
       // Cupón de descuento (si existe)
       if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
@@ -838,13 +835,10 @@ export default function ReservationDetailsModal({
         y += 3;
         doc.text(`Descuento: -${formatPrice(reservation.couponDiscount)}`, 5, y);
         y += 3;
-        doc.text(`Total con descuento: ${formatPrice(reservation.totalAmount - reservation.couponDiscount)}`, 5, y);
+        doc.text(`Total: ${formatPrice(finalPrice)}`, 5, y);
       }
       
       y += 3;
-      
-      // Calcular precio final después del descuento
-      const finalPrice = reservation.couponDiscount > 0 ? reservation.totalAmount - reservation.couponDiscount : reservation.totalAmount;
       
       if (reservation.advanceAmount && reservation.advanceAmount > 0) {
         // Anticipo con método de pago
@@ -1442,7 +1436,7 @@ export default function ReservationDetailsModal({
 
                         {/* Botón de descarga actualizado para usar handleDownloadTicket */}
                         <Button
-                          onClick={handleDownloadTicket} // <-- Aquí se usa la nueva función
+                          onClick={handleDownloadTicket}
                           variant="default"
                           size="sm"
                           className="bg-blue-600 hover:bg-blue-700 text-white"
