@@ -400,7 +400,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     createReservationMutation.mutate(reservationData);
   };
   
-  // Handle printing the ticket in 60mm thermal format
+  // Handle printing the ticket in 60mm thermal format (similar to packages)
   const handlePrintTicket60mm = async () => {
     if (!submittedReservation) {
       toast({
@@ -412,9 +412,64 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     }
 
     try {
+      // Importar la función de generación de PDF de 60mm de manera dinámica
+      const { generateReservationTicket60mmPDF } = await import('./reservation-ticket-thermal');
+      
+      // Datos de la reservación para el ticket
+      const reservationData = {
+        id: submittedReservation.id,
+        passengerName: `${passengers[0]?.firstName || ''} ${passengers[0]?.lastName || ''}`.trim(),
+        phone: phone,
+        email: email,
+        origin: trip.origin || trip.segmentOrigin || trip.route?.origin || 'No especificado',
+        destination: trip.destination || trip.segmentDestination || trip.route?.destination || 'No especificado',
+        departureDate: trip.departureDate,
+        departureTime: trip.departureTime,
+        arrivalTime: trip.arrivalTime,
+        totalAmount: couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice,
+        originalPrice: totalPrice,
+        couponDiscount: couponVerified && couponDiscount > 0 ? couponDiscount : 0,
+        advanceAmount: advanceAmount,
+        paymentMethod: paymentMethod,
+        advancePaymentMethod: advancePaymentMethod,
+        numPassengers: numPassengers,
+        passengers: passengers,
+        couponCode: couponVerified ? couponCode : null
+      };
+      
+      // Generar el PDF con dimensiones de ticket térmico (60mm x 170mm)
+      generateReservationTicket60mmPDF(reservationData, user?.company || "TransRoute");
+      
       toast({
-        title: "Generando ticket térmico...",
-        description: "Por favor espere mientras se genera el boleto 60mm",
+        title: "Ticket térmico generado",
+        description: "El boleto de 60mm se ha abierto para imprimir",
+      });
+
+    } catch (error) {
+      console.error("Error al generar el ticket PDF 60mm:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el ticket PDF 60mm. Intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle downloading the ticket as PDF in 60mm format (original behavior)
+  const handleDownloadTicket60mmPDF = async () => {
+    if (!submittedReservation) {
+      toast({
+        title: "Error",
+        description: "No se encontró la información de la reservación",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Generando PDF 60mm...",
+        description: "Por favor espere mientras se genera el boleto",
       });
 
       const { jsPDF } = await import('jspdf');
@@ -2096,7 +2151,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                 Imprimir boleto 60mm
               </Button>
               <Button 
-                onClick={handleDownloadTicket60mm}
+                onClick={handleDownloadTicket60mmPDF}
                 className="w-full sm:w-auto"
               >
                 <DownloadIcon className="w-4 h-4 mr-2" />
