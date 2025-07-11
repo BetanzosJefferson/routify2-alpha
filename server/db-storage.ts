@@ -2844,15 +2844,23 @@ export class DatabaseStorage implements IStorage {
               const trip = tripResult[0];
               const tripData = trip.tripData as any;
               
+              console.log(`DB Storage: [createTransactionFromReservation] 🔍 Viaje ${recordId} encontrado, tripData length: ${tripData?.length}`);
+              
               if (tripData && Array.isArray(tripData)) {
                 // Si hay subTripIndex, es un sub-viaje
                 if (subTripIndex && subTripIndex !== '0') {
                   isSubTrip = true;
                   const subTripIdx = parseInt(subTripIndex);
+                  console.log(`DB Storage: [createTransactionFromReservation] 🔍 Accediendo a segmento ${subTripIdx} de ${tripData.length} total`);
+                  
                   if (subTripIdx < tripData.length) {
                     const subTrip = tripData[subTripIdx];
+                    console.log(`DB Storage: [createTransactionFromReservation] 🔍 Segmento ${subTripIdx}:`, JSON.stringify(subTrip, null, 2));
                     origen = subTrip.origin || "Origen no especificado";
                     destino = subTrip.destination || "Destino no especificado";
+                    console.log(`DB Storage: [createTransactionFromReservation] ✅ Obtenidos de BD: ${origen} → ${destino}`);
+                  } else {
+                    console.log(`DB Storage: [createTransactionFromReservation] ❌ Índice ${subTripIdx} fuera de rango (${tripData.length})`);
                   }
                 } else {
                   // Es el viaje principal
@@ -2860,9 +2868,14 @@ export class DatabaseStorage implements IStorage {
                   if (mainTrip) {
                     origen = mainTrip.origin || "Origen no especificado";
                     destino = mainTrip.destination || "Destino no especificado";
+                    console.log(`DB Storage: [createTransactionFromReservation] ✅ Obtenidos de BD (main): ${origen} → ${destino}`);
                   }
                 }
+              } else {
+                console.log(`DB Storage: [createTransactionFromReservation] ❌ tripData no es array válido:`, tripData);
               }
+            } else {
+              console.log(`DB Storage: [createTransactionFromReservation] ❌ Viaje ${recordId} no encontrado`);
             }
           }
         } catch (tripError) {
