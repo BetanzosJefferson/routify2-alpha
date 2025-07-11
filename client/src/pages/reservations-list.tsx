@@ -12,6 +12,8 @@ import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
 import { useQueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { withErrorHandling } from "@/lib/error-handler";
 
 function ReservationsListContent() {
   const queryClient = useQueryClient();
@@ -20,11 +22,12 @@ function ReservationsListContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [routeFilter, setRouteFilter] = useState("");
   const [timeFilter, setTimeFilter] = useState("");
+  const [hasError, setHasError] = useState(false);
   
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
   // Obtener la fecha actual - permitir que el usuario configure la fecha correcta
-  const getCurrentDate = () => {
+  const getCurrentDate = withErrorHandling(() => {
     const now = new Date();
     
     // Método 1: Fecha del sistema local
@@ -49,7 +52,7 @@ function ReservationsListContent() {
     
     // Usar la fecha del sistema local por defecto
     return systemDate;
-  };
+  }, "getCurrentDate");
 
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(getCurrentDate()));
   const [searchDate, setSearchDate] = useState(formatDateForInput(getCurrentDate())); // Usar fecha actual por defecto
@@ -71,6 +74,39 @@ function ReservationsListContent() {
     // No filtrar por fecha en el backend - traer todas las reservaciones
     // El filtrado se hará en el frontend después de agrupar por viaje padre
   });
+
+  // Manejo de errores específico para Android
+  if (error && !hasError) {
+    setHasError(true);
+    console.error('Error en reservaciones-list:', error);
+  }
+
+  // Renderizado de error específico para Android
+  if (hasError || error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.966-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Error al cargar reservaciones
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Ha ocurrido un error al cargar las reservaciones. Por favor, intenta de nuevo.
+          </p>
+          <Button onClick={() => {
+            setHasError(false);
+            window.location.reload();
+          }}>
+            Recargar página
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Log para depuración
   console.log(`[Reservaciones] Fecha búsqueda: ${searchDate}, Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
@@ -139,7 +175,7 @@ function ReservationsListContent() {
     }
 
     // Filtro de ruta: buscar en origen y destino
-    if (routeFilter) {
+    if (routeFilter && routeFilter !== 'all') {
       const routeLower = routeFilter.toLowerCase();
       const tripDetails = reservation.tripDetails as any;
       const origin = tripDetails?.origin || reservation.trip?.origin || '';
@@ -152,7 +188,7 @@ function ReservationsListContent() {
     }
 
     // Filtro de horario: buscar en hora de salida
-    if (timeFilter) {
+    if (timeFilter && timeFilter !== 'all') {
       const tripDetails = reservation.tripDetails as any;
       const departureTime = tripDetails?.departureTime || reservation.trip?.departureTime || '';
       const matchesTime = departureTime.includes(timeFilter);
@@ -412,7 +448,7 @@ function ReservationsListContent() {
                   <SelectValue placeholder="Filtrar por ruta" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las rutas</SelectItem>
+                  <SelectItem value="all">Todas las rutas</SelectItem>
                   <SelectItem value="Acapulco">Acapulco</SelectItem>
                   <SelectItem value="Taxqueña">Taxqueña</SelectItem>
                   <SelectItem value="Chilpancingo">Chilpancingo</SelectItem>
@@ -429,7 +465,7 @@ function ReservationsListContent() {
                   <SelectValue placeholder="Horario" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="06:00">6:00 AM</SelectItem>
                   <SelectItem value="07:00">7:00 AM</SelectItem>
                   <SelectItem value="08:00">8:00 AM</SelectItem>
@@ -633,12 +669,33 @@ function ReservationsListContent() {
 
       {/* Sidebar de detalles de reservaciones */}
       {selectedTrip && (
-        <ReservationDetailsSidebar
-          recordId={selectedTrip.recordId}
-          tripInfo={selectedTrip.tripInfo}
-          reservations={selectedTrip.reservations}
-          onClose={() => setSelectedTrip(null)}
-        />
+        <ErrorBoundary 
+          fallback={(error, reset) => (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg max-w-md">
+                <h3 className="text-lg font-semibold mb-2">Error en el sidebar</h3>
+                <p className="text-gray-600 mb-4">
+                  Ha ocurrido un error al cargar los detalles de la reservación.
+                </p>
+                <div className="flex gap-2">
+                  <Button onClick={reset} variant="default">
+                    Reintentar
+                  </Button>
+                  <Button onClick={() => setSelectedTrip(null)} variant="outline">
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        >
+          <ReservationDetailsSidebar
+            recordId={selectedTrip.recordId}
+            tripInfo={selectedTrip.tripInfo}
+            reservations={selectedTrip.reservations}
+            onClose={() => setSelectedTrip(null)}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );

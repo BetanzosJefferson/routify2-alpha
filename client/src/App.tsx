@@ -9,6 +9,8 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { DataLoaderProvider } from "@/hooks/use-data-loader";
 import { NotificationsProvider } from "@/components/notifications/notifications-provider";
+import { ErrorBoundary, ErrorFallback } from "@/components/error-boundary";
+import "@/lib/error-handler"; // Inicializar el manejador de errores global
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AuthPage from "@/pages/auth-page";
@@ -83,20 +85,24 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <DataLoaderProvider>
-        <AuthProvider>
-          <NotificationsProvider>
-            <ThemeProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Router />
-              </TooltipProvider>
-            </ThemeProvider>
-          </NotificationsProvider>
-        </AuthProvider>
-      </DataLoaderProvider>
-    </QueryClientProvider>
+    <ErrorBoundary fallback={ErrorFallback}>
+      <QueryClientProvider client={queryClient}>
+        <DataLoaderProvider>
+          <AuthProvider>
+            <NotificationsProvider>
+              <ThemeProvider>
+                <TooltipProvider>
+                  <ErrorBoundary fallback={ErrorFallback}>
+                    <Toaster />
+                    <Router />
+                  </ErrorBoundary>
+                </TooltipProvider>
+              </ThemeProvider>
+            </NotificationsProvider>
+          </AuthProvider>
+        </DataLoaderProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

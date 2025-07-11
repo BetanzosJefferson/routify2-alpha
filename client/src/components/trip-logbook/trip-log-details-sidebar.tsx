@@ -422,7 +422,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         onChange={(e) => setNewExpense(prev => ({ ...prev, type: e.target.value }))}
                         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <option value="">Seleccionar categoría</option>
+                        <option value="none">Seleccionar categoría</option>
                         <option value="gasolina">Gasolina</option>
                         <option value="casetas">Casetas</option>
                         <option value="otros">Otros</option>

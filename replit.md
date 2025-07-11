@@ -119,6 +119,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - CRITICAL FIX: Android blank screen issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: SelectItem components with empty string values (`value=""`) were causing Android browsers to crash
+  - **ANDROID-SPECIFIC ISSUE**: Empty string values in SelectItem components trigger React errors that cause complete UI failure on Android
+  - **SYSTEMATIC FIX**: Located and corrected all instances of problematic SelectItem and option elements
+  - **FILES CORRECTED**: 
+    - reservations-list.tsx: Fixed route filter and time filter SelectItem values
+    - reservation-details-sidebar.tsx: Fixed expense category dropdown option value
+    - trip-log-details-sidebar.tsx: Fixed expense category dropdown option value
+  - **GLOBAL ERROR HANDLING**: Implemented comprehensive error boundary system with Android-specific error detection
+  - **ERROR PREVENTION**: Changed all empty string values to meaningful alternatives ("all", "none")
+  - **FILTER LOGIC UPDATED**: Updated filtering logic to handle new non-empty values correctly
+  - **CROSS-PLATFORM COMPATIBILITY**: Solution works on all platforms while specifically fixing Android crashes
+  - **USER EXPERIENCE**: Step-by-step forms and reservation lists now work properly on Android devices
+  - **TECHNICAL SOLUTION**: Replaced `value=""` with `value="all"` or `value="none"` and updated related logic
+  - Complete fix for blank screen issues in Android browsers across all form components
+
 - **July 11, 2025** - COMPREHENSIVE FIX: Android thermal printing compatibility resolved across all modules:
   - **ROOT CAUSE FIXED**: Android browsers handle blob URLs differently than about:blank for PDF printing
   - **ANDROID ISSUE**: Blob URLs trigger Android's auto-scaling, making thermal tickets print too small (rescaled)

@@ -878,7 +878,7 @@ export function ReservationDetailsSidebar({
                           }))}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          <option value="">Seleccionar categoría</option>
+                          <option value="none">Seleccionar categoría</option>
                           <option value="Gasolina">Gasolina</option>
                           <option value="Casetas">Casetas</option>
                           <option value="Otros">Otros</option>
