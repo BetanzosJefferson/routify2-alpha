@@ -1333,8 +1333,8 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Si el usuario es conductor (chofer), solo mostrar reservaciones de sus viajes asignados
-      if (userRole === 'chofer' && currentUserId && tripRecord.driverId !== currentUserId) {
-        console.log(`DB Storage: Omitiendo reservación ${reservation.id} - no es del conductor ${currentUserId}`);
+      if (filters?.userRole === 'chofer' && filters?.currentUserId && tripRecord.driverId !== filters.currentUserId) {
+        console.log(`DB Storage: Omitiendo reservación ${reservation.id} - no es del conductor ${filters.currentUserId}`);
         continue;
       }
       
