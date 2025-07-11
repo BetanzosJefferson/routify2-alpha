@@ -1689,6 +1689,55 @@ export class DatabaseStorage implements IStorage {
     
     console.log("Creando reservación con datos:", JSON.stringify(reservation, null, 2));
     const [newReservation] = await db.insert(schema.reservations).values(reservation).returning();
+    
+    // 🔥 CRÍTICO: Actualizar asientos disponibles en el viaje
+    console.log(`[createReservation] Iniciando actualización de asientos para viaje ${reservation.tripId}`);
+    
+    // Obtener información del viaje
+    const trip = await this.getTrip(reservation.tripId);
+    if (trip && trip.tripData && Array.isArray(trip.tripData)) {
+      // Obtener pasajeros de la reservación recién creada
+      const passengers = await this.getPassengers(newReservation.id);
+      const passengerCount = passengers.length;
+      
+      console.log(`[createReservation] Pasajeros en la reservación: ${passengerCount}`);
+      
+      if (passengerCount > 0) {
+        // Obtener tripId específico del objeto reservación
+        const tripDetails = reservation.tripDetails;
+        let specificTripId: string | null = null;
+        
+        if (tripDetails && typeof tripDetails === 'object' && 'tripId' in tripDetails) {
+          specificTripId = String(tripDetails.tripId);
+        } else if (tripDetails && typeof tripDetails === 'string') {
+          try {
+            const parsed = JSON.parse(tripDetails);
+            if (parsed && parsed.tripId) {
+              specificTripId = String(parsed.tripId);
+            }
+          } catch (e) {
+            console.log(`[createReservation] No se pudo parsear tripDetails: ${tripDetails}`);
+          }
+        }
+        
+        if (specificTripId) {
+          console.log(`[createReservation] Actualizando asientos para tripId específico: ${specificTripId}`);
+          
+          // Actualizar asientos disponibles en el segmento específico
+          await this.updateRelatedTripsAvailability(reservation.tripId, specificTripId, -passengerCount);
+        } else {
+          console.log(`[createReservation] No se encontró tripId específico, usando el primer segmento`);
+          // Si no se puede determinar el tripId específico, usar el primer segmento
+          const firstSegment = trip.tripData[0];
+          if (firstSegment && firstSegment.tripId) {
+            await this.updateRelatedTripsAvailability(reservation.tripId, String(firstSegment.tripId), -passengerCount);
+          }
+        }
+      }
+    } else {
+      console.warn(`[createReservation] No se pudo obtener información del viaje ${reservation.tripId} para actualizar asientos`);
+    }
+    
     return newReservation;
   }
   
