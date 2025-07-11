@@ -425,7 +425,13 @@ export function formatDateForApiQuery(date: Date | string): string {
     console.log(`[formatDateForApiQuery] Fecha por componentes: ${year}-${month}-${day}`);
     return `${year}-${month}-${day}`;
   } else {
-    // Para strings, normalizar primero
+    // Para strings en formato YYYY-MM-DD, devolverlas directamente
+    if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.log(`[formatDateForApiQuery] Fecha string válida: ${date}`);
+      return date;
+    }
+    
+    // Para otros formatos, normalizar primero
     const normalizedDate = normalizeToStartOfDay(date);
     return dateToLocalISOString(normalizedDate);
   }

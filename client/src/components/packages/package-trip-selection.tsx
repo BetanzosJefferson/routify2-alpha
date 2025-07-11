@@ -90,15 +90,17 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
 
   // Manejar búsqueda
   const handleSearch = () => {
+    const formattedDate = formatDateForApiQuery(date);
     console.log(`[PackageTripSelection] Searching with filters:`, {
-      date,
+      originalDate: date,
+      formattedDate,
       origin,
       destination
     });
     
     // Construir nuevos parámetros de búsqueda
     const newSearchParams: SearchParams = {
-      date: formatDateForApiQuery(new Date(date)),
+      date: formattedDate,
       visibility: 'publicado'
     };
     
