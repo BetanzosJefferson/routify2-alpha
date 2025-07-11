@@ -120,7 +120,10 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "trips",
     "my-commissions",
     "reservation-requests",
-    "notifications"
+    "notifications",
+    "cash-register",
+    "cash-box",
+    "cutoff-history"
   ]
 };
 

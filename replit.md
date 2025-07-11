@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 10, 2025** - ENHANCED: Commission agent role permissions expanded:
+  - **CASH REGISTER ACCESS**: Added "cash-register" permission to COMMISSIONER role
+  - **CASH BOX ACCESS**: Added "cash-box" permission to COMMISSIONER role  
+  - **CUTOFF HISTORY ACCESS**: Added "cutoff-history" permission to COMMISSIONER role
+  - **COMPLETE WORKFLOW**: Commission agents can now manage their daily cash operations
+  - **ROLE CONSISTENCY**: Aligns commissioner permissions with other sales roles (checker, ticket office)
+  - **USER EXPERIENCE**: Commission agents now have full access to cash management tools
+
 - **July 10, 2025** - ENHANCED: Native ticket sharing functionality implemented:
   - **WEB SHARE API**: Integrated native Web Share API for both package and reservation tickets
   - **MULTI-PLATFORM SUPPORT**: Works with Bluetooth, messaging apps, and other native sharing options
