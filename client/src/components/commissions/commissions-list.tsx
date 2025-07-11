@@ -16,10 +16,15 @@ import {
   DollarSign,
   Calendar,
   User,
-  MapPin
+  MapPin,
+  Download
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice, generateReservationId } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import QRCode from "qrcode";
 
 interface CommissionsListProps {
   /** Si es true, muestra solo vista de lectura para comisionistas */
@@ -225,6 +230,247 @@ function CommissionItems({
   formatCurrency, 
   formatDate 
 }: CommissionItemsProps) {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Función para generar boleto 60mm
+  const downloadTicket60mm = async (reservation: any) => {
+    try {
+      toast({
+        title: "Generando ticket térmico...",
+        description: "Generando boleto de 60mm, por favor espera...",
+      });
+
+      const { jsPDF } = await import('jspdf');
+      
+      // Generar código QR para la reservación
+      let qrCodeDataUrl;
+      try {
+        const verificationUrl = `${window.location.origin}/reservation-details?id=${reservation.id}`;
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 100 });
+      } catch (error) {
+        console.error("Error al generar código QR:", error);
+        qrCodeDataUrl = null;
+      }
+      
+      // Crear documento PDF con dimensiones de ticket térmico (58mm x 160mm)
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [58, 160],
+      });
+
+      // Configuración de fuentes
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+
+      // Margen superior
+      let y = 10;
+
+      // Encabezado
+      doc.setFontSize(12);
+      doc.setFont("courier", "bold");
+      const companyName = user?.company || "TransRoute";
+      const companyNameWidth = doc.getStringUnitWidth(companyName) * 12 / doc.internal.scaleFactor;
+      const companyNameX = (58 - companyNameWidth) / 2;
+      doc.text(companyName, companyNameX, y);
+      
+      y += 5;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
+      doc.text("Boleto de reservación", 29, y, { align: "center" });
+      
+      // Línea separadora
+      y += 3;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(5, y, 53, y);
+      
+      // ID de la reservación
+      y += 5;
+      doc.setFontSize(10);
+      doc.setFont("courier", "bold");
+      doc.text(`RESERVACIÓN #${generateReservationId(reservation.id)}`, 29, y, { align: "center" });
+      
+      y += 4;
+      doc.setFontSize(8);
+      doc.text(format(new Date(reservation.createdAt), "dd/MM/yyyy HH:mm", { locale: es }), 29, y, { align: "center" });
+      
+      // Información del viaje
+      if (reservation.trip) {
+        y += 6;
+        doc.setFontSize(9);
+        doc.setFont("courier", "bold");
+        doc.text("Ruta", 5, y);
+        
+        y += 4;
+        doc.setFontSize(8);
+        doc.setFont("courier", "normal");
+        
+        // Origen y destino específicos del trayecto
+        const origen = reservation.specificOrigin || reservation.trip.route?.origin || "";
+        const destino = reservation.specificDestination || reservation.trip.route?.destination || "";
+        const maxWidth = 48;
+        
+        // Origen
+        const origenCompleto = `Origen: ${origen}`;
+        if (doc.getStringUnitWidth(origenCompleto) * 8 / doc.internal.scaleFactor > maxWidth) {
+          doc.text("Origen:", 5, y);
+          y += 3;
+          const words = origen.split(' ');
+          let line = '';
+          for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidth) {
+              doc.text(line, 5, y);
+              line = words[i] + ' ';
+              y += 3;
+            } else {
+              line = testLine;
+            }
+          }
+          doc.text(line, 5, y);
+          y += 4;
+        } else {
+          doc.text(origenCompleto, 5, y);
+          y += 4;
+        }
+        
+        // Destino
+        const destinoCompleto = `Destino: ${destino}`;
+        if (doc.getStringUnitWidth(destinoCompleto) * 8 / doc.internal.scaleFactor > maxWidth) {
+          doc.text("Destino:", 5, y);
+          y += 3;
+          const words = destino.split(' ');
+          let line = '';
+          for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidth) {
+              doc.text(line, 5, y);
+              line = words[i] + ' ';
+              y += 3;
+            } else {
+              line = testLine;
+            }
+          }
+          doc.text(line, 5, y);
+          y += 4;
+        } else {
+          doc.text(destinoCompleto, 5, y);
+          y += 4;
+        }
+        
+        // Fecha y hora del viaje
+        y += 4;
+        doc.text(`Fecha: ${reservation.trip.departureDate || 'No especificada'}`, 5, y);
+        y += 4;
+        doc.text(`Hora: ${reservation.trip.departureTime || 'No especificada'}`, 5, y);
+      }
+
+      // Información de pasajeros
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("courier", "bold");
+      doc.text("Pasajeros", 5, y);
+      
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
+      
+      if (reservation.passengers && reservation.passengers.length > 0) {
+        reservation.passengers.forEach((passenger: any) => {
+          const passengerName = `${passenger.firstName} ${passenger.lastName}`;
+          doc.text(`• ${passengerName}`, 5, y);
+          y += 3;
+        });
+      } else {
+        doc.text("No especificado", 5, y);
+        y += 3;
+      }
+
+      // Información de pago
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("courier", "bold");
+      doc.text("Pago", 5, y);
+      
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
+      doc.text(`Total: ${formatPrice(reservation.totalAmount)}`, 5, y);
+      y += 3;
+      
+      if (reservation.advancePayment > 0) {
+        doc.text(`Anticipo: ${formatPrice(reservation.advancePayment)}`, 5, y);
+        y += 3;
+        doc.text(`Restante: ${formatPrice(reservation.remainingBalance)}`, 5, y);
+        y += 3;
+      }
+      
+      if (reservation.paymentMethod) {
+        doc.text(`Método: ${reservation.paymentMethod}`, 5, y);
+        y += 3;
+      }
+
+      // Contacto
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("courier", "bold");
+      doc.text("Contacto", 5, y);
+      
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
+      
+      if (reservation.phone) {
+        doc.text(`Tel: ${reservation.phone}`, 5, y);
+        y += 3;
+      }
+      
+      if (reservation.email) {
+        const emailText = doc.splitTextToSize(`Email: ${reservation.email}`, 48);
+        doc.text(emailText, 5, y);
+        y += emailText.length * 3;
+      }
+
+      // Código QR
+      if (qrCodeDataUrl) {
+        y += 8;
+        const qrX = (58 - 25) / 2; // Centrar el QR (25mm de ancho)
+        try {
+          doc.addImage(qrCodeDataUrl, 'PNG', qrX, y, 25, 25);
+          y += 27;
+        } catch (error) {
+          console.error("Error al añadir QR al PDF:", error);
+          y += 5;
+        }
+      }
+
+      // Pie de página
+      y += 3;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(5, y, 53, y);
+      
+      y += 4;
+      doc.setFontSize(6);
+      doc.text("Gracias por su preferencia", 29, y, { align: "center" });
+
+      // Abrir en nueva ventana para imprimir
+      window.open(URL.createObjectURL(doc.output('blob')));
+      
+      toast({
+        title: "Boleto generado",
+        description: `El boleto térmico de 60mm ha sido generado para la reservación #${generateReservationId(reservation.id)}`,
+      });
+      
+    } catch (error) {
+      console.error('Error al generar boleto 60mm:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el boleto. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
   return (
     <div className="space-y-4">
       {commissions.map((commission) => (
@@ -316,8 +562,19 @@ function CommissionItems({
                 <strong>Total:</strong> {formatCurrency(commission.totalAmount || 0)}
               </span>
             </div>
-            <div className="text-gray-500">
-              Reservación #{commission.id}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => downloadTicket60mm(commission)}
+                size="sm"
+                variant="outline"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Descargar Boleto
+              </Button>
+              <div className="text-gray-500">
+                Reservación #{commission.id}
+              </div>
             </div>
           </div>
         </div>
