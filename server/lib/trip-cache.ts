@@ -7,7 +7,7 @@ interface ServerCacheEntry {
 
 class ServerTripCache {
   private cache = new Map<string, ServerCacheEntry>();
-  private readonly CACHE_DURATION = 3 * 60 * 1000; // 3 minutos en el servidor
+  private readonly CACHE_DURATION = 20 * 1000; // 20 segundos para datos críticos como asientos
   private readonly MAX_CACHE_SIZE = 100; // Máximo 100 búsquedas en caché
 
   // Generar clave única para el caché
@@ -78,6 +78,31 @@ class ServerTripCache {
   invalidateAll(): void {
     this.cache.clear();
     console.log(`[ServerTripCache] Cache completamente invalidado`);
+  }
+
+  // Invalidar caché relacionado con asientos disponibles
+  invalidateSeatsRelatedCache(): void {
+    const keysToDelete: string[] = [];
+    
+    for (const [key, entry] of this.cache.entries()) {
+      // Si la entrada contiene datos de viajes con asientos, invalidarla
+      if (entry.data && Array.isArray(entry.data) && entry.data.length > 0) {
+        const hasAvailableSeats = entry.data.some(item => 
+          item.availableSeats !== undefined || 
+          (item.tripData && Array.isArray(item.tripData) && 
+           item.tripData.some((segment: any) => segment.availableSeats !== undefined))
+        );
+        
+        if (hasAvailableSeats) {
+          keysToDelete.push(key);
+        }
+      }
+    }
+    
+    keysToDelete.forEach(key => {
+      this.cache.delete(key);
+      console.log(`[ServerTripCache] Invalidado cache por cambio de asientos: ${key}`);
+    });
   }
 
   // Estadísticas del caché

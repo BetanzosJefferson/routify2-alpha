@@ -119,6 +119,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - IMPLEMENTED: Real-time seat availability system with intelligent cache invalidation:
+  - **BACKEND CACHE INVALIDATION**: Added automatic cache clearing in all reservation endpoints (create, cancel, delete)
+  - **FRONTEND CACHE SYNCHRONIZATION**: Integrated tripCache.invalidateSeatsCache() in reservation creation components
+  - **INTELLIGENT CACHE TIMING**: Reduced cache duration to 30 seconds for seat availability vs 5 minutes for other data
+  - **DUAL-LAYER CACHING**: Both server-side (serverTripCache) and client-side (tripCache) automatic invalidation
+  - **ENDPOINT COVERAGE**: Cache invalidation added to POST /reservations, POST /reservations/:id/cancel, DELETE /reservations/:id
+  - **REAL-TIME UPDATES**: Frontend automatically refreshes seat availability when reservations are created/modified
+  - **PERFORMANCE OPTIMIZATION**: Maintains fast loading while ensuring data accuracy for critical booking operations
+  - **QUERY OPTIMIZATION**: Adjusted React Query staleTime and refetchInterval for optimal balance between performance and freshness
+  - **COMPREHENSIVE LOGGING**: Added detailed console output to track cache invalidation and seat availability updates
+  - **FALLBACK PROTECTION**: Cache invalidation works even if QR code generation fails during reservation creation
+  - **ROLE-BASED SUPPORT**: Cache invalidation works for all user roles including commissioners creating reservation requests
+  - System now prevents booking conflicts by showing real-time seat availability instead of cached outdated data
+
 - **July 11, 2025** - CRITICAL FIX: PDF ticket generation now correctly displays coupon discounts with improved formatting:
   - **PDF DISCOUNT BUG FIXED**: Corrected critical issue where PDF tickets showed full price instead of discounted price when coupons were applied
   - **IMPROVED LAYOUT**: Reorganized payment section with cleaner format: "Precio original", "Descuento", "Total", then "Anticipo", "Restante"

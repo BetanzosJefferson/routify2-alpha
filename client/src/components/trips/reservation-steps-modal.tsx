@@ -11,6 +11,7 @@ import { es } from "date-fns/locale";
 import { TripWithRouteInfo, UserRole } from "@shared/schema";
 import QRCode from "qrcode";
 import { openPrintWindow } from "./enhanced-ticket";
+import { tripCache } from "@/lib/trip-cache";
 
 import {
   Dialog,
@@ -276,6 +277,9 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         queryClient.invalidateQueries({ queryKey: ["/api/reservation-requests"] });
         queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
         
+        // CRÍTICO: Invalidar caché de asientos disponibles
+        tripCache.invalidateSeatsCache();
+        
         // Cerrar el modal y regresar al paso inicial
         setCurrentStep(0);
         onClose();
@@ -294,11 +298,17 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
           
           queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
           queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
+          
+          // CRÍTICO: Invalidar caché de asientos disponibles
+          tripCache.invalidateSeatsCache();
         })
         .catch((err: Error) => {
           console.error("Error generating QR code", err);
           setSubmittedReservation(data);
           setCurrentStep(4); // Move to ticket screen even without QR
+          
+          // CRÍTICO: Invalidar caché de asientos disponibles incluso si falla el QR
+          tripCache.invalidateSeatsCache();
         });
     },
     onError: (error: Error) => {

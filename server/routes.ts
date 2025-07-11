@@ -2981,6 +2981,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.updateRelatedTripsAvailability(numericRecordId, tripId, -passengerCount);
         console.log(`[POST /reservations] Asientos actualizados exitosamente para el registro ${numericRecordId}, segmento ${tripId}`);
+        
+        // CRÍTICO: Invalidar caché de asientos disponibles después de crear reservación
+        console.log(`[POST /reservations] Invalidando caché de asientos disponibles tras creación de reservación`);
+        serverTripCache.invalidateSeatsRelatedCache();
+        
+        // TIEMPO REAL: Notificar cambios de asientos disponibles via WebSocket
+        const seatUpdateNotification = {
+          type: 'seat_availability_update',
+          recordId: numericRecordId,
+          tripId: reservationData.tripDetails.tripId,
+          seatsReduced: passengerCount,
+          message: `${passengerCount} asientos ocupados en viaje ${numericRecordId}`
+        };
+        
+        // Enviar notificación a todos los usuarios conectados
+        broadcast(seatUpdateNotification);
+        console.log(`[POST /reservations] Notificación de asientos enviada via WebSocket`);
+        
+        
       } catch (e) {
         console.error("[POST /reservations] Error al actualizar viajes relacionados:", e);
         // No fallamos si esto falla, podemos seguir con la operación principal
@@ -3358,6 +3377,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Usar la función existente para actualizar asientos en viajes relacionados
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           console.log(`[POST /reservations/${id}/cancel] Asientos liberados exitosamente para recordId: ${recordId}, tripId: ${tripId}`);
+          
+          // CRÍTICO: Invalidar caché de asientos disponibles después de cancelar reservación
+          console.log(`[POST /reservations/${id}/cancel] Invalidando caché de asientos disponibles tras cancelación`);
+          serverTripCache.invalidateSeatsRelatedCache();
+          
+          // TIEMPO REAL: Notificar liberación de asientos via WebSocket
+          const seatReleaseNotification = {
+            type: 'seat_availability_update',
+            recordId: recordId,
+            tripId: tripId,
+            seatsReleased: passengerCount,
+            message: `${passengerCount} asientos liberados en viaje ${recordId}`
+          };
+          
+          // Enviar notificación a todos los usuarios conectados
+          broadcast(seatReleaseNotification);
+          console.log(`[POST /reservations/${id}/cancel] Notificación de liberación de asientos enviada via WebSocket`);
+          
         } catch (e) {
           console.error("Error al liberar asientos en viajes relacionados:", e);
           // No fallar la operación principal si esto falla
@@ -3421,6 +3458,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
           console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
+          
+          // CRÍTICO: Invalidar caché de asientos disponibles después de eliminar reservación
+          console.log(`[DELETE /reservations/${id}] Invalidando caché de asientos disponibles tras eliminación`);
+          serverTripCache.invalidateSeatsRelatedCache();
+          
+          // TIEMPO REAL: Notificar liberación de asientos via WebSocket
+          const seatReleaseNotification = {
+            type: 'seat_availability_update',
+            recordId: recordId,
+            tripId: tripId,
+            seatsReleased: passengerCount,
+            message: `${passengerCount} asientos liberados en viaje ${recordId}`
+          };
+          
+          // Enviar notificación a todos los usuarios conectados
+          broadcast(seatReleaseNotification);
+          console.log(`[DELETE /reservations/${id}] Notificación de liberación de asientos enviada via WebSocket`);
+          
         } catch (e) {
           console.error("Error al actualizar viajes relacionados:", e);
           // No fallamos si esto falla, podemos seguir con la operación principal

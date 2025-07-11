@@ -23,8 +23,8 @@ export function useReservations(options: UseReservationsOptions = {}) {
   return useQuery<ReservationWithDetails[]>({
     queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived }],
     enabled: !!user && enabled,
-    staleTime: 1000, // Reducir tiempo de cache para búsquedas por fecha
-    refetchInterval: false, // Desactivar refetch automático para evitar conflictos
+    staleTime: 1000, // 1 segundo para reservaciones - muy corto para tiempo real
+    refetchInterval: 5000, // Refetch cada 5 segundos para mantener datos actualizados
     queryFn: async () => {
       try {
         // Construir la URL base
