@@ -678,6 +678,248 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     }
   };
   
+  // Handle downloading the ticket as PDF in 60mm format
+  const handleDownloadTicket60mm = async () => {
+    if (!submittedReservation) {
+      toast({
+        title: "Error",
+        description: "No se encontró la información de la reservación",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Mostrar loading
+      toast({
+        title: "Generando PDF 60mm...",
+        description: "Por favor espera mientras se genera el boleto",
+      });
+
+      const { jsPDF } = await import('jspdf');
+
+      // Configurar para formato 60mm x 170mm (ticket térmico)
+      const doc = new jsPDF({
+        unit: 'mm',
+        format: [60, 170] // 60mm ancho x 170mm alto
+      });
+
+      const pageWidth = doc.internal.pageSize.width;
+      const margin = 3;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPos = margin + 5;
+
+      // Función para dibujar el contenido del ticket
+      const drawTicketContent = () => {
+        // Cabecera de la empresa
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("BAMO AUTOTRANSPORTE", pageWidth / 2, yPos, { align: 'center' });
+        yPos += 5;
+        
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text("Transportes Interestatales", pageWidth / 2, yPos, { align: 'center' });
+        yPos += 4;
+        
+        doc.text("Tel: (744) 485-02-30", pageWidth / 2, yPos, { align: 'center' });
+        yPos += 8;
+        
+        // Línea separadora
+        doc.setLineWidth(0.2);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
+        
+        // Título del ticket
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("BOLETO DE AUTOBÚS", pageWidth / 2, yPos, { align: 'center' });
+        yPos += 8;
+        
+        // Información del viaje
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        
+        // Origen
+        doc.text("ORIGEN:", margin, yPos);
+        yPos += 3;
+        const originText = trip.origin.length > 25 ? trip.origin.substring(0, 25) + "..." : trip.origin;
+        doc.text(originText, margin, yPos);
+        yPos += 5;
+        
+        // Destino
+        doc.text("DESTINO:", margin, yPos);
+        yPos += 3;
+        const destText = trip.destination.length > 25 ? trip.destination.substring(0, 25) + "..." : trip.destination;
+        doc.text(destText, margin, yPos);
+        yPos += 5;
+        
+        // Fecha y hora
+        doc.text("FECHA: " + formatDate(trip.departureDate), margin, yPos);
+        yPos += 4;
+        doc.text("HORA: " + formatTripTime(trip.departureTime), margin, yPos);
+        yPos += 6;
+        
+        // Línea separadora
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
+        
+        // Información del pasajero
+        doc.text("PASAJERO:", margin, yPos);
+        yPos += 3;
+        doc.text(`${formData.firstName} ${formData.lastName}`, margin, yPos);
+        yPos += 4;
+        doc.text("TEL: " + formData.phone, margin, yPos);
+        yPos += 6;
+        
+        // Línea separadora
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
+        
+        // Información de precios
+        doc.text("PRECIO ORIGINAL: " + formatPrice(trip.price * numPassengers), margin, yPos);
+        yPos += 4;
+        
+        if (couponVerified && couponDiscount > 0) {
+          doc.text("DESCUENTO: -" + formatPrice(couponDiscount), margin, yPos);
+          yPos += 4;
+          
+          doc.setFont("helvetica", "bold");
+          doc.text("TOTAL: " + formatPrice(trip.price * numPassengers - couponDiscount), margin, yPos);
+          yPos += 4;
+          doc.setFont("helvetica", "normal");
+        }
+        
+        if (advanceAmount > 0) {
+          doc.text("ANTICIPO: " + formatPrice(advanceAmount), margin, yPos);
+          yPos += 4;
+          
+          const finalPrice = (couponVerified && couponDiscount > 0 ? trip.price * numPassengers - couponDiscount : trip.price * numPassengers);
+          const remaining = finalPrice - advanceAmount;
+          doc.text("RESTANTE: " + formatPrice(remaining), margin, yPos);
+          yPos += 4;
+        }
+        
+        // Línea separadora
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
+        
+        // Información de pago
+        doc.text("PAGO AL ABORDAR:", margin, yPos);
+        yPos += 3;
+        doc.text(paymentMethod === PaymentMethod.CASH ? "EFECTIVO" : "TRANSFERENCIA", margin, yPos);
+        yPos += 6;
+        
+        // Folio
+        doc.setFont("helvetica", "bold");
+        doc.text("FOLIO: " + submittedReservation.id.toString(), margin, yPos);
+        yPos += 8;
+        doc.setFont("helvetica", "normal");
+        
+        // Línea separadora
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
+        
+        // Nota final
+        doc.setFontSize(7);
+        doc.text("Conserve este boleto hasta", pageWidth / 2, yPos, { align: 'center' });
+        yPos += 3;
+        doc.text("el final del viaje", pageWidth / 2, yPos, { align: 'center' });
+        yPos += 4;
+        doc.text("No se aceptan devoluciones", pageWidth / 2, yPos, { align: 'center' });
+      };
+
+      // Función para dibujar QR code
+      const drawQRCode = (qrCodeUrl: string) => {
+        // Posición del QR al final del ticket
+        const qrSize = 30; // QR más grande para 60mm
+        const qrX = (pageWidth - qrSize) / 2;
+        const qrY = yPos + 5;
+        
+        doc.addImage(qrCodeUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      };
+
+      // Generar QR code
+      const qrData = `RESERVA-${submittedReservation.id}-${trip.id}`;
+      console.log('Generando QR code con datos:', qrData);
+      
+      try {
+        const qrCodeUrl = await QRCode.toDataURL(qrData, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+
+        const img = new Image();
+        img.onload = () => {
+          console.log('QR code cargado, dibujando contenido completo');
+          
+          // Dibujar contenido del ticket
+          drawTicketContent();
+          
+          // Dibujar QR code
+          drawQRCode(qrCodeUrl);
+          
+          // Guardar el PDF
+          const fileName = `boleto-60mm-${submittedReservation.id}-${format(new Date(), 'yyyyMMdd-HHmmss')}.pdf`;
+          doc.save(fileName);
+          
+          toast({
+            title: "PDF 60mm generado exitosamente",
+            description: `El boleto se ha descargado como ${fileName}`,
+          });
+        };
+
+        img.onerror = () => {
+          console.error('Error al cargar QR code, continuando sin QR');
+          drawTicketContent();
+          
+          // Guardar el PDF sin QR
+          const fileName = `boleto-60mm-${submittedReservation.id}-${format(new Date(), 'yyyyMMdd-HHmmss')}.pdf`;
+          doc.save(fileName);
+          
+          toast({
+            title: "PDF 60mm generado",
+            description: `El boleto se ha descargado como ${fileName} (sin QR)`,
+          });
+        };
+
+        img.src = qrCodeUrl;
+
+        // Timeout para el QR en caso de que no cargue
+        setTimeout(() => {
+          if (!img.complete) {
+            img.onerror();
+          }
+        }, 5000);
+      } catch (qrError) {
+        console.error('Error al generar QR code:', qrError);
+        drawTicketContent();
+        
+        // Guardar el PDF sin QR
+        const fileName = `boleto-60mm-${submittedReservation.id}-${format(new Date(), 'yyyyMMdd-HHmmss')}.pdf`;
+        doc.save(fileName);
+        
+        toast({
+          title: "PDF 60mm generado",
+          description: `El boleto se ha descargado como ${fileName} (sin QR)`,
+        });
+      }
+
+    } catch (error) {
+      console.error('Error al generar PDF 60mm:', error);
+
+      toast({
+        title: "Error al generar PDF",
+        description: "Ocurrió un error al generar el boleto. Intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Handle downloading the ticket as PDF (usando la misma lógica que reservation-details-modal)
   const handleDownloadTicket = async () => {
     if (!submittedReservation) {
@@ -1854,11 +2096,11 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                 Imprimir boleto 60mm
               </Button>
               <Button 
-                onClick={handleDownloadTicket}
+                onClick={handleDownloadTicket60mm}
                 className="w-full sm:w-auto"
               >
                 <DownloadIcon className="w-4 h-4 mr-2" />
-                Descargar Boleto
+                Descargar boleto 60mm
               </Button>
             </DialogFooter>
           </>
