@@ -574,7 +574,8 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
       // Generar código QR para la reservación
       let qrCodeDataUrl;
       try {
-        const verificationUrl = `${window.location.origin}/reservation-request/${request.id}`;
+        // Apuntar a la página de detalles de reservación existente
+        const verificationUrl = `${window.location.origin}/reservation-details?id=${request.id}`;
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 100 });
       } catch (error) {
         console.error("Error al generar código QR:", error);
