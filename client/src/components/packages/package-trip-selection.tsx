@@ -156,6 +156,38 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
     } else {
       // Es un viaje simple, tiene un segmento, o es una combinación específica filtrada
       console.log(`[PackageTripSelection] Selecting trip directly - hasSpecificFilters: ${hasSpecificFilters}, segments: ${trip.tripData?.length || 1}`);
+      
+      // Si es una búsqueda específica y tiene múltiples segmentos, necesitamos encontrar el segmento correcto
+      if (hasSpecificFilters && trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1) {
+        // Encontrar el segmento que coincida con los filtros aplicados
+        const matchingSegmentIndex = trip.tripData.findIndex((segment: any) => {
+          const originMatch = !origin.trim() || segment.origin.toLowerCase().includes(origin.toLowerCase());
+          const destinationMatch = !destination.trim() || segment.destination.toLowerCase().includes(destination.toLowerCase());
+          return originMatch && destinationMatch;
+        });
+        
+        if (matchingSegmentIndex !== -1) {
+          console.log(`[PackageTripSelection] Found matching segment at index ${matchingSegmentIndex}`);
+          const segment = trip.tripData[matchingSegmentIndex];
+          const selectedSegment = {
+            ...trip,
+            id: `${trip.id}_${matchingSegmentIndex}`,
+            tripData: [segment],
+            origin: segment.origin,
+            destination: segment.destination,
+            departureDate: segment.departureDate,
+            departureTime: segment.departureTime,
+            arrivalTime: segment.arrivalTime,
+            availableSeats: segment.availableSeats
+          };
+          
+          console.log(`[PackageTripSelection] Segment ${matchingSegmentIndex} constructed:`, selectedSegment);
+          onTripSelect(selectedSegment);
+          return;
+        }
+      }
+      
+      // Fallback: seleccionar el viaje tal como está
       onTripSelect(trip);
     }
   };

@@ -143,6 +143,9 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
           // Los datos del segmento específico están en tripData[0]
           const segmentData = selectedTrip.tripData?.[0] || {};
           
+          console.log(`[PackageForm] Procesando objeto trip:`, selectedTrip);
+          console.log(`[PackageForm] Datos del segmento extraídos:`, segmentData);
+          
           setTripInfo({
             availableSeats: segmentData.availableSeats || selectedTrip.capacity || 0,
             origin: segmentData.origin || "",

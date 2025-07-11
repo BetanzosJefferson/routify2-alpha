@@ -3237,6 +3237,9 @@ export class DatabaseStorage implements IStorage {
           tripDepartureTime: tripDetails?.departureTime || '',
           tripArrivalTime: tripDetails?.arrivalTime || '',
           tripId: tripDetails?.tripId || null,
+          // Mapear campos específicos del segmento (que es lo que el frontend espera)
+          segmentOrigin: tripDetails?.origin || '',
+          segmentDestination: tripDetails?.destination || '',
           // Mantener tripDetails original para compatibilidad
           tripDetails: tripDetails
         };
