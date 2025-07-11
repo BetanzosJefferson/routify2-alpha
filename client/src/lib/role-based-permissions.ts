@@ -70,6 +70,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "commissions",
     "reservation-requests", 
     "notifications",
+    "coupons",
     "packages",
     "cash-register",
     "cash-box",

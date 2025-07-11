@@ -665,12 +665,7 @@ export function ReservationList() {
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por nombre, correo o teléfono..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+               
               </div>
             </div>
 
@@ -679,12 +674,7 @@ export function ReservationList() {
               {/* Filtro por fecha específica */}
               <div className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-gray-500" />
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-auto"
-                />
+              
               </div>
 
               {/* Ordenamiento por fecha */}
@@ -747,33 +737,7 @@ export function ReservationList() {
                   }}
                   className="w-32 text-sm"
                 />
-                {/* Botón para usar fecha de hoy */}
-                <Button
-                  onClick={() => {
-                    const today = getCurrentDateForFilter();
-                    console.log(`[ReservationList] Estableciendo fecha de hoy: ${today}`);
-                    setDateFilter(today);
-                  }}
-                  size="sm"
-                  variant="outline"
-                  className="whitespace-nowrap"
-                >
-                  Hoy
-                </Button>
-                <Button
-                  onClick={() => {
-                    const manualDate = prompt("¿Cuál es la fecha correcta de hoy? (formato: YYYY-MM-DD, ejemplo: 2025-01-15)");
-                    if (manualDate && manualDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                      console.log(`[ReservationList] Estableciendo fecha manual: ${manualDate}`);
-                      setDateFilter(manualDate);
-                    }
-                  }}
-                  size="sm"
-                  variant="outline"
-                  className="whitespace-nowrap"
-                >
-                  Manual
-                </Button>
+             
               </div>
 
               {/* Filtro general */}
