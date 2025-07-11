@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - PERFORMANCE OPTIMIZATION: Commission section now loads only current day data by default:
+  - **BACKEND OPTIMIZATION**: Modified `/api/commissions/reservations` endpoint to filter by date parameter
+  - **DATE FILTERING**: Added date query parameter support (format: YYYY-MM-DD) with current date as default
+  - **FRONTEND ENHANCEMENT**: Added date picker interface with "Hoy" button and manual date selection
+  - **QUERY OPTIMIZATION**: Reduced database load by filtering commissions by creation date instead of loading all historical data
+  - **USER EXPERIENCE**: Fast loading of current day commissions with option to browse historical data
+  - **INTELLIGENT CACHING**: Query cache includes date parameter to ensure proper data isolation
+  - **VISUAL FEEDBACK**: Added date display and refresh button for better user control
+  - **PERFORMANCE IMPROVEMENT**: Eliminated slow loading times caused by retrieving all historical commission data
+
 - **July 11, 2025** - COMPREHENSIVE FIX: Android thermal printing compatibility resolved across all modules:
   - **ROOT CAUSE FIXED**: Android browsers handle blob URLs differently than about:blank for PDF printing
   - **ANDROID ISSUE**: Blob URLs trigger Android's auto-scaling, making thermal tickets print too small (rescaled)

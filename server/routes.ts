@@ -4248,11 +4248,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener el usuario autenticado
       const { user } = req as any;
       const requestedUserId = req.query.userId as string;
+      const dateFilter = req.query.date as string; // Formato: YYYY-MM-DD
       
       console.log(`[GET /commissions/reservations] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
         console.log(`[GET /commissions/reservations] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
         console.log(`[GET /commissions/reservations] userId solicitado: ${requestedUserId || 'Todos'}`);
+        console.log(`[GET /commissions/reservations] Fecha filtro: ${dateFilter || 'Fecha actual'}`);
       }
       
       // SEGURIDAD: Verificar que solo los roles autorizados puedan acceder
@@ -4293,6 +4295,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Determinar la fecha de filtro (por defecto: fecha actual)
+      let filterDate = dateFilter;
+      if (!filterDate) {
+        // Si no se especifica fecha, usar la fecha actual
+        const now = new Date();
+        filterDate = now.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      }
+      
+      console.log(`[GET /commissions/reservations] Aplicando filtro de fecha: ${filterDate}`);
+      
       // Obtener todas las reservaciones con sus detalles
       const allReservations = await storage.getReservations({
         companyId: companyId === null ? undefined : companyId,
@@ -4304,6 +4316,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let comissionerReservations = allReservations.filter(
         reservation => reservation.createdByUser && reservation.createdByUser.role === UserRole.COMMISSIONER
       );
+      
+      // OPTIMIZACIÓN: Filtrar por fecha para mejorar rendimiento
+      if (filterDate) {
+        comissionerReservations = comissionerReservations.filter(reservation => {
+          if (!reservation.createdAt) return false;
+          
+          // Convertir createdAt a formato YYYY-MM-DD para comparación
+          const reservationDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+          return reservationDate === filterDate;
+        });
+        
+        console.log(`[GET /commissions/reservations] Después del filtro de fecha ${filterDate}: ${comissionerReservations.length} reservaciones`);
+      }
       
       // Si se especifica un usuario específico, filtrar por ese usuario
       if (targetUserId) {
