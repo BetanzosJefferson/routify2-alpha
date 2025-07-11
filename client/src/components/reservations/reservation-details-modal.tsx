@@ -1448,11 +1448,17 @@ export default function ReservationDetailsModal({
                       <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                        
 
-                        {/* Botón de descarga actualizado para usar downloadTicketPDF */}
+                        {/* Botón de descarga TEST */}
                         <Button
                           onClick={() => {
-                            console.log("🔥 CLICK EN BOTÓN DESCARGAR BOLETO - NUEVA FUNCIÓN");
-                            downloadTicketPDF();
+                            console.log("🔥🔥🔥 CLICK DETECTADO EN BOTÓN");
+                            alert("¡Botón presionado!");
+                            try {
+                              downloadTicketPDF();
+                            } catch (error) {
+                              console.error("Error al ejecutar downloadTicketPDF:", error);
+                              alert("Error: " + error.message);
+                            }
                           }}
                           variant="default"
                           size="sm"
