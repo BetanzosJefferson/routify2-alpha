@@ -278,6 +278,20 @@ function ReservationsListContent() {
               >
                 Hoy
               </Button>
+              <Button
+                onClick={() => {
+                  const manualDate = prompt("¿Cuál es la fecha correcta de hoy? (formato: YYYY-MM-DD, ejemplo: 2025-01-15)");
+                  if (manualDate && manualDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    console.log(`[Reservaciones] Estableciendo fecha manual: ${manualDate}`);
+                    setSelectedDate(manualDate);
+                  }
+                }}
+                size="sm"
+                variant="outline"
+                className="whitespace-nowrap"
+              >
+                Manual
+              </Button>
             </div>
           </div>
         </div>

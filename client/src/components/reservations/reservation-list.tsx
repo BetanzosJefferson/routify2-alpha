@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatDate, formatPrice, generateReservationId, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
+import { formatDate, formatPrice, generateReservationId, normalizeToStartOfDay, isSameLocalDay, formatDateForInput } from "@/lib/utils";
 import { formatTripTime } from "@/lib/trip-utils";
 import { useLocation } from "wouter";
 import {
@@ -99,7 +99,23 @@ export function ReservationList() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   // OPTIMIZACIÓN: Por defecto filtrar solo por fecha actual para evitar sobrecarga
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const getCurrentDateForFilter = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    console.log(`[ReservationList] ========== DIAGNÓSTICO DE FECHA ==========`);
+    console.log(`[ReservationList] Fecha actual sistema: ${now.toISOString()}`);
+    console.log(`[ReservationList] Fecha local: ${now.toLocaleDateString()}`);
+    console.log(`[ReservationList] Fecha formateada: ${dateString}`);
+    console.log(`[ReservationList] =============================================`);
+    
+    return dateString;
+  };
+  
+  const today = getCurrentDateForFilter();
   const [dateFilter, setDateFilter] = useState(today); // Fecha actual por defecto
   const [confirmingDelete, setConfirmingDelete] = useState<number | null>(null);
   const [editingReservation, setEditingReservation] = useState<ReservationWithDetails | null>(null);
@@ -731,7 +747,33 @@ export function ReservationList() {
                   }}
                   className="w-32 text-sm"
                 />
-             
+                {/* Botón para usar fecha de hoy */}
+                <Button
+                  onClick={() => {
+                    const today = getCurrentDateForFilter();
+                    console.log(`[ReservationList] Estableciendo fecha de hoy: ${today}`);
+                    setDateFilter(today);
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  Hoy
+                </Button>
+                <Button
+                  onClick={() => {
+                    const manualDate = prompt("¿Cuál es la fecha correcta de hoy? (formato: YYYY-MM-DD, ejemplo: 2025-01-15)");
+                    if (manualDate && manualDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                      console.log(`[ReservationList] Estableciendo fecha manual: ${manualDate}`);
+                      setDateFilter(manualDate);
+                    }
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  Manual
+                </Button>
               </div>
 
               {/* Filtro general */}
