@@ -296,6 +296,16 @@ export function ReservationDetailsSidebar({
     enabled: true
   });
 
+  // Debug logging para paqueterías
+  console.log(`[ReservationDetailsSidebar] Packages debug:`, {
+    recordId,
+    tripInfo,
+    packagesCount: packages.length,
+    userRole: user?.role,
+    isLoadingPackages,
+    packagesError: packagesError?.message
+  });
+
   // Efecto para detectar clics fuera del sidebar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
