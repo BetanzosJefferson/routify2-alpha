@@ -121,13 +121,33 @@ function filterTripsByTime(trips: TripWithRouteInfo[]): TripWithRouteInfo[] {
 function standardizeTimeFormat(time: string): string {
   if (!time) return '';
   
-  // Si ya está en formato 12 horas, devolverlo tal como está
-  if (time.includes('AM') || time.includes('PM')) {
-    return time;
+  // Limpiar indicadores de día adicionales
+  const cleanTime = time.replace(/\s*\+\d+d$/, '');
+  
+  // Si ya está en formato 12 horas correcto, verificar si es válido
+  if (cleanTime.includes('AM') || cleanTime.includes('PM')) {
+    const [hourMin, period] = cleanTime.split(' ');
+    const [hours, minutes] = hourMin.split(':').map(Number);
+    
+    // Verificar si es un formato válido de 12 horas
+    if (hours >= 1 && hours <= 12) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+    
+    // Si no es válido (como 23:50 PM), convertirlo
+    if (hours === 0) {
+      return `12:${minutes.toString().padStart(2, '0')} AM`;
+    } else if (hours < 12) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} AM`;
+    } else if (hours === 12) {
+      return `12:${minutes.toString().padStart(2, '0')} PM`;
+    } else {
+      return `${hours - 12}:${minutes.toString().padStart(2, '0')} PM`;
+    }
   }
   
   // Convertir de 24 horas a 12 horas
-  const [hourMin] = time.split(' ');
+  const [hourMin] = cleanTime.split(' ');
   const [hours, minutes] = hourMin.split(':').map(Number);
   
   if (hours === 0) {
@@ -551,18 +571,7 @@ export function TripList() {
         </div>
       </div>
 
-      {/* Información sobre filtros aplicados */}
-      {(!hasSearched || (!origin && !destination)) && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-blue-800">
-            <CalendarIcon className="h-4 w-4" />
-            <span>
-              Mostrando solo viajes que salen en 60 minutos o más desde ahora. 
-              Los asientos se actualizan automáticamente cada 30 segundos.
-            </span>
-          </div>
-        </div>
-      )}
+      
 
       {isLoading ? (
         <div className="flex justify-center items-center p-8">
@@ -619,7 +628,12 @@ export function TripList() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex flex-col">
                     <div className="text-lg font-bold">
-                      {standardizeTimeFormat((trip as any).departureTime)}
+                      {(() => {
+                        const originalTime = (trip as any).departureTime;
+                        const convertedTime = standardizeTimeFormat(originalTime);
+                        console.log(`[TIME_DEBUG] Original: ${originalTime} -> Converted: ${convertedTime}`);
+                        return convertedTime;
+                      })()}
                     </div>
                    
                     <div className="text-sm text-gray-500 mt-1">

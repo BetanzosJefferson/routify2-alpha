@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - ENHANCED: Trip section improvements with real-time updates and standardized formatting:
+  - **TIME FILTERING**: Implemented smart filter to show only trips departing 60+ minutes from current time
+  - **AUTO-REFRESH**: Added automatic seat availability updates every 30 seconds
+  - **MANUAL REFRESH**: Added refresh button with last update timestamp display
+  - **TIME STANDARDIZATION**: Fixed hour format standardization to properly convert mixed formats (like "23:50 PM") to correct 12-hour format
+  - **SEARCH BEHAVIOR**: Time filtering applies only to general browsing, not specific origin/destination searches
+  - **USER FEEDBACK**: Added informative banner explaining filtering behavior and auto-update frequency
+  - **PERFORMANCE**: Optimized with intelligent caching and update intervals
+  - **VISUAL INDICATORS**: Clear display of filtering status and last update time
+
 - **July 11, 2025** - CRITICAL FIX: PDF ticket generation now correctly displays coupon discounts with improved formatting:
   - **PDF DISCOUNT BUG FIXED**: Corrected critical issue where PDF tickets showed full price instead of discounted price when coupons were applied
   - **IMPROVED LAYOUT**: Reorganized payment section with cleaner format: "Precio original", "Descuento", "Total", then "Anticipo", "Restante"
