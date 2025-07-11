@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - CRITICAL FIX: Android thermal printing compatibility resolved:
+  - **ROOT CAUSE FIXED**: Android browsers handle blob URLs differently than about:blank for PDF printing
+  - **ANDROID ISSUE**: Blob URLs trigger Android's auto-scaling, making thermal tickets print too small (rescaled)
+  - **SOLUTION IMPLEMENTED**: Changed reservation "Descargar boleto 60mm" to use about:blank method like packages
+  - **TECHNICAL FIX**: Replaced `window.open(URL.createObjectURL(doc.output('blob')))` with about:blank HTML wrapper
+  - **COMPATIBILITY**: about:blank method preserves original 60mm dimensions on Android thermal printers
+  - **CROSS-PLATFORM**: PC and iOS handle both methods consistently, only Android had scaling issues
+  - **USER EXPERIENCE**: Thermal tickets now print correctly at 60mm width on all platforms including Android
+  - **CONSISTENT BEHAVIOR**: Both package and reservation tickets now use same printing method
+
 - **July 11, 2025** - ENHANCED: Package trip selection with intelligent segment modal system:
   - **FIXED DATE DISPLAY**: Resolved timezone issue by replacing Date.toLocaleDateString with custom formatDate function
   - **SMART SEGMENT SELECTION**: Implemented modal system that only shows when browsing general trips (no specific filters)
