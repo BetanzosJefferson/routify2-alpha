@@ -4959,7 +4959,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(apiRouter('/users/:id'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN]), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { email, password, commissionPercentage } = req.body;
+      const { email, password, commissionPercentage, commissionEnabled, cashBoxEnabled } = req.body;
       
       // Verificar si el usuario existe
       const existingUser = await storage.getUserById(id);
@@ -4976,21 +4976,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Verificar si se intenta modificar el porcentaje de comisión solo para comisionistas
-      if (commissionPercentage !== undefined && existingUser.role !== 'comisionista') {
-        return res.status(400).json({ message: 'Solo se puede establecer el porcentaje de comisión para usuarios con rol Comisionista' });
-      }
-      
       // Construir objeto de actualización
       const updateData: {
         email?: string;
         password?: string;
         commissionPercentage?: number;
+        commissionEnabled?: boolean;
+        cashBoxEnabled?: boolean;
       } = {};
       
       if (email) updateData.email = email;
       if (password) updateData.password = password;
       if (commissionPercentage !== undefined) updateData.commissionPercentage = commissionPercentage;
+      if (commissionEnabled !== undefined) updateData.commissionEnabled = commissionEnabled;
+      if (cashBoxEnabled !== undefined) updateData.cashBoxEnabled = cashBoxEnabled;
       
       // Actualizar el usuario
       const updatedUser = await storage.updateUser(id, updateData);

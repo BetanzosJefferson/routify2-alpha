@@ -653,6 +653,10 @@ export const users = pgTable("users", {
   companyId: text("company_id").default(""),
   // Campo para almacenar el porcentaje de comisión para usuarios comisionistas
   commissionPercentage: doublePrecision("commission_percentage").default(0),
+  // Campo para habilitar/deshabilitar el sistema de comisiones para cualquier usuario
+  commissionEnabled: boolean("commission_enabled").default(false),
+  // Campo para habilitar/deshabilitar caja individual para usuarios con comisiones
+  cashBoxEnabled: boolean("cash_box_enabled").default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users)

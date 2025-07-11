@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,6 +35,8 @@ const userEditSchema = z.object({
     z.string().length(0) // Permite cadena vacía
   ]).optional(),
   commissionPercentage: z.number().min(0, "El porcentaje no puede ser negativo").max(100, "El porcentaje no puede superar 100").optional(),
+  commissionEnabled: z.boolean().optional(),
+  cashBoxEnabled: z.boolean().optional(),
 });
 
 type UserEditFormValues = z.infer<typeof userEditSchema>;
@@ -98,6 +101,8 @@ export function UsersPage() {
       email: "",
       password: "",
       commissionPercentage: undefined,
+      commissionEnabled: false,
+      cashBoxEnabled: false,
     },
   });
 
@@ -136,11 +141,13 @@ export function UsersPage() {
   const handleEditUser = (user: User) => {
     setUserToEdit(user);
     
-    // Configurar valores por defecto (solo email y porcentaje de comisión)
+    // Configurar valores por defecto
     form.reset({
       email: user.email,
       password: "",
       commissionPercentage: user.commissionPercentage ?? undefined,
+      commissionEnabled: user.commissionEnabled ?? false,
+      cashBoxEnabled: user.cashBoxEnabled ?? false,
     });
     
     setIsEditDialogOpen(true);
@@ -155,6 +162,8 @@ export function UsersPage() {
     if (data.email && data.email !== userToEdit.email) filteredData.email = data.email;
     if (data.password && data.password.trim() !== '') filteredData.password = data.password;
     if (data.commissionPercentage !== undefined) filteredData.commissionPercentage = data.commissionPercentage;
+    if (data.commissionEnabled !== undefined) filteredData.commissionEnabled = data.commissionEnabled;
+    if (data.cashBoxEnabled !== undefined) filteredData.cashBoxEnabled = data.cashBoxEnabled;
     
     // Solo enviar si hay datos a actualizar
     if (Object.keys(filteredData).length > 0) {
@@ -615,34 +624,89 @@ export function UsersPage() {
                 )}
               />
               
-              {/* Mostrar campo de porcentaje de comisión solo para comisionistas */}
-              {userToEdit?.role === UserRole.COMMISSIONER && (
+              {/* Configuración de comisiones */}
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium text-sm">Configuración de Comisiones</h3>
+                
                 <FormField
                   control={form.control}
-                  name="commissionPercentage"
+                  name="commissionEnabled"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Porcentaje de Comisión</FormLabel>
+                    <FormItem className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm font-medium">
+                          Activar Comisiones
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                          Habilita el sistema de comisiones para este usuario
+                        </FormDescription>
+                      </div>
                       <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="Ej: 10"
-                          min={0}
-                          max={100}
-                          step={0.5}
-                          {...field}
-                          value={field.value ?? ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? parseFloat(e.target.value) : undefined;
-                            field.onChange(value);
-                          }}
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
+
+                {form.watch("commissionEnabled") && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="commissionPercentage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Porcentaje de Comisión</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Ej: 10"
+                              min={0}
+                              max={100}
+                              step={0.5}
+                              {...field}
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const value = e.target.value ? parseFloat(e.target.value) : undefined;
+                                field.onChange(value);
+                              }}
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs">
+                            Porcentaje de comisión por cada reservación creada
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="cashBoxEnabled"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm font-medium">
+                              Activar Caja Individual
+                            </FormLabel>
+                            <FormDescription className="text-xs">
+                              Al activar, las transacciones de sus solicitudes se asignarán a su caja personal
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+              </div>
               
               <DialogFooter>
                 <Button
