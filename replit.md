@@ -119,15 +119,23 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 11, 2025** - CRITICAL FIX: Android thermal printing compatibility resolved:
+- **July 11, 2025** - COMPREHENSIVE FIX: Android thermal printing compatibility resolved across all modules:
   - **ROOT CAUSE FIXED**: Android browsers handle blob URLs differently than about:blank for PDF printing
   - **ANDROID ISSUE**: Blob URLs trigger Android's auto-scaling, making thermal tickets print too small (rescaled)
-  - **SOLUTION IMPLEMENTED**: Changed reservation "Descargar boleto 60mm" to use about:blank method like packages
-  - **TECHNICAL FIX**: Replaced `window.open(URL.createObjectURL(doc.output('blob')))` with about:blank HTML wrapper
+  - **SYSTEM-WIDE CORRECTION**: Updated all 60mm ticket generation functions across the entire application
+  - **MODULES FIXED**: 
+    - Reservation details modal (reservation-details-modal.tsx)
+    - Reservation requests page (reservation-requests-page.tsx)
+    - Commission reservations (commissions-list.tsx)
+    - Cutoff history tickets (transaction-history-box.tsx)
+    - Commissioner reservations page (commissioner-reservations-page.tsx)
+    - Reservation thermal module (reservation-ticket-thermal.tsx)
+    - Reservation steps modal (reservation-steps-modal.tsx)
+  - **TECHNICAL FIX**: Replaced all `window.open(URL.createObjectURL(doc.output('blob')))` with about:blank HTML wrapper
   - **COMPATIBILITY**: about:blank method preserves original 60mm dimensions on Android thermal printers
   - **CROSS-PLATFORM**: PC and iOS handle both methods consistently, only Android had scaling issues
-  - **USER EXPERIENCE**: Thermal tickets now print correctly at 60mm width on all platforms including Android
-  - **CONSISTENT BEHAVIOR**: Both package and reservation tickets now use same printing method
+  - **USER EXPERIENCE**: All thermal tickets now print correctly at 60mm width on all platforms including Android
+  - **CONSISTENT BEHAVIOR**: All ticket generation functions across the system now use same printing method
 
 - **July 11, 2025** - ENHANCED: Package trip selection with intelligent segment modal system:
   - **FIXED DATE DISPLAY**: Resolved timezone issue by replacing Date.toLocaleDateString with custom formatDate function

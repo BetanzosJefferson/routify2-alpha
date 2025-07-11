@@ -324,8 +324,25 @@ async function generateCutoffTicketPDF(
     doc.setFontSize(7);
     doc.text("GRACIAS POR SU PREFERENCIA", 29, y, { align: "center" });
     
-    // Abrir en una nueva ventana e imprimir automáticamente
-    window.open(URL.createObjectURL(doc.output('blob')));
+    // Abrir el PDF en una nueva ventana usando about:blank (compatible con Android)
+    const pdfWindow = window.open('', '_blank');
+    if (pdfWindow) {
+      pdfWindow.document.write(`
+        <html>
+          <head>
+            <title>Ticket de Corte - 60mm</title>
+            <style>
+              body { margin: 0; }
+              iframe { width: 100%; height: 100vh; border: none; }
+            </style>
+          </head>
+          <body>
+            <iframe src="${doc.output('datauristring')}" type="application/pdf"></iframe>
+          </body>
+        </html>
+      `);
+      pdfWindow.document.close();
+    }
     
     return doc;
   } catch (error) {

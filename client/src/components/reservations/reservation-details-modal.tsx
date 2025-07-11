@@ -895,8 +895,25 @@ export default function ReservationDetailsModal({
       y += 4;
       doc.text(`TransRoute © ${new Date().getFullYear()}`, 29, y, { align: "center" });
 
-      // Abrir en nueva ventana para imprimir
-      window.open(URL.createObjectURL(doc.output('blob')));
+      // Abrir el PDF en una nueva ventana usando about:blank (compatible con Android)
+      const pdfWindow = window.open('', '_blank');
+      if (pdfWindow) {
+        pdfWindow.document.write(`
+          <html>
+            <head>
+              <title>Reservación #${generateReservationId(reservation.id)} - 60mm</title>
+              <style>
+                body { margin: 0; }
+                iframe { width: 100%; height: 100vh; border: none; }
+              </style>
+            </head>
+            <body>
+              <iframe src="${doc.output('datauristring')}" type="application/pdf"></iframe>
+            </body>
+          </html>
+        `);
+        pdfWindow.document.close();
+      }
       
       toast({
         title: "Ticket térmico generado",

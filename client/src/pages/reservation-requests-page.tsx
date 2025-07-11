@@ -804,8 +804,25 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
       doc.setFontSize(6);
       doc.text("Gracias por su preferencia", 29, y, { align: "center" });
 
-      // Abrir en nueva ventana para imprimir (igual que paquetes)
-      window.open(URL.createObjectURL(doc.output('blob')));
+      // Abrir el PDF en una nueva ventana usando about:blank (compatible con Android)
+      const pdfWindow = window.open('', '_blank');
+      if (pdfWindow) {
+        pdfWindow.document.write(`
+          <html>
+            <head>
+              <title>Solicitud #${request.id} - 60mm</title>
+              <style>
+                body { margin: 0; }
+                iframe { width: 100%; height: 100vh; border: none; }
+              </style>
+            </head>
+            <body>
+              <iframe src="${doc.output('datauristring')}" type="application/pdf"></iframe>
+            </body>
+          </html>
+        `);
+        pdfWindow.document.close();
+      }
       
       toast({
         title: "Boleto generado",
