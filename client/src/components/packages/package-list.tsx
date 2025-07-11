@@ -346,6 +346,29 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       }
     }
   };
+
+  // Manejar la impresión del ticket de 60mm
+  const handlePrintTicket60mm = () => {
+    if (packageToView) {
+      // Importar la función de generación de PDF de 60mm de manera dinámica
+      import('./package-ticket').then(({ generatePackageTicket60mmPDF }) => {
+        // Generar el PDF con dimensiones de ticket térmico (60mm x 170mm)
+        generatePackageTicket60mmPDF(packageToView, user?.company || "TransRoute");
+        
+        // Cerrar el diálogo automáticamente después de abrir la ventana del PDF
+        setTimeout(() => {
+          setPackageToView(null);
+        }, 500);
+      }).catch(error => {
+        console.error("Error al generar el ticket PDF 60mm:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo generar el ticket PDF 60mm. Intente nuevamente.",
+          variant: "destructive",
+        });
+      });
+    }
+  };
   
   // Renderizar el estado de carga
   if (packagesQuery.isLoading) {
@@ -781,18 +804,27 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                                   companyName={user?.company || "TransRoute"} 
                                 />
                               </div>
-                              <div className="flex flex-col sm:flex-row gap-2 w-full max-w-sm">
+                              <div className="flex flex-col gap-2 w-full max-w-sm">
                                 <Button 
                                   onClick={handlePrintTicket} 
-                                  className="flex-1"
+                                  className="w-full"
                                   size="lg"
                                 >
                                   <Printer className="mr-2 h-4 w-4" />
                                   Imprimir Ticket
                                 </Button>
                                 <Button 
+                                  onClick={handlePrintTicket60mm} 
+                                  className="w-full"
+                                  size="lg"
+                                  variant="secondary"
+                                >
+                                  <Printer className="mr-2 h-4 w-4" />
+                                  Descargar boleto 60mm
+                                </Button>
+                                <Button 
                                   onClick={handleShareTicket} 
-                                  className="flex-1"
+                                  className="w-full"
                                   size="lg"
                                   variant="outline"
                                 >

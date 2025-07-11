@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - ENHANCED: Package ticket improvements with new 60mm format and improved layout:
+  - **NEW 60MM TICKET FORMAT**: Added `generatePackageTicket60mmPDF` function for wider ticket format (60mm x 170mm)
+  - **IMPROVED BUTTON LAYOUT**: Changed package ticket modal buttons from horizontal to vertical column layout
+  - **ENHANCED USER INTERFACE**: Added "Descargar boleto 60mm" button with secondary variant styling
+  - **COMPREHENSIVE TICKET OPTIONS**: Users now have three ticket actions: Imprimir Ticket (58mm), Descargar boleto 60mm, and Compartir Ticket
+  - **OPTIMIZED DIMENSIONS**: 60mm tickets use larger QR codes (30mm) and improved spacing for better readability
+  - **CONSISTENT FUNCTIONALITY**: All ticket formats maintain same data structure and error handling
+  - **MOBILE RESPONSIVE**: Vertical button layout works better on mobile devices
+  - **USER EXPERIENCE**: Clear distinction between ticket formats with appropriate visual styling
+
 - **July 11, 2025** - ENHANCED: Trip section improvements with real-time updates and standardized formatting:
   - **TIME FILTERING REMOVED**: Completely disabled time filtering to show all available trips regardless of departure time
   - **AUTO-REFRESH**: Added automatic seat availability updates every 30 seconds

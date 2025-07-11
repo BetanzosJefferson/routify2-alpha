@@ -40,7 +40,7 @@ interface PackageTicketProps {
   companyName?: string;
 }
 
-// Función para generar el PDF con dimensiones de ticket térmico
+// Función para generar el PDF con dimensiones de ticket térmico (58mm)
 export async function generatePackageTicketPDF(packageData: PackageData, companyName: string) {
   // Generar código QR para añadir al PDF
   let qrCodeDataUrl;
@@ -494,4 +494,259 @@ export function PackageTicket({ packageData, companyName = "TransRoute" }: Packa
       <div className="ticket-route"></div>
     </div>
   );
+}
+
+// Función para generar el PDF con dimensiones de ticket térmico (60mm)
+export async function generatePackageTicket60mmPDF(packageData: PackageData, companyName: string) {
+  // Generar código QR para añadir al PDF
+  let qrCodeDataUrl;
+  try {
+    const verificationUrl = `${window.location.origin}/package/${packageData.id}`;
+    qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 120 });
+  } catch (error) {
+    console.error("Error al generar código QR:", error);
+    qrCodeDataUrl = null;
+  }
+
+  // Crear un documento PDF con las dimensiones de un ticket térmico (60mm x 170mm)
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [60, 170], // 60mm de ancho, 170mm de alto (formato más amplio para tickets térmicos)
+  });
+
+  // Configuración de fuentes
+  doc.setFont("courier", "normal");
+  doc.setFontSize(10);
+
+  // Margen superior
+  let y = 10;
+
+  // Encabezado
+  doc.setFontSize(12);
+  doc.setFont("courier", "bold");
+  const companyNameWidth = doc.getStringUnitWidth(companyName) * 12 / doc.internal.scaleFactor;
+  const companyNameX = (60 - companyNameWidth) / 2;
+  doc.text(companyName, companyNameX, y);
+  
+  y += 5;
+  doc.setFontSize(8);
+  doc.setFont("courier", "normal");
+  doc.text("Servicio de paquetería", 30, y, { align: "center" });
+  
+  // Línea separadora
+  y += 3;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(5, y, 55, y);
+  
+  // ID del paquete
+  y += 5;
+  doc.setFontSize(10);
+  doc.setFont("courier", "bold");
+  doc.text(`PAQUETE #${packageData.id}`, 30, y, { align: "center" });
+  
+  y += 4;
+  doc.setFontSize(8);
+  doc.text(formatDate(new Date(packageData.createdAt)), 30, y, { align: "center" });
+  
+  // Remitente
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont("courier", "bold");
+  doc.text("Remitente", 5, y);
+  
+  y += 4;
+  doc.setFontSize(8);
+  doc.setFont("courier", "normal");
+  doc.text(`${packageData.senderName} ${packageData.senderLastName}`, 5, y);
+  
+  y += 3;
+  doc.text(`Tel: ${packageData.senderPhone}`, 5, y);
+  
+  // Destinatario
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont("courier", "bold");
+  doc.text("Destinatario", 5, y);
+  
+  y += 4;
+  doc.setFontSize(8);
+  doc.setFont("courier", "normal");
+  doc.text(`${packageData.recipientName} ${packageData.recipientLastName}`, 5, y);
+  
+  y += 3;
+  doc.text(`Tel: ${packageData.recipientPhone}`, 5, y);
+  
+  // Ruta
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont("courier", "bold");
+  doc.text("Ruta", 5, y);
+  
+  y += 4;
+  doc.setFontSize(8);
+  doc.setFont("courier", "normal");
+  
+  // Origen
+  const maxWidthOrigen = 50; // Ancho máximo en mm para el texto
+  const origenCompleto = `Origen: ${packageData.tripOrigin || packageData.segmentOrigin || 'No especificado'}`;
+  
+  if (doc.getStringUnitWidth(origenCompleto) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+    const origen = packageData.tripOrigin || packageData.segmentOrigin || 'No especificado';
+    doc.text("Origen:", 5, y);
+    y += 3;
+    
+    // Dividir el resto en múltiples líneas
+    const words = origen.split(' ');
+    let line = '';
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+        doc.text(line, 5, y);
+        line = words[i] + ' ';
+        y += 3;
+      } else {
+        line = testLine;
+      }
+    }
+    doc.text(line, 5, y);
+    y += 4;
+  } else {
+    doc.text(origenCompleto, 5, y);
+    y += 4;
+  }
+  
+  // Destino
+  const destinoCompleto = `Destino: ${packageData.tripDestination || packageData.segmentDestination || 'No especificado'}`;
+  
+  if (doc.getStringUnitWidth(destinoCompleto) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+    const destino = packageData.tripDestination || packageData.segmentDestination || 'No especificado';
+    doc.text("Destino:", 5, y);
+    y += 3;
+    
+    // Dividir el resto en múltiples líneas
+    const words = destino.split(' ');
+    let line = '';
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+        doc.text(line, 5, y);
+        line = words[i] + ' ';
+        y += 3;
+      } else {
+        line = testLine;
+      }
+    }
+    doc.text(line, 5, y);
+    y += 4;
+  } else {
+    doc.text(destinoCompleto, 5, y);
+    y += 4;
+  }
+  
+  // Fecha y hora del viaje
+  if (packageData.shippingDate || packageData.tripDate) {
+    y += 4;
+    const dateToUse = packageData.shippingDate ? new Date(packageData.shippingDate) : 
+                      (packageData.tripDate ? new Date(packageData.tripDate) : new Date());
+    doc.text(`Fecha de envío: ${formatDate(dateToUse)}`, 5, y);
+  }
+  
+  if (packageData.departureTime) {
+    y += 4;
+    doc.text(`Hora de salida: ${formatTripTime(packageData.departureTime, true, 'standard')}`, 5, y);
+  }
+  
+  // Detalles del paquete
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont("courier", "bold");
+  doc.text("Detalles del Paquete", 5, y);
+  
+  y += 4;
+  doc.setFontSize(8);
+  doc.setFont("courier", "normal");
+  const descripcion = packageData.packageDescription || "Sin descripción";
+  
+  // Dividir descripción larga en múltiples líneas si es necesario
+  const maxWidth = 50; // Ancho máximo en mm
+  if (doc.getStringUnitWidth(descripcion) * 8 / doc.internal.scaleFactor > maxWidth) {
+    const words = descripcion.split(' ');
+    let line = '';
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidth) {
+        doc.text(line, 5, y);
+        line = words[i] + ' ';
+        y += 3;
+      } else {
+        line = testLine;
+      }
+    }
+    doc.text(line, 5, y);
+  } else {
+    doc.text(descripcion, 5, y);
+  }
+  
+  y += 4;
+  doc.text(`Precio: ${formatCurrency(packageData.price)}`, 5, y);
+  
+  if (packageData.usesSeats) {
+    y += 4;
+    doc.text(`Ocupa ${packageData.seatsQuantity} ${packageData.seatsQuantity === 1 ? 'asiento' : 'asientos'}`, 5, y);
+  }
+  
+  y += 4;
+  doc.text(
+    packageData.isPaid 
+      ? `Pagado (${packageData.paymentMethod || 'efectivo'})` 
+      : 'Pendiente de pago', 
+    5, 
+    y
+  );
+  
+  // Código QR
+  if (qrCodeDataUrl) {
+    y += 8;
+    const qrX = (60 - 30) / 2; // Centrar el QR (30mm de ancho)
+    try {
+      doc.addImage(qrCodeDataUrl, 'PNG', qrX, y, 30, 30);
+      y += 32; // Espacio para el QR + margen
+    } catch (error) {
+      console.error("Error al agregar código QR al PDF:", error);
+    }
+  }
+  
+  // Línea separadora final
+  y += 3;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(5, y, 55, y);
+  
+  // Información de corte
+  y += 4;
+  doc.setFontSize(6);
+  doc.setFont("courier", "normal");
+  doc.text("Corte aquí", 30, y, { align: "center" });
+  
+  // Abrir el PDF en una nueva ventana
+  const pdfWindow = window.open('', '_blank');
+  if (pdfWindow) {
+    pdfWindow.document.write(`
+      <html>
+        <head>
+          <title>Ticket Paquete #${packageData.id} - 60mm</title>
+          <style>
+            body { margin: 0; }
+            iframe { width: 100%; height: 100vh; border: none; }
+          </style>
+        </head>
+        <body>
+          <iframe src="${doc.output('datauristring')}" type="application/pdf"></iframe>
+        </body>
+      </html>
+    `);
+    pdfWindow.document.close();
+  }
+  
+  return doc;
 }
