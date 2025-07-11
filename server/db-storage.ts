@@ -2822,19 +2822,24 @@ export class DatabaseStorage implements IStorage {
         try {
           // Extraer recordId del tripId 
           let recordId;
+          let subTripIndex;
           
           if (typeof tripId === 'string' && tripId.includes('_')) {
             // Formato: "recordId_subTripIndex"
-            const [recordIdStr, subTripIndex] = tripId.split('_');
+            const [recordIdStr, subTripIndexStr] = tripId.split('_');
             recordId = parseInt(recordIdStr);
+            subTripIndex = subTripIndexStr;
           } else {
             // Formato antiguo: número directo
             recordId = typeof tripId === 'string' ? parseInt(tripId) : tripId;
+            subTripIndex = null;
           }
+          
+          console.log(`DB Storage: [createTransactionFromReservation] 🔍 Extrayendo: recordId=${recordId}, subTripIndex=${subTripIndex} de tripId=${tripId}`);
           
           if (!isNaN(recordId)) {
             // Buscar el viaje en la base de datos
-            const tripResult = await db
+            const tripResult = await this.db
               .select()
               .from(schema.trips)
               .where(eq(schema.trips.id, recordId))
