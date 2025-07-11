@@ -571,12 +571,29 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
 
       const { jsPDF } = await import('jspdf');
       
+      // Buscar la reservación real asociada a esta solicitud aprobada
+      let reservationId = null;
+      try {
+        const response = await fetch(`/api/reservation-requests/${request.id}/reservation`);
+        if (response.ok) {
+          const reservation = await response.json();
+          reservationId = reservation.id;
+          console.log(`[QR] Encontrada reservación real ${reservationId} para solicitud ${request.id}`);
+        } else {
+          console.error(`[QR] No se encontró reservación para solicitud ${request.id}`);
+        }
+      } catch (error) {
+        console.error(`[QR] Error al buscar reservación para solicitud ${request.id}:`, error);
+      }
+      
       // Generar código QR para la reservación
       let qrCodeDataUrl;
       try {
-        // Apuntar a la página de detalles de reservación existente
-        const verificationUrl = `${window.location.origin}/reservation-details?id=${request.id}`;
+        // Usar el ID de la reservación real si se encontró, sino usar el ID de la solicitud
+        const finalId = reservationId || request.id;
+        const verificationUrl = `${window.location.origin}/reservation-details?id=${finalId}`;
         qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 100 });
+        console.log(`[QR] Generado QR para ID ${finalId}: ${verificationUrl}`);
       } catch (error) {
         console.error("Error al generar código QR:", error);
         qrCodeDataUrl = null;
