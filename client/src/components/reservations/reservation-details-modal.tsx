@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, User, Mail, Phone, MapPin, Calendar, Clock, CheckCircle, X, ArrowRightLeft, Eye, Download, Printer, QrCode, RefreshCw } from "lucide-react";
+import { Loader2, User, Mail, Phone, MapPin, Calendar, Clock, CheckCircle, X, ArrowRightLeft, Eye, Download, Printer, QrCode, RefreshCw, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatPrice, generateReservationId } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -859,6 +859,192 @@ export default function ReservationDetailsModal({
     }
   };
 
+  // Función para compartir ticket usando Web Share API
+  const handleShareTicket = async () => {
+    if (!reservation) {
+      toast({
+        title: "Error",
+        description: "No se encontró la información de la reservación",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Generar el PDF primero usando la función de ticket de 60mm
+      const { jsPDF } = await import('jspdf');
+      
+      // Crear documento PDF con dimensiones de ticket térmico (58mm x altura variable)
+      const docHeight = 160;
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [58, docHeight],
+      });
+
+      // Configurar fuente
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+      
+      let y = 8;
+      
+      // Encabezado
+      doc.setFontSize(12);
+      doc.setFont("courier", "bold");
+      doc.text(user?.company || "TransRoute", 29, y, { align: "center" });
+      y += 5;
+      doc.setFontSize(8);
+      doc.text("Boleto de Viaje", 29, y, { align: "center" });
+      y += 6;
+      
+      // ID de reservación
+      doc.setFontSize(10);
+      doc.text(`#${generateReservationId(reservation.id)}`, 29, y, { align: "center" });
+      y += 5;
+      
+      // Información del pasajero
+      doc.setFontSize(8);
+      doc.setFont("courier", "bold");
+      doc.text("Pasajero:", 5, y);
+      y += 3;
+      doc.setFont("courier", "normal");
+      doc.text(`${reservation.passengerName}`, 5, y);
+      y += 3;
+      doc.text(`${reservation.passengerLastName}`, 5, y);
+      y += 3;
+      doc.text(`Tel: ${reservation.passengerPhone}`, 5, y);
+      y += 5;
+      
+      // Información del viaje
+      doc.setFont("courier", "bold");
+      doc.text("Viaje:", 5, y);
+      y += 3;
+      doc.setFont("courier", "normal");
+      doc.text(`${reservation.trip.origin}`, 5, y);
+      y += 3;
+      doc.text(`-> ${reservation.trip.destination}`, 5, y);
+      y += 3;
+      doc.text(`${formatDate(reservation.trip.departureDate)}`, 5, y);
+      y += 3;
+      doc.text(`${formatTripTime(reservation.trip.departureTime, true, 'standard')}`, 5, y);
+      y += 5;
+      
+      // Información de asientos
+      doc.setFont("courier", "bold");
+      doc.text("Asientos:", 5, y);
+      y += 3;
+      doc.setFont("courier", "normal");
+      doc.text(`${reservation.seatNumbers.join(", ")}`, 5, y);
+      y += 3;
+      doc.text(`${reservation.passengers.length} pasajero${reservation.passengers.length > 1 ? 's' : ''}`, 5, y);
+      y += 5;
+      
+      // Información de precio
+      doc.setFont("courier", "bold");
+      doc.text("Precio:", 5, y);
+      y += 3;
+      doc.setFont("courier", "normal");
+      
+      // Calcular precio final después del descuento
+      const finalPrice = reservation.couponDiscount > 0 ? reservation.totalAmount - reservation.couponDiscount : reservation.totalAmount;
+      
+      if (reservation.advanceAmount && reservation.advanceAmount > 0) {
+        // Anticipo con método de pago
+        doc.text(`Anticipo: ${formatPrice(reservation.advanceAmount)} (${reservation.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, 5, y);
+        
+        if (reservation.advanceAmount < finalPrice) {
+          y += 3;
+          const restante = finalPrice - reservation.advanceAmount;
+          doc.text(`Restante: ${formatPrice(restante)} (${reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, 5, y);
+        }
+        
+        y += 3;
+        doc.text(`Total: ${formatPrice(finalPrice)}`, 5, y);
+      } else {
+        // Sin anticipo
+        doc.text(`Metodo de pago: ${reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+        y += 3;
+        doc.text(`Total: ${formatPrice(finalPrice)}`, 5, y);
+      }
+      
+      // Estado de pago
+      y += 4;
+      doc.text("Estado:", 5, y);
+      y += 3;
+      doc.setFont("courier", "bold");
+      const isPaid = reservation.paymentStatus === 'pagado';
+      doc.text(isPaid ? "PAGADO" : "PENDIENTE", 5, y);
+      
+      // Pie de página
+      y += 8;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(5, y, 53, y);
+      
+      y += 5;
+      doc.setFontSize(7);
+      doc.setFont("courier", "normal");
+      doc.text("Presente este boleto al abordar", 29, y, { align: "center" });
+      y += 3;
+      doc.text("el vehiculo", 29, y, { align: "center" });
+      y += 4;
+      doc.text(`TransRoute © ${new Date().getFullYear()}`, 29, y, { align: "center" });
+
+      // Crear el blob del PDF
+      const pdfBlob = doc.output('blob');
+      
+      // Crear el archivo para compartir
+      const file = new File([pdfBlob], `boleto-${generateReservationId(reservation.id)}.pdf`, {
+        type: 'application/pdf',
+      });
+
+      // Datos para compartir
+      const shareData = {
+        title: `Boleto de Viaje #${generateReservationId(reservation.id)}`,
+        text: `Boleto de viaje #${generateReservationId(reservation.id)} - ${reservation.passengerName} ${reservation.passengerLastName}\n${reservation.trip.origin} → ${reservation.trip.destination}\n${formatDate(reservation.trip.departureDate)} ${formatTripTime(reservation.trip.departureTime, true, 'standard')}`,
+        files: [file],
+        url: `${window.location.origin}/reservation-details?id=${reservation.id}`,
+      };
+
+      // Verificar si el dispositivo soporta compartir archivos
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        toast({
+          title: "Boleto compartido",
+          description: "El boleto se ha compartido exitosamente",
+        });
+      } else if (navigator.share) {
+        // Si no soporta archivos, compartir solo el enlace
+        await navigator.share({
+          title: shareData.title,
+          text: shareData.text,
+          url: shareData.url,
+        });
+        toast({
+          title: "Enlace compartido",
+          description: "El enlace del boleto se ha compartido exitosamente",
+        });
+      } else {
+        // Fallback: copiar al portapapeles
+        await navigator.clipboard.writeText(shareData.url);
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace del boleto se ha copiado al portapapeles",
+        });
+      }
+    } catch (error) {
+      console.error('Error al compartir boleto:', error);
+      if (error.name === 'AbortError') {
+        // Usuario canceló el compartir
+        return;
+      }
+      toast({
+        title: "Error al compartir",
+        description: "No se pudo compartir el boleto. Intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -1228,6 +1414,17 @@ export default function ReservationDetailsModal({
                         >
                           <Printer className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                           Imprimir boleto 60mm
+                        </Button>
+
+                        {/* Botón de compartir ticket */}
+                        <Button
+                          onClick={handleShareTicket}
+                          variant="outline"
+                          size="sm"
+                          className="border-blue-300 hover:bg-blue-50 text-blue-700"
+                        >
+                          <Share2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                          Compartir Ticket
                         </Button>
                       </div>
                     </div>

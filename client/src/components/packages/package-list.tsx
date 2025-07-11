@@ -281,6 +281,71 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       });
     }
   };
+
+  // Manejar el compartir ticket usando la Web Share API
+  const handleShareTicket = async () => {
+    if (packageToView) {
+      try {
+        // Generar el PDF primero
+        const { generatePackageTicketPDF } = await import('./package-ticket');
+        const doc = await generatePackageTicketPDF(packageToView, user?.company || "TransRoute");
+        
+        // Crear el blob del PDF
+        const pdfBlob = doc.output('blob');
+        
+        // Crear el archivo para compartir
+        const file = new File([pdfBlob], `ticket-paquete-${packageToView.id}.pdf`, {
+          type: 'application/pdf',
+        });
+
+        // Datos para compartir
+        const shareData = {
+          title: `Ticket de Paquete #${packageToView.id}`,
+          text: `Ticket de paquete #${packageToView.id} - ${packageToView.senderName} ${packageToView.senderLastName} → ${packageToView.recipientName} ${packageToView.recipientLastName}`,
+          files: [file],
+          url: `${window.location.origin}/package/${packageToView.id}`,
+        };
+
+        // Verificar si el dispositivo soporta compartir archivos
+        if (navigator.canShare && navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          toast({
+            title: "Ticket compartido",
+            description: "El ticket se ha compartido exitosamente",
+          });
+        } else if (navigator.share) {
+          // Si no soporta archivos, compartir solo el enlace
+          await navigator.share({
+            title: shareData.title,
+            text: shareData.text,
+            url: shareData.url,
+          });
+          toast({
+            title: "Enlace compartido",
+            description: "El enlace del ticket se ha compartido exitosamente",
+          });
+        } else {
+          // Fallback: copiar al portapapeles
+          await navigator.clipboard.writeText(shareData.url);
+          toast({
+            title: "Enlace copiado",
+            description: "El enlace del ticket se ha copiado al portapapeles",
+          });
+        }
+      } catch (error) {
+        console.error('Error al compartir ticket:', error);
+        if (error.name === 'AbortError') {
+          // Usuario canceló el compartir
+          return;
+        }
+        toast({
+          title: "Error al compartir",
+          description: "No se pudo compartir el ticket. Intente nuevamente.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
   
   // Renderizar el estado de carga
   if (packagesQuery.isLoading) {
@@ -716,14 +781,25 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                                   companyName={user?.company || "TransRoute"} 
                                 />
                               </div>
-                              <Button 
-                                onClick={handlePrintTicket} 
-                                className="w-full max-w-sm"
-                                size="lg"
-                              >
-                                <Printer className="mr-2 h-4 w-4" />
-                                Imprimir Ticket
-                              </Button>
+                              <div className="flex flex-col sm:flex-row gap-2 w-full max-w-sm">
+                                <Button 
+                                  onClick={handlePrintTicket} 
+                                  className="flex-1"
+                                  size="lg"
+                                >
+                                  <Printer className="mr-2 h-4 w-4" />
+                                  Imprimir Ticket
+                                </Button>
+                                <Button 
+                                  onClick={handleShareTicket} 
+                                  className="flex-1"
+                                  size="lg"
+                                  variant="outline"
+                                >
+                                  <Share2 className="mr-2 h-4 w-4" />
+                                  Compartir Ticket
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </DialogContent>
