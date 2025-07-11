@@ -720,6 +720,15 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                     <MapPin className="mr-1 h-3 w-3" />
                     <span className="truncate">{pkg.segmentDestination || pkg.tripDestination || "No disponible"}</span>
                   </div>
+                  {/* Horario de salida */}
+                  {(pkg.tripDetails?.departureTime || pkg.tripDepartureTime) && (
+                    <div className="flex items-center text-gray-600 mt-1">
+                      <Clock className="mr-1 h-3 w-3" />
+                      <span className="text-xs font-medium">
+                        Salida: {pkg.tripDetails?.departureTime || pkg.tripDepartureTime}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               

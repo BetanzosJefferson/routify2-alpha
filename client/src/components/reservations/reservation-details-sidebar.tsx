@@ -745,6 +745,16 @@ export function ReservationDetailsSidebar({
                     </div>
                   </div>
 
+                  {/* Horario de salida */}
+                  {(pkg.tripDetails?.departureTime || pkg.tripDepartureTime) && (
+                    <div className="mb-3">
+                      <div className="text-xs text-gray-500">Hora de salida</div>
+                      <div className="font-medium text-xs md:text-sm text-orange-600">
+                        {pkg.tripDetails?.departureTime || pkg.tripDepartureTime}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Información de contacto */}
                   <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 text-sm mb-3">
                     <div>
