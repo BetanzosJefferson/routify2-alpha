@@ -160,6 +160,16 @@ function ReservationsListContent() {
     
     // Establecer información del viaje padre usando la información del viaje padre (recordId)
     if (!groups[groupKey].tripInfo) {
+      // DEBUG: Logging detallado de la estructura de datos
+      console.log(`[TRIP_INFO_DEBUG] Procesando reservación ${reservation.id}:`, {
+        'tripDetails': reservation.tripDetails,
+        'trip': reservation.trip,
+        'trip?.parentTrip': reservation.trip?.parentTrip,
+        'trip?.driver': reservation.trip?.driver,
+        'trip?.parentTrip?.driver': reservation.trip?.parentTrip?.driver,
+        'tripDetails?.trip?.driver': reservation.tripDetails?.trip?.driver
+      });
+      
       // Buscar información del viaje padre si está disponible
       const parentTripInfo = reservation.trip?.parentTrip;
       if (parentTripInfo) {
@@ -185,8 +195,8 @@ function ReservationsListContent() {
           arrivalTime: reservation.trip.arrivalTime,
           recordId: recordId,
           route: reservation.trip.route,
-          driver: reservation.trip.driver,
-          vehicle: reservation.trip.vehicle
+          driver: reservation.trip.driver || reservation.tripDetails?.trip?.driver,
+          vehicle: reservation.trip.vehicle || reservation.tripDetails?.trip?.vehicle
         };
         groups[groupKey].parentTripDate = reservation.trip.departureDate;
       }
