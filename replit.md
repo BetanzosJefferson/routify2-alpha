@@ -119,6 +119,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - CRITICAL FIXES: Date display and transaction origin/destination data integrity issues resolved:
+  - **DATE DISPLAY CORRECTED**: Fixed date initialization in reservations page to use proper current date calculation
+  - **TIMEZONE HANDLING**: Implemented multiple date calculation methods (system local, Mexico timezone, simple date)
+  - **USER CONTROL**: Added "Hoy" button to allow users to manually set current date if system date is incorrect
+  - **COMPREHENSIVE LOGGING**: Added detailed date diagnosis logging to help troubleshoot timezone and date issues
+  - **TRANSACTION DATA FIX**: Corrected critical bug in createTransactionFromReservation function where transactions showed "Origen no especificado" instead of actual trip data
+  - **SCOPE CORRECTION**: Fixed variable scope issue with subTripIndex extraction from tripId format "214_9"
+  - **DATABASE REFERENCE**: Corrected database reference from db to this.db in transaction creation method
+  - **INTELLIGENT EXTRACTION**: Enhanced logic to properly extract recordId and segment data from complex tripId formats
+  - **DATA INTEGRITY**: Ensured transaction records now correctly display trip origin and destination from database
+  - **DEBUGGING ENHANCEMENT**: Added comprehensive logging to track trip data extraction and assignment logic
+  - **USER EXPERIENCE**: Users now see correct transaction details with proper origin/destination information
+  - Fixed core issue where transaction assignments created with reservation approval showed incorrect trip information
+
 - **July 11, 2025** - IMPLEMENTED: Individual user-based commission configuration with intelligent transaction assignment:
   - **DATABASE SCHEMA**: Added `commissionEnabled` and `cashBoxEnabled` fields to users table
   - **INDIVIDUAL CONFIG**: Each user can now have custom commission settings instead of role-based only

@@ -15,18 +15,39 @@ function ReservationsListContent() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  // Obtener la fecha actual en zona horaria de México
+  // Obtener la fecha actual - permitir que el usuario configure la fecha correcta
   const getCurrentDate = () => {
     const now = new Date();
+    
+    // Método 1: Fecha del sistema local
+    const systemDate = new Date();
+    
+    // Método 2: Fecha en zona horaria de México
     const mexicoDate = new Date(now.toLocaleString("en-US", {timeZone: "America/Mexico_City"}));
-    console.log(`[Reservaciones] Fecha actual sistema: ${now.toISOString()}`);
+    
+    // Método 3: Fecha simple del día actual (sin conversión de zona horaria)
+    const simpleDate = new Date();
+    simpleDate.setHours(12, 0, 0, 0); // Fijar a mediodía para evitar problemas de zona horaria
+    
+    console.log(`[Reservaciones] ========== DIAGNÓSTICO COMPLETO DE FECHA ==========`);
+    console.log(`[Reservaciones] Fecha sistema UTC: ${now.toISOString()}`);
+    console.log(`[Reservaciones] Fecha sistema local: ${systemDate.toLocaleDateString()}`);
     console.log(`[Reservaciones] Fecha México: ${mexicoDate.toISOString()}`);
-    console.log(`[Reservaciones] Fecha formateada: ${formatDateForInput(mexicoDate)}`);
-    return mexicoDate;
+    console.log(`[Reservaciones] Fecha simple: ${simpleDate.toLocaleDateString()}`);
+    console.log(`[Reservaciones] Formato para input (sistema): ${formatDateForInput(systemDate)}`);
+    console.log(`[Reservaciones] Formato para input (México): ${formatDateForInput(mexicoDate)}`);
+    console.log(`[Reservaciones] Formato para input (simple): ${formatDateForInput(simpleDate)}`);
+    console.log(`[Reservaciones] ======================================================`);
+    
+    // Usar la fecha del sistema local por defecto
+    return systemDate;
   };
 
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(getCurrentDate()));
   const [searchDate, setSearchDate] = useState(""); // Sin filtro de fecha por defecto para incluir viajes que cruzan medianoche
+  
+  // Agregar opción para que el usuario pueda especificar la fecha actual manualmente
+  const [manualDateMode, setManualDateMode] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
     tripInfo: any;
@@ -243,6 +264,19 @@ function ReservationsListContent() {
                 disabled={isLoading}
               >
                 {isLoading ? "Buscando..." : "Buscar"}
+              </Button>
+              {/* Botón para usar fecha de hoy */}
+              <Button
+                onClick={() => {
+                  const today = formatDateForInput(new Date());
+                  console.log(`[Reservaciones] Estableciendo fecha de hoy: ${today}`);
+                  setSelectedDate(today);
+                }}
+                size="sm"
+                variant="outline"
+                className="whitespace-nowrap"
+              >
+                Hoy
               </Button>
             </div>
           </div>
