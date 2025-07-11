@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
-import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck, Filter } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Calendar, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Truck, UserCheck, Filter } from "lucide-react";
+
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
@@ -20,8 +20,6 @@ function ReservationsListContent() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [routeFilter, setRouteFilter] = useState("");
-  const [timeFilter, setTimeFilter] = useState("");
   const [hasError, setHasError] = useState(false);
   
   // Verificar si el usuario es chofer
@@ -174,26 +172,7 @@ function ReservationsListContent() {
       if (!matchesText) return false;
     }
 
-    // Filtro de ruta: buscar en origen y destino
-    if (routeFilter && routeFilter !== 'all') {
-      const routeLower = routeFilter.toLowerCase();
-      const tripDetails = reservation.tripDetails as any;
-      const origin = tripDetails?.origin || reservation.trip?.origin || '';
-      const destination = tripDetails?.destination || reservation.trip?.destination || '';
-      const matchesRoute = (
-        origin.toLowerCase().includes(routeLower) ||
-        destination.toLowerCase().includes(routeLower)
-      );
-      if (!matchesRoute) return false;
-    }
 
-    // Filtro de horario: buscar en hora de salida
-    if (timeFilter && timeFilter !== 'all') {
-      const tripDetails = reservation.tripDetails as any;
-      const departureTime = tripDetails?.departureTime || reservation.trip?.departureTime || '';
-      const matchesTime = departureTime.includes(timeFilter);
-      if (!matchesTime) return false;
-    }
 
     return true;
   });
@@ -429,7 +408,7 @@ function ReservationsListContent() {
             </div>
           </div>
           
-          {/* Filtros de ruta y horario */}
+          {/* Filtro de búsqueda */}
           <div className="flex flex-col md:flex-row gap-3 mt-4 pt-4 border-t">
             <div className="flex items-center gap-2 w-full md:w-auto">
               <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -441,60 +420,11 @@ function ReservationsListContent() {
               />
             </div>
             
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <Select value={routeFilter} onValueChange={setRouteFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filtrar por ruta" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las rutas</SelectItem>
-                  <SelectItem value="Acapulco">Acapulco</SelectItem>
-                  <SelectItem value="Taxqueña">Taxqueña</SelectItem>
-                  <SelectItem value="Chilpancingo">Chilpancingo</SelectItem>
-                  <SelectItem value="Cuernavaca">Cuernavaca</SelectItem>
-                  <SelectItem value="Coyoacán">Coyoacán</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger className="w-full md:w-32">
-                  <SelectValue placeholder="Horario" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="06:00">6:00 AM</SelectItem>
-                  <SelectItem value="07:00">7:00 AM</SelectItem>
-                  <SelectItem value="08:00">8:00 AM</SelectItem>
-                  <SelectItem value="09:00">9:00 AM</SelectItem>
-                  <SelectItem value="10:00">10:00 AM</SelectItem>
-                  <SelectItem value="11:00">11:00 AM</SelectItem>
-                  <SelectItem value="12:00">12:00 PM</SelectItem>
-                  <SelectItem value="13:00">1:00 PM</SelectItem>
-                  <SelectItem value="14:00">2:00 PM</SelectItem>
-                  <SelectItem value="15:00">3:00 PM</SelectItem>
-                  <SelectItem value="16:00">4:00 PM</SelectItem>
-                  <SelectItem value="17:00">5:00 PM</SelectItem>
-                  <SelectItem value="18:00">6:00 PM</SelectItem>
-                  <SelectItem value="19:00">7:00 PM</SelectItem>
-                  <SelectItem value="20:00">8:00 PM</SelectItem>
-                  <SelectItem value="21:00">9:00 PM</SelectItem>
-                  <SelectItem value="22:00">10:00 PM</SelectItem>
-                  <SelectItem value="23:00">11:00 PM</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
             {/* Botón para limpiar filtros */}
-            {(searchTerm || routeFilter || timeFilter) && (
+            {searchTerm && (
               <Button
                 onClick={() => {
                   setSearchTerm("");
-                  setRouteFilter("");
-                  setTimeFilter("");
                 }}
                 size="sm"
                 variant="outline"
