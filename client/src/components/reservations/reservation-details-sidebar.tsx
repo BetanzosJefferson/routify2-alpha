@@ -427,7 +427,9 @@ export function ReservationDetailsSidebar({
               </div>
               <div>
                 <p className="text-xs text-gray-500">Horario</p>
-                <p className="font-semibold text-sm">10:00 AM - 03:00 PM</p>
+                <p className="font-semibold text-sm">
+                  {formatTime(tripInfo?.departureTime || '00:00')} - {formatTime(tripInfo?.arrivalTime || '00:00')}
+                </p>
               </div>
             </div>
             

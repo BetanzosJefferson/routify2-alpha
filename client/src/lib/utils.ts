@@ -198,7 +198,46 @@ export function formatDateForInput(date: Date | string): string {
 }
 
 export function formatTime(time: string): string {
-  return time;
+  if (!time) return '';
+  
+  // Limpiar indicadores de día adicionales
+  const cleanTime = time.replace(/\s*\+\d+d$/, '');
+  
+  // Si ya está en formato 12 horas, verificar si es válido
+  if (cleanTime.includes('AM') || cleanTime.includes('PM')) {
+    const [hourMin, period] = cleanTime.split(' ');
+    const [hours, minutes] = hourMin.split(':').map(Number);
+    
+    // Verificar si es un formato válido de 12 horas
+    if (hours >= 1 && hours <= 12) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+    
+    // Si no es válido (como 23:50 PM), convertirlo
+    if (hours === 0) {
+      return `12:${minutes.toString().padStart(2, '0')} AM`;
+    } else if (hours < 12) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} AM`;
+    } else if (hours === 12) {
+      return `12:${minutes.toString().padStart(2, '0')} PM`;
+    } else {
+      return `${hours - 12}:${minutes.toString().padStart(2, '0')} PM`;
+    }
+  }
+  
+  // Convertir de 24 horas a 12 horas
+  const [hourMin] = cleanTime.split(' ');
+  const [hours, minutes] = hourMin.split(':').map(Number);
+  
+  if (hours === 0) {
+    return `12:${minutes.toString().padStart(2, '0')} AM`;
+  } else if (hours < 12) {
+    return `${hours}:${minutes.toString().padStart(2, '0')} AM`;
+  } else if (hours === 12) {
+    return `12:${minutes.toString().padStart(2, '0')} PM`;
+  } else {
+    return `${hours - 12}:${minutes.toString().padStart(2, '0')} PM`;
+  }
 }
 
 export function formatPrice(price: number | null | undefined): string {
