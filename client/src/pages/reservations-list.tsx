@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
+import { useAuth } from "@/hooks/use-auth";
 import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
 import { Search, Calendar, MapPin, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Clock, Truck, UserCheck } from "lucide-react";
 import { ReservationWithDetails } from "@shared/schema";
@@ -13,8 +14,12 @@ import { useQueryClient } from "@tanstack/react-query";
 
 function ReservationsListContent() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Verificar si el usuario es chofer
+  const isDriver = user?.role === 'chofer';
   // Obtener la fecha actual - permitir que el usuario configure la fecha correcta
   const getCurrentDate = () => {
     const now = new Date();
@@ -66,6 +71,7 @@ function ReservationsListContent() {
 
   // Log para depuración
   console.log(`[Reservaciones] Fecha búsqueda: ${searchDate}, Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
+  console.log(`[Reservaciones] Usuario: ${user?.firstName} ${user?.lastName}, Rol: ${user?.role}, ID: ${user?.id}`);
   
   // Función para realizar búsqueda con invalidación de cache
   const handleSearch = async () => {
@@ -100,6 +106,18 @@ function ReservationsListContent() {
     // Excluir reservaciones canceladas
     if (reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') {
       return false;
+    }
+
+    // FILTRO PARA CHÓFERES: Solo mostrar reservaciones de viajes donde el chofer está asignado
+    if (isDriver && user?.id) {
+      const tripInfo = reservation.tripDetails?.trip || reservation.trip;
+      const driverId = tripInfo?.driver?.id || tripInfo?.driverId;
+      
+      // Si no hay información del conductor o el conductor no coincide, filtrar
+      if (!driverId || driverId !== user.id) {
+        console.log(`[DRIVER_FILTER] Filtrando reservación ${reservation.id} - Conductor asignado: ${driverId}, Usuario actual: ${user.id}`);
+        return false;
+      }
     }
     
     // Filtrar por término de búsqueda
@@ -208,6 +226,7 @@ function ReservationsListContent() {
   console.log(`[FILTER_DEBUG] Total grupos antes del filtrado: ${Object.keys(groupedReservations).length}`);
   console.log(`[FILTER_DEBUG] Fecha de búsqueda: ${searchDate}`);
   console.log(`[FILTER_DEBUG] Total grupos después del filtrado: ${Object.keys(filteredGroupedReservations).length}`);
+  console.log(`[DRIVER_FILTER] Es conductor: ${isDriver}, Reservaciones filtradas: ${filteredReservations.length} de ${reservations.length}`);
 
   // Paginación aplicada a los grupos filtrados
   const totalGroups = Object.keys(filteredGroupedReservations).length;
@@ -336,6 +355,23 @@ function ReservationsListContent() {
           </div>
         </div>
       </div>
+
+      {/* Banner informativo para chóferes */}
+      {isDriver && (
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mx-4">
+          <div className="flex items-center gap-2">
+            <Truck className="h-5 w-5 text-blue-600" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Vista de conductor
+              </h3>
+              <p className="text-sm text-blue-700">
+                Mostrando solo las reservaciones de los viajes asignados a ti como conductor.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenido principal con padding optimizado */}
       <div className="container mx-auto px-4 py-4 pb-20">
