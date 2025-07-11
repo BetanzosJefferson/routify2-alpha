@@ -84,12 +84,14 @@ function calculateDuration(departureTime: string, arrivalTime: string): string {
   }
 }
 
-// Función para filtrar viajes cercanos a la hora actual (60 minutos)
+// Función para filtrar viajes que aún no han salido
 function filterTripsByTime(trips: TripWithRouteInfo[]): TripWithRouteInfo[] {
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
   const currentTimeMinutes = currentHour * 60 + currentMinute;
+  
+  console.log(`[TIME_FILTER] Hora actual: ${currentHour}:${currentMinute.toString().padStart(2, '0')} (${currentTimeMinutes} minutos)`);
   
   return trips.filter(trip => {
     const departureTime = (trip as any).departureTime;
@@ -106,14 +108,18 @@ function filterTripsByTime(trips: TripWithRouteInfo[]): TripWithRouteInfo[] {
     
     const departureMinutes = hours * 60 + minutes;
     
-    // Mostrar solo viajes que salen en los próximos 60 minutos o después
+    // CORRECCIÓN: Mostrar viajes que salen en el futuro (no en el pasado)
     // Si el viaje es para el día siguiente (cruza medianoche), siempre mostrarlo
-    if (departureTime.includes('+1d') || departureMinutes >= currentTimeMinutes + 60) {
+    if (departureTime.includes('+1d')) {
+      console.log(`[TIME_FILTER] Viaje ${trip.id} (${departureTime}) - Día siguiente: INCLUIDO`);
       return true;
     }
     
-    // Para viajes del mismo día, mostrar solo los que salen en 60 minutos o más
-    return departureMinutes >= currentTimeMinutes + 60;
+    // Para viajes del mismo día, mostrar solo los que aún no han salido
+    const willDepart = departureMinutes > currentTimeMinutes;
+    console.log(`[TIME_FILTER] Viaje ${trip.id} (${departureTime}) - Salida: ${departureMinutes} min, Actual: ${currentTimeMinutes} min, Incluir: ${willDepart}`);
+    
+    return willDepart;
   });
 }
 
@@ -571,7 +577,24 @@ export function TripList() {
         </div>
       </div>
 
-      
+      {/* Banner informativo sobre filtro de tiempo */}
+      {(!hasSearched || (!origin && !destination)) && (
+        <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
+          <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Filtro de tiempo activo
+              </h3>
+              <p className="text-sm text-blue-700">
+                Solo se muestran viajes que aún no han partido. Los viajes que ya iniciaron no aparecen en la lista.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center p-8">
