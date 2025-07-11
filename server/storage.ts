@@ -97,7 +97,12 @@ export interface IStorage {
   updateRelatedTripsAvailability(recordId: number, tripId: string, seatChange: number): Promise<void>;
   
   // Reservation methods
-  getReservations(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
+  getReservations(filters?: { 
+    companyId?: string; 
+    currentUserId?: number; 
+    userRole?: string; 
+    createdBy?: number; 
+  }): Promise<ReservationWithDetails[]>;
   getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
   getReservation(id: number): Promise<Reservation | undefined>;
   getReservationWithDetails(id: number, companyId?: string): Promise<ReservationWithDetails | undefined>;

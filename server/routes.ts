@@ -2397,7 +2397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint - force extraction test
   app.get(apiRouter("/debug-extraction"), isAuthenticated, async (req, res) => {
     try {
-      const reservations = await storage.getReservations("bamo-350045");
+      const reservations = await storage.getReservations({ companyId: "bamo-350045" });
       const testReservation = reservations[0];
       
       if (!testReservation) {
@@ -4715,12 +4715,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Obtener la reservación real asociada a una solicitud aprobada
-  app.get(apiRouter('/reservation-requests/:id/reservation'), isAuthenticated, async (req, res) => {
+  // Obtener reservaciones de un comisionista específico
+  app.get(apiRouter('/commissioners/:id/reservations'), isAuthenticated, async (req, res) => {
     try {
-      const requestId = parseInt(req.params.id);
-      if (isNaN(requestId)) {
-        return res.status(400).json({ message: "ID de solicitud inválido" });
+      const commissionerId = parseInt(req.params.id);
+      if (isNaN(commissionerId)) {
+        return res.status(400).json({ message: "ID de comisionista inválido" });
       }
       
       const currentUser = req.user as any;
@@ -4728,77 +4728,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "No autenticado" });
       }
       
-      // Obtener la solicitud
-      const request = await storage.getReservationRequest(requestId);
-      
-      if (!request) {
-        return res.status(404).json({ message: "Solicitud no encontrada" });
-      }
-      
-      // Verificar que esté aprobada
-      if (request.status !== 'aprobada') {
-        return res.status(400).json({ message: "La solicitud no está aprobada" });
-      }
-      
-      // Verificar permisos de acceso
-      if (currentUser.role === UserRole.COMMISSIONER && request.requesterId !== currentUser.id) {
+      // Verificar permisos: solo el propio comisionista puede ver sus reservaciones
+      if (currentUser.role === UserRole.COMMISSIONER && currentUser.id !== commissionerId) {
         return res.status(403).json({ 
-          message: "No tienes permiso para ver esta solicitud" 
+          message: "No tienes permiso para ver estas reservaciones" 
         });
       }
       
-      if (currentUser.role !== UserRole.SUPER_ADMIN && 
-          currentUser.role !== UserRole.COMMISSIONER && 
-          request.companyId !== currentUser.companyId) {
-        return res.status(403).json({ 
-          message: "No tienes permiso para ver esta solicitud" 
-        });
-      }
-      
-      // Buscar la reservación real basada en los datos de la solicitud
-      // Esto funciona porque cuando se aprueba una solicitud, se crea una reservación
-      // con los mismos datos de viaje, pasajeros y detalles de pago
-      const requestData = request.data as any;
-      
-      // Buscar reservaciones del mismo comisionista con datos similares
-      const allReservations = await storage.getReservations({ 
-        companyId: request.companyId,
-        userId: request.requesterId 
+      // Obtener reservaciones donde created_by es igual al ID del comisionista
+      const reservations = await storage.getReservations({ 
+        companyId: currentUser.companyId,
+        createdBy: commissionerId
       });
       
-      // Encontrar la reservación que coincida con los datos de la solicitud
-      const matchingReservation = allReservations.find(reservation => {
-        const reservationData = reservation.tripDetails as any;
-        
-        // Comparar trip ID y fechas
-        if (reservationData.tripId === requestData.trip_details?.tripId &&
-            reservationData.departureDate === requestData.trip_details?.departureDate) {
-          
-          // Comparar información de pasajeros si está disponible
-          if (requestData.passengers && reservation.passengers) {
-            const requestPassengers = requestData.passengers.map((p: any) => p.name?.toLowerCase()).sort();
-            const reservationPassengers = reservation.passengers.map((p: any) => p.name?.toLowerCase()).sort();
-            
-            // Si coinciden los nombres de pasajeros, es probable que sea la misma reservación
-            if (JSON.stringify(requestPassengers) === JSON.stringify(reservationPassengers)) {
-              return true;
-            }
-          }
-          
-          // Si no hay pasajeros para comparar, usar otros criterios
-          return Math.abs(new Date(reservation.createdAt).getTime() - new Date(request.createdAt).getTime()) < 24 * 60 * 60 * 1000; // Misma fecha
-        }
-        
-        return false;
-      });
+      console.log(`[/commissioners/${commissionerId}/reservations] Encontradas ${reservations.length} reservaciones`);
       
-      if (!matchingReservation) {
-        return res.status(404).json({ message: "Reservación asociada no encontrada" });
-      }
-      
-      res.json(matchingReservation);
+      res.json(reservations);
     } catch (error) {
-      console.error(`Error al obtener reservación para solicitud ${req.params.id}:`, error);
+      console.error(`Error al obtener reservaciones del comisionista ${req.params.id}:`, error);
       res.status(500).json({ message: "Error interno al procesar la solicitud" });
     }
   });

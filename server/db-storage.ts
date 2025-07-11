@@ -1260,16 +1260,32 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getReservations(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
+  async getReservations(filters?: { 
+    companyId?: string; 
+    currentUserId?: number; 
+    userRole?: string; 
+    createdBy?: number; 
+  }): Promise<ReservationWithDetails[]> {
     console.log("DB Storage: Consultando reservaciones");
     
     // Primero, definimos la consulta base
     let query = db.select().from(schema.reservations);
     
-    // Si hay un companyId, filtrar directamente por ese campo en la tabla de reservaciones
-    if (companyId) {
-      console.log(`DB Storage: Filtrando reservaciones por compañía: ${companyId}`);
-      query = query.where(eq(schema.reservations.companyId, companyId));
+    // Aplicar filtros
+    const conditions = [];
+    
+    if (filters?.companyId) {
+      console.log(`DB Storage: Filtrando reservaciones por compañía: ${filters.companyId}`);
+      conditions.push(eq(schema.reservations.companyId, filters.companyId));
+    }
+    
+    if (filters?.createdBy) {
+      console.log(`DB Storage: Filtrando reservaciones por creador: ${filters.createdBy}`);
+      conditions.push(eq(schema.reservations.createdBy, filters.createdBy));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
     
     // Ejecutar la consulta

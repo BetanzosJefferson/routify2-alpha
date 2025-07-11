@@ -20,6 +20,7 @@ export const ALL_SECTIONS: Section[] = [
   { id: "vehicles", name: "Unidades", description: "Gestión de vehículos y flota" },
   { id: "commissions", name: "Comisiones", description: "Configuración de comisiones" },
   { id: "my-commissions", name: "Mis Comisiones", description: "Historial de comisiones personales" },
+  { id: "my-reservations", name: "Mis Reservaciones", description: "Reservaciones creadas por el comisionista" },
   { id: "reservation-requests", name: "Solicitudes", description: "Gestión de solicitudes de reservación" },
   { id: "notifications", name: "Notificaciones", description: "Centro de notificaciones del sistema" },
   { id: "coupons", name: "Cupones", description: "Gestión de cupones de descuento" },
@@ -120,6 +121,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.COMMISSIONER]: [
     "trips",
     "my-commissions",
+    "my-reservations",
     "reservation-requests",
     "notifications",
     "cash-register",
