@@ -445,10 +445,24 @@ export default function ReservationDetailsModal({
         let originalPrice = reservation.totalAmount;
         let finalPrice = reservation.totalAmount;
         
+        // Debug: Ver datos del cupón
+        console.log("🔍 DEBUG PDF - Datos cupón:", {
+          couponCode: reservation.couponCode,
+          couponDiscount: reservation.couponDiscount,
+          totalAmount: reservation.totalAmount,
+          hasDiscount: reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0
+        });
+        
         // Si hay descuento, el precio original es el total + descuento
         if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
           originalPrice = reservation.totalAmount + reservation.couponDiscount;
           finalPrice = reservation.totalAmount; // El totalAmount ya tiene el descuento aplicado
+          
+          console.log("🔍 DEBUG PDF - Precios calculados:", {
+            originalPrice,
+            finalPrice,
+            discount: reservation.couponDiscount
+          });
         }
 
         // Precio original
