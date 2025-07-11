@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
@@ -145,13 +145,17 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const handleTripSelect = (trip: TripWithRouteInfo) => {
     console.log(`[PackageTripSelection] Trip selected:`, trip);
     
-    // Si el viaje tiene tripData con múltiples segmentos, mostrar modal de selección
-    if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1) {
-      console.log(`[PackageTripSelection] Trip has ${trip.tripData.length} segments, showing segment selection modal`);
+    // Si el viaje tiene tripData con múltiples segmentos Y no se buscó con filtros específicos,
+    // mostrar modal de selección. Si se buscó con filtros específicos, es una combinación específica.
+    const hasSpecificFilters = origin.trim() || destination.trim();
+    
+    if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1 && !hasSpecificFilters) {
+      console.log(`[PackageTripSelection] Trip has ${trip.tripData.length} segments and no specific filters, showing segment selection modal`);
       setSelectedTrip(trip);
       setShowSegmentModal(true);
     } else {
-      // Es un viaje simple o solo tiene un segmento
+      // Es un viaje simple, tiene un segmento, o es una combinación específica filtrada
+      console.log(`[PackageTripSelection] Selecting trip directly - hasSpecificFilters: ${hasSpecificFilters}, segments: ${trip.tripData?.length || 1}`);
       onTripSelect(trip);
     }
   };
@@ -393,12 +397,11 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Seleccionar Segmento del Viaje</DialogTitle>
+            <DialogDescription>
+              Este viaje tiene múltiples segmentos. Selecciona el segmento específico para tu paquetería.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Este viaje tiene múltiples segmentos. Selecciona el segmento específico para tu paquetería:
-            </p>
-            
             {selectedTrip && selectedTrip.tripData && (
               <div className="grid gap-3">
                 {selectedTrip.tripData.map((segment: any, index: number) => (
