@@ -7,7 +7,7 @@ interface CacheEntry {
 
 class TripCache {
   private cache = new Map<string, CacheEntry>();
-  private readonly CACHE_DURATION = 30 * 1000; // 30 segundos para datos críticos como asientos
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
   private readonly MAX_CACHE_SIZE = 50; // Máximo 50 búsquedas en caché
 
   // Generar key único basado en parámetros de búsqueda
@@ -83,26 +83,6 @@ class TripCache {
     } else {
       this.cache.clear();
       console.log(`[TripCache] Cache completamente limpiado`);
-    }
-  }
-
-  // Invalidar caché cuando se modifiquen asientos disponibles
-  invalidateSeatsCache(): void {
-    // Invalidar todas las entradas del caché que contengan búsquedas de viajes
-    for (const [key, entry] of this.cache.entries()) {
-      // Si la entrada contiene datos de viajes con asientos, invalidarla
-      if (entry.data && Array.isArray(entry.data) && entry.data.length > 0) {
-        const hasAvailableSeats = entry.data.some(item => 
-          item.availableSeats !== undefined || 
-          (item.tripData && Array.isArray(item.tripData) && 
-           item.tripData.some((segment: any) => segment.availableSeats !== undefined))
-        );
-        
-        if (hasAvailableSeats) {
-          this.cache.delete(key);
-          console.log(`[TripCache] Invalidado cache por cambio de asientos: ${key}`);
-        }
-      }
     }
   }
 

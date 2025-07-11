@@ -9,7 +9,6 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { DataLoaderProvider } from "@/hooks/use-data-loader";
 import { NotificationsProvider } from "@/components/notifications/notifications-provider";
-import { SeatNotifications } from "@/components/notifications/seat-notifications";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AuthPage from "@/pages/auth-page";
@@ -91,7 +90,6 @@ function App() {
             <ThemeProvider>
               <TooltipProvider>
                 <Toaster />
-                <SeatNotifications />
                 <Router />
               </TooltipProvider>
             </ThemeProvider>

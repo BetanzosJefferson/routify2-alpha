@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Trip, TripWithRouteInfo } from "@shared/schema";
 import { useAuth } from "./use-auth";
 import { formatDateForApiQuery } from "@/lib/utils";
-import { tripCache } from "@/lib/trip-cache";
 
 type UseTripsOptions = {
   enabled?: boolean;
@@ -23,8 +22,8 @@ export function useTrips(options: UseTripsOptions = {}) {
   return useQuery<TripWithRouteInfo[]>({
     queryKey: ["/api/trips", { routeId, departureDate, searchTerm, date, isSubTrip }],
     enabled: enabled, // Allow anonymous access to public trips
-    staleTime: 1000, // 1 segundo para asientos disponibles - muy corto para tiempo real
-    refetchInterval: 5000, // Refetch cada 5 segundos para mantener datos actualizados
+    staleTime: 5000,
+    refetchInterval: 15000,
     queryFn: async () => {
       try {
         // Construir la URL base
