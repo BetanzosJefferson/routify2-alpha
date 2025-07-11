@@ -60,7 +60,8 @@ function ReservationsListContent() {
     isLoading, 
     error 
   } = useReservations({
-    date: searchDate || undefined // Solo usar filtro de fecha si se especifica explícitamente
+    // No filtrar por fecha en el backend - traer todas las reservaciones
+    // El filtrado se hará en el frontend después de agrupar por viaje padre
   });
 
   // Log para depuración
@@ -169,11 +170,37 @@ function ReservationsListContent() {
     return groups;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
 
-  // Paginación aplicada a los grupos
-  const totalGroups = Object.keys(groupedReservations).length;
+  // Filtrar grupos por fecha del viaje padre si se especifica una fecha de búsqueda
+  const filteredGroupedReservations = Object.entries(groupedReservations).reduce((filtered, [groupKey, group]) => {
+    // Si no hay fecha de búsqueda, incluir todos los grupos
+    if (!searchDate) {
+      filtered[groupKey] = group;
+      return filtered;
+    }
+    
+    // Verificar si la fecha del viaje padre coincide con la fecha de búsqueda
+    const parentTripDate = group.parentTripDate || group.tripInfo?.departureDate;
+    const matches = parentTripDate && isSameLocalDay(parentTripDate, searchDate);
+    
+    console.log(`[FILTER_DEBUG] Grupo ${groupKey}:`, {
+      parentTripDate,
+      searchDate,
+      matches,
+      reservationsCount: group.reservations.length
+    });
+    
+    if (matches) {
+      filtered[groupKey] = group;
+    }
+    
+    return filtered;
+  }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
+
+  // Paginación aplicada a los grupos filtrados
+  const totalGroups = Object.keys(filteredGroupedReservations).length;
   const totalPages = Math.ceil(totalGroups / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedGroups = Object.entries(groupedReservations).slice(startIndex, startIndex + itemsPerPage);
+  const paginatedGroups = Object.entries(filteredGroupedReservations).slice(startIndex, startIndex + itemsPerPage);
 
   const handleTripClick = (recordId: string, tripInfo: any, reservations: ReservationWithDetails[]) => {
     setSelectedTrip({
@@ -240,7 +267,7 @@ function ReservationsListContent() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Reservaciones en Lista</h1>
               <div className="text-sm text-gray-600 mt-1">
-                Total: {filteredReservations.length} reservaciones en {Object.keys(groupedReservations).length} viajes
+                Total: {filteredReservations.length} reservaciones en {Object.keys(filteredGroupedReservations).length} viajes
               </div>
             </div>
             
