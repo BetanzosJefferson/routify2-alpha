@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - CRITICAL FIX: PDF ticket generation now correctly displays coupon discounts:
+  - **PDF DISCOUNT BUG FIXED**: Corrected critical issue where PDF tickets showed full price instead of discounted price when coupons were applied
+  - **RESERVATION STEPS MODAL**: Enhanced PDF generation in reservation-steps-modal.tsx to include coupon code, discount amount, and final price
+  - **RESERVATION DETAILS MODAL**: Fixed PDF generation in reservation-details-modal.tsx to display complete coupon information
+  - **COMPREHENSIVE DISPLAY**: PDF tickets now show: subtotal, coupon code, discount amount (in red), and final total price
+  - **PAYMENT CALCULATION**: Fixed payment breakdown to calculate remaining amounts based on final discounted price instead of original price
+  - **VISUAL ENHANCEMENT**: Added color coding (red for discounts) to improve readability of coupon information in PDF tickets
+  - **USER EXPERIENCE**: Users now receive accurate PDF tickets that reflect actual discounted prices when coupons are applied
+  - Fixed issue where customers received tickets showing incorrect payment amounts after coupon application
+
 - **July 11, 2025** - CRITICAL FIXES: Date display and transaction origin/destination data integrity issues resolved:
   - **DATE DISPLAY CORRECTED**: Fixed date initialization in reservations page to use proper current date calculation
   - **TIMEZONE HANDLING**: Implemented multiple date calculation methods (system local, Mexico timezone, simple date)
