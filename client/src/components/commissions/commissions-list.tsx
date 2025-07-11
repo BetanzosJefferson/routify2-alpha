@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   AlertTriangle, 
   AlertCircle, 
@@ -19,9 +17,7 @@ import {
   Calendar,
   User,
   MapPin,
-  Download,
-  CalendarDays,
-  RefreshCw
+  Download
 } from "lucide-react";
 import { cn, formatPrice, generateReservationId } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -46,23 +42,12 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
   
   // Estado para reservaciones seleccionadas (solo para modo admin)
   const [selectedReservations, setSelectedReservations] = useState<Set<number>>(new Set());
-  
-  // Estado para el filtro de fecha (por defecto: fecha actual)
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const now = new Date();
-    return now.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-  });
 
   // Consulta para obtener las reservaciones de comisionistas
-  const { data: commissionsData, isLoading, error, refetch } = useQuery({
-    queryKey: ['/api/commissions/reservations', queryKeySuffix, selectedDate],
+  const { data: commissionsData, isLoading, error } = useQuery({
+    queryKey: ['/api/commissions/reservations', queryKeySuffix],
     queryFn: async () => {
-      const url = new URL('/api/commissions/reservations', window.location.origin);
-      if (selectedDate) {
-        url.searchParams.append('date', selectedDate);
-      }
-      
-      const response = await fetch(url.toString());
+      const response = await fetch('/api/commissions/reservations');
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Error al obtener comisiones: ${response.status} ${errorText}`);
@@ -118,23 +103,6 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     setSelectedReservations(newSelection);
   };
 
-  // Función para cambiar al día actual
-  const goToToday = () => {
-    const now = new Date();
-    setSelectedDate(now.toISOString().split('T')[0]);
-  };
-  
-  // Función para formatear fecha para display
-  const formatDateForDisplay = (dateString: string): string => {
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('es-MX', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-  
   // Filtrar comisiones según el estado
   const pendingCommissions = commissionsData?.filter((comm: any) => !comm.commissionPaid) || [];
   const paidCommissions = commissionsData?.filter((comm: any) => comm.commissionPaid) || [];
@@ -194,46 +162,6 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               </Button>
             )}
           </div>
-          
-          {/* Filtro de fecha */}
-          <div className="flex items-center gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-gray-500" />
-              <Label htmlFor="date-filter" className="text-sm font-medium">
-                Fecha:
-              </Label>
-              <Input
-                id="date-filter"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-auto"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToToday}
-              className="flex items-center gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              Hoy
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-              Actualizar
-            </Button>
-            <div className="text-sm text-gray-600 ml-auto">
-              {formatDateForDisplay(selectedDate)}
-            </div>
-          </div>
-          
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pendientes">
               Pendientes ({pendingCommissions.length})
