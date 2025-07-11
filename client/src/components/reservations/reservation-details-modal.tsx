@@ -1479,16 +1479,7 @@ export default function ReservationDetailsModal({
                           Imprimir boleto 60mm
                         </Button>
 
-                        {/* Botón de compartir ticket */}
-                        <Button
-                          onClick={handleShareTicket}
-                          variant="outline"
-                          size="sm"
-                          className="border-blue-300 hover:bg-blue-50 text-blue-700"
-                        >
-                          <Share2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                          Compartir Ticket
-                        </Button>
+                       
                       </div>
                     </div>
                   </div>

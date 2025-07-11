@@ -17,8 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { formatPrice } from "@/lib/utils";
-import { Check, X, CalendarIcon, CreditCard, MapPin, Phone, User } from "lucide-react";
+import { formatPrice, generateReservationId } from "@/lib/utils";
+import { Check, X, CalendarIcon, CreditCard, MapPin, Phone, User, Printer } from "lucide-react";
 import { TabType } from "@/hooks/use-active-tab";
 
 // Función auxiliar para extraer solo el nombre de la ciudad de la dirección completa
@@ -509,6 +509,7 @@ interface RequestCardProps {
 
 function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestCardProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // Extraer datos de la solicitud desde el campo JSON
   const requestData = request.data || {};
@@ -556,6 +557,151 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
         return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Rechazada</Badge>;
       default:
         return <Badge>{request.status}</Badge>;
+    }
+  };
+
+  // Función para generar boleto 60mm
+  const downloadTicket60mm = async () => {
+    try {
+      toast({
+        title: "Generando boleto...",
+        description: "Generando boleto de 60mm, por favor espera...",
+      });
+
+      const { jsPDF } = await import('jspdf');
+      
+      // Configuración para ticket de 60mm
+      const ticketWidth = 60; // mm
+      const ticketHeight = 120; // mm ajustable según contenido
+      
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [ticketWidth, ticketHeight]
+      });
+
+      // Configurar fuente
+      doc.setFont('helvetica', 'normal');
+      let yPosition = 8;
+      const leftMargin = 3;
+      const rightMargin = 3;
+      const contentWidth = ticketWidth - leftMargin - rightMargin;
+
+      // Título
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('BOLETO DE VIAJE', ticketWidth / 2, yPosition, { align: 'center' });
+      yPosition += 6;
+
+      // Línea separadora
+      doc.setLineWidth(0.2);
+      doc.line(leftMargin, yPosition, ticketWidth - rightMargin, yPosition);
+      yPosition += 4;
+
+      // Información del boleto
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      
+      doc.text(`Solicitud: #${request.id}`, leftMargin, yPosition);
+      yPosition += 4;
+      
+      doc.text(`Fecha: ${format(new Date(request.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}`, leftMargin, yPosition);
+      yPosition += 4;
+
+      // Información del viaje
+      yPosition += 2;
+      doc.setFont('helvetica', 'bold');
+      doc.text('RUTA:', leftMargin, yPosition);
+      yPosition += 3;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      
+      if (tripInfo) {
+        const originText = doc.splitTextToSize(`De: ${tripInfo.origin}`, contentWidth);
+        doc.text(originText, leftMargin, yPosition);
+        yPosition += originText.length * 2.5;
+        
+        const destinationText = doc.splitTextToSize(`A: ${tripInfo.destination}`, contentWidth);
+        doc.text(destinationText, leftMargin, yPosition);
+        yPosition += destinationText.length * 2.5;
+        
+        doc.text(`Fecha: ${tripInfo.departureDate}`, leftMargin, yPosition);
+        yPosition += 3;
+        doc.text(`Hora: ${tripInfo.departureTime}`, leftMargin, yPosition);
+        yPosition += 3;
+      }
+
+      // Información de pasajeros
+      yPosition += 2;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PASAJEROS:', leftMargin, yPosition);
+      yPosition += 3;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      
+      if (passengerNames.length > 0) {
+        passengerNames.forEach(name => {
+          doc.text(`• ${name}`, leftMargin, yPosition);
+          yPosition += 3;
+        });
+      }
+
+      // Información de pago
+      yPosition += 2;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PAGO:', leftMargin, yPosition);
+      yPosition += 3;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.text(`Total: ${formatPrice(totalAmount)}`, leftMargin, yPosition);
+      yPosition += 3;
+      
+      if (advanceAmount > 0) {
+        doc.text(`Anticipo: ${formatPrice(advanceAmount)}`, leftMargin, yPosition);
+        yPosition += 3;
+        doc.text(`Restante: ${formatPrice(totalAmount - advanceAmount)}`, leftMargin, yPosition);
+        yPosition += 3;
+      }
+
+      // Contacto
+      yPosition += 2;
+      doc.setFontSize(7);
+      doc.text(`Tel: ${phone}`, leftMargin, yPosition);
+      yPosition += 3;
+      
+      const emailText = doc.splitTextToSize(`Email: ${email}`, contentWidth);
+      doc.text(emailText, leftMargin, yPosition);
+      yPosition += emailText.length * 2.5;
+
+      // Línea final
+      yPosition += 2;
+      doc.line(leftMargin, yPosition, ticketWidth - rightMargin, yPosition);
+      yPosition += 3;
+      
+      doc.setFontSize(6);
+      doc.text('Gracias por su preferencia', ticketWidth / 2, yPosition, { align: 'center' });
+
+      // Descargar el PDF
+      const fileName = `boleto_60mm_solicitud_${request.id}.pdf`;
+      doc.save(fileName);
+      
+      toast({
+        title: "Boleto generado",
+        description: `El boleto de 60mm ha sido descargado: ${fileName}`,
+      });
+      
+    } catch (error) {
+      console.error('Error al generar boleto 60mm:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el boleto. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -699,6 +845,23 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
             {request.reviewNotes && (
               <p className="text-muted-foreground">{request.reviewNotes}</p>
             )}
+          </div>
+        )}
+        
+        {/* Botón de descarga de boleto 60mm para comisionistas en solicitudes aprobadas */}
+        {isProcessed && 
+         request.status === "aprobada" && 
+         user?.role === "comisionista" && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <Button 
+              onClick={downloadTicket60mm}
+              variant="outline"
+              size="sm"
+              className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Descargar Boleto 60mm
+            </Button>
           </div>
         )}
       </CardContent>
