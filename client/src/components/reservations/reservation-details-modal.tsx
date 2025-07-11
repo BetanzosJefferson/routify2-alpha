@@ -1438,7 +1438,10 @@ export default function ReservationDetailsModal({
 
                         {/* Botón de descarga actualizado para usar handleDownloadTicket */}
                         <Button
-                          onClick={handleDownloadTicket}
+                          onClick={() => {
+                            console.log("🔥 CLICK EN BOTÓN DESCARGAR BOLETO");
+                            handleDownloadTicket();
+                          }}
                           variant="default"
                           size="sm"
                           className="bg-blue-600 hover:bg-blue-700 text-white"
