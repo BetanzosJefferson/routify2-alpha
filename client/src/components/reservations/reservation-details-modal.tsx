@@ -226,11 +226,9 @@ export default function ReservationDetailsModal({
     onOpenChange(false);
   };
 
-  // --- Función para descargar el ticket como PDF con la nueva estructura ---
-  // Función optimizada para descargar el ticket como PDF
-  // Función optimizada para descargar el ticket como PDF
-  const handleDownloadTicket = async () => {
-    console.log("🔥 EJECUTANDO handleDownloadTicket - Esta es la función correcta");
+  // Nueva función para descargar el ticket PDF
+  const downloadTicketPDF = async () => {
+    console.log("🔥 EJECUTANDO downloadTicketPDF - FUNCIÓN NUEVA");
     
     if (!reservation) {
       toast({
@@ -1436,11 +1434,11 @@ export default function ReservationDetailsModal({
                       <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
                        
 
-                        {/* Botón de descarga actualizado para usar handleDownloadTicket */}
+                        {/* Botón de descarga actualizado para usar downloadTicketPDF */}
                         <Button
                           onClick={() => {
-                            console.log("🔥 CLICK EN BOTÓN DESCARGAR BOLETO");
-                            handleDownloadTicket();
+                            console.log("🔥 CLICK EN BOTÓN DESCARGAR BOLETO - NUEVA FUNCIÓN");
+                            downloadTicketPDF();
                           }}
                           variant="default"
                           size="sm"
