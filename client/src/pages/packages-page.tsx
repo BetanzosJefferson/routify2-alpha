@@ -34,8 +34,14 @@ export default function PackagesPage() {
   ]) : false;
   
   // Manejar click en viaje para seleccionarlo
-  const handleTripSelect = (tripId: number) => {
-    setSelectedTripId(tripId);
+  const handleTripSelect = (trip: any) => {
+    // Puede recibir tanto un número como un objeto trip completo
+    if (typeof trip === 'number') {
+      setSelectedTripId(trip);
+    } else {
+      // Es un objeto trip completo, pasarlo directamente al formulario
+      setSelectedTripId(trip);
+    }
     setView("form");
   };
   

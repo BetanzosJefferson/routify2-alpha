@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
-import { formatDateForInput, formatDateForApiQuery } from "@/lib/utils";
+import { formatDateForInput, formatDateForApiQuery, formatDate } from "@/lib/utils";
 import { TripWithRouteInfo } from "@shared/schema";
 import { LocationAdapter } from "@/components/ui/location-adapter";
 import { LocationOption } from "@/components/ui/location-selector";
@@ -23,7 +24,7 @@ interface SearchParams {
 }
 
 interface PackageTripSelectionProps {
-  onTripSelect: (trip: TripWithRouteInfo) => void;
+  onTripSelect: (trip: TripWithRouteInfo | number) => void;
   onBack: () => void;
 }
 
@@ -43,6 +44,10 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState(today);
+  
+  // Modal state for segment selection
+  const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
+  const [showSegmentModal, setShowSegmentModal] = useState(false);
 
   // Query principal usando la misma lógica que trip-list
   const { data: trips = [], isLoading, error, refetch } = useQuery<TripWithRouteInfo[]>({
@@ -139,7 +144,39 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   // Manejar selección de viaje
   const handleTripSelect = (trip: TripWithRouteInfo) => {
     console.log(`[PackageTripSelection] Trip selected:`, trip);
-    onTripSelect(trip);
+    
+    // Si el viaje tiene tripData con múltiples segmentos, mostrar modal de selección
+    if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1) {
+      console.log(`[PackageTripSelection] Trip has ${trip.tripData.length} segments, showing segment selection modal`);
+      setSelectedTrip(trip);
+      setShowSegmentModal(true);
+    } else {
+      // Es un viaje simple o solo tiene un segmento
+      onTripSelect(trip);
+    }
+  };
+
+  // Manejar selección de segmento específico
+  const handleSegmentSelect = (segmentIndex: number) => {
+    if (!selectedTrip) return;
+    
+    const segment = selectedTrip.tripData[segmentIndex];
+    const selectedSegment = {
+      ...selectedTrip,
+      id: `${selectedTrip.id}_${segmentIndex}`,
+      tripData: [segment],
+      origin: segment.origin,
+      destination: segment.destination,
+      departureDate: segment.departureDate,
+      departureTime: segment.departureTime,
+      arrivalTime: segment.arrivalTime,
+      availableSeats: segment.availableSeats
+    };
+    
+    console.log(`[PackageTripSelection] Segment ${segmentIndex} selected:`, selectedSegment);
+    setShowSegmentModal(false);
+    setSelectedTrip(null);
+    onTripSelect(selectedSegment);
   };
 
   return (
@@ -314,7 +351,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
-                              <span>{new Date(trip.departureDate).toLocaleDateString('es-MX')}</span>
+                              <span>{formatDate(trip.departureDate)}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
@@ -350,6 +387,70 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
           )}
         </div>
       )}
+
+      {/* Modal de selección de segmentos */}
+      <Dialog open={showSegmentModal} onOpenChange={setShowSegmentModal}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Seleccionar Segmento del Viaje</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Este viaje tiene múltiples segmentos. Selecciona el segmento específico para tu paquetería:
+            </p>
+            
+            {selectedTrip && selectedTrip.tripData && (
+              <div className="grid gap-3">
+                {selectedTrip.tripData.map((segment: any, index: number) => (
+                  <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleSegmentSelect(index)}>
+                    <CardContent className="pt-4">
+                      <div className="flex justify-between items-center">
+                        <div className="space-y-2 flex-1">
+                          {/* Ruta del segmento */}
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-green-600" />
+                            <span className="font-medium">{segment.origin}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <MapPin className="h-4 w-4 text-red-600" />
+                            <span className="font-medium">{segment.destination}</span>
+                          </div>
+
+                          {/* Fecha y horarios */}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDate(segment.departureDate)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{segment.departureTime} - {segment.arrivalTime}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              <span>{segment.availableSeats} asientos disponibles</span>
+                            </div>
+                          </div>
+
+                          {/* Precio del segmento */}
+                          {segment.price && (
+                            <div className="text-lg font-semibold text-primary">
+                              ${segment.price} MXN
+                            </div>
+                          )}
+                        </div>
+
+                        <Button variant="outline" size="sm">
+                          Seleccionar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
