@@ -2854,14 +2854,37 @@ export class DatabaseStorage implements IStorage {
         `${p.firstName || ''} ${p.lastName || ''}`.trim()
       ).join(', ') || 'Sin especificar';
       
+      // 6. Determinar a quién asignar la transacción (comisionista con caja vs aprobador)
+      let assignedUserId = approvedBy; // Por defecto al aprobador
+      let assignmentReason = "Asignada al aprobador";
+      
+      // Si hay un comisionista identificado, verificar si tiene caja habilitada
+      const commissionerUserId = requestData.created_by;
+      if (commissionerUserId) {
+        try {
+          // Obtener información del comisionista
+          const commissioner = await this.getUserById(commissionerUserId);
+          if (commissioner && commissioner.cashBoxEnabled === true) {
+            assignedUserId = commissionerUserId;
+            assignmentReason = "Asignada al comisionista (caja habilitada)";
+            console.log(`DB Storage: [createTransactionFromReservation] 💰 Transacción asignada al comisionista ${commissionerUserId} (caja habilitada)`);
+          } else {
+            console.log(`DB Storage: [createTransactionFromReservation] 👤 Transacción asignada al aprobador ${approvedBy} (comisionista sin caja)`);
+          }
+        } catch (userError) {
+          console.error(`DB Storage: [createTransactionFromReservation] Error al obtener info del comisionista ${commissionerUserId}:`, userError);
+          // Mantener asignación al aprobador en caso de error
+        }
+      }
+      
       const transactionData: schema.InsertTransaccion = {
         reservationId: reservationId,
         companyId: requestData.company_id,
-        user_id: approvedBy, // CRÍTICO: Asociar al aprobador, no al comisionista
+        user_id: assignedUserId, // NUEVA LÓGICA: Asignar basado en caja del comisionista
         amount: transactionAmount,
         type: transactionType,
         paymentMethod: paymentMethod,
-        notes: `Transacción creada automáticamente por aprobación de solicitud de comisionista`,
+        notes: `Transacción creada automáticamente por aprobación de solicitud de comisionista - ${assignmentReason}`,
         details: {
           type: "reservation",
           details: {
@@ -2897,7 +2920,8 @@ export class DatabaseStorage implements IStorage {
       console.log(`  - Tipo: ${transactionType}`);
       console.log(`  - Monto: ${transactionAmount}`);
       console.log(`  - Método: ${paymentMethod}`);
-      console.log(`  - Asociada a aprobador: ${approvedBy}`);
+      console.log(`  - Asignada a usuario: ${assignedUserId} (${assignmentReason})`);
+      console.log(`  - Aprobador: ${approvedBy}`);
       console.log(`  - Reservación: ${reservationId}`);
       
     } catch (error) {

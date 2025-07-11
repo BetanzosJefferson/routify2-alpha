@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - IMPLEMENTED: Individual user-based commission configuration with intelligent transaction assignment:
+  - **DATABASE SCHEMA**: Added `commissionEnabled` and `cashBoxEnabled` fields to users table
+  - **INDIVIDUAL CONFIG**: Each user can now have custom commission settings instead of role-based only
+  - **SMART ASSIGNMENT**: When a user with `cashBoxEnabled: true` creates a reservation request, and it gets approved, the transaction is automatically assigned to them instead of the approver
+  - **FALLBACK LOGIC**: If the commissioner doesn't have cash box enabled, transaction assignment follows the original logic (assigned to approver)
+  - **ENHANCED UI**: User management interface now includes commission configuration with toggles for commission activation and individual cash box
+  - **VALIDATION**: Added proper form validation for commission rates (0-100%) and boolean toggles
+  - **BACKEND LOGIC**: Modified `createTransactionFromReservation` method to intelligently determine transaction assignment based on individual user settings
+  - **COMPREHENSIVE LOGGING**: Added detailed logging to track transaction assignment decisions and reasoning
+  - **USER EXPERIENCE**: Commission agents can now have personalized cash management without affecting other users
+
 - **July 10, 2025** - ENHANCED: Commission agent role permissions expanded:
   - **CASH REGISTER ACCESS**: Added "cash-register" permission to COMMISSIONER role
   - **CASH BOX ACCESS**: Added "cash-box" permission to COMMISSIONER role  
