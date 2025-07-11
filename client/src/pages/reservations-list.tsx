@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
-import { Search, Calendar, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Truck, UserCheck, Filter } from "lucide-react";
+import { Search, Calendar, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Truck, UserCheck, Filter, MapPin, Clock } from "lucide-react";
 
 import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
