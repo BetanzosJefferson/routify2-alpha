@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatPrice, generateReservationId } from "@/lib/utils";
+import QRCode from "qrcode";
 import { Check, X, CalendarIcon, CreditCard, MapPin, Phone, User, Printer } from "lucide-react";
 import { TabType } from "@/hooks/use-active-tab";
 
@@ -560,139 +561,237 @@ function RequestCard({ request, isProcessed, onReview, isHighlighted }: RequestC
     }
   };
 
-  // Función para generar boleto 60mm
+  // Función para generar boleto 60mm (formato térmico como paquetes)
   const downloadTicket60mm = async () => {
     try {
       toast({
-        title: "Generando boleto...",
+        title: "Generando ticket térmico...",
         description: "Generando boleto de 60mm, por favor espera...",
       });
 
       const { jsPDF } = await import('jspdf');
       
-      // Configuración para ticket de 60mm
-      const ticketWidth = 60; // mm
-      const ticketHeight = 120; // mm ajustable según contenido
+      // Generar código QR para la reservación
+      let qrCodeDataUrl;
+      try {
+        const verificationUrl = `${window.location.origin}/reservation-request/${request.id}`;
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 100 });
+      } catch (error) {
+        console.error("Error al generar código QR:", error);
+        qrCodeDataUrl = null;
+      }
       
+      // Crear documento PDF con dimensiones de ticket térmico (58mm x 160mm)
       const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [ticketWidth, ticketHeight]
+        orientation: "portrait",
+        unit: "mm",
+        format: [58, 160], // Mismo formato que paquetes
       });
 
-      // Configurar fuente
-      doc.setFont('helvetica', 'normal');
-      let yPosition = 8;
-      const leftMargin = 3;
-      const rightMargin = 3;
-      const contentWidth = ticketWidth - leftMargin - rightMargin;
-
-      // Título
+      // Configuración de fuentes (igual que paquetes)
+      doc.setFont("courier", "normal");
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BOLETO DE VIAJE', ticketWidth / 2, yPosition, { align: 'center' });
-      yPosition += 6;
 
-      // Línea separadora
-      doc.setLineWidth(0.2);
-      doc.line(leftMargin, yPosition, ticketWidth - rightMargin, yPosition);
-      yPosition += 4;
+      // Margen superior
+      let y = 10;
 
-      // Información del boleto
+      // Encabezado
+      doc.setFontSize(12);
+      doc.setFont("courier", "bold");
+      const companyName = user?.company || "TransRoute";
+      const companyNameWidth = doc.getStringUnitWidth(companyName) * 12 / doc.internal.scaleFactor;
+      const companyNameX = (58 - companyNameWidth) / 2;
+      doc.text(companyName, companyNameX, y);
+      
+      y += 5;
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont("courier", "normal");
+      doc.text("Boleto de reservación", 29, y, { align: "center" });
       
-      doc.text(`Solicitud: #${request.id}`, leftMargin, yPosition);
-      yPosition += 4;
+      // Línea separadora
+      y += 3;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(5, y, 53, y);
       
-      doc.text(`Fecha: ${format(new Date(request.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}`, leftMargin, yPosition);
-      yPosition += 4;
-
+      // ID de la solicitud
+      y += 5;
+      doc.setFontSize(10);
+      doc.setFont("courier", "bold");
+      doc.text(`SOLICITUD #${request.id}`, 29, y, { align: "center" });
+      
+      y += 4;
+      doc.setFontSize(8);
+      doc.text(format(new Date(request.createdAt), "dd/MM/yyyy HH:mm", { locale: es }), 29, y, { align: "center" });
+      
       // Información del viaje
-      yPosition += 2;
-      doc.setFont('helvetica', 'bold');
-      doc.text('RUTA:', leftMargin, yPosition);
-      yPosition += 3;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      
       if (tripInfo) {
-        const originText = doc.splitTextToSize(`De: ${tripInfo.origin}`, contentWidth);
-        doc.text(originText, leftMargin, yPosition);
-        yPosition += originText.length * 2.5;
+        y += 6;
+        doc.setFontSize(9);
+        doc.setFont("courier", "bold");
+        doc.text("Ruta", 5, y);
         
-        const destinationText = doc.splitTextToSize(`A: ${tripInfo.destination}`, contentWidth);
-        doc.text(destinationText, leftMargin, yPosition);
-        yPosition += destinationText.length * 2.5;
+        y += 4;
+        doc.setFontSize(8);
+        doc.setFont("courier", "normal");
         
-        doc.text(`Fecha: ${tripInfo.departureDate}`, leftMargin, yPosition);
-        yPosition += 3;
-        doc.text(`Hora: ${tripInfo.departureTime}`, leftMargin, yPosition);
-        yPosition += 3;
+        // Origen con ajuste de texto
+        const origen = tripInfo.origin || "";
+        const origenCompleto = `Origen: ${origen}`;
+        const maxWidthOrigen = 48; // Ancho máximo en mm
+        
+        if (doc.getStringUnitWidth(origenCompleto) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+          doc.text("Origen:", 5, y);
+          y += 3;
+          const words = origen.split(' ');
+          let line = '';
+          for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+              doc.text(line, 5, y);
+              line = words[i] + ' ';
+              y += 3;
+            } else {
+              line = testLine;
+            }
+          }
+          doc.text(line, 5, y);
+          y += 4;
+        } else {
+          doc.text(origenCompleto, 5, y);
+          y += 4;
+        }
+        
+        // Destino con ajuste de texto
+        const destino = tripInfo.destination || "";
+        const destinoCompleto = `Destino: ${destino}`;
+        
+        if (doc.getStringUnitWidth(destinoCompleto) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+          doc.text("Destino:", 5, y);
+          y += 3;
+          const words = destino.split(' ');
+          let line = '';
+          for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + ' ';
+            if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidthOrigen) {
+              doc.text(line, 5, y);
+              line = words[i] + ' ';
+              y += 3;
+            } else {
+              line = testLine;
+            }
+          }
+          doc.text(line, 5, y);
+          y += 4;
+        } else {
+          doc.text(destinoCompleto, 5, y);
+          y += 4;
+        }
+        
+        // Fecha y hora del viaje
+        y += 4;
+        doc.text(`Fecha: ${tripInfo.departureDate}`, 5, y);
+        y += 4;
+        doc.text(`Hora: ${tripInfo.departureTime}`, 5, y);
       }
 
       // Información de pasajeros
-      yPosition += 2;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PASAJEROS:', leftMargin, yPosition);
-      yPosition += 3;
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("courier", "bold");
+      doc.text("Pasajeros", 5, y);
       
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
       
       if (passengerNames.length > 0) {
         passengerNames.forEach(name => {
-          doc.text(`• ${name}`, leftMargin, yPosition);
-          yPosition += 3;
+          doc.text(`• ${name}`, 5, y);
+          y += 3;
         });
+      } else {
+        doc.text("No especificado", 5, y);
+        y += 3;
       }
 
       // Información de pago
-      yPosition += 2;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.text('PAGO:', leftMargin, yPosition);
-      yPosition += 3;
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("courier", "bold");
+      doc.text("Pago", 5, y);
       
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.text(`Total: ${formatPrice(totalAmount)}`, leftMargin, yPosition);
-      yPosition += 3;
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
+      doc.text(`Total: ${formatPrice(totalAmount)}`, 5, y);
+      y += 3;
       
       if (advanceAmount > 0) {
-        doc.text(`Anticipo: ${formatPrice(advanceAmount)}`, leftMargin, yPosition);
-        yPosition += 3;
-        doc.text(`Restante: ${formatPrice(totalAmount - advanceAmount)}`, leftMargin, yPosition);
-        yPosition += 3;
+        doc.text(`Anticipo: ${formatPrice(advanceAmount)}`, 5, y);
+        y += 3;
+        doc.text(`Restante: ${formatPrice(totalAmount - advanceAmount)}`, 5, y);
+        y += 3;
+        
+        if (advancePaymentMethod) {
+          doc.text(`Método anticipo: ${advancePaymentMethod}`, 5, y);
+          y += 3;
+        }
+        
+        if (paymentMethod) {
+          doc.text(`Método abordo: ${paymentMethod}`, 5, y);
+          y += 3;
+        }
+      } else {
+        if (paymentMethod) {
+          doc.text(`Método: ${paymentMethod}`, 5, y);
+          y += 3;
+        }
       }
 
       // Contacto
-      yPosition += 2;
-      doc.setFontSize(7);
-      doc.text(`Tel: ${phone}`, leftMargin, yPosition);
-      yPosition += 3;
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("courier", "bold");
+      doc.text("Contacto", 5, y);
       
-      const emailText = doc.splitTextToSize(`Email: ${email}`, contentWidth);
-      doc.text(emailText, leftMargin, yPosition);
-      yPosition += emailText.length * 2.5;
+      y += 4;
+      doc.setFontSize(8);
+      doc.setFont("courier", "normal");
+      doc.text(`Tel: ${phone}`, 5, y);
+      y += 3;
+      
+      const emailText = doc.splitTextToSize(`Email: ${email}`, 48);
+      doc.text(emailText, 5, y);
+      y += emailText.length * 3;
 
-      // Línea final
-      yPosition += 2;
-      doc.line(leftMargin, yPosition, ticketWidth - rightMargin, yPosition);
-      yPosition += 3;
+      // Código QR
+      if (qrCodeDataUrl) {
+        y += 8;
+        const qrX = (58 - 25) / 2; // Centrar el QR (25mm de ancho)
+        try {
+          doc.addImage(qrCodeDataUrl, 'PNG', qrX, y, 25, 25);
+          y += 27; // Espacio para el QR + margen
+        } catch (error) {
+          console.error("Error al añadir QR al PDF:", error);
+          y += 5;
+        }
+      }
+
+      // Pie de página
+      y += 3;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(5, y, 53, y);
       
+      y += 4;
       doc.setFontSize(6);
-      doc.text('Gracias por su preferencia', ticketWidth / 2, yPosition, { align: 'center' });
+      doc.text("Gracias por su preferencia", 29, y, { align: "center" });
 
-      // Descargar el PDF
-      const fileName = `boleto_60mm_solicitud_${request.id}.pdf`;
-      doc.save(fileName);
+      // Abrir en nueva ventana para imprimir (igual que paquetes)
+      window.open(URL.createObjectURL(doc.output('blob')));
       
       toast({
         title: "Boleto generado",
-        description: `El boleto de 60mm ha sido descargado: ${fileName}`,
+        description: `El boleto térmico de 60mm ha sido generado para la solicitud #${request.id}`,
       });
       
     } catch (error) {
