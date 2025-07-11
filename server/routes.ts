@@ -4319,12 +4319,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // OPTIMIZACIÓN: Filtrar por fecha para mejorar rendimiento
       if (filterDate) {
+        console.log(`[GET /commissions/reservations] Filtrando ${comissionerReservations.length} reservaciones por fecha ${filterDate}`);
+        
         comissionerReservations = comissionerReservations.filter(reservation => {
-          if (!reservation.createdAt) return false;
+          // Debug: mostrar datos de la reservación
+          console.log(`[GET /commissions/reservations] Reservación ${reservation.id}:`, {
+            createdAt: reservation.createdAt,
+            tripDepartureDate: reservation.trip?.departureDate,
+            tripDetails: reservation.tripDetails
+          });
           
-          // Convertir createdAt a formato YYYY-MM-DD para comparación
-          const reservationDate = new Date(reservation.createdAt).toISOString().split('T')[0];
-          return reservationDate === filterDate;
+          // Priorizar fecha del viaje sobre fecha de creación
+          let reservationDate = null;
+          
+          if (reservation.trip && reservation.trip.departureDate) {
+            reservationDate = reservation.trip.departureDate;
+          } else if (reservation.createdAt) {
+            reservationDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+          }
+          
+          if (!reservationDate) {
+            console.log(`[GET /commissions/reservations] Reservación ${reservation.id} sin fecha válida`);
+            return false;
+          }
+          
+          // Normalizar formato de fecha (asegurar YYYY-MM-DD)
+          let normalizedDate = reservationDate;
+          if (reservationDate.length !== 10 || !reservationDate.includes('-')) {
+            normalizedDate = new Date(reservationDate).toISOString().split('T')[0];
+          }
+          
+          const matches = normalizedDate === filterDate;
+          console.log(`[GET /commissions/reservations] Reservación ${reservation.id}: ${normalizedDate} === ${filterDate} = ${matches}`);
+          return matches;
         });
         
         console.log(`[GET /commissions/reservations] Después del filtro de fecha ${filterDate}: ${comissionerReservations.length} reservaciones`);
