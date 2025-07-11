@@ -787,10 +787,17 @@ export class DatabaseStorage implements IStorage {
           // 🔥 APLICAR FILTRO DE FECHA EN MODO OPTIMIZADO
           let dateMatch = true;
           if (params.date) {
-            dateMatch = firstSegment.departureDate === params.date;
+            // Comparar fechas considerando posibles desfases de timezone
+            const segmentDate = new Date(firstSegment.departureDate + 'T12:00:00');
+            const searchDate = new Date(params.date + 'T12:00:00');
+            dateMatch = segmentDate.toDateString() === searchDate.toDateString();
             console.log(`[searchTrips] 🔥 Filtro de fecha optimizado: ${firstSegment.departureDate} === ${params.date} => ${dateMatch}`);
           } else if (params.dateRange && params.dateRange.length > 0) {
-            dateMatch = params.dateRange.includes(firstSegment.departureDate);
+            dateMatch = params.dateRange.some(date => {
+              const segmentDate = new Date(firstSegment.departureDate + 'T12:00:00');
+              const searchDate = new Date(date + 'T12:00:00');
+              return segmentDate.toDateString() === searchDate.toDateString();
+            });
             console.log(`[searchTrips] 🔥 Filtro de rango de fechas optimizado: ${firstSegment.departureDate} en [${params.dateRange.join(', ')}] => ${dateMatch}`);
           }
           
@@ -866,10 +873,17 @@ export class DatabaseStorage implements IStorage {
         // NUEVO: Aplicar filtro de fecha por segmento individual
         let dateMatch = true;
         if (params.date) {
-          dateMatch = segment.departureDate === params.date;
+          // Comparar fechas considerando posibles desfases de timezone
+          const segmentDate = new Date(segment.departureDate + 'T12:00:00');
+          const searchDate = new Date(params.date + 'T12:00:00');
+          dateMatch = segmentDate.toDateString() === searchDate.toDateString();
           console.log(`[searchTrips] Filtro de fecha - Segmento ${segmentIndex}: ${segment.departureDate} === ${params.date} => ${dateMatch}`);
         } else if (params.dateRange && params.dateRange.length > 0) {
-          dateMatch = params.dateRange.includes(segment.departureDate);
+          dateMatch = params.dateRange.some(date => {
+            const segmentDate = new Date(segment.departureDate + 'T12:00:00');
+            const searchDate = new Date(date + 'T12:00:00');
+            return segmentDate.toDateString() === searchDate.toDateString();
+          });
           console.log(`[searchTrips] Filtro de rango de fechas - Segmento ${segmentIndex}: ${segment.departureDate} en [${params.dateRange.join(', ')}] => ${dateMatch}`);
         }
         
