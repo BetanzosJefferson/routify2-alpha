@@ -873,23 +873,30 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
+        // Calcular precio original y final
+        let originalPrice = totalPrice;
+        let finalPrice = totalPrice;
+        
+        // Si hay descuento, calcular correctamente
+        if (couponVerified && couponDiscount > 0) {
+          originalPrice = totalPrice; // El totalPrice ya es el precio original
+          finalPrice = totalPrice - couponDiscount; // Aplicar descuento
+        }
+
         // Precio original
         doc.setTextColor(...colors.muted);
         doc.text('Precio original:', paymentX, paymentY);
         doc.setTextColor(...colors.text);
-        doc.text(formatPrice(totalPrice), paymentX + 35, paymentY);
+        doc.text(formatPrice(originalPrice), paymentX + 35, paymentY);
         paymentY += 8;
 
         // Información del cupón y descuento (si existe)
-        let finalPrice = totalPrice;
         if (couponVerified && couponDiscount > 0) {
           doc.setTextColor(...colors.muted);
           doc.text('Descuento:', paymentX, paymentY);
           doc.setTextColor(220, 53, 69); // Color rojo para descuento
           doc.text(`-${formatPrice(couponDiscount)}`, paymentX + 35, paymentY);
           paymentY += 8;
-
-          finalPrice = totalPrice - couponDiscount;
         }
 
         // Total final

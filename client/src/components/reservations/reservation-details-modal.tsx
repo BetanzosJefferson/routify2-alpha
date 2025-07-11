@@ -441,23 +441,30 @@ export default function ReservationDetailsModal({
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
+        // Calcular precio original y final
+        let originalPrice = reservation.totalAmount;
+        let finalPrice = reservation.totalAmount;
+        
+        // Si hay descuento, el precio original es el total + descuento
+        if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
+          originalPrice = reservation.totalAmount + reservation.couponDiscount;
+          finalPrice = reservation.totalAmount; // El totalAmount ya tiene el descuento aplicado
+        }
+
         // Precio original
         doc.setTextColor(...colors.muted);
         doc.text('Precio original:', paymentX, paymentY);
         doc.setTextColor(...colors.text);
-        doc.text(formatPrice(reservation.totalAmount), paymentX + 35, paymentY);
+        doc.text(formatPrice(originalPrice), paymentX + 35, paymentY);
         paymentY += 8;
 
         // Información del cupón y descuento (si existe)
-        let finalPrice = reservation.totalAmount;
         if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
           doc.setTextColor(...colors.muted);
           doc.text('Descuento:', paymentX, paymentY);
           doc.setTextColor(220, 53, 69); // Color rojo para descuento
           doc.text(`-${formatPrice(reservation.couponDiscount)}`, paymentX + 35, paymentY);
           paymentY += 8;
-
-          finalPrice = reservation.totalAmount - reservation.couponDiscount;
         }
 
         // Total final
