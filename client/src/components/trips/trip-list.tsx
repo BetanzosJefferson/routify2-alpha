@@ -240,17 +240,17 @@ export function TripList() {
     };
   }, [queryClient]);
 
-  // Efecto para actualización automática cada minuto (filtro de tiempo)
-  useEffect(() => {
-    const timeFilterInterval = setInterval(() => {
-      // Solo actualizar si no hay búsqueda específica
-      if (!hasSearched || (!origin && !destination)) {
-        setLastUpdate(new Date());
-      }
-    }, 60000); // 60 segundos
-    
-    return () => clearInterval(timeFilterInterval);
-  }, [hasSearched, origin, destination]);
+  // Efecto para actualización automática cada minuto (filtro de tiempo) - DESHABILITADO
+  // useEffect(() => {
+  //   const timeFilterInterval = setInterval(() => {
+  //     // Solo actualizar si no hay búsqueda específica
+  //     if (!hasSearched || (!origin && !destination)) {
+  //       setLastUpdate(new Date());
+  //     }
+  //   }, 60000); // 60 segundos
+  //   
+  //   return () => clearInterval(timeFilterInterval);
+  // }, [hasSearched, origin, destination]);
 
   // Query para traer viajes usando los parámetros de búsqueda
   const { data: trips, isLoading, isError } = useQuery<TripWithRouteInfo[]>({
@@ -319,10 +319,10 @@ export function TripList() {
       filtered = filtered.filter(trip => ((trip as any).availableSeats || 0) >= parseInt(seats));
     }
     
-    // Aplicar filtro de tiempo solo si no se está realizando una búsqueda específica
-    if (!hasSearched || (!origin && !destination)) {
-      filtered = filterTripsByTime(filtered);
-    }
+    // Filtro de tiempo deshabilitado - mostrar todos los horarios
+    // if (!hasSearched || (!origin && !destination)) {
+    //   filtered = filterTripsByTime(filtered);
+    // }
     
     return filtered;
   }, [trips, seats, hasSearched, origin, destination]);
@@ -577,24 +577,7 @@ export function TripList() {
         </div>
       </div>
 
-      {/* Banner informativo sobre filtro de tiempo */}
-      {(!hasSearched || (!origin && !destination)) && (
-        <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4">
-          <div className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <h3 className="text-sm font-medium text-blue-800">
-                Filtro de tiempo activo
-              </h3>
-              <p className="text-sm text-blue-700">
-                Solo se muestran viajes que aún no han partido. Los viajes que ya iniciaron no aparecen en la lista.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {isLoading ? (
         <div className="flex justify-center items-center p-8">
