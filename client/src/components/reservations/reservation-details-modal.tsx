@@ -230,6 +230,8 @@ export default function ReservationDetailsModal({
   // Función optimizada para descargar el ticket como PDF
   // Función optimizada para descargar el ticket como PDF
   const handleDownloadTicket = async () => {
+    console.log("🔥 EJECUTANDO handleDownloadTicket - Esta es la función correcta");
+    
     if (!reservation) {
       toast({
         title: "Error",
