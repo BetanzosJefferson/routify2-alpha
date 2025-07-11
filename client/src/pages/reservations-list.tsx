@@ -15,7 +15,17 @@ function ReservationsListContent() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(formatDateForInput(new Date()));
+  // Obtener la fecha actual en zona horaria de México
+  const getCurrentDate = () => {
+    const now = new Date();
+    const mexicoDate = new Date(now.toLocaleString("en-US", {timeZone: "America/Mexico_City"}));
+    console.log(`[Reservaciones] Fecha actual sistema: ${now.toISOString()}`);
+    console.log(`[Reservaciones] Fecha México: ${mexicoDate.toISOString()}`);
+    console.log(`[Reservaciones] Fecha formateada: ${formatDateForInput(mexicoDate)}`);
+    return mexicoDate;
+  };
+
+  const [selectedDate, setSelectedDate] = useState(formatDateForInput(getCurrentDate()));
   const [searchDate, setSearchDate] = useState(""); // Sin filtro de fecha por defecto para incluir viajes que cruzan medianoche
   const [selectedTrip, setSelectedTrip] = useState<{
     recordId: string;
