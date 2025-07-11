@@ -2288,9 +2288,19 @@ export class DatabaseStorage implements IStorage {
           throw new Error('Datos de viaje inválidos en la solicitud');
         }
         
-        const recordId = requestData.trip_details.recordId;
+        // Extraer recordId numérico del formato "214_9" o "214"
+        let recordId: number;
+        const rawRecordId = requestData.trip_details.recordId;
+        if (typeof rawRecordId === 'string' && rawRecordId.includes('_')) {
+          recordId = parseInt(rawRecordId.split('_')[0]);
+        } else {
+          recordId = typeof rawRecordId === 'string' ? parseInt(rawRecordId) : rawRecordId;
+        }
+        
         const tripId = requestData.trip_details.tripId;
         const seatsRequested = requestData.trip_details.seats || 1;
+        
+        console.log(`DB Storage: Extrayendo recordId ${recordId} de ${rawRecordId}, tripId: ${tripId}, asientos: ${seatsRequested}`);
         
         // 4. Validar disponibilidad de asientos
         const hasAvailability = await this.validateSeatAvailability(recordId, tripId, seatsRequested);
