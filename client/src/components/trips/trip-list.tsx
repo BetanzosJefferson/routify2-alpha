@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2Icon, MapPinIcon, CalendarIcon } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2Icon, MapPinIcon, CalendarIcon, RefreshCw } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { format } from "date-fns";
@@ -84,6 +84,63 @@ function calculateDuration(departureTime: string, arrivalTime: string): string {
   }
 }
 
+// Función para filtrar viajes cercanos a la hora actual (60 minutos)
+function filterTripsByTime(trips: TripWithRouteInfo[]): TripWithRouteInfo[] {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTimeMinutes = currentHour * 60 + currentMinute;
+  
+  return trips.filter(trip => {
+    const departureTime = (trip as any).departureTime;
+    if (!departureTime) return false;
+    
+    // Convertir hora de salida a minutos
+    const cleanTime = departureTime.replace(/\s*\+\d+d$/, ''); // Remover indicadores de día
+    const [hourMin, period] = cleanTime.split(' ');
+    let [hours, minutes] = hourMin.split(':').map(Number);
+    
+    // Convertir a formato 24 horas
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    const departureMinutes = hours * 60 + minutes;
+    
+    // Mostrar solo viajes que salen en los próximos 60 minutos o después
+    // Si el viaje es para el día siguiente (cruza medianoche), siempre mostrarlo
+    if (departureTime.includes('+1d') || departureMinutes >= currentTimeMinutes + 60) {
+      return true;
+    }
+    
+    // Para viajes del mismo día, mostrar solo los que salen en 60 minutos o más
+    return departureMinutes >= currentTimeMinutes + 60;
+  });
+}
+
+// Función para estandarizar formato de hora a 12 horas
+function standardizeTimeFormat(time: string): string {
+  if (!time) return '';
+  
+  // Si ya está en formato 12 horas, devolverlo tal como está
+  if (time.includes('AM') || time.includes('PM')) {
+    return time;
+  }
+  
+  // Convertir de 24 horas a 12 horas
+  const [hourMin] = time.split(' ');
+  const [hours, minutes] = hourMin.split(':').map(Number);
+  
+  if (hours === 0) {
+    return `12:${minutes.toString().padStart(2, '0')} AM`;
+  } else if (hours < 12) {
+    return `${hours}:${minutes.toString().padStart(2, '0')} AM`;
+  } else if (hours === 12) {
+    return `12:${minutes.toString().padStart(2, '0')} PM`;
+  } else {
+    return `${hours - 12}:${minutes.toString().padStart(2, '0')} PM`;
+  }
+}
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -119,12 +176,55 @@ export function TripList() {
   const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [sortMethod, setSortMethod] = useState<"departure" | "price" | "duration">("departure");
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   // Form state
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState(today);
   const [seats, setSeats] = useState("");
+  
+  // Referencias para actualización automática
+  const queryClient = useQueryClient();
+  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Función para actualizar datos automáticamente
+  const refreshTripData = async () => {
+    try {
+      // Invalidar caché
+      tripCache.clear();
+      
+      // Invalidar consultas
+      await queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error('Error al actualizar datos de viajes:', error);
+    }
+  };
+
+  // Efecto para actualización automática cada 30 segundos
+  useEffect(() => {
+    updateIntervalRef.current = setInterval(refreshTripData, 30000);
+    
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
+    };
+  }, [queryClient]);
+
+  // Efecto para actualización automática cada minuto (filtro de tiempo)
+  useEffect(() => {
+    const timeFilterInterval = setInterval(() => {
+      // Solo actualizar si no hay búsqueda específica
+      if (!hasSearched || (!origin && !destination)) {
+        setLastUpdate(new Date());
+      }
+    }, 60000); // 60 segundos
+    
+    return () => clearInterval(timeFilterInterval);
+  }, [hasSearched, origin, destination]);
 
   // Query para traer viajes usando los parámetros de búsqueda
   const { data: trips, isLoading, isError } = useQuery<TripWithRouteInfo[]>({
@@ -182,11 +282,27 @@ export function TripList() {
     return extractLocationsFromTrips(allTripsForLocations);
   }, [allTripsForLocations]);
 
-  // Los viajes ya vienen filtrados del backend, no necesitamos filtrar en el frontend
-  const filteredTrips = trips || [];
+  // Filtrar viajes basándose en los parámetros de búsqueda
+  const filteredTrips = useMemo(() => {
+    if (!trips) return [];
+    
+    let filtered = trips;
+    
+    // Filtrar por número de asientos
+    if (seats && parseInt(seats) > 0) {
+      filtered = filtered.filter(trip => ((trip as any).availableSeats || 0) >= parseInt(seats));
+    }
+    
+    // Aplicar filtro de tiempo solo si no se está realizando una búsqueda específica
+    if (!hasSearched || (!origin && !destination)) {
+      filtered = filterTripsByTime(filtered);
+    }
+    
+    return filtered;
+  }, [trips, seats, hasSearched, origin, destination]);
   
-  console.log('TripList: Datos recibidos del backend:', filteredTrips);
-  console.log('TripList: Número de viajes:', filteredTrips.length);
+  console.log('TripList: Datos recibidos del backend:', trips);
+  console.log('TripList: Número de viajes después del filtro:', filteredTrips.length);
 
   // Handler for search button click
   const handleSearch = () => {
@@ -379,47 +495,74 @@ export function TripList() {
         </CardContent>
       </Card>
 
-      {/* Opciones de ordenamiento */}
+      {/* Opciones de ordenamiento y actualización */}
       <div className="mb-6">
-        <div className="flex flex-col md:flex-row gap-2 items-start">
-          <div className="text-sm font-medium text-gray-700">Ordenar por:</div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                sortMethod === "departure"
-                  ? "bg-blue-50 text-blue-600"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-              }`}
-              onClick={() => setSortMethod("departure")}
+        <div className="flex flex-col md:flex-row gap-2 items-start justify-between">
+          <div className="flex flex-col md:flex-row gap-2 items-start">
+            <div className="text-sm font-medium text-gray-700">Ordenar por:</div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  sortMethod === "departure"
+                    ? "bg-blue-50 text-blue-600"
+                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                }`}
+                onClick={() => setSortMethod("departure")}
+              >
+                Salida más temprana
+              </button>
+              <button
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  sortMethod === "price"
+                    ? "bg-blue-50 text-blue-600"
+                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                }`}
+                onClick={() => setSortMethod("price")}
+              >
+                Precio más bajo
+              </button>
+              <button
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  sortMethod === "duration"
+                    ? "bg-blue-50 text-blue-600"
+                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                }`}
+                onClick={() => setSortMethod("duration")}
+              >
+                Duración más corta
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={refreshTripData}
+              variant="outline"
+              size="sm"
+              className="gap-2"
             >
-              Salida más temprana
-            </button>
-            <button
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                sortMethod === "price"
-                  ? "bg-blue-50 text-blue-600"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-              }`}
-              onClick={() => setSortMethod("price")}
-            >
-              Precio más bajo
-            </button>
-            <button
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                sortMethod === "duration"
-                  ? "bg-blue-50 text-blue-600"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-              }`}
-              onClick={() => setSortMethod("duration")}
-            >
-              Duración más corta
-            </button>
+              <RefreshCw className="h-4 w-4" />
+              Actualizar
+            </Button>
+            <div className="text-xs text-gray-500">
+              Última actualización: {format(lastUpdate, 'HH:mm:ss')}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Información sobre el tipo de búsqueda */}
- 
+      {/* Información sobre filtros aplicados */}
+      {(!hasSearched || (!origin && !destination)) && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-blue-800">
+            <CalendarIcon className="h-4 w-4" />
+            <span>
+              Mostrando solo viajes que salen en 60 minutos o más desde ahora. 
+              Los asientos se actualizan automáticamente cada 30 segundos.
+            </span>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center p-8">
@@ -476,7 +619,7 @@ export function TripList() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex flex-col">
                     <div className="text-lg font-bold">
-                      {formatTripTime((trip as any).departureTime, true, 'pretty')}
+                      {standardizeTimeFormat((trip as any).departureTime)}
                     </div>
                    
                     <div className="text-sm text-gray-500 mt-1">
@@ -501,7 +644,7 @@ export function TripList() {
 
                   <div className="flex flex-col items-end">
                     <div className="text-lg font-bold">
-                      {formatTripTime((trip as any).arrivalTime, true, 'pretty')}
+                      {standardizeTimeFormat((trip as any).arrivalTime)}
                     </div>
                     <div className="text-sm text-gray-500 mt-1 text-right">
                       {(trip as any).destination || trip.route?.destination || 'Destino no disponible'}
