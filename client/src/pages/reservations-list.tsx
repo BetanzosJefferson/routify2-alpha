@@ -44,7 +44,7 @@ function ReservationsListContent() {
   };
 
   const [selectedDate, setSelectedDate] = useState(formatDateForInput(getCurrentDate()));
-  const [searchDate, setSearchDate] = useState(""); // Sin filtro de fecha por defecto para incluir viajes que cruzan medianoche
+  const [searchDate, setSearchDate] = useState(formatDateForInput(getCurrentDate())); // Usar fecha actual por defecto
   
   // Agregar opción para que el usuario pueda especificar la fecha actual manualmente
   const [manualDateMode, setManualDateMode] = useState(false);
@@ -78,6 +78,13 @@ function ReservationsListContent() {
     
     // Solo aplicar filtro de fecha si se especifica una fecha
     setSearchDate(selectedDate);
+    setCurrentPage(1);
+  };
+
+  // Actualizar fecha de búsqueda automáticamente cuando cambia la fecha seleccionada
+  const handleDateChange = (newDate: string) => {
+    setSelectedDate(newDate);
+    setSearchDate(newDate); // Actualizar automáticamente
     setCurrentPage(1);
   };
   
@@ -186,7 +193,8 @@ function ReservationsListContent() {
       parentTripDate,
       searchDate,
       matches,
-      reservationsCount: group.reservations.length
+      reservationsCount: group.reservations.length,
+      tripInfo: group.tripInfo
     });
     
     if (matches) {
@@ -195,6 +203,11 @@ function ReservationsListContent() {
     
     return filtered;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
+
+  // Agregar logging adicional para debug
+  console.log(`[FILTER_DEBUG] Total grupos antes del filtrado: ${Object.keys(groupedReservations).length}`);
+  console.log(`[FILTER_DEBUG] Fecha de búsqueda: ${searchDate}`);
+  console.log(`[FILTER_DEBUG] Total grupos después del filtrado: ${Object.keys(filteredGroupedReservations).length}`);
 
   // Paginación aplicada a los grupos filtrados
   const totalGroups = Object.keys(filteredGroupedReservations).length;
@@ -279,7 +292,7 @@ function ReservationsListContent() {
                 value={selectedDate}
                 onChange={(e) => {
                   console.log(`[Reservaciones] Cambiando fecha de ${selectedDate} a ${e.target.value}`);
-                  setSelectedDate(e.target.value);
+                  handleDateChange(e.target.value);
                 }}
                 onKeyPress={handleKeyPress}
                 className="w-full md:w-32 text-sm"
@@ -297,7 +310,7 @@ function ReservationsListContent() {
                 onClick={() => {
                   const today = formatDateForInput(new Date());
                   console.log(`[Reservaciones] Estableciendo fecha de hoy: ${today}`);
-                  setSelectedDate(today);
+                  handleDateChange(today);
                 }}
                 size="sm"
                 variant="outline"
@@ -310,7 +323,7 @@ function ReservationsListContent() {
                   const manualDate = prompt("¿Cuál es la fecha correcta de hoy? (formato: YYYY-MM-DD, ejemplo: 2025-01-15)");
                   if (manualDate && manualDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
                     console.log(`[Reservaciones] Estableciendo fecha manual: ${manualDate}`);
-                    setSelectedDate(manualDate);
+                    handleDateChange(manualDate);
                   }
                 }}
                 size="sm"
