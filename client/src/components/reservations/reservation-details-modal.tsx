@@ -441,26 +441,20 @@ export default function ReservationDetailsModal({
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
-        // Subtotal (antes del descuento)
+        // Precio original
         doc.setTextColor(...colors.muted);
-        doc.text('Subtotal:', paymentX, paymentY);
+        doc.text('Precio original:', paymentX, paymentY);
         doc.setTextColor(...colors.text);
-        doc.text(formatPrice(reservation.totalAmount), paymentX + 25, paymentY);
+        doc.text(formatPrice(reservation.totalAmount), paymentX + 35, paymentY);
         paymentY += 8;
 
         // Información del cupón y descuento (si existe)
         let finalPrice = reservation.totalAmount;
         if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
           doc.setTextColor(...colors.muted);
-          doc.text('Cupón aplicado:', paymentX, paymentY);
-          doc.setTextColor(...colors.text);
-          doc.text(reservation.couponCode, paymentX + 40, paymentY);
-          paymentY += 8;
-
-          doc.setTextColor(...colors.muted);
           doc.text('Descuento:', paymentX, paymentY);
           doc.setTextColor(220, 53, 69); // Color rojo para descuento
-          doc.text(`-${formatPrice(reservation.couponDiscount)}`, paymentX + 25, paymentY);
+          doc.text(`-${formatPrice(reservation.couponDiscount)}`, paymentX + 35, paymentY);
           paymentY += 8;
 
           finalPrice = reservation.totalAmount - reservation.couponDiscount;
@@ -468,12 +462,17 @@ export default function ReservationDetailsModal({
 
         // Total final
         doc.setTextColor(...colors.muted);
-        doc.text('Total final:', paymentX, paymentY);
+        doc.text('Total:', paymentX, paymentY);
         doc.setTextColor(...colors.text);
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatPrice(finalPrice), paymentX + 30, paymentY);
-        paymentY += 10;
+        doc.text(formatPrice(finalPrice), paymentX + 35, paymentY);
+        paymentY += 12;
+
+        // Línea divisoria
+        doc.setDrawColor(...colors.border);
+        doc.line(paymentX, paymentY - 2, paymentX + colWidth, paymentY - 2);
+        paymentY += 4;
 
         // Método de pago
         doc.setFontSize(10);
@@ -482,21 +481,21 @@ export default function ReservationDetailsModal({
           doc.setTextColor(...colors.muted);
           doc.text('Anticipo:', paymentX, paymentY);
           doc.setTextColor(...colors.text);
-          doc.text(`${formatPrice(reservation.advanceAmount)} (${reservation.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 25, paymentY);
+          doc.text(`${formatPrice(reservation.advanceAmount)} (${reservation.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 35, paymentY);
           paymentY += 8;
 
           if (reservation.advanceAmount < finalPrice) {
             doc.setTextColor(...colors.muted);
             doc.text('Restante:', paymentX, paymentY);
             doc.setTextColor(...colors.text);
-            doc.text(`${formatPrice(finalPrice - reservation.advanceAmount)} (${reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 25, paymentY);
+            doc.text(`${formatPrice(finalPrice - reservation.advanceAmount)} (${reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 35, paymentY);
             paymentY += 8;
           }
         } else {
           doc.setTextColor(...colors.muted);
           doc.text('Método:', paymentX, paymentY);
           doc.setTextColor(...colors.text);
-          doc.text(reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia', paymentX + 25, paymentY);
+          doc.text(reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia', paymentX + 35, paymentY);
           paymentY += 8;
         }
 

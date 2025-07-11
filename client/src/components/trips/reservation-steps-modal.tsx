@@ -873,39 +873,38 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
-        // Subtotal (antes del descuento)
+        // Precio original
         doc.setTextColor(...colors.muted);
-        doc.text('Subtotal:', paymentX, paymentY);
+        doc.text('Precio original:', paymentX, paymentY);
         doc.setTextColor(...colors.text);
-        doc.text(formatPrice(totalPrice), paymentX + 25, paymentY);
+        doc.text(formatPrice(totalPrice), paymentX + 35, paymentY);
         paymentY += 8;
 
         // Información del cupón y descuento (si existe)
         let finalPrice = totalPrice;
-        if (appliedCoupon && appliedCoupon.discountAmount > 0) {
-          doc.setTextColor(...colors.muted);
-          doc.text('Cupón aplicado:', paymentX, paymentY);
-          doc.setTextColor(...colors.text);
-          doc.text(appliedCoupon.code, paymentX + 40, paymentY);
-          paymentY += 8;
-
+        if (couponVerified && couponDiscount > 0) {
           doc.setTextColor(...colors.muted);
           doc.text('Descuento:', paymentX, paymentY);
           doc.setTextColor(220, 53, 69); // Color rojo para descuento
-          doc.text(`-${formatPrice(appliedCoupon.discountAmount)}`, paymentX + 25, paymentY);
+          doc.text(`-${formatPrice(couponDiscount)}`, paymentX + 35, paymentY);
           paymentY += 8;
 
-          finalPrice = totalPrice - appliedCoupon.discountAmount;
+          finalPrice = totalPrice - couponDiscount;
         }
 
         // Total final
         doc.setTextColor(...colors.muted);
-        doc.text('Total final:', paymentX, paymentY);
+        doc.text('Total:', paymentX, paymentY);
         doc.setTextColor(...colors.text);
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text(formatPrice(finalPrice), paymentX + 30, paymentY);
-        paymentY += 10;
+        doc.text(formatPrice(finalPrice), paymentX + 35, paymentY);
+        paymentY += 12;
+
+        // Línea divisoria
+        doc.setDrawColor(...colors.border);
+        doc.line(paymentX, paymentY - 2, paymentX + colWidth, paymentY - 2);
+        paymentY += 4;
 
         // Método de pago
         doc.setFontSize(10);
@@ -914,21 +913,21 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
           doc.setTextColor(...colors.muted);
           doc.text('Anticipo:', paymentX, paymentY);
           doc.setTextColor(...colors.text);
-          doc.text(`${formatPrice(advanceAmount)} (${advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 25, paymentY);
+          doc.text(`${formatPrice(advanceAmount)} (${advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 35, paymentY);
           paymentY += 8;
 
           if (advanceAmount < finalPrice) {
             doc.setTextColor(...colors.muted);
             doc.text('Restante:', paymentX, paymentY);
             doc.setTextColor(...colors.text);
-            doc.text(`${formatPrice(finalPrice - advanceAmount)} (${paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 25, paymentY);
+            doc.text(`${formatPrice(finalPrice - advanceAmount)} (${paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})`, paymentX + 35, paymentY);
             paymentY += 8;
           }
         } else {
           doc.setTextColor(...colors.muted);
           doc.text('Método:', paymentX, paymentY);
           doc.setTextColor(...colors.text);
-          doc.text(paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia', paymentX + 25, paymentY);
+          doc.text(paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia', paymentX + 35, paymentY);
           paymentY += 8;
         }
 
