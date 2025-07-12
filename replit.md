@@ -122,12 +122,14 @@ Preferred communication style: Simple, everyday language.
 - **July 12, 2025** - COMPLETED: Mobile thermal ticket display optimization with direct download:
   - **ROOT CAUSE IDENTIFIED**: iOS and Android browsers automatically scale 60mm PDFs making them appear very small
   - **MOBILE ISSUE RESOLVED**: PDF viewers on mobile devices scale narrow PDFs (60mm) to fit screen, causing tiny display
-  - **SOLUTION IMPLEMENTED**: Created `generateReservationTicket60mmPDFWithDownload` function for direct PDF download
+  - **SOLUTION IMPLEMENTED**: Created direct PDF download functions for all thermal ticket generation
   - **TECHNICAL APPROACH**: Replaced browser PDF display with direct file download using `doc.save()` method
   - **CROSS-PLATFORM FIX**: Direct download bypasses mobile browser scaling issues while maintaining PC compatibility
-  - **FILENAME GENERATION**: PDFs now download with descriptive names like "Reservacion_12345_60mm.pdf"
+  - **COMMISSION TICKETS**: Updated commission system to use `generateReservationTicket60mmPDFWithDownload`
+  - **CUTOFF TICKETS**: Updated cutoff history to use `generateCutoffTicketPDFWithDownload` for 58mm thermal tickets
+  - **FILENAME GENERATION**: PDFs now download with descriptive names like "Reservacion_12345_60mm.pdf" and "Corte_CRT-6_58mm.pdf"
   - **USER EXPERIENCE**: Mobile users now get properly sized thermal tickets that download directly to device
-  - **COMMISSION INTEGRATION**: Updated commission system to use new download method via `useCommissionTicketGenerator`
+  - **COMPREHENSIVE SOLUTION**: Applied to both commission reservations and cutoff history ticket generation
   - **BACKWARD COMPATIBILITY**: Original display method preserved for other ticket generation functions
 
 - **July 12, 2025** - COMPLETED: Date filtering fix for commission system successfully implemented:

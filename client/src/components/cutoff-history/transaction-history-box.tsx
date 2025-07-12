@@ -351,6 +351,234 @@ async function generateCutoffTicketPDF(
   }
 }
 
+// Función para generar el PDF con descarga directa (optimizada para móviles)
+async function generateCutoffTicketPDFWithDownload(
+  cutoffGroup: {
+    cutoffId: number;
+    cutoffCode: string;
+    transactions: Transaction[];
+    totalAmount: number;
+    cashAmount: number;
+    transferAmount: number;
+    reservationCount: number;
+    packageCount: number;
+  },
+  companyName: string,
+  userName?: string
+) {
+  try {
+    // Calcular altura del documento basado en la cantidad de transacciones y sus detalles
+    const transactionCount = cutoffGroup.transactions.length;
+    // Altura base (80mm) + altura variable por transacción con detalles adicionales
+    let extraHeight = 0;
+    
+    // Calcular altura adicional según el tipo de transacciones
+    cutoffGroup.transactions.forEach(transaction => {
+      if (transaction.details.type.includes("package")) {
+        // Paquetes tienen más detalles: origen-destino, remitente, destinatario, descripción
+        extraHeight += 25; // 25mm adicionales por paquete
+      } else if (transaction.details.type.includes("reservation")) {
+        // Reservas tienen: origen-destino, pasajeros
+        extraHeight += 18; // 18mm adicionales por reserva
+      } else {
+        extraHeight += 10; // Altura mínima por transacción básica
+      }
+    });
+    
+    // Altura base más generosa + altura dinámica + margen adicional
+    const docHeight = Math.max(120, 100 + extraHeight); // Mínimo 120mm, o más según contenido
+    console.log(`Generando PDF con altura calculada: ${docHeight}mm para ${transactionCount} transacciones`);
+    
+    // Crear un documento PDF con las dimensiones de un ticket térmico
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [58, docHeight], // 58mm de ancho (formato estándar para tickets térmicos)
+    });
+
+    // Configuración de fuentes
+    doc.setFont("courier", "normal");
+    doc.setFontSize(10);
+
+    // Margen superior
+    let y = 10;
+
+    // Encabezado
+    doc.setFontSize(12);
+    doc.setFont("courier", "bold");
+    const companyNameWidth = doc.getStringUnitWidth(companyName) * 12 / doc.internal.scaleFactor;
+    const companyNameX = (58 - companyNameWidth) / 2;
+    doc.text(companyName, companyNameX, y);
+    
+    y += 5;
+    doc.setFontSize(8);
+    doc.setFont("courier", "normal");
+    doc.text("Corte de Caja", 29, y, { align: "center" });
+    
+    // Línea separadora
+    y += 3;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(5, y, 53, y);
+    
+    // ID del corte
+    y += 5;
+    doc.setFontSize(10);
+    doc.setFont("courier", "bold");
+    doc.text(`CORTE #${cutoffGroup.cutoffCode}`, 29, y, { align: "center" });
+    
+    // Fecha actual
+    y += 4;
+    doc.setFontSize(8);
+    const currentDate = new Date();
+    doc.text(formatDate(currentDate), 29, y, { align: "center" });
+    
+    // Nombre del usuario
+    if (userName) {
+      y += 4;
+      doc.text(`Usuario: ${userName}`, 29, y, { align: "center" });
+    }
+    
+    // Resumen de transacciones
+    y += 6;
+    doc.setFontSize(9);
+    doc.setFont("courier", "bold");
+    doc.text("Resumen de Transacciones", 5, y);
+    
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont("courier", "normal");
+    doc.text(`Total transacciones: ${transactionCount}`, 5, y);
+    
+    y += 4;
+    doc.text(`Reservaciones: ${cutoffGroup.reservationCount}`, 5, y);
+    
+    y += 4;
+    doc.text(`Paquetes: ${cutoffGroup.packageCount}`, 5, y);
+    
+    // Resumen de montos
+    y += 6;
+    doc.setFontSize(9);
+    doc.setFont("courier", "bold");
+    doc.text("Resumen de Ingresos", 5, y);
+    
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont("courier", "normal");
+    doc.text(`Total: ${formatCurrency(cutoffGroup.totalAmount)}`, 5, y);
+    
+    y += 4;
+    doc.text(`Efectivo: ${formatCurrency(cutoffGroup.cashAmount)}`, 5, y);
+    
+    y += 4;
+    doc.text(`Transferencia: ${formatCurrency(cutoffGroup.transferAmount)}`, 5, y);
+    
+    // Línea separadora
+    y += 6;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(5, y, 53, y);
+    
+    // Listado de transacciones
+    y += 6;
+    doc.setFontSize(9);
+    doc.setFont("courier", "bold");
+    doc.text("Detalle de Transacciones", 5, y);
+    
+    // Listar transacciones con detalles
+    for (const transaction of cutoffGroup.transactions) {
+      y += 5;
+      doc.setFontSize(7);
+      doc.setFont("courier", "normal");
+      
+      // ID y tipo de transacción (en negrita)
+      const type = transaction.details.type.includes("reservation") ? "RESERVA" : "PAQUETE";
+      doc.setFont("courier", "bold");
+      doc.text(`#${transaction.id} - ${type}`, 5, y);
+      
+      // Monto y método de pago
+      y += 3;
+      doc.setFont("courier", "normal");
+      const monto = transaction.details.details.monto || 0;
+      const metodoPago = transaction.details.details.metodoPago === "efectivo" ? "Efectivo" : "Transferencia";
+      doc.text(`${formatCurrency(monto)} - ${metodoPago}`, 5, y);
+      
+      // Detalles específicos según el tipo
+      const details = transaction.details.details;
+      
+      if (transaction.details.type.includes("package")) {
+        // Para paquetes: origen-destino, remitente/destinatario, descripción
+        if (details.origen && details.destino) {
+          y += 3;
+          // Mostrar origen y destino en líneas separadas para evitar desbordamiento
+          const origenCorto = details.origen.length > 28 ? details.origen.substring(0, 28) + "..." : details.origen;
+          doc.text(`De: ${origenCorto}`, 5, y);
+          y += 3;
+          const destinoCorto = details.destino.length > 28 ? details.destino.substring(0, 28) + "..." : details.destino;
+          doc.text(`A: ${destinoCorto}`, 5, y);
+        }
+        
+        if (details.remitente && details.destinatario) {
+          y += 3;
+          // Mostrar solo nombres si son muy largos
+          const remitenteCorto = details.remitente.length > 25 ? details.remitente.substring(0, 25) + "..." : details.remitente;
+          doc.text(`De: ${remitenteCorto}`, 5, y);
+          
+          y += 3;
+          const destinatarioCorto = details.destinatario.length > 25 ? details.destinatario.substring(0, 25) + "..." : details.destinatario;
+          doc.text(`Para: ${destinatarioCorto}`, 5, y);
+        }
+        
+        if (details.descripcion) {
+          y += 3;
+          const descripcionCorta = details.descripcion.length > 30 ? details.descripcion.substring(0, 30) + "..." : details.descripcion;
+          doc.text(`Desc: ${descripcionCorta}`, 5, y);
+        }
+        
+      } else if (transaction.details.type.includes("reservation")) {
+        // Para reservas: origen-destino, pasajeros
+        if (details.origen && details.destino) {
+          y += 3;
+          // Mostrar origen y destino en líneas separadas para evitar desbordamiento
+          const origenCorto = details.origen.length > 28 ? details.origen.substring(0, 28) + "..." : details.origen;
+          doc.text(`De: ${origenCorto}`, 5, y);
+          y += 3;
+          const destinoCorto = details.destino.length > 28 ? details.destino.substring(0, 28) + "..." : details.destino;
+          doc.text(`A: ${destinoCorto}`, 5, y);
+        }
+        
+        if (details.pasajeros) {
+          y += 3;
+          // Mostrar lista de pasajeros, acortada si es muy larga
+          const pasajerosCorto = details.pasajeros.length > 30 ? details.pasajeros.substring(0, 30) + "..." : details.pasajeros;
+          doc.text(`Pasajeros: ${pasajerosCorto}`, 5, y);
+        }
+      }
+      
+      // Línea separadora entre transacciones
+      y += 2;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(5, y, 53, y);
+    }
+    
+    // Pie de página
+    y += 8;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(5, y, 53, y);
+    
+    y += 5;
+    doc.setFontSize(7);
+    doc.text("GRACIAS POR SU PREFERENCIA", 29, y, { align: "center" });
+    
+    // Descargar el PDF directamente
+    const fileName = `Corte_${cutoffGroup.cutoffCode}_58mm.pdf`;
+    doc.save(fileName);
+    
+    return doc;
+  } catch (error) {
+    console.error("Error al generar el ticket de corte:", error);
+    throw error;
+  }
+}
+
 const TransactionHistoryBox: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -613,9 +841,14 @@ const TransactionHistoryBox: React.FC = () => {
         description: "Por favor espere mientras se genera el ticket...",
       });
       
-      // Generar el ticket en formato térmico
+      // Generar el ticket en formato térmico con descarga directa
       const userName = user ? `${user.firstName} ${user.lastName}` : undefined;
-      await generateCutoffTicketPDF(cutoffGroup, user?.company || "TransRoute", userName);
+      await generateCutoffTicketPDFWithDownload(cutoffGroup, user?.company || "TransRoute", userName);
+      
+      toast({
+        title: "Ticket generado",
+        description: `El ticket térmico ha sido descargado para el corte ${cutoffGroup.cutoffCode}`,
+      });
     } catch (error) {
       console.error("Error al generar el ticket del corte:", error);
       toast({
