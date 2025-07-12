@@ -3099,18 +3099,27 @@ export class DatabaseStorage implements IStorage {
   // Package methods
   async getPackages(filters?: { companyId?: string; tripId?: number }): Promise<schema.Package[]> {
     try {
+      console.log('DB Storage: [OPTIMIZED] Obteniendo paquetes con filtros:', filters);
+      
       let query = this.db.select().from(schema.packages);
+      let conditions: any[] = [];
 
       if (filters?.companyId) {
-        query = query.where(eq(schema.packages.companyId, filters.companyId));
+        conditions.push(eq(schema.packages.companyId, filters.companyId));
+        console.log(`DB Storage: [OPTIMIZED] Filtrando por compañía: ${filters.companyId}`);
       }
 
       if (filters?.tripId) {
-        query = query.where(eq(schema.packages.tripId, filters.tripId.toString()));
+        conditions.push(eq(schema.packages.tripId, filters.tripId.toString()));
+        console.log(`DB Storage: [OPTIMIZED] Filtrando por tripId: ${filters.tripId}`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
       }
 
       const packages = await query;
-      console.log(`DB Storage: Encontrados ${packages.length} paquetes`);
+      console.log(`DB Storage: [OPTIMIZED] Encontrados ${packages.length} paquetes`);
       return packages;
     } catch (error) {
       console.error(`DB Storage: Error al obtener paquetes:`, error);
@@ -3126,23 +3135,31 @@ export class DatabaseStorage implements IStorage {
     date?: string; // Formato YYYY-MM-DD
   }, currentUserId?: number, userRole?: string): Promise<any[]> {
     try {
-      let query = this.db.select().from(schema.packages);
-      let conditions: any[] = [];
-
+      console.log('DB Storage: [OPTIMIZED] Obteniendo paquetes con información de viaje');
+      console.log('DB Storage: [OPTIMIZED] Filtros:', filters);
+      console.log('DB Storage: [OPTIMIZED] Usuario:', currentUserId, 'Rol:', userRole);
+      
+      // NUEVA IMPLEMENTACIÓN OPTIMIZADA CON JOINs
+      // Construir query con LEFT JOIN para obtener información del trip en una sola consulta
+      const conditions: any[] = [];
+      
       // Filtro por compañía única
       if (filters?.companyId) {
         conditions.push(eq(schema.packages.companyId, filters.companyId));
+        console.log(`DB Storage: [OPTIMIZED] Filtrando por compañía: ${filters.companyId}`);
       }
 
       // Filtro por múltiples compañías (para taquilleros)
       if (filters?.companyIds && filters.companyIds.length > 0) {
         conditions.push(inArray(schema.packages.companyId, filters.companyIds));
+        console.log(`DB Storage: [OPTIMIZED] Filtrando por múltiples compañías: ${filters.companyIds.join(', ')}`);
       }
 
       // Filtro por viaje único
       if (filters?.tripId) {
         const tripDetails = sql`JSON_EXTRACT(${schema.packages.tripDetails}, '$.tripId')`;
         conditions.push(eq(tripDetails, filters.tripId.toString()));
+        console.log(`DB Storage: [OPTIMIZED] Filtrando por tripId: ${filters.tripId}`);
       }
 
       // Filtro por múltiples viajes (para conductores)
@@ -3150,102 +3167,119 @@ export class DatabaseStorage implements IStorage {
         const tripIdStrings = filters.tripIds.map(id => id.toString());
         const tripDetails = sql`${schema.packages.tripDetails}->>'tripId'`;
         conditions.push(inArray(tripDetails, tripIdStrings));
+        console.log(`DB Storage: [OPTIMIZED] Filtrando por múltiples tripIds: ${filters.tripIds.join(', ')}`);
       }
 
       // Filtro por fecha
       if (filters?.date) {
         const dateCondition = sql`DATE(${schema.packages.createdAt}) = ${filters.date}`;
         conditions.push(dateCondition);
-        console.log(`DB Storage: Aplicando filtro por fecha: ${filters.date}`);
+        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
       }
 
-      // Aplicar condiciones si existen
+      // Filtro por conductor optimizado - usar JOIN en lugar de consultas individuales
+      if (userRole === 'chofer' && currentUserId) {
+        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro de conductor optimizado para usuario ${currentUserId}`);
+        conditions.push(eq(schema.trips.driverId, currentUserId));
+      }
+
+      // Construir query optimizada con LEFT JOIN
+      let query = this.db
+        .select({
+          // Campos del paquete
+          id: schema.packages.id,
+          senderName: schema.packages.senderName,
+          senderLastName: schema.packages.senderLastName,
+          senderPhone: schema.packages.senderPhone,
+          recipientName: schema.packages.recipientName,
+          recipientLastName: schema.packages.recipientLastName,
+          recipientPhone: schema.packages.recipientPhone,
+          packageDescription: schema.packages.packageDescription,
+          weight: schema.packages.weight,
+          price: schema.packages.price,
+          status: schema.packages.status,
+          tripId: schema.packages.tripId,
+          tripDetails: schema.packages.tripDetails,
+          companyId: schema.packages.companyId,
+          createdAt: schema.packages.createdAt,
+          updatedAt: schema.packages.updatedAt,
+          // Campos del trip (para evitar consultas adicionales)
+          tripRecordId: schema.trips.id,
+          tripDriverId: schema.trips.driverId,
+          tripCompanyId: schema.trips.companyId,
+          tripRouteId: schema.trips.routeId,
+          tripData: schema.trips.tripData
+        })
+        .from(schema.packages);
+
+      // Solo hacer JOIN si necesitamos filtrar por conductor o necesitamos datos del trip
+      if (userRole === 'chofer' && currentUserId) {
+        // JOIN optimizado usando una expresión SQL personalizada para extraer recordId
+        query = query.leftJoin(
+          schema.trips,
+          sql`${schema.trips.id} = CAST(
+            CASE 
+              WHEN ${schema.packages.tripDetails}->>'$.tripId' LIKE '%_%' 
+              THEN SUBSTRING_INDEX(${schema.packages.tripDetails}->>'$.tripId', '_', 1)
+              ELSE ${schema.packages.tripDetails}->>'$.tripId'
+            END AS UNSIGNED
+          )`
+        );
+      }
+
+      // Aplicar condiciones
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      const rawPackages = await query;
+      console.log(`DB Storage: [OPTIMIZED] Ejecutando query con JOIN optimizado`);
+      const startTime = Date.now();
+      const results = await query;
+      const queryTime = Date.now() - startTime;
+      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${results.length} resultados`);
 
-      // Implementar filtrado por conductor si es necesario
-      let filteredPackages = rawPackages;
-      
-      if (userRole === 'chofer' && currentUserId) {
-        console.log(`DB Storage: Aplicando filtro de conductor para usuario ${currentUserId}`);
-        console.log(`DB Storage: Total de paquetes a filtrar: ${rawPackages.length}`);
-        
-        filteredPackages = [];
-        for (const pkg of rawPackages) {
-          const tripDetails = typeof pkg.tripDetails === 'string' 
-            ? JSON.parse(pkg.tripDetails) 
-            : pkg.tripDetails;
-          
-          console.log(`DB Storage: Evaluando paquete ${pkg.id} con tripDetails:`, tripDetails);
-          
-          if (tripDetails?.tripId) {
-            // Extraer recordId del tripId (ej: "31_0" -> recordId = 31)
-            let recordId;
-            
-            if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
-              const tripIdParts = tripDetails.tripId.split('_');
-              recordId = parseInt(tripIdParts[0]);
-            } else {
-              // Formato antiguo: número directo
-              recordId = typeof tripDetails.tripId === 'string' ? parseInt(tripDetails.tripId) : tripDetails.tripId;
-            }
-            
-            console.log(`DB Storage: Paquete ${pkg.id} - Extrayendo recordId ${recordId} de tripId ${tripDetails.tripId}`);
-            
-            if (!isNaN(recordId)) {
-              // Verificar directamente en la tabla trips si este viaje está asignado al conductor
-              const tripRecord = await this.getTrip(recordId);
-              
-              console.log(`DB Storage: Trip record ${recordId}:`, tripRecord ? {
-                id: tripRecord.id,
-                driverId: tripRecord.driverId,
-                companyId: tripRecord.companyId
-              } : 'No encontrado');
-              
-              if (tripRecord && tripRecord.driverId === currentUserId) {
-                console.log(`DB Storage: ✓ Incluyendo paquete ${pkg.id} - conductor ${currentUserId} asignado al viaje ${recordId}`);
-                filteredPackages.push(pkg);
-              } else {
-                console.log(`DB Storage: ✗ Omitiendo paquete ${pkg.id} - conductor ${currentUserId} NO asignado al viaje ${recordId} (driverId: ${tripRecord?.driverId})`);
-              }
-            } else {
-              console.log(`DB Storage: ✗ Omitiendo paquete ${pkg.id} - no se pudo extraer recordId válido de tripId ${tripDetails.tripId}`);
-            }
-          } else {
-            console.log(`DB Storage: ✗ Omitiendo paquete ${pkg.id} - sin tripId en tripDetails`);
-          }
-        }
-        
-        console.log(`DB Storage: Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
-      }
-
-      // Mapear los datos para incluir información del viaje desde trip_details
-      const packagesWithTripInfo = filteredPackages.map(pkg => {
-        const tripDetails = typeof pkg.tripDetails === 'string' 
-          ? JSON.parse(pkg.tripDetails) 
-          : pkg.tripDetails;
+      // Mapear resultados sin consultas adicionales
+      const packagesWithTripInfo = results.map(result => {
+        const tripDetails = typeof result.tripDetails === 'string' 
+          ? JSON.parse(result.tripDetails) 
+          : result.tripDetails;
 
         return {
-          ...pkg,
-          // Mapear campos para compatibilidad con el frontend
+          // Campos del paquete
+          id: result.id,
+          senderName: result.senderName,
+          senderLastName: result.senderLastName,
+          senderPhone: result.senderPhone,
+          recipientName: result.recipientName,
+          recipientLastName: result.recipientLastName,
+          recipientPhone: result.recipientPhone,
+          packageDescription: result.packageDescription,
+          weight: result.weight,
+          price: result.price,
+          status: result.status,
+          tripId: result.tripId,
+          companyId: result.companyId,
+          createdAt: result.createdAt,
+          updatedAt: result.updatedAt,
+          // Campos de trip info desde tripDetails (más confiable)
           tripOrigin: tripDetails?.origin || '',
           tripDestination: tripDetails?.destination || '',
           tripDepartureDate: tripDetails?.departureDate || '',
           tripDepartureTime: tripDetails?.departureTime || '',
           tripArrivalTime: tripDetails?.arrivalTime || '',
-          tripId: tripDetails?.tripId || null,
-          // Mapear campos específicos del segmento (que es lo que el frontend espera)
+          // Campos específicos del segmento
           segmentOrigin: tripDetails?.origin || '',
           segmentDestination: tripDetails?.destination || '',
           // Mantener tripDetails original para compatibilidad
-          tripDetails: tripDetails
+          tripDetails: tripDetails,
+          // Información del trip record (si está disponible)
+          tripRecordId: result.tripRecordId || null,
+          tripDriverId: result.tripDriverId || null
         };
       });
 
-      console.log(`DB Storage: Encontrados ${packagesWithTripInfo.length} paquetes con información de viaje`);
+      console.log(`DB Storage: [OPTIMIZED] Procesados ${packagesWithTripInfo.length} paquetes con información de viaje`);
+      console.log(`DB Storage: [OPTIMIZED] Mejora de rendimiento: Eliminadas consultas N+1, tiempo total: ${queryTime}ms`);
       return packagesWithTripInfo;
     } catch (error) {
       console.error(`DB Storage: Error al obtener paquetes con información de viaje:`, error);
@@ -3270,25 +3304,111 @@ export class DatabaseStorage implements IStorage {
 
   async getPackageWithTripInfo(id: number): Promise<schema.Package & { trip?: TripWithRouteInfo } | undefined> {
     try {
-      const packageData = await this.getPackage(id);
-      if (!packageData) return undefined;
+      console.log(`DB Storage: [OPTIMIZED] Obteniendo paquete ${id} con información del viaje`);
+      
+      // OPTIMIZACIÓN: Usar JOIN para obtener package + trip en una sola consulta
+      const result = await this.db
+        .select({
+          // Campos del paquete
+          id: schema.packages.id,
+          senderName: schema.packages.senderName,
+          senderLastName: schema.packages.senderLastName,
+          senderPhone: schema.packages.senderPhone,
+          recipientName: schema.packages.recipientName,
+          recipientLastName: schema.packages.recipientLastName,
+          recipientPhone: schema.packages.recipientPhone,
+          packageDescription: schema.packages.packageDescription,
+          weight: schema.packages.weight,
+          price: schema.packages.price,
+          status: schema.packages.status,
+          tripId: schema.packages.tripId,
+          tripDetails: schema.packages.tripDetails,
+          companyId: schema.packages.companyId,
+          createdAt: schema.packages.createdAt,
+          updatedAt: schema.packages.updatedAt,
+          // Campos del trip
+          tripRecordId: schema.trips.id,
+          tripRouteId: schema.trips.routeId,
+          tripDriverId: schema.trips.driverId,
+          tripVehicleId: schema.trips.vehicleId,
+          tripData: schema.trips.tripData,
+          tripCreatedAt: schema.trips.createdAt,
+          tripUpdatedAt: schema.trips.updatedAt,
+          // Campos de la ruta
+          routeId: schema.routes.id,
+          routeName: schema.routes.name,
+          routeStops: schema.routes.stops,
+          routeCompanyId: schema.routes.companyId
+        })
+        .from(schema.packages)
+        .leftJoin(
+          schema.trips,
+          sql`${schema.trips.id} = CAST(
+            CASE 
+              WHEN ${schema.packages.tripId} LIKE '%_%' 
+              THEN SUBSTRING_INDEX(${schema.packages.tripId}, '_', 1)
+              ELSE ${schema.packages.tripId}
+            END AS UNSIGNED
+          )`
+        )
+        .leftJoin(schema.routes, eq(schema.routes.id, schema.trips.routeId))
+        .where(eq(schema.packages.id, id))
+        .limit(1);
 
-      // Si el paquete tiene tripId, obtener información del viaje
-      let trip: TripWithRouteInfo | undefined;
-      if (packageData.tripId) {
-        // Extraer recordId del tripId 
-        let tripId;
-        const tripIdStr = packageData.tripId.toString();
-        
-        if (tripIdStr.includes('_')) {
-          tripId = parseInt(tripIdStr.split('_')[0]);
-        } else {
-          tripId = parseInt(tripIdStr);
-        }
-        trip = await this.getTripWithRouteInfo(tripId);
+      if (!result || result.length === 0) {
+        console.log(`DB Storage: [OPTIMIZED] Paquete ${id} no encontrado`);
+        return undefined;
       }
 
-      return { ...packageData, trip };
+      const packageData = result[0];
+      console.log(`DB Storage: [OPTIMIZED] Paquete ${id} encontrado con datos del trip`);
+
+      // Construir objeto trip si tenemos datos del trip
+      let trip: TripWithRouteInfo | undefined;
+      if (packageData.tripRecordId) {
+        const route = {
+          id: packageData.routeId,
+          name: packageData.routeName,
+          stops: packageData.routeStops,
+          companyId: packageData.routeCompanyId
+        };
+
+        trip = {
+          id: packageData.tripRecordId,
+          routeId: packageData.tripRouteId,
+          driverId: packageData.tripDriverId,
+          vehicleId: packageData.tripVehicleId,
+          tripData: packageData.tripData,
+          companyId: packageData.companyId,
+          createdAt: packageData.tripCreatedAt,
+          updatedAt: packageData.tripUpdatedAt,
+          route: route
+        };
+      }
+
+      // Construir objeto package
+      const packageResult = {
+        id: packageData.id,
+        senderName: packageData.senderName,
+        senderLastName: packageData.senderLastName,
+        senderPhone: packageData.senderPhone,
+        recipientName: packageData.recipientName,
+        recipientLastName: packageData.recipientLastName,
+        recipientPhone: packageData.recipientPhone,
+        packageDescription: packageData.packageDescription,
+        weight: packageData.weight,
+        price: packageData.price,
+        status: packageData.status,
+        tripId: packageData.tripId,
+        tripDetails: packageData.tripDetails,
+        companyId: packageData.companyId,
+        createdAt: packageData.createdAt,
+        updatedAt: packageData.updatedAt,
+        trip: trip
+      };
+
+      console.log(`DB Storage: [OPTIMIZED] Paquete ${id} procesado exitosamente`);
+      return packageResult;
     } catch (error) {
       console.error(`DB Storage: Error al obtener paquete con información del viaje ${id}:`, error);
       throw error;

@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-07-12T05:01:51.015Z",
+  "version": "after-optimization",
+  "tests": {
+    "test1": {
+      "endpoint": "/api/packages",
+      "description": "getPackages() - Método básico OPTIMIZADO",
+      "totalTime": 39.016332999999996,
+      "curlTime": 3.2720000000000002,
+      "resultCount": 0,
+      "success": true
+    },
+    "test2": {
+      "endpoint": "/api/taquilla/packages",
+      "description": "getPackagesWithTripInfo() - Con información de viaje OPTIMIZADO",
+      "totalTime": 31.376003999999995,
+      "curlTime": 2.2239999999999998,
+      "resultCount": 0,
+      "success": true
+    }
+  },
+  "optimization": {
+    "description": "Eliminación de consultas N+1 y uso de JOINs optimizados",
+    "changes": [
+      "Refactorización del método getPackages() con mejores filtros",
+      "Refactorización completa del método getPackagesWithTripInfo()",
+      "Eliminación de bucles con consultas individuales",
+      "Implementación de LEFT JOIN optimizado para filtrado por conductor",
+      "Uso de SQL personalizado para extraer recordId sin consultas adicionales"
+    ]
+  }
+}

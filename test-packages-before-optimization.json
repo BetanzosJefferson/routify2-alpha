@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-07-12T04:58:30.294Z",
+  "version": "before-optimization",
+  "realTests": {
+    "test1": {
+      "endpoint": "/api/packages",
+      "description": "getPackages() - Método básico",
+      "totalTime": 403.323629,
+      "curlTime": 368.993,
+      "resultCount": 0,
+      "success": true
+    },
+    "test2": {
+      "endpoint": "/api/taquilla/packages",
+      "description": "getPackagesWithTripInfo() - Con información de viaje",
+      "totalTime": 131.75644699999998,
+      "curlTime": 94.155,
+      "resultCount": 0,
+      "success": true
+    }
+  },
+  "simulation": {
+    "simple": 89.0102617852373,
+    "complex": 4909.588479881038,
+    "n1Queries": 42,
+    "ratio": 55.15755578527366
+  }
+}
