@@ -145,17 +145,8 @@ function ReservationsListContent() {
       return false;
     }
 
-    // FILTRO PARA CHÓFERES: Solo mostrar reservaciones de viajes donde el chofer está asignado
-    if (isDriver && user?.id) {
-      const tripInfo = reservation.tripDetails?.trip || reservation.trip;
-      const driverId = tripInfo?.driver?.id || tripInfo?.driverId;
-      
-      // Si no hay información del conductor o el conductor no coincide, filtrar
-      if (!driverId || driverId !== user.id) {
-        console.log(`[DRIVER_FILTER] Filtrando reservación ${reservation.id} - Conductor asignado: ${driverId}, Usuario actual: ${user.id}`);
-        return false;
-      }
-    }
+    // FILTRO PARA CHÓFERES: El backend ya filtra las reservaciones por conductor asignado
+    // No necesitamos filtrar aquí porque el backend ya devuelve solo las reservaciones del conductor
     
     // Filtro de texto: buscar en nombres de pasajeros y usuario creador
     if (searchTerm) {
