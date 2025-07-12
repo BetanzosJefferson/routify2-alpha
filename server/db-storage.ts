@@ -1317,7 +1317,7 @@ export class DatabaseStorage implements IStorage {
       // CONSULTA OPTIMIZADA SIMPLIFICADA: Obtenemos solo las reservaciones
       // CRÍTICO: Incluir explícitamente el campo commissionPaid
       let query = db.select({
-        // Incluir todos los campos necesarios explícitamente
+        // Incluir solo los campos que realmente existen en el schema
         id: schema.reservations.id,
         companyId: schema.reservations.companyId,
         status: schema.reservations.status,
@@ -1331,16 +1331,8 @@ export class DatabaseStorage implements IStorage {
         createdBy: schema.reservations.createdBy,
         createdAt: schema.reservations.createdAt,
         updatedAt: schema.reservations.updatedAt,
-        pickupLocation: schema.reservations.pickupLocation,
-        dropoffLocation: schema.reservations.dropoffLocation,
-        seatNumbers: schema.reservations.seatNumbers,
-        checkInTime: schema.reservations.checkInTime,
-        boardingStatus: schema.reservations.boardingStatus,
-        cancellationReason: schema.reservations.cancellationReason,
         advanceAmount: schema.reservations.advanceAmount,
         advancePaymentMethod: schema.reservations.advancePaymentMethod,
-        remainingBalance: schema.reservations.remainingBalance,
-        commissionAmount: schema.reservations.commissionAmount,
         paidBy: schema.reservations.paidBy,
         markedAsPaidAt: schema.reservations.markedAsPaidAt,
         originalAmount: schema.reservations.originalAmount,
