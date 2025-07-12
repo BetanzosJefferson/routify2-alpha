@@ -105,9 +105,24 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     }).format(amount);
   };
 
-  // Función para formatear fecha
+  // Función para formatear fecha (evitando problemas de zona horaria)
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('es-MX');
+    if (!dateString) return 'No especificada';
+    
+    // Si es formato YYYY-MM-DD, procesarlo directamente sin conversión de zona horaria
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    
+    // Para otros formatos, usar fecha sin conversión de zona horaria
+    try {
+      const date = new Date(dateString + 'T00:00:00');
+      return date.toLocaleDateString('es-MX');
+    } catch (error) {
+      console.error('Error formateando fecha:', error);
+      return dateString;
+    }
   };
 
   // Manejar selección de reservaciones (solo para admins)
