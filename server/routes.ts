@@ -7165,8 +7165,8 @@ function setupPackageRoutes(app: Express) {
       
       // Verificar acceso a la compañía
       if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = req.user.company || req.user.companyId;
-        if (packageData.companyId !== userCompany) {
+        const userCompanyId = req.user.companyId || req.user.company;
+        if (packageData.companyId !== userCompanyId) {
           return res.status(403).json({ message: 'No tiene permisos para ver este paquete' });
         }
       }
@@ -7188,7 +7188,7 @@ function setupPackageRoutes(app: Express) {
       const newPackage = {
         ...packageData,
         createdBy: req.user?.id,
-        companyId: req.user?.company, // Usamos solo el campo company sin la alternativa companyId
+        companyId: req.user?.companyId || req.user?.company,
       };
       
       // Crear el paquete
@@ -7255,8 +7255,8 @@ function setupPackageRoutes(app: Express) {
       
       // Verificar permisos de compañía
       if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = req.user.company || req.user.companyId;
-        if (existingPackage.companyId !== userCompany) {
+        const userCompanyId = req.user.companyId || req.user.company;
+        if (existingPackage.companyId !== userCompanyId) {
           return res.status(403).json({ message: 'No tiene permisos para editar este paquete' });
         }
       }
@@ -7289,8 +7289,8 @@ function setupPackageRoutes(app: Express) {
       
       // Verificar permisos de compañía
       if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = req.user.company || req.user.companyId;
-        if (existingPackage.companyId !== userCompany) {
+        const userCompanyId = req.user.companyId || req.user.company;
+        if (existingPackage.companyId !== userCompanyId) {
           return res.status(403).json({ message: 'No tiene permisos para eliminar este paquete' });
         }
       }
