@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 12, 2025** - COMPLETED: 60mm thermal ticket generation optimization in commission system:
+  - **ROOT CAUSE FIXED**: Commission module was generating oversized 60mm tickets due to custom PDF generation
+  - **SOLUTION IMPLEMENTED**: Created `useCommissionTicketGenerator` hook using specialized `generateReservationTicket60mmPDF` function
+  - **TECHNICAL APPROACH**: Replaced custom PDF generation with optimized thermal ticket function from `reservation-ticket-thermal.tsx`
+  - **DATA MAPPING**: Implemented proper mapping of commission reservation data to thermal ticket format
+  - **CROSS-PLATFORM COMPATIBILITY**: Maintained Android-compatible about:blank method for PDF display
+  - **CONSISTENT SIZING**: Now generates proper 60mm x 170mm tickets with correct font sizes and QR codes
+  - **MODULAR DESIGN**: Created reusable `commission-ticket-generator.tsx` utility for maintainability
+  - **USER EXPERIENCE**: "Descargar Boleto" button now generates correctly sized thermal tickets across all platforms
+
 - **July 12, 2025** - COMPLETED: Date filtering fix for commission system successfully implemented:
   - **ROOT CAUSE IDENTIFIED**: Commission date filter was using reservation creation date instead of trip departure date
   - **CRITICAL FIX**: Modified `/api/commissions/reservations` endpoint to filter by trip departure date
