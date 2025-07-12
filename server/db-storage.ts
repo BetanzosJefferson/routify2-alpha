@@ -1047,6 +1047,9 @@ export class DatabaseStorage implements IStorage {
           reservationCommissionAmount: schema.reservations.commissionAmount,
           reservationPaidBy: schema.reservations.paidBy,
           reservationOriginalAmount: schema.reservations.originalAmount,
+          reservationCheckCount: schema.reservations.checkCount,
+          reservationCheckedBy: schema.reservations.checkedBy,
+          reservationCheckedAt: schema.reservations.checkedAt,
           
           // Campos de trip
           tripId: schema.trips.id,
@@ -1260,6 +1263,9 @@ export class DatabaseStorage implements IStorage {
           commissionAmount: result.reservationCommissionAmount,
           paidBy: result.reservationPaidBy,
           originalAmount: result.reservationOriginalAmount,
+          checkCount: result.reservationCheckCount,
+          checkedBy: result.reservationCheckedBy,
+          checkedAt: result.reservationCheckedAt,
           trip,
           passengers,
           createdByUser
@@ -1554,6 +1560,9 @@ export class DatabaseStorage implements IStorage {
           commissionAmount: reservation.commissionAmount,
           paidBy: reservation.paidBy,
           originalAmount: reservation.originalAmount,
+          checkCount: reservation.checkCount,
+          checkedBy: reservation.checkedBy,
+          checkedAt: reservation.checkedAt,
           trip,
           passengers,
           createdByUser: createdByUser ? {
