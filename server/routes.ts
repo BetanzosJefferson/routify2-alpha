@@ -7061,20 +7061,36 @@ function setupPackageRoutes(app: Express) {
     res.status(403).json({ message: 'No tiene permisos para modificar paquetes' });
   }
   
-  // GET /api/packages - Obtener lista de paquetes
+  // GET /api/packages - Obtener lista de paquetes con información del viaje
   app.get(apiRouter('/packages'), isAuthenticated, hasPackageAccess, async (req, res) => {
     try {
-      const tripId = req.query.tripId ? parseInt(req.query.tripId as string) : undefined;
+      const { user } = req as any;
+      const { tripId, date } = req.query;
+      
+      console.log(`[GET /packages] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Filtrar por compañía para asegurar aislamiento de datos
-      let companyFilter = null;
-      if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-        companyFilter = req.user.company || req.user.companyId;
+      const userCompanyId = user.companyId || user.company;
+      const filters: any = {};
+      
+      if (user.role !== UserRole.SUPER_ADMIN) {
+        filters.companyId = userCompanyId;
       }
       
-      // Obtener paquetes
-      const packages = await storage.getPackages(companyFilter, tripId);
+      if (tripId && !isNaN(parseInt(tripId as string))) {
+        filters.tripId = parseInt(tripId as string);
+      }
       
+      if (date) {
+        filters.date = date as string;
+      }
+      
+      console.log(`[GET /packages] Obteniendo paquetes con información de viaje:`, filters);
+      
+      // Obtener paquetes CON información del viaje (origen y destino)
+      const packages = await storage.getPackagesWithTripInfo(filters, user.id, user.role);
+      
+      console.log(`[GET /packages] Encontrados ${packages.length} paquetes con información de viaje`);
       res.json(packages);
     } catch (error) {
       console.error('Error al obtener paquetes:', error);

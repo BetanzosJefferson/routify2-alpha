@@ -3235,26 +3235,37 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
       }
 
-      // Mapear resultados básicos
+      // Mapear resultados con información del viaje extraída de tripDetails
       const packagesWithTripInfo = filteredPackages.map(pkg => {
-        const tripDetails = typeof pkg.tripDetails === 'string' 
-          ? JSON.parse(pkg.tripDetails) 
-          : pkg.tripDetails;
+        let tripDetails;
+        
+        try {
+          tripDetails = typeof pkg.tripDetails === 'string' 
+            ? JSON.parse(pkg.tripDetails) 
+            : pkg.tripDetails;
+        } catch (error) {
+          console.error('Error al parsear tripDetails:', error);
+          tripDetails = {};
+        }
 
-        return {
+        const result = {
           ...pkg,
           // Campos de trip info desde tripDetails
-          tripOrigin: tripDetails?.origin || '',
-          tripDestination: tripDetails?.destination || '',
+          tripOrigin: tripDetails?.origin || 'No especificado',
+          tripDestination: tripDetails?.destination || 'No especificado',
           tripDepartureDate: tripDetails?.departureDate || '',
           tripDepartureTime: tripDetails?.departureTime || '',
           tripArrivalTime: tripDetails?.arrivalTime || '',
           // Campos específicos del segmento
-          segmentOrigin: tripDetails?.origin || '',
-          segmentDestination: tripDetails?.destination || '',
+          segmentOrigin: tripDetails?.origin || 'No especificado',
+          segmentDestination: tripDetails?.destination || 'No especificado',
           // Mantener tripDetails original para compatibilidad
           tripDetails: tripDetails
         };
+        
+        console.log(`DB Storage: [OPTIMIZED] Paquete ${pkg.id} - Origen: ${result.tripOrigin}, Destino: ${result.tripDestination}`);
+        
+        return result;
       });
 
       console.log(`DB Storage: [OPTIMIZED] Procesados ${packagesWithTripInfo.length} paquetes con información de viaje`);
