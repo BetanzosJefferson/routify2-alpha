@@ -1,4 +1,4 @@
-import { generateReservationTicket60mmPDF } from '../trips/reservation-ticket-thermal';
+import { generateReservationTicket60mmPDFWithDownload } from '../trips/reservation-ticket-thermal';
 import { generateReservationId } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
