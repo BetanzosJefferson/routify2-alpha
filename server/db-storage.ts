@@ -3101,21 +3101,28 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('DB Storage: [OPTIMIZED] Obteniendo paquetes con filtros:', filters);
       
+      // Construir query base de forma más robusta
       let query = this.db.select().from(schema.packages);
-      let conditions: any[] = [];
-
+      
+      // Aplicar filtros uno por uno para evitar problemas con arrays vacíos
       if (filters?.companyId) {
-        conditions.push(eq(schema.packages.companyId, filters.companyId));
         console.log(`DB Storage: [OPTIMIZED] Filtrando por compañía: ${filters.companyId}`);
+        query = query.where(eq(schema.packages.companyId, filters.companyId));
       }
 
       if (filters?.tripId) {
-        conditions.push(eq(schema.packages.tripId, filters.tripId.toString()));
         console.log(`DB Storage: [OPTIMIZED] Filtrando por tripId: ${filters.tripId}`);
-      }
-
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        const tripIdCondition = eq(schema.packages.tripId, filters.tripId.toString());
+        
+        // Si ya hay condiciones, combinar con AND
+        if (filters?.companyId) {
+          query = query.where(and(
+            eq(schema.packages.companyId, filters.companyId),
+            tripIdCondition
+          ));
+        } else {
+          query = query.where(tripIdCondition);
+        }
       }
 
       const packages = await query;
@@ -3177,91 +3184,66 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
       }
 
-      // Filtro por conductor optimizado - usar JOIN en lugar de consultas individuales
-      if (userRole === 'chofer' && currentUserId) {
-        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro de conductor optimizado para usuario ${currentUserId}`);
-        conditions.push(eq(schema.trips.driverId, currentUserId));
-      }
+      // Construir query básica sin JOIN complejo para evitar errores
+      let query = this.db.select().from(schema.packages);
 
-      // Construir query optimizada con LEFT JOIN
-      let query = this.db
-        .select({
-          // Campos del paquete
-          id: schema.packages.id,
-          senderName: schema.packages.senderName,
-          senderLastName: schema.packages.senderLastName,
-          senderPhone: schema.packages.senderPhone,
-          recipientName: schema.packages.recipientName,
-          recipientLastName: schema.packages.recipientLastName,
-          recipientPhone: schema.packages.recipientPhone,
-          packageDescription: schema.packages.packageDescription,
-          weight: schema.packages.weight,
-          price: schema.packages.price,
-          status: schema.packages.status,
-          tripId: schema.packages.tripId,
-          tripDetails: schema.packages.tripDetails,
-          companyId: schema.packages.companyId,
-          createdAt: schema.packages.createdAt,
-          updatedAt: schema.packages.updatedAt,
-          // Campos del trip (para evitar consultas adicionales)
-          tripRecordId: schema.trips.id,
-          tripDriverId: schema.trips.driverId,
-          tripCompanyId: schema.trips.companyId,
-          tripRouteId: schema.trips.routeId,
-          tripData: schema.trips.tripData
-        })
-        .from(schema.packages);
-
-      // Solo hacer JOIN si necesitamos filtrar por conductor o necesitamos datos del trip
-      if (userRole === 'chofer' && currentUserId) {
-        // JOIN optimizado usando una expresión SQL personalizada para extraer recordId
-        query = query.leftJoin(
-          schema.trips,
-          sql`${schema.trips.id} = CAST(
-            CASE 
-              WHEN ${schema.packages.tripDetails}->>'$.tripId' LIKE '%_%' 
-              THEN SUBSTRING_INDEX(${schema.packages.tripDetails}->>'$.tripId', '_', 1)
-              ELSE ${schema.packages.tripDetails}->>'$.tripId'
-            END AS UNSIGNED
-          )`
-        );
-      }
-
-      // Aplicar condiciones
+      // Aplicar condiciones básicas
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      console.log(`DB Storage: [OPTIMIZED] Ejecutando query con JOIN optimizado`);
+      console.log(`DB Storage: [OPTIMIZED] Ejecutando query básica`);
       const startTime = Date.now();
-      const results = await query;
+      const rawPackages = await query;
       const queryTime = Date.now() - startTime;
-      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${results.length} resultados`);
+      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
 
-      // Mapear resultados sin consultas adicionales
-      const packagesWithTripInfo = results.map(result => {
-        const tripDetails = typeof result.tripDetails === 'string' 
-          ? JSON.parse(result.tripDetails) 
-          : result.tripDetails;
+      // Aplicar filtrado por conductor manualmente si es necesario (temporalmente)
+      let filteredPackages = rawPackages;
+      
+      if (userRole === 'chofer' && currentUserId) {
+        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro de conductor para usuario ${currentUserId}`);
+        filteredPackages = [];
+        
+        for (const pkg of rawPackages) {
+          const tripDetails = typeof pkg.tripDetails === 'string' 
+            ? JSON.parse(pkg.tripDetails) 
+            : pkg.tripDetails;
+          
+          if (tripDetails?.tripId) {
+            // Extraer recordId del tripId (ej: "31_0" -> recordId = 31)
+            let recordId;
+            
+            if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+              const tripIdParts = tripDetails.tripId.split('_');
+              recordId = parseInt(tripIdParts[0]);
+            } else {
+              recordId = typeof tripDetails.tripId === 'string' ? parseInt(tripDetails.tripId) : tripDetails.tripId;
+            }
+            
+            if (!isNaN(recordId)) {
+              // Verificar si este viaje está asignado al conductor
+              const tripRecord = await this.getTrip(recordId);
+              
+              if (tripRecord && tripRecord.driverId === currentUserId) {
+                filteredPackages.push(pkg);
+              }
+            }
+          }
+        }
+        
+        console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
+      }
+
+      // Mapear resultados básicos
+      const packagesWithTripInfo = filteredPackages.map(pkg => {
+        const tripDetails = typeof pkg.tripDetails === 'string' 
+          ? JSON.parse(pkg.tripDetails) 
+          : pkg.tripDetails;
 
         return {
-          // Campos del paquete
-          id: result.id,
-          senderName: result.senderName,
-          senderLastName: result.senderLastName,
-          senderPhone: result.senderPhone,
-          recipientName: result.recipientName,
-          recipientLastName: result.recipientLastName,
-          recipientPhone: result.recipientPhone,
-          packageDescription: result.packageDescription,
-          weight: result.weight,
-          price: result.price,
-          status: result.status,
-          tripId: result.tripId,
-          companyId: result.companyId,
-          createdAt: result.createdAt,
-          updatedAt: result.updatedAt,
-          // Campos de trip info desde tripDetails (más confiable)
+          ...pkg,
+          // Campos de trip info desde tripDetails
           tripOrigin: tripDetails?.origin || '',
           tripDestination: tripDetails?.destination || '',
           tripDepartureDate: tripDetails?.departureDate || '',
@@ -3271,10 +3253,7 @@ export class DatabaseStorage implements IStorage {
           segmentOrigin: tripDetails?.origin || '',
           segmentDestination: tripDetails?.destination || '',
           // Mantener tripDetails original para compatibilidad
-          tripDetails: tripDetails,
-          // Información del trip record (si está disponible)
-          tripRecordId: result.tripRecordId || null,
-          tripDriverId: result.tripDriverId || null
+          tripDetails: tripDetails
         };
       });
 
