@@ -1408,10 +1408,11 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
         
-        // Obtener trip info de los mapas
-        const tripRecord = tripMap.get(tripDetails.recordId);
+        // Obtener trip info de los mapas (convertir recordId a número)
+        const numericRecordId = parseInt(tripDetails.recordId);
+        const tripRecord = tripMap.get(numericRecordId);
         if (!tripRecord) {
-          console.warn(`[OPTIMIZED] Trip record ${tripDetails.recordId} not found`);
+          console.warn(`[OPTIMIZED] Trip record ${tripDetails.recordId} (converted to ${numericRecordId}) not found`);
           continue;
         }
         
