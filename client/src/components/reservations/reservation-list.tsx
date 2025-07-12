@@ -230,12 +230,15 @@ export function ReservationList() {
       ).join(" ");
       const email = (reservation.email || '').toLowerCase();
       const phone = (reservation.phone || '').toLowerCase();
+      const reservationId = generateReservationId(reservation.id).toLowerCase();
 
       matchesSearch = (
         routeName.includes(searchLower) ||
         passengerNames.includes(searchLower) ||
         email.includes(searchLower) ||
-        phone.includes(searchLower)
+        phone.includes(searchLower) ||
+        reservationId.includes(searchLower) ||
+        reservation.id.toString().includes(searchLower)
       );
     }
 
@@ -595,7 +598,23 @@ export function ReservationList() {
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-               
+                <Input
+                  type="text"
+                  placeholder="Buscar por nombre, teléfono, correo o ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                  >
+                    <XIcon className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 
