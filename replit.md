@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 12, 2025** - COMPLETED: Date filtering fix for commission system successfully implemented:
+  - **ROOT CAUSE IDENTIFIED**: Commission date filter was using reservation creation date instead of trip departure date
+  - **CRITICAL FIX**: Modified `/api/commissions/reservations` endpoint to filter by trip departure date
+  - **ENHANCED LOGIC**: Added intelligent date extraction from tripDetails.tripId and trip.departureDate
+  - **FALLBACK SYSTEM**: Implemented multi-level date resolution: trip date → creation date fallback
+  - **USER ISSUE RESOLVED**: When filtering by date "11", now correctly shows only reservations for trips departing on that date
+  - **DATABASE VERIFICATION**: Confirmed reservations 65-69 were created on 2025-07-11 but belong to trip departing 2025-07-10
+  - **FRONTEND CONSISTENCY**: Date display now matches backend filtering logic for accurate commission tracking
+  - **IMPROVED ACCURACY**: Commission filtering now reflects actual trip dates rather than reservation creation dates
+
 - **July 12, 2025** - COMPLETED: UI optimizations and role permissions cleanup successfully implemented:
   - **MOBILE COMMISSIONS UI**: Fixed mobile desbordamiento (overflow) issues in commission cards with responsive design
   - **RESPONSIVE LAYOUT**: Optimized commission card layout for better mobile viewing with improved spacing and text wrapping

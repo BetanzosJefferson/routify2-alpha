@@ -4331,14 +4331,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const targetDate = filterDate || new Date().toISOString().split('T')[0]; // Usar fecha especificada o fecha actual
         
         comissionerReservations = comissionerReservations.filter(reservation => {
-          if (!reservation.createdAt) return false;
+          // Obtener fecha del viaje desde trip_details o trip
+          let tripDate = null;
           
-          // Convertir fecha de creación a formato YYYY-MM-DD
-          const createdDate = new Date(reservation.createdAt).toISOString().split('T')[0];
-          return createdDate === targetDate;
+          try {
+            // Si hay tripDetails con tripId, obtener la fecha del viaje
+            if (reservation.tripDetails && reservation.tripDetails.tripId) {
+              const tripId = reservation.tripDetails.tripId;
+              let recordId: number;
+              let tripIndex: number = 0;
+              
+              // Extraer recordId y index desde tripId
+              if (typeof tripId === 'string' && tripId.includes('_')) {
+                const [recordIdStr, indexStr] = tripId.split('_');
+                recordId = parseInt(recordIdStr);
+                tripIndex = parseInt(indexStr);
+              } else {
+                recordId = typeof tripId === 'number' ? tripId : parseInt(tripId.toString());
+              }
+              
+              // Buscar en la lista de viajes ya obtenidos para optimizar
+              const existingTrip = allReservations.find(r => 
+                r.tripDetails && 
+                (r.tripDetails.recordId === recordId || r.tripDetails.tripId === recordId)
+              )?.trip;
+              
+              if (existingTrip && existingTrip.departureDate) {
+                tripDate = existingTrip.departureDate;
+              }
+            }
+            
+            // Fallback: usar fecha del trip si existe
+            if (!tripDate && reservation.trip && reservation.trip.departureDate) {
+              tripDate = reservation.trip.departureDate;
+            }
+            
+            // Si no hay fecha del viaje, usar fecha de creación como fallback
+            if (!tripDate && reservation.createdAt) {
+              tripDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+            }
+            
+          } catch (error) {
+            console.error(`[GET /commissions/reservations] Error obteniendo fecha del viaje:`, error);
+            // Fallback a fecha de creación
+            if (reservation.createdAt) {
+              tripDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+            }
+          }
+          
+          return tripDate === targetDate;
         });
         
-        console.log(`[GET /commissions/reservations] Filtrado por fecha (${targetDate}): ${comissionerReservations.length} reservaciones`);
+        console.log(`[GET /commissions/reservations] Filtrado por fecha de viaje (${targetDate}): ${comissionerReservations.length} reservaciones`);
       } else {
         console.log(`[GET /commissions/reservations] Mostrando todas las comisiones: ${comissionerReservations.length} reservaciones`);
       }
