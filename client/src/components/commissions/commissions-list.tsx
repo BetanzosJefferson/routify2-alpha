@@ -313,53 +313,53 @@ function CommissionItems({
       let qrCodeDataUrl;
       try {
         const verificationUrl = `${window.location.origin}/reservation-details?id=${reservation.id}`;
-        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 100 });
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, { width: 120 });
       } catch (error) {
         console.error("Error al generar código QR:", error);
         qrCodeDataUrl = null;
       }
       
-      // Crear documento PDF con dimensiones de ticket térmico (58mm x 160mm)
+      // Crear documento PDF con dimensiones de ticket térmico (60mm x 170mm)
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: [58, 160],
+        format: [60, 170],
       });
 
       // Configuración de fuentes
       doc.setFont("courier", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(11);
 
       // Margen superior
       let y = 10;
 
       // Encabezado
-      doc.setFontSize(12);
+      doc.setFontSize(14);
       doc.setFont("courier", "bold");
       const companyName = user?.company || "TransRoute";
-      const companyNameWidth = doc.getStringUnitWidth(companyName) * 12 / doc.internal.scaleFactor;
-      const companyNameX = (58 - companyNameWidth) / 2;
+      const companyNameWidth = doc.getStringUnitWidth(companyName) * 14 / doc.internal.scaleFactor;
+      const companyNameX = (60 - companyNameWidth) / 2;
       doc.text(companyName, companyNameX, y);
       
-      y += 5;
-      doc.setFontSize(8);
+      y += 6;
+      doc.setFontSize(9);
       doc.setFont("courier", "normal");
-      doc.text("Boleto de reservación", 29, y, { align: "center" });
+      doc.text("Boleto de reservación", 30, y, { align: "center" });
       
       // Línea separadora
-      y += 3;
+      y += 4;
       doc.setDrawColor(200, 200, 200);
-      doc.line(5, y, 53, y);
+      doc.line(5, y, 55, y);
       
       // ID de la reservación
-      y += 5;
-      doc.setFontSize(10);
+      y += 6;
+      doc.setFontSize(11);
       doc.setFont("courier", "bold");
-      doc.text(`RESERVACIÓN #${generateReservationId(reservation.id)}`, 29, y, { align: "center" });
+      doc.text(`RESERVACIÓN #${generateReservationId(reservation.id)}`, 30, y, { align: "center" });
       
-      y += 4;
-      doc.setFontSize(8);
-      doc.text(format(new Date(reservation.createdAt), "dd/MM/yyyy HH:mm", { locale: es }), 29, y, { align: "center" });
+      y += 5;
+      doc.setFontSize(9);
+      doc.text(format(new Date(reservation.createdAt), "dd/MM/yyyy HH:mm", { locale: es }), 30, y, { align: "center" });
       
       // Información del viaje
       if (reservation.trip) {
@@ -375,18 +375,18 @@ function CommissionItems({
         // Origen y destino específicos del trayecto
         const origen = reservation.specificOrigin || reservation.trip.route?.origin || "";
         const destino = reservation.specificDestination || reservation.trip.route?.destination || "";
-        const maxWidth = 48;
+        const maxWidth = 50;
         
         // Origen
         const origenCompleto = `Origen: ${origen}`;
-        if (doc.getStringUnitWidth(origenCompleto) * 8 / doc.internal.scaleFactor > maxWidth) {
+        if (doc.getStringUnitWidth(origenCompleto) * 9 / doc.internal.scaleFactor > maxWidth) {
           doc.text("Origen:", 5, y);
           y += 3;
           const words = origen.split(' ');
           let line = '';
           for (let i = 0; i < words.length; i++) {
             const testLine = line + words[i] + ' ';
-            if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidth) {
+            if (doc.getStringUnitWidth(testLine) * 9 / doc.internal.scaleFactor > maxWidth) {
               doc.text(line, 5, y);
               line = words[i] + ' ';
               y += 3;
@@ -403,14 +403,14 @@ function CommissionItems({
         
         // Destino
         const destinoCompleto = `Destino: ${destino}`;
-        if (doc.getStringUnitWidth(destinoCompleto) * 8 / doc.internal.scaleFactor > maxWidth) {
+        if (doc.getStringUnitWidth(destinoCompleto) * 9 / doc.internal.scaleFactor > maxWidth) {
           doc.text("Destino:", 5, y);
           y += 3;
           const words = destino.split(' ');
           let line = '';
           for (let i = 0; i < words.length; i++) {
             const testLine = line + words[i] + ' ';
-            if (doc.getStringUnitWidth(testLine) * 8 / doc.internal.scaleFactor > maxWidth) {
+            if (doc.getStringUnitWidth(testLine) * 9 / doc.internal.scaleFactor > maxWidth) {
               doc.text(line, 5, y);
               line = words[i] + ' ';
               y += 3;
@@ -501,10 +501,10 @@ function CommissionItems({
       // Código QR
       if (qrCodeDataUrl) {
         y += 8;
-        const qrX = (58 - 25) / 2; // Centrar el QR (25mm de ancho)
+        const qrX = (60 - 30) / 2; // Centrar el QR (30mm de ancho)
         try {
-          doc.addImage(qrCodeDataUrl, 'PNG', qrX, y, 25, 25);
-          y += 27;
+          doc.addImage(qrCodeDataUrl, 'PNG', qrX, y, 30, 30);
+          y += 32;
         } catch (error) {
           console.error("Error al añadir QR al PDF:", error);
           y += 5;
@@ -514,22 +514,43 @@ function CommissionItems({
       // Pie de página
       y += 3;
       doc.setDrawColor(200, 200, 200);
-      doc.line(5, y, 53, y);
+      doc.line(5, y, 55, y);
       
       y += 4;
-      doc.setFontSize(6);
-      doc.text("Gracias por su preferencia", 29, y, { align: "center" });
+      doc.setFontSize(7);
+      doc.text("Gracias por su preferencia", 30, y, { align: "center" });
 
       // Abrir el PDF en una nueva ventana usando about:blank (compatible con Android)
-      const pdfWindow = window.open('', '_blank');
+      const pdfWindow = window.open('about:blank', '_blank');
       if (pdfWindow) {
         pdfWindow.document.write(`
           <html>
             <head>
               <title>Reservación #${generateReservationId(reservation.id)} - 60mm</title>
               <style>
-                body { margin: 0; }
-                iframe { width: 100%; height: 100vh; border: none; }
+                body { 
+                  margin: 0; 
+                  padding: 0;
+                  width: 100%;
+                  height: 100vh;
+                  overflow: hidden;
+                }
+                iframe { 
+                  width: 100%; 
+                  height: 100vh; 
+                  border: none;
+                  display: block;
+                }
+                @media print {
+                  body { 
+                    width: 60mm !important;
+                    height: auto !important;
+                  }
+                  iframe {
+                    width: 60mm !important;
+                    height: auto !important;
+                  }
+                }
               </style>
             </head>
             <body>
