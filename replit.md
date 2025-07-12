@@ -119,6 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 12, 2025** - ENHANCED: Commission management system with advanced filtering and bulk operations:
+  - **COMMISSIONER FILTER**: Added dropdown to filter commissions by specific commissioner user
+  - **BULK SELECTION**: Implemented "Seleccionar todo" button to select all visible commissions at once
+  - **BULK DESELECTION**: Added "Deseleccionar todo" button to clear all selections
+  - **TOTAL CALCULATION**: Added real-time calculation of selected commission amounts with proper display
+  - **NEW ENDPOINT**: Created `/api/users/commissioners` to fetch commissioner list for admin filtering
+  - **ENHANCED UI**: Improved commission interface with better control layout and responsive design
+  - **CALCULATION FIX**: Fixed NaN issue in total calculation by properly accessing commission percentage and amounts
+  - **BACKEND INTEGRATION**: Enhanced existing `/api/commissions/reservations` endpoint to support `userId` filtering
+  - **ROLE PERMISSIONS**: Restricted advanced features to owner and admin roles only
+  - **COMMISSION FORMULA**: Implemented proper commission calculation: `totalAmount * (commissionPercentage / 100)`
+  - **USER EXPERIENCE**: Commission management now supports efficient bulk operations for payment processing
+
 - **July 12, 2025** - CRITICAL FIX: Package editing permissions error completely resolved:
   - **ROOT CAUSE IDENTIFIED**: Package editing failed with 403 "No tiene permisos para ver este paquete" error
   - **BACKEND METHOD FIXED**: Corrected all `getPackageById()` references to use correct `getPackage()` method

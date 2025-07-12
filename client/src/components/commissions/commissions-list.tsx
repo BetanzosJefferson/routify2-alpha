@@ -183,7 +183,17 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     );
     
     return selectedCommissions.reduce((total: number, comm: any) => {
-      const commissionAmount = comm.monto * (comm.commissionPercentage / 100);
+      // Obtener el monto total de la reservación
+      const totalAmount = comm.totalAmount || comm.monto || 0;
+      
+      // Obtener el porcentaje de comisión del usuario creador
+      const commissionPercentage = comm.createdByUser?.commissionPercentage || 10; // Default 10%
+      
+      // Calcular el monto de la comisión
+      const commissionAmount = totalAmount * (commissionPercentage / 100);
+      
+      console.log(`[calculateSelectedTotal] Reservación ${comm.id}: monto=${totalAmount}, porcentaje=${commissionPercentage}%, comisión=${commissionAmount}`);
+      
       return total + commissionAmount;
     }, 0);
   };
