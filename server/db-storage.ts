@@ -1374,6 +1374,14 @@ export class DatabaseStorage implements IStorage {
         reservations.slice(0, 3).forEach(r => {
           console.log(`  Reservación ${r.id}: commissionPaid=${r.commissionPaid}, createdBy=${r.createdBy}`);
         });
+        
+        // DEBUG CRÍTICO: Verificar reservaciones específicas que deberían tener commissionPaid=true
+        const specificIds = [63, 65, 66, 67, 68, 69];
+        const specificReservations = reservations.filter(r => specificIds.includes(r.id));
+        console.log(`[DEBUG] Reservaciones específicas encontradas: ${specificReservations.length}`);
+        specificReservations.forEach(r => {
+          console.log(`  [ESPECÍFICA] Reservación ${r.id}: commissionPaid=${r.commissionPaid}, typeof=${typeof r.commissionPaid}`);
+        });
       }
       
       // Recolectar IDs únicos para consultas batch
