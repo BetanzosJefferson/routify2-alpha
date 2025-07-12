@@ -2544,7 +2544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Get reservations using the OPTIMIZED storage method
-        const reservations = await storage.getReservationsOptimized({
+        const reservations = await storage.getReservations({
           companyId: companyId,
           currentUserId: user.id,
           userRole: user.role
