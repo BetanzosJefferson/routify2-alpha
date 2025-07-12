@@ -456,9 +456,9 @@ export class DatabaseStorage implements IStorage {
         condiciones.push(or(...dateConditions));
       }
     } else if (params.date) {
-      console.log(`[searchTrips] Filtro de fecha individual será aplicado en procesamiento posterior: ${params.date}`);
-      // No aplicar filtro SQL de fecha aquí - lo haremos en el procesamiento posterior
-      // para tener control sobre qué segmentos usar para el filtro
+      console.log(`[searchTrips] 🔥 Aplicando filtro SQL por fecha específica: ${params.date}`);
+      // Aplicar filtro SQL de fecha directamente para mejor rendimiento
+      condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)

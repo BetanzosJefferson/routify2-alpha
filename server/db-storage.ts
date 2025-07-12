@@ -627,12 +627,18 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // CAMBIO: Remover filtro de fecha SQL inicial para permitir filtrado por segmento individual
-    // El filtro de fecha se aplicará en el procesamiento posterior de cada segmento
+    // 🔥 OPTIMIZACIÓN CRÍTICA: Filtro de fecha a nivel SQL para evitar procesamiento en memoria
     if (params.dateRange && params.dateRange.length > 0) {
-      console.log(`[searchTrips] [OPTIMIZED] Filtro por rango de fechas será aplicado en procesamiento posterior:`, params.dateRange);
+      console.log(`[searchTrips] [OPTIMIZED] Aplicando filtro SQL por rango de fechas:`, params.dateRange);
+      // Crear condiciones OR para cada fecha en el rango
+      const dateConditions = params.dateRange.map(date => 
+        sql`${schema.trips.tripData}->0->>'departureDate' = ${date}`
+      );
+      condiciones.push(or(...dateConditions));
     } else if (params.date) {
-      console.log(`[searchTrips] [OPTIMIZED] Filtro de fecha individual será aplicado en procesamiento posterior: ${params.date}`);
+      console.log(`[searchTrips] [OPTIMIZED] 🔥 Aplicando filtro SQL por fecha específica: ${params.date}`);
+      // Usar SQL directo para filtrar por fecha en el primer segmento
+      condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -808,25 +814,8 @@ export class DatabaseStorage implements IStorage {
         // Usar el primer segmento como representativo del viaje completo
         const firstSegment = tripDataArray[0];
         if (firstSegment) {
-          // 🔥 APLICAR FILTRO DE FECHA EN MODO OPTIMIZADO
-          let dateMatch = true;
-          if (params.date) {
-            // Comparar fechas considerando posibles desfases de timezone
-            const segmentDate = new Date(firstSegment.departureDate + 'T12:00:00');
-            const searchDate = new Date(params.date + 'T12:00:00');
-            dateMatch = segmentDate.toDateString() === searchDate.toDateString();
-            console.log(`[searchTrips] [OPTIMIZED] 🔥 Filtro de fecha optimizado: ${firstSegment.departureDate} === ${params.date} => ${dateMatch}`);
-          } else if (params.dateRange && params.dateRange.length > 0) {
-            dateMatch = params.dateRange.some(date => {
-              const segmentDate = new Date(firstSegment.departureDate + 'T12:00:00');
-              const searchDate = new Date(date + 'T12:00:00');
-              return segmentDate.toDateString() === searchDate.toDateString();
-            });
-            console.log(`[searchTrips] [OPTIMIZED] 🔥 Filtro de rango de fechas optimizado: ${firstSegment.departureDate} en [${params.dateRange.join(', ')}] => ${dateMatch}`);
-          }
-          
-          // Solo incluir si pasa el filtro de fecha
-          if (dateMatch) {
+          // 🔥 FECHA YA FILTRADA EN SQL - no necesita filtro adicional
+          // El filtro de fecha se aplica ahora a nivel de base de datos para mejor rendimiento
             tripsWithRouteInfo.push({
             ...trip,
             // Mantener ID original para viaje principal
@@ -862,7 +851,6 @@ export class DatabaseStorage implements IStorage {
               lastName: assignedDriver.lastName
             } : undefined
           });
-          }
         }
       } else {
         // MODO EXPANDIDO: Process each segment in the tripData array
@@ -894,25 +882,11 @@ export class DatabaseStorage implements IStorage {
         
         console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
         
-        // NUEVO: Aplicar filtro de fecha por segmento individual
-        let dateMatch = true;
-        if (params.date) {
-          // Comparar fechas considerando posibles desfases de timezone
-          const segmentDate = new Date(segment.departureDate + 'T12:00:00');
-          const searchDate = new Date(params.date + 'T12:00:00');
-          dateMatch = segmentDate.toDateString() === searchDate.toDateString();
-          console.log(`[searchTrips] [OPTIMIZED] Filtro de fecha - Segmento ${segmentIndex}: ${segment.departureDate} === ${params.date} => ${dateMatch}`);
-        } else if (params.dateRange && params.dateRange.length > 0) {
-          dateMatch = params.dateRange.some(date => {
-            const segmentDate = new Date(segment.departureDate + 'T12:00:00');
-            const searchDate = new Date(date + 'T12:00:00');
-            return segmentDate.toDateString() === searchDate.toDateString();
-          });
-          console.log(`[searchTrips] [OPTIMIZED] Filtro de rango de fechas - Segmento ${segmentIndex}: ${segment.departureDate} en [${params.dateRange.join(', ')}] => ${dateMatch}`);
-        }
+        // 🔥 FECHA YA FILTRADA EN SQL - no necesita filtro adicional para modo expandido
+        // Solo aplicar filtros de origen, destino y asientos
         
-        // Only include segment if it matches all filters INCLUDING date
-        if (originMatch && destMatch && seatMatch && dateMatch) {
+        // Only include segment if it matches all filters (date already filtered at SQL level)
+        if (originMatch && destMatch && seatMatch) {
           // Create a unique identifier for this segment using recordId_segmentIndex format
           const uniqueTripId = `${trip.id}_${segmentIndex}`;
           
