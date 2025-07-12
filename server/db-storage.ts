@@ -1315,7 +1315,43 @@ export class DatabaseStorage implements IStorage {
     
     try {
       // CONSULTA OPTIMIZADA SIMPLIFICADA: Obtenemos solo las reservaciones
-      let query = db.select()
+      // CRÍTICO: Incluir explícitamente el campo commissionPaid
+      let query = db.select({
+        // Incluir todos los campos necesarios explícitamente
+        id: schema.reservations.id,
+        companyId: schema.reservations.companyId,
+        status: schema.reservations.status,
+        tripDetails: schema.reservations.tripDetails,
+        totalAmount: schema.reservations.totalAmount,
+        email: schema.reservations.email,
+        phone: schema.reservations.phone,
+        notes: schema.reservations.notes,
+        paymentMethod: schema.reservations.paymentMethod,
+        paymentStatus: schema.reservations.paymentStatus,
+        createdBy: schema.reservations.createdBy,
+        createdAt: schema.reservations.createdAt,
+        updatedAt: schema.reservations.updatedAt,
+        pickupLocation: schema.reservations.pickupLocation,
+        dropoffLocation: schema.reservations.dropoffLocation,
+        seatNumbers: schema.reservations.seatNumbers,
+        checkInTime: schema.reservations.checkInTime,
+        boardingStatus: schema.reservations.boardingStatus,
+        cancellationReason: schema.reservations.cancellationReason,
+        advanceAmount: schema.reservations.advanceAmount,
+        advancePaymentMethod: schema.reservations.advancePaymentMethod,
+        remainingBalance: schema.reservations.remainingBalance,
+        commissionAmount: schema.reservations.commissionAmount,
+        paidBy: schema.reservations.paidBy,
+        markedAsPaidAt: schema.reservations.markedAsPaidAt,
+        originalAmount: schema.reservations.originalAmount,
+        checkCount: schema.reservations.checkCount,
+        checkedBy: schema.reservations.checkedBy,
+        checkedAt: schema.reservations.checkedAt,
+        // CRÍTICO: Incluir explícitamente el campo commissionPaid
+        commissionPaid: schema.reservations.commissionPaid,
+        couponCode: schema.reservations.couponCode,
+        discountAmount: schema.reservations.discountAmount
+      })
         .from(schema.reservations)
       
       // Aplicar filtros
