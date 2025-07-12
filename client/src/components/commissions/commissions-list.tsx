@@ -199,7 +199,10 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
   };
 
   // Filtrar comisiones según el estado
-  const pendingCommissions = commissionsData?.filter((comm: any) => !comm.commissionPaid) || [];
+  const pendingCommissions = commissionsData?.filter((comm: any) => {
+    console.log(`[DEBUG] Comisión ${comm.id}: commissionPaid=${comm.commissionPaid}, typeof=${typeof comm.commissionPaid}`);
+    return !comm.commissionPaid;
+  }) || [];
   const paidCommissions = commissionsData?.filter((comm: any) => comm.commissionPaid) || [];
 
   if (isLoading) {

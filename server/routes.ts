@@ -4431,7 +4431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
 
         // Retornar la reservación con datos modificados, preservando createdByUser completo
-        return {
+        const transformedReservation = {
           ...reservation,
           // Sobrescribir datos de trip con información específica
           trip: {
@@ -4447,8 +4447,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...reservation.createdByUser,
             // Preservar explícitamente el commissionPercentage si existe
             commissionPercentage: reservation.createdByUser?.commissionPercentage
-          }
+          },
+          // CRÍTICO: Preservar explícitamente el campo commissionPaid
+          commissionPaid: reservation.commissionPaid
         };
+        
+        console.log(`[GET /commissions/reservations] Reservación ${reservation.id}: commissionPaid=${reservation.commissionPaid}`);
+        
+        return transformedReservation;
       }));
       
       res.json(transformedReservations);
