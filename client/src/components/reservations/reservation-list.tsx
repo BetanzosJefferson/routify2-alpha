@@ -13,7 +13,7 @@ import {
   PhoneIcon,
   MailIcon,
   CalendarIcon,
-  ArchiveIcon,
+
   FilterIcon,
   QrCode,
   ExternalLink,
@@ -128,7 +128,7 @@ export function ReservationList() {
   // Modal de detalles de reservación
   const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  // Por defecto mostramos las reservaciones actuales/futuras
+  // Ya no necesitamos pestañas, solo mostramos las reservaciones por fecha
   const [activeTab, setActiveTab] = useState("upcoming");
 
   // Estados adicionales para mejorar la UX
@@ -156,7 +156,7 @@ export function ReservationList() {
     error: reservationsError
   } = useReservations({
     date: dateFilter, // Usar filtro de fecha (incluyendo fecha actual por defecto)
-    archived: activeTab === "archived" // Usar endpoint archivadas cuando el filtro sea "archived"
+    archived: false // Ya no usamos funcionalidad de archivadas
   });
 
   // Actualizar estados de UI basados en el estado de carga
@@ -170,67 +170,18 @@ export function ReservationList() {
     }
   }, [isLoading, reservationsError]);
 
-  // Ahora usamos funciones inline para manejar las comparaciones de fechas
-
-  // Separar reservaciones en actuales, archivadas y canceladas
-  // Primero, separamos las canceladas (tendrán su propia pestaña)
+  // Filtrar reservaciones canceladas para mostrar en pestaña separada
   const canceledReservations = reservations?.filter(
     (reservation) => reservation.status === 'canceled' || reservation.status === 'canceledAndRefund'
   ) || [];
 
-  // Usar la fecha actual real del sistema
-  const SYSTEM_DATE = new Date();
-  console.log(`[SISTEMA] Fecha actual del sistema: ${SYSTEM_DATE.toISOString()}`);
-
-  // Luego filtramos las reservaciones actuales/futuras (que no estén canceladas)
-  const upcomingReservations = reservations?.filter(
-    (reservation) => {
-      // Solo incluir reservaciones confirmadas (no canceladas)
-      if (reservation.status !== 'confirmed') return false;
-
-      // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
-      // CORRECTED: Access reservation.trip.departureDate directly
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
-      // Normalizar la fecha actual del sistema para una comparación correcta
-      const today = normalizeToStartOfDay(SYSTEM_DATE);
-
-      console.log(`[Clasificación] Evaluando reservación ${reservation.id} para 'Actuales y Futuras'`);
-      console.log(`[Clasificación] Fecha viaje: ${tripDate.toISOString()}, Fecha sistema: ${today.toISOString()}`);
-      console.log(`[Clasificación] ¿Es actual o futura? ${tripDate >= today ? 'SÍ' : 'NO'}`);
-
-      // Las reservaciones con fecha igual o posterior a hoy se consideran "actuales o futuras"
-      return tripDate >= today;
-    }
-  ) || [];
-
-  const archivedReservations = reservations?.filter(
-    (reservation) => {
-      // Solo incluir reservaciones confirmadas (no canceladas)
-      if (reservation.status !== 'confirmed') return false;
-
-      // Usar normalizeToStartOfDay para obtener la fecha normalizada del viaje
-      // CORRECTED: Access reservation.trip.departureDate directly
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
-      // Usar la misma fecha del sistema declarada arriba
-      const today = normalizeToStartOfDay(SYSTEM_DATE);
-
-      console.log(`[Clasificación] Evaluando reservación ${reservation.id} para 'Archivadas'`);
-      console.log(`[Clasificación] Fecha viaje: ${tripDate.toISOString()}, Fecha sistema: ${today.toISOString()}`);
-      console.log(`[Clasificación] ¿Es archivada? ${tripDate < today ? 'SÍ' : 'NO'}`);
-
-      // Cambiamos a 'estrictamente menor que' para que las reservaciones del día actual
-      // NO se consideren archivadas sino actuales
-      return tripDate < today;
-    }
+  // Mostrar solo las reservaciones confirmadas (no canceladas)
+  const confirmedReservations = reservations?.filter(
+    (reservation) => reservation.status === 'confirmed'
   ) || [];
 
   // Obtener las reservaciones según la pestaña activa
-  const activeReservations =
-    activeTab === "upcoming"
-      ? upcomingReservations
-      : activeTab === "archived"
-        ? archivedReservations
-        : canceledReservations;
+  const activeReservations = activeTab === "canceled" ? canceledReservations : confirmedReservations;
 
   // Function to handle sorting
   const getSortedReservations = (reservations: ReservationWithDetails[]) => {
@@ -602,43 +553,21 @@ export function ReservationList() {
           {/* Título y botones de categoría */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
-              {activeTab === "upcoming" ? (
-                <>
-                  <CalendarIcon className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Reservaciones</CardTitle>
-                </>
-              ) : activeTab === "archived" ? (
-                <>
-                  <ArchiveIcon className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-lg">Archivadas</CardTitle>
-                </>
-              ) : (
+              {activeTab === "canceled" ? (
                 <>
                   <XIcon className="h-5 w-5 text-red-600" />
                   <CardTitle className="text-lg">Canceladas</CardTitle>
                 </>
+              ) : (
+                <>
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">Reservaciones</CardTitle>
+                </>
               )}
             </div>
 
-            {/* Botones de categoría */}
+            {/* Botón de reservaciones canceladas */}
             <div className="flex gap-2">
-              <Button
-                variant={activeTab === "archived" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  // Si ya está activo el filtro "archived", quitarlo (volver a "upcoming")
-                  if (activeTab === "archived") {
-                    setActiveTab("upcoming");
-                  } else {
-                    setActiveTab("archived");
-                  }
-                }}
-                className="gap-1"
-              >
-                <ArchiveIcon className="h-4 w-4" />
-                Archivadas
-                <Badge variant="secondary" className="ml-1">{archivedReservations.length}</Badge>
-              </Button>
               <Button
                 variant={activeTab === "canceled" ? "default" : "outline"}
                 size="sm"
@@ -1082,9 +1011,9 @@ export function ReservationList() {
             </table>
           ) : (
             <div className="text-center p-8 text-gray-500">
-              {activeTab === "upcoming"
-                ? "No hay reservaciones actuales o futuras disponibles."
-                : "No hay reservaciones archivadas disponibles."}
+              {activeTab === "canceled"
+                ? "No hay reservaciones canceladas disponibles."
+                : "No hay reservaciones disponibles."}
             </div>
           )}
         </div>
@@ -1160,9 +1089,9 @@ export function ReservationList() {
             </div>
           ) : (
             <div className="text-center p-8 text-gray-500 text-sm">
-              {activeTab === "upcoming"
-                ? "No hay reservaciones actuales o futuras disponibles."
-                : "No hay reservaciones archivadas disponibles."}
+              {activeTab === "canceled"
+                ? "No hay reservaciones canceladas disponibles."
+                : "No hay reservaciones disponibles."}
             </div>
           )}
         </div>
