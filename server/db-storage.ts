@@ -1628,6 +1628,8 @@ export class DatabaseStorage implements IStorage {
           checkCount: reservation.checkCount,
           checkedBy: reservation.checkedBy,
           checkedAt: reservation.checkedAt,
+          // CRÍTICO: Incluir explícitamente el campo commissionPaid
+          commissionPaid: reservation.commissionPaid,
           trip,
           passengers,
           createdByUser: createdByUser ? {
@@ -1656,6 +1658,11 @@ export class DatabaseStorage implements IStorage {
             paymentStatus: reservationResult.paymentStatus,
             paymentMethod: reservationResult.paymentMethod
           }, null, 2));
+        }
+
+        // DEBUG CRÍTICO: Verificar que commissionPaid se incluye en el resultado final
+        if ([63, 65, 66, 67, 68, 69].includes(reservation.id)) {
+          console.log(`[DEBUG_COMMISSION] Reservación ${reservation.id} - reservationResult.commissionPaid: ${reservationResult.commissionPaid}`);
         }
 
         results.push(reservationResult);
