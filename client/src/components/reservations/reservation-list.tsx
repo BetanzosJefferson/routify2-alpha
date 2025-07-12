@@ -155,7 +155,8 @@ export function ReservationList() {
     isLoading,
     error: reservationsError
   } = useReservations({
-    date: dateFilter, // Usar filtro de fecha (incluyendo fecha actual por defecto)
+    // No filtrar por fecha en el backend - traer todas las reservaciones
+    // El filtrado se hará en el frontend después de agrupar por viaje padre
     archived: false // Ya no usamos funcionalidad de archivadas
   });
 
