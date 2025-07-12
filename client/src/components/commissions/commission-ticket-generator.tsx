@@ -37,8 +37,8 @@ export function useCommissionTicketGenerator() {
         couponCode: reservation.couponCode || null,
       };
 
-      // Generar el boleto usando la función especializada
-      await generateReservationTicket60mmPDF(reservationData, companyName);
+      // Generar el boleto usando la función especializada con descarga directa
+      await generateReservationTicket60mmPDFWithDownload(reservationData, companyName);
       
       toast({
         title: "Boleto generado",
