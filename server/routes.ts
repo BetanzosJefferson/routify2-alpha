@@ -7157,7 +7157,7 @@ function setupPackageRoutes(app: Express) {
       const id = parseInt(req.params.id);
       
       // Obtener el paquete
-      const packageData = await storage.getPackageById(id);
+      const packageData = await storage.getPackage(id);
       
       if (!packageData) {
         return res.status(404).json({ message: 'Paquete no encontrado' });
@@ -7215,7 +7215,7 @@ function setupPackageRoutes(app: Express) {
       const id = parseInt(req.params.id);
       
       // Verificar que el paquete existe
-      const existingPackage = await storage.getPackageById(id);
+      const existingPackage = await storage.getPackage(id);
       if (!existingPackage) {
         return res.status(404).json({ message: 'Paquete no encontrado' });
       }
@@ -7248,7 +7248,7 @@ function setupPackageRoutes(app: Express) {
       const id = parseInt(req.params.id);
       
       // Verificar que el paquete existe
-      const existingPackage = await storage.getPackageById(id);
+      const existingPackage = await storage.getPackage(id);
       if (!existingPackage) {
         return res.status(404).json({ message: 'Paquete no encontrado' });
       }
@@ -7282,7 +7282,7 @@ function setupPackageRoutes(app: Express) {
       const id = parseInt(req.params.id);
       
       // Verificar que el paquete existe
-      const existingPackage = await storage.getPackageById(id);
+      const existingPackage = await storage.getPackage(id);
       if (!existingPackage) {
         return res.status(404).json({ message: 'Paquete no encontrado' });
       }

@@ -199,12 +199,16 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
       
       setIsLoading(true);
       try {
+        console.log(`[PackageForm] Cargando paquete con ID: ${packageId}`);
         const response = await fetch(`/api/packages/${packageId}`);
         if (!response.ok) {
-          throw new Error('Error al cargar los datos del paquete');
+          const errorText = await response.text();
+          console.error(`[PackageForm] Error al cargar paquete ${packageId}:`, response.status, errorText);
+          throw new Error(`Error al cargar los datos del paquete: ${response.status} ${errorText}`);
         }
         
         const packageData = await response.json();
+        console.log(`[PackageForm] Datos del paquete cargados:`, packageData);
         // Actualizar el formulario con los datos del paquete
         form.reset({
           senderName: packageData.senderName,
@@ -246,7 +250,7 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
           }
         }
       } catch (error) {
-        console.error('Error al cargar el paquete:', error);
+        console.error('[PackageForm] Error al cargar el paquete:', error);
         toast({
           title: 'Error',
           description: 'No se pudo cargar la información del paquete',
