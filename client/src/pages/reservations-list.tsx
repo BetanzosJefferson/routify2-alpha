@@ -226,9 +226,16 @@ function ReservationsListContent() {
           arrivalTime: parentTripInfo.arrivalTime,
           recordId: recordId,
           route: parentTripInfo.route,
-          driver: parentTripInfo.driver,
-          vehicle: parentTripInfo.vehicle
+          driver: parentTripInfo.driver || reservation.trip?.driver, // Usar conductor del trip principal si parentTrip no tiene
+          vehicle: parentTripInfo.vehicle || reservation.trip?.vehicle
         };
+        
+        // DEBUG: Verificar que el conductor se asigna correctamente
+        console.log(`[TRIPINFO_DEBUG] Grupo ${groupKey} - Conductor asignado:`, {
+          'parentTripInfo.driver': parentTripInfo.driver,
+          'reservation.trip?.driver': reservation.trip?.driver,
+          'final driver': groups[groupKey].tripInfo.driver
+        });
         groups[groupKey].parentTripDate = parentTripInfo.departureDate;
       } else if (reservation.trip) {
         // Fallback: usar información del trip asociado
@@ -243,6 +250,13 @@ function ReservationsListContent() {
           driver: reservation.trip.driver || reservation.tripDetails?.trip?.driver,
           vehicle: reservation.trip.vehicle || reservation.tripDetails?.trip?.vehicle
         };
+        
+        // DEBUG: Verificar que el conductor se asigna correctamente
+        console.log(`[TRIPINFO_DEBUG] Grupo ${groupKey} - Conductor asignado (fallback):`, {
+          'reservation.trip.driver': reservation.trip.driver,
+          'reservation.tripDetails?.trip?.driver': reservation.tripDetails?.trip?.driver,
+          'final driver': groups[groupKey].tripInfo.driver
+        });
         groups[groupKey].parentTripDate = reservation.trip.departureDate;
       }
     }
