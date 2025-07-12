@@ -4307,11 +4307,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener todas las reservaciones con sus detalles
+      console.log(`[GET /commissions/reservations] LLAMANDO storage.getReservations con:`, {
+        companyId: companyId === null ? undefined : companyId,
+        currentUserId: user.id,
+        userRole: user.role
+      });
       const allReservations = await storage.getReservations({
         companyId: companyId === null ? undefined : companyId,
         currentUserId: user.id,
         userRole: user.role
       });
+      console.log(`[GET /commissions/reservations] RECIBIDO ${allReservations.length} reservaciones`);
+      
+      // DEBUG: Verificar si las reservaciones tienen commissionPaid
+      if (allReservations.length > 0) {
+        console.log(`[GET /commissions/reservations] MUESTRA - Primera reservación:`, {
+          id: allReservations[0].id,
+          commissionPaid: allReservations[0].commissionPaid,
+          hasCommissionPaid: allReservations[0].hasOwnProperty('commissionPaid')
+        });
+      }
       
       // Filtrar solo aquellas creadas por usuarios comisionistas
       let comissionerReservations = allReservations.filter(
