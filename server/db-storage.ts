@@ -1272,6 +1272,24 @@ export class DatabaseStorage implements IStorage {
           passengers,
           createdByUser
         };
+
+        // DEBUG: Logging específico para reservación 579
+        if (result.reservationId === 579) {
+          console.log(`[DEBUG_579] Datos de reservación 579:`);
+          console.log(`  - totalAmount: ${result.reservationTotalAmount}`);
+          console.log(`  - advanceAmount: ${result.reservationAdvanceAmount}`);
+          console.log(`  - advancePaymentMethod: ${result.reservationAdvancePaymentMethod}`);
+          console.log(`  - paymentStatus: ${result.reservationPaymentStatus}`);
+          console.log(`  - paymentMethod: ${result.reservationPaymentMethod}`);
+          console.log(`  - Objeto final:`, JSON.stringify({
+            id: reservation.id,
+            totalAmount: reservation.totalAmount,
+            advanceAmount: reservation.advanceAmount,
+            advancePaymentMethod: reservation.advancePaymentMethod,
+            paymentStatus: reservation.paymentStatus,
+            paymentMethod: reservation.paymentMethod
+          }, null, 2));
+        }
         
         reservationsWithDetails.push(reservation);
       }
