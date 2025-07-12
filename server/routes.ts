@@ -4988,6 +4988,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Rutas para manejo de usuarios
+  // GET /api/users/commissioners - Obtener lista de comisionistas
+  app.get(apiRouter('/users/commissioners'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN]), async (req, res) => {
+    try {
+      const user = req.user as Express.User;
+      let commissioners;
+      
+      console.log(`[GET /api/users/commissioners] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}, CompanyId: ${user.companyId || 'N/A'}`);
+      
+      if (user.role === UserRole.SUPER_ADMIN) {
+        // Superadmin puede ver todos los comisionistas
+        commissioners = await storage.getUsers();
+        commissioners = commissioners.filter(u => u.role === UserRole.COMMISSIONER);
+      } else {
+        // Owner y Admin solo ven comisionistas de su compañía
+        const companyFilter = user.companyId || user.company || '';
+        commissioners = await storage.getUsersByCompanyAndRole(companyFilter, UserRole.COMMISSIONER);
+      }
+      
+      console.log(`[GET /api/users/commissioners] Encontrados ${commissioners.length} comisionistas`);
+      
+      res.json(commissioners);
+    } catch (error) {
+      console.error('Error al obtener comisionistas:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  });
+
   // GET /api/users - Obtener todos los usuarios
   app.get(apiRouter('/users'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN]), async (req, res) => {
     try {

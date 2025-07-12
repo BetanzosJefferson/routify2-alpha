@@ -19,7 +19,9 @@ import {
   MapPin,
   Download,
   CalendarDays,
-  Eye
+  Eye,
+  Users,
+  CheckSquare
 } from "lucide-react";
 import { cn, formatPrice, generateReservationId } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -30,6 +32,7 @@ import { useCommissionTicketGenerator } from "./commission-ticket-generator";
 import QRCode from "qrcode";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CommissionsListProps {
   /** Si es true, muestra solo vista de lectura para comisionistas */
@@ -54,10 +57,11 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     return today.toISOString().split('T')[0];
   });
   const [viewAll, setViewAll] = useState(false);
+  const [selectedCommissioner, setSelectedCommissioner] = useState<string>("todos");
 
   // Consulta para obtener las reservaciones de comisionistas
   const { data: commissionsData, isLoading, error } = useQuery({
-    queryKey: ['/api/commissions/reservations', queryKeySuffix, filterDate, viewAll],
+    queryKey: ['/api/commissions/reservations', queryKeySuffix, filterDate, viewAll, selectedCommissioner],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (!viewAll && filterDate) {
@@ -65,6 +69,9 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
       }
       if (viewAll) {
         params.append('viewAll', 'true');
+      }
+      if (selectedCommissioner !== "todos") {
+        params.append('userId', selectedCommissioner);
       }
       
       const url = `/api/commissions/reservations${params.toString() ? '?' + params.toString() : ''}`;
@@ -76,6 +83,19 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
       return response.json();
     },
     enabled: !!user
+  });
+
+  // Consulta para obtener la lista de comisionistas (solo para admins)
+  const { data: commissionersData } = useQuery({
+    queryKey: ['/api/users/commissioners'],
+    queryFn: async () => {
+      const response = await fetch('/api/users/commissioners');
+      if (!response.ok) {
+        throw new Error('Error al obtener comisionistas');
+      }
+      return response.json();
+    },
+    enabled: !!user && !readOnly
   });
 
   // Mutación para marcar comisiones como pagadas (solo para admins)
@@ -139,6 +159,35 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     setSelectedReservations(newSelection);
   };
 
+  // Función para seleccionar todas las comisiones visibles
+  const handleSelectAll = () => {
+    if (readOnly) return;
+    
+    const currentCommissions = commissionTab === "pendientes" ? pendingCommissions : paidCommissions;
+    const allIds = currentCommissions.map((comm: any) => comm.id);
+    setSelectedReservations(new Set(allIds));
+  };
+
+  // Función para deseleccionar todas las comisiones
+  const handleDeselectAll = () => {
+    if (readOnly) return;
+    setSelectedReservations(new Set());
+  };
+
+  // Calcular total de comisiones seleccionadas
+  const calculateSelectedTotal = () => {
+    if (!commissionsData || selectedReservations.size === 0) return 0;
+    
+    const selectedCommissions = commissionsData.filter((comm: any) => 
+      selectedReservations.has(comm.id)
+    );
+    
+    return selectedCommissions.reduce((total: number, comm: any) => {
+      const commissionAmount = comm.monto * (comm.commissionPercentage / 100);
+      return total + commissionAmount;
+    }, 0);
+  };
+
   // Filtrar comisiones según el estado
   const pendingCommissions = commissionsData?.filter((comm: any) => !comm.commissionPaid) || [];
   const paidCommissions = commissionsData?.filter((comm: any) => comm.commissionPaid) || [];
@@ -187,46 +236,98 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               <PercentIcon className="h-5 w-5" />
               {readOnly ? "Mis Comisiones" : "Gestión de Comisiones"}
             </CardTitle>
-            {!readOnly && selectedReservations.size > 0 && (
-              <Button
-                onClick={() => markAsPaidMutation.mutate([...selectedReservations])}
-                disabled={markAsPaidMutation.isPending}
-                className="ml-auto"
-              >
-                <DollarSign className="h-4 w-4 mr-2" />
-                Marcar como Pagadas ({selectedReservations.size})
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {!readOnly && selectedReservations.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Total seleccionado: {formatCurrency(calculateSelectedTotal())}
+                  </span>
+                  <Button
+                    onClick={() => markAsPaidMutation.mutate([...selectedReservations])}
+                    disabled={markAsPaidMutation.isPending}
+                  >
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Marcar como Pagadas ({selectedReservations.size})
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Controles de filtro */}
-          <div className="flex items-center gap-4 mt-4">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="filter-date" className="text-sm">
-                Filtrar por fecha:
-              </Label>
-              <Input
-                id="filter-date"
-                type="date"
-                value={filterDate}
-                onChange={(e) => {
-                  setFilterDate(e.target.value);
-                  setViewAll(false);
-                }}
-                disabled={viewAll}
-                className="w-40"
-              />
+          <div className="space-y-3 mt-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="filter-date" className="text-sm">
+                  Filtrar por fecha:
+                </Label>
+                <Input
+                  id="filter-date"
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => {
+                    setFilterDate(e.target.value);
+                    setViewAll(false);
+                  }}
+                  disabled={viewAll}
+                  className="w-40"
+                />
+              </div>
+              
+              {!readOnly && commissionersData && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="filter-commissioner" className="text-sm">
+                    Comisionista:
+                  </Label>
+                  <Select value={selectedCommissioner} onValueChange={setSelectedCommissioner}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Seleccionar comisionista" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos los comisionistas</SelectItem>
+                      {commissionersData.map((commissioner: any) => (
+                        <SelectItem key={commissioner.id} value={commissioner.id.toString()}>
+                          {commissioner.firstName} {commissioner.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
+              <Button
+                onClick={() => setViewAll(!viewAll)}
+                variant={viewAll ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                {viewAll ? "Filtrar por fecha" : "Ver todas mis comisiones"}
+              </Button>
             </div>
-            
-            <Button
-              onClick={() => setViewAll(!viewAll)}
-              variant={viewAll ? "default" : "outline"}
-              size="sm"
-              className="gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              {viewAll ? "Filtrar por fecha" : "Ver todas mis comisiones"}
-            </Button>
+
+            {!readOnly && (
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleSelectAll}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  Seleccionar todo
+                </Button>
+                <Button
+                  onClick={handleDeselectAll}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  Deseleccionar todo
+                </Button>
+              </div>
+            )}
           </div>
           
           <TabsList className="grid w-full grid-cols-2 mt-4">
