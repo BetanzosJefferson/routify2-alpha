@@ -4333,6 +4333,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reservation => reservation.createdByUser && reservation.createdByUser.role === UserRole.COMMISSIONER
       );
       
+      // DEBUG: Verificar comisiones específicas antes del filtrado
+      console.log(`[GET /commissions/reservations] DEBUG - Comisiones específicas (63, 65-69) en allReservations:`);
+      [63, 65, 66, 67, 68, 69].forEach(id => {
+        const reservation = allReservations.find(r => r.id === id);
+        if (reservation) {
+          console.log(`  Reservación ${id}: commissionPaid=${reservation.commissionPaid}, createdBy=${reservation.createdBy}, role=${reservation.createdByUser?.role}`);
+        } else {
+          console.log(`  Reservación ${id}: NO ENCONTRADA`);
+        }
+      });
+      
       // Si se especifica un usuario específico, filtrar por ese usuario
       if (targetUserId) {
         comissionerReservations = comissionerReservations.filter(
