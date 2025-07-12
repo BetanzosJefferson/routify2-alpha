@@ -1268,217 +1268,44 @@ export class DatabaseStorage implements IStorage {
     return this.getReservationsOptimized(filters?.companyId, filters?.currentUserId, filters?.userRole);
   }
 
-  // Method to get detailed reservation information
-  async getReservation(id: number): Promise<ReservationWithDetails | undefined> {
-    console.log(`DB Storage: Consultando reservación con id: ${id}`);
-    
-    const reservation = await db
-      .select()
-      .from(schema.reservations)
-      .where(eq(schema.reservations.id, id))
-      .limit(1);
-    
-    if (!reservation || reservation.length === 0) {
-      console.log(`DB Storage: No se encontró reservación con id: ${id}`);
-      return undefined;
-    }
-    
-    const singleReservation = reservation[0];
-    
-    // Obtain trip information
-    const tripDetails = typeof singleReservation.tripDetails === 'string' 
-      ? JSON.parse(singleReservation.tripDetails) 
-      : singleReservation.tripDetails;
-    
-    const tripRecord = await this.getTrip(tripDetails.recordId);
-    if (!tripRecord) {
-      console.warn(`Trip ${tripDetails.recordId} not found for reservation ${id}`);
-      return undefined;
-    }
-    
-    // Parse tripData to get specific segment
-    let tripDataArray = [];
-    try {
-      tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
-    } catch (error) {
-      console.warn(`Error parsing tripData for trip ${tripRecord.id}:`, error);
-      return undefined;
-    }
-    
-    // Find specific segment using tripId
-    let tripSegment;
-    if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
-      // New format: "recordId_segmentIndex"
-      const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
-      tripSegment = tripDataArray[segmentIndex];
-    } else {
-      // Old format: search by tripId
-      tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
-      if (!tripSegment && tripDataArray.length > 0) {
-        tripSegment = tripDataArray[0];
-      }
-    }
-    
-    if (!tripSegment) {
-      console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
-      return undefined;
-    }
-    
-    // Get route information
-    let route = null;
-    if (tripRecord.routeId) {
-      route = await this.getRoute(tripRecord.routeId);
-    }
-    
-    // Get driver information
-    let driverInfo = null;
-    if (tripRecord.driverId) {
-      try {
-        const driver = await this.getUser(tripRecord.driverId);
-        if (driver) {
-          driverInfo = {
-            id: driver.id,
-            firstName: driver.firstName,
-            lastName: driver.lastName,
-            email: driver.email,
-            phone: driver.phone,
-          };
-        }
-      } catch (error) {
-        console.warn(`Error fetching driver ${tripRecord.driverId}:`, error);
-      }
-    }
-    
-    // Get vehicle information
-    let vehicleInfo = null;
-    if (tripRecord.vehicleId) {
-      try {
-        const vehicle = await this.getVehicle(tripRecord.vehicleId);
-        if (vehicle) {
-          vehicleInfo = {
-            id: vehicle.id,
-            plates: vehicle.plates,
-            brand: vehicle.brand,
-            model: vehicle.model,
-            capacity: vehicle.capacity,
-            hasAC: vehicle.hasAC,
-            hasRecliningSeats: vehicle.hasRecliningSeats,
-            services: vehicle.services,
-          };
-        }
-      } catch (error) {
-        console.warn(`Error fetching vehicle ${tripRecord.vehicleId}:`, error);
-      }
-    }
-    
-    // Get passengers
-    const passengers = await this.getPassengers(id);
-    
-    // Get creator user information
-    let createdByUser = null;
-    if (singleReservation.createdBy) {
-      try {
-        const user = await this.getUser(singleReservation.createdBy);
-        if (user) {
-          createdByUser = {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            commissionPercentage: user.commissionPercentage,
-          };
-        }
-      } catch (error) {
-        console.warn(`Error fetching created_by user ${singleReservation.createdBy}:`, error);
-      }
-    }
-    
-    // Get paid by user information
-    let paidByUser = null;
-    if (singleReservation.paidBy) {
-      try {
-        const user = await this.getUser(singleReservation.paidBy);
-        if (user) {
-          paidByUser = {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-          };
-        }
-      } catch (error) {
-        console.warn(`Error fetching paid_by user ${singleReservation.paidBy}:`, error);
-      }
-    }
-    
-    // Get checked by user information
-    let checkedByUser = null;
-    if (singleReservation.checkedBy) {
-      try {
-        const user = await this.getUser(singleReservation.checkedBy);
-        if (user) {
-          checkedByUser = {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-          };
-        }
-      } catch (error) {
-        console.warn(`Error fetching checked_by user ${singleReservation.checkedBy}:`, error);
-      }
-    }
-    
-    // Create trip object compatible with frontend
-    const trip = {
-      id: tripDetails.tripId,
-      recordId: tripRecord.id,
-      routeId: tripRecord.routeId,
-      route: route,
-      origin: tripSegment.origin,
-      destination: tripSegment.destination,
-      departureDate: tripSegment.departureDate,
-      departureTime: tripSegment.departureTime,
-      arrivalTime: tripSegment.arrivalTime,
-      price: tripSegment.price,
-      availableSeats: tripSegment.availableSeats,
-      capacity: tripRecord.capacity,
-      companyId: tripRecord.companyId,
-      visibility: tripRecord.visibility
-    };
-    
-    return {
-      ...singleReservation,
-      trip,
-      passengers,
-      createdByUser,
-      paidByUser,
-      checkedByUser
-    };
-  }
-
+  // Additional database operations continue here...
+  
   async createReservation(reservation: InsertReservation): Promise<Reservation> {
-    // Si no se proporciona un companyId, intentamos obtenerlo del viaje relacionado
-    if (!reservation.companyId) {
-      const trip = await this.getTrip(reservation.tripId);
-      if (trip && trip.companyId) {
-        console.log(`Heredando companyId ${trip.companyId} del viaje ${trip.id} para la nueva reservación`);
-        reservation.companyId = trip.companyId;
-      } else {
-        console.warn(`No se pudo obtener companyId del viaje ${reservation.tripId}. La reservación no tendrá companyId.`);
-      }
-    }
-    
-    console.log("Creando reservación con datos:", JSON.stringify(reservation, null, 2));
-    const [newReservation] = await db.insert(schema.reservations).values(reservation).returning();
-    return newReservation;
-  }
+          tripSegment = tripDataArray[segmentIndex];
+        } else {
+          // Formato antiguo: buscar por tripId
+          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+          // Si no se encuentra, usar el primer segmento
+          if (!tripSegment && tripDataArray.length > 0) {
+            tripSegment = tripDataArray[0];
+          }
+        }
+        
+        if (!tripSegment) {
+          console.warn(`Trip segment ${tripDetails.tripId} not found in trip ${result.tripId}`);
+          continue;
+        }
+        
+        // Obtener pasajeros (aún requiere consulta separada pero optimizada)
+        const passengers = await this.getPassengers(result.reservationId);
+        
+        // Construir objetos de información
+        const route = result.routeId ? {
+          id: result.routeId,
+          name: result.routeName,
+          origin: result.routeOrigin,
+          destination: result.routeDestination,
+          stops: result.routeStops,
+          companyId: result.routeCompanyId,
+        } : null;
+        
+        const driverInfo = result.driverId ? {
+          id: result.driverId,
+          firstName: result.driverFirstName,
+          lastName: result.driverLastName,
+          email: result.driverEmail,
+          phone: result.driverPhone,
+        } : null;
         
         const vehicleInfo = result.vehicleId ? {
           id: result.vehicleId,
