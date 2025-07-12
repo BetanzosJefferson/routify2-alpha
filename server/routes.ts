@@ -3941,34 +3941,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /public/packages/${id}] Acceso público solicitado`);
       
-      // Obtener el paquete sin filtrado por compañía (es acceso público)
-      const packageData = await storage.getPackage(id);
+      // Obtener el paquete con información del viaje usando el método optimizado
+      const packageData = await storage.getPackageWithTripInfo(id);
       
       if (!packageData) {
         console.log(`[GET /public/packages/${id}] Paquete no encontrado`);
         return res.status(404).json({ error: "Paquete no encontrado" });
       }
       
-      // Si tiene tripId, obtener la información del viaje
-      let tripInfo = null;
-      if (packageData.tripId) {
-        const trip = await storage.getTrip(packageData.tripId);
-        if (trip) {
-          const route = await storage.getRoute(trip.routeId);
-          if (route) {
-            tripInfo = {
-              tripOrigin: route.origin,
-              tripDestination: route.destination,
-              tripDate: trip.departureDate,
-              segmentOrigin: trip.segmentOrigin || route.origin,
-              segmentDestination: trip.segmentDestination || route.destination,
-              companyName: trip.companyName || route.companyName,
-              // Para asegurar que se usa la fecha del viaje como fecha de envío
-              shippingDate: trip.departureDate,
-              // Incluir la hora de salida del viaje
-              departureTime: trip.departureTime
-            };
-          }
+      // Extraer información del viaje desde tripDetails
+      let tripInfo = {};
+      if (packageData.tripDetails) {
+        try {
+          const tripDetails = typeof packageData.tripDetails === 'string' 
+            ? JSON.parse(packageData.tripDetails) 
+            : packageData.tripDetails;
+          
+          tripInfo = {
+            tripOrigin: tripDetails.origin || 'No especificado',
+            tripDestination: tripDetails.destination || 'No especificado',
+            tripDate: tripDetails.departureDate || '',
+            tripDepartureTime: tripDetails.departureTime || '',
+            tripArrivalTime: tripDetails.arrivalTime || '',
+            segmentOrigin: tripDetails.origin || 'No especificado',
+            segmentDestination: tripDetails.destination || 'No especificado',
+            // Para asegurar que se usa la fecha del viaje como fecha de envío
+            shippingDate: tripDetails.departureDate || '',
+            // Incluir la hora de salida del viaje
+            departureTime: tripDetails.departureTime || ''
+          };
+          
+          console.log(`[GET /public/packages/${id}] Información del viaje extraída: ${tripInfo.tripOrigin} → ${tripInfo.tripDestination}`);
+        } catch (error) {
+          console.error(`[GET /public/packages/${id}] Error al parsear tripDetails:`, error);
         }
       }
       

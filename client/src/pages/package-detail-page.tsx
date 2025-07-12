@@ -395,11 +395,11 @@ export default function PackageDetailPage() {
           <div className="space-y-2 text-sm">
             <div>
               <span className="text-gray-600">Origen: </span>
-              <span>{packageData.segmentOrigin || "No disponible"}</span>
+              <span>{packageData.tripOrigin || packageData.segmentOrigin || "No disponible"}</span>
             </div>
             <div>
               <span className="text-gray-600">Destino: </span>
-              <span>{packageData.segmentDestination || "No disponible"}</span>
+              <span>{packageData.tripDestination || packageData.segmentDestination || "No disponible"}</span>
             </div>
           </div>
         </div>
