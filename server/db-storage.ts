@@ -1368,6 +1368,14 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`[OPTIMIZED] Obtenidas ${reservations.length} reservaciones en ${Date.now() - startTime}ms`);
       
+      // DEBUG: Verificar si commissionPaid está llegando correctamente
+      if (reservations.length > 0) {
+        console.log("[DEBUG] Muestra de reservaciones con commissionPaid:");
+        reservations.slice(0, 3).forEach(r => {
+          console.log(`  Reservación ${r.id}: commissionPaid=${r.commissionPaid}, createdBy=${r.createdBy}`);
+        });
+      }
+      
       // Recolectar IDs únicos para consultas batch
       const tripIds = new Set<number>();
       const createdByIds = new Set<number>();
