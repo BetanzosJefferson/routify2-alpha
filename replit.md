@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - OPTIMIZED: Commission loading performance improved by filtering to current date:
+  - **USER REQUEST**: Reduced commission loading time by limiting payload to today's data only
+  - **PERFORMANCE IMPROVEMENT**: Added date filter to show only current day's commissions by default
+  - **PAYLOAD REDUCTION**: Significantly reduced data transfer by filtering reservations by creation date
+  - **BACKEND OPTIMIZATION**: Modified /api/commissions/reservations endpoint to filter by today's date (YYYY-MM-DD format)
+  - **FASTER LOADING**: Commission section now loads much faster with smaller data sets
+  - **USER EXPERIENCE**: Improved responsiveness when accessing "Mis comisiones" section
+  - **SMART FILTERING**: Maintains user-specific and company-specific filtering while adding date constraint
+
 - **July 11, 2025** - CONFIRMED: Android-compatible thermal printing already implemented in commission modules:
   - **USER REQUEST**: Verified thermal printing functionality in "Mis comisiones" section
   - **EXISTING IMPLEMENTATION**: Both commission pages already use about:blank method for Android compatibility

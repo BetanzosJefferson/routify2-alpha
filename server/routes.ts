@@ -4313,6 +4313,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /commissions/reservations] Filtrado por usuario ${targetUserId}: ${comissionerReservations.length} reservaciones`);
       }
       
+      // OPTIMIZACIÓN: Filtrar por fecha actual por defecto para reducir payload
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      
+      comissionerReservations = comissionerReservations.filter(reservation => {
+        if (!reservation.createdAt) return false;
+        
+        // Convertir fecha de creación a formato YYYY-MM-DD
+        const createdDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+        return createdDate === todayStr;
+      });
+      
+      console.log(`[GET /commissions/reservations] Filtrado por fecha actual (${todayStr}): ${comissionerReservations.length} reservaciones`);
       console.log(`[GET /commissions/reservations] Encontradas ${comissionerReservations.length} reservaciones creadas por comisionistas`);
       
       // Transformar los datos para incluir origen/destino específicos y comisiones
