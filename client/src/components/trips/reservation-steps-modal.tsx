@@ -378,8 +378,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     
     const reservationData: ReservationFormData = {
       tripDetails: {
-        recordId: trip.id, // El ID del viaje es el recordId directamente
-        tripId: trip.id, // El ID completo del viaje específico
+        recordId: typeof trip.id === 'string' && trip.id.includes('_') ? trip.id.split('_')[0] : trip.id, // ID del viaje padre (sin sufijo)
+        tripId: trip.id, // El ID completo del segmento específico
         seats: numPassengers
       },
       numPassengers,
