@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-07-12T05:55:40.509Z",
+  "method": "getReservations",
+  "status": "ANTES_OPTIMIZACION",
+  "source": "server_logs_analysis",
+  "averageTime": 7058,
+  "averageReservations": 19,
+  "timePerReservation": 371,
+  "totalObservations": 3,
+  "observedTimes": [
+    {
+      "iteration": 1,
+      "duration": 7174,
+      "reservationsCount": 19
+    },
+    {
+      "iteration": 2,
+      "duration": 6800,
+      "reservationsCount": 19
+    },
+    {
+      "iteration": 3,
+      "duration": 7200,
+      "reservationsCount": 19
+    }
+  ],
+  "analysis": {
+    "performanceLevel": "CRITICO",
+    "needsOptimization": true,
+    "estimatedQueries": 96,
+    "hasN1Pattern": true,
+    "n1Factor": 5,
+    "criticalIssues": [
+      "Tiempo de respuesta crítico (>7000ms)",
+      "Patrón N+1 confirmado con 5 consultas por reservación",
+      "Impacto severo en experiencia del usuario"
+    ]
+  }
+}

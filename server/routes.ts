@@ -2539,12 +2539,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Use the updated DatabaseStorage method with tripDetails JSON support
-      console.log(`[GET /reservations] Using DatabaseStorage with tripDetails JSON support`);
+      // Use the OPTIMIZED DatabaseStorage method with tripDetails JSON support
+      console.log(`[GET /reservations] Using OPTIMIZED DatabaseStorage with tripDetails JSON support`);
       
       try {
-        // Get reservations using the updated storage method
-        const reservations = await storage.getReservations(companyId, user.id, user.role);
+        // Get reservations using the OPTIMIZED storage method
+        const reservations = await storage.getReservations({
+          companyId: companyId,
+          currentUserId: user.id,
+          userRole: user.role
+        });
         
         // Apply additional filtering if needed
         let filteredReservations = reservations;
