@@ -1461,8 +1461,8 @@ export class DatabaseStorage implements IStorage {
         
         const driverInfo = driver ? {
           id: driver.id,
-          firstName: driver.firstName,
-          lastName: driver.lastName,
+          firstName: driver.firstName || driver.first_name,
+          lastName: driver.lastName || driver.last_name,
           email: driver.email,
           phone: driver.phone,
         } : null;
@@ -1545,8 +1545,8 @@ export class DatabaseStorage implements IStorage {
           passengers,
           createdByUser: createdByUser ? {
             id: createdByUser.id,
-            firstName: createdByUser.firstName,
-            lastName: createdByUser.lastName,
+            firstName: createdByUser.firstName || createdByUser.first_name,
+            lastName: createdByUser.lastName || createdByUser.last_name,
             email: createdByUser.email,
             role: createdByUser.role,
             commissionPercentage: createdByUser.commissionPercentage,
