@@ -4248,11 +4248,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener el usuario autenticado
       const { user } = req as any;
       const requestedUserId = req.query.userId as string;
+      const filterDate = req.query.date as string; // Nuevo parámetro para filtrar por fecha
+      const viewAll = req.query.viewAll === 'true'; // Nuevo parámetro para ver todas las comisiones
       
       console.log(`[GET /commissions/reservations] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       if (user) {
         console.log(`[GET /commissions/reservations] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
         console.log(`[GET /commissions/reservations] userId solicitado: ${requestedUserId || 'Todos'}`);
+        console.log(`[GET /commissions/reservations] Fecha filtro: ${filterDate || 'No especificada'}`);
+        console.log(`[GET /commissions/reservations] Ver todas: ${viewAll ? 'Sí' : 'No'}`);
       }
       
       // SEGURIDAD: Verificar que solo los roles autorizados puedan acceder
@@ -4313,19 +4317,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /commissions/reservations] Filtrado por usuario ${targetUserId}: ${comissionerReservations.length} reservaciones`);
       }
       
-      // OPTIMIZACIÓN: Filtrar por fecha actual por defecto para reducir payload
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-      
-      comissionerReservations = comissionerReservations.filter(reservation => {
-        if (!reservation.createdAt) return false;
+      // OPTIMIZACIÓN: Filtrar por fecha - por defecto fecha actual, personalizable o todas
+      if (!viewAll) {
+        const targetDate = filterDate || new Date().toISOString().split('T')[0]; // Usar fecha especificada o fecha actual
         
-        // Convertir fecha de creación a formato YYYY-MM-DD
-        const createdDate = new Date(reservation.createdAt).toISOString().split('T')[0];
-        return createdDate === todayStr;
-      });
-      
-      console.log(`[GET /commissions/reservations] Filtrado por fecha actual (${todayStr}): ${comissionerReservations.length} reservaciones`);
+        comissionerReservations = comissionerReservations.filter(reservation => {
+          if (!reservation.createdAt) return false;
+          
+          // Convertir fecha de creación a formato YYYY-MM-DD
+          const createdDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+          return createdDate === targetDate;
+        });
+        
+        console.log(`[GET /commissions/reservations] Filtrado por fecha (${targetDate}): ${comissionerReservations.length} reservaciones`);
+      } else {
+        console.log(`[GET /commissions/reservations] Mostrando todas las comisiones: ${comissionerReservations.length} reservaciones`);
+      }
       console.log(`[GET /commissions/reservations] Encontradas ${comissionerReservations.length} reservaciones creadas por comisionistas`);
       
       // Transformar los datos para incluir origen/destino específicos y comisiones

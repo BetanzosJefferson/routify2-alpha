@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 11, 2025** - ENHANCED: Commission filtering with date picker and "View All" functionality:
+  - **USER REQUEST**: Added date picker to filter commissions by specific date and "Ver todas mis comisiones" button
+  - **FRONTEND CONTROLS**: Added date input field with current date as default and toggle button for viewing all commissions
+  - **BACKEND FLEXIBILITY**: Enhanced /api/commissions/reservations endpoint to accept date and viewAll parameters
+  - **SMART FILTERING**: Three modes: current date (default), specific date via picker, or all commissions
+  - **USER EXPERIENCE**: Users can now easily switch between filtered views and comprehensive commission history
+  - **OPTIMIZED PERFORMANCE**: Maintains fast loading by defaulting to current date while allowing full access when needed
+  - **INTELLIGENT UI**: Date picker disabled when "View All" is active, seamless switching between filter modes
+
 - **July 11, 2025** - OPTIMIZED: Commission loading performance improved by filtering to current date:
   - **USER REQUEST**: Reduced commission loading time by limiting payload to today's data only
   - **PERFORMANCE IMPROVEMENT**: Added date filter to show only current day's commissions by default

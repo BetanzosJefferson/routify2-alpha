@@ -17,7 +17,9 @@ import {
   Calendar,
   User,
   MapPin,
-  Download
+  Download,
+  CalendarDays,
+  Eye
 } from "lucide-react";
 import { cn, formatPrice, generateReservationId } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -25,6 +27,8 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import QRCode from "qrcode";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface CommissionsListProps {
   /** Si es true, muestra solo vista de lectura para comisionistas */
@@ -42,12 +46,28 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
   
   // Estado para reservaciones seleccionadas (solo para modo admin)
   const [selectedReservations, setSelectedReservations] = useState<Set<number>>(new Set());
+  
+  // Estados para filtros
+  const [filterDate, setFilterDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [viewAll, setViewAll] = useState(false);
 
   // Consulta para obtener las reservaciones de comisionistas
   const { data: commissionsData, isLoading, error } = useQuery({
-    queryKey: ['/api/commissions/reservations', queryKeySuffix],
+    queryKey: ['/api/commissions/reservations', queryKeySuffix, filterDate, viewAll],
     queryFn: async () => {
-      const response = await fetch('/api/commissions/reservations');
+      const params = new URLSearchParams();
+      if (!viewAll && filterDate) {
+        params.append('date', filterDate);
+      }
+      if (viewAll) {
+        params.append('viewAll', 'true');
+      }
+      
+      const url = `/api/commissions/reservations${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Error al obtener comisiones: ${response.status} ${errorText}`);
@@ -162,7 +182,38 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               </Button>
             )}
           </div>
-          <TabsList className="grid w-full grid-cols-2">
+          
+          {/* Controles de filtro */}
+          <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="filter-date" className="text-sm">
+                Filtrar por fecha:
+              </Label>
+              <Input
+                id="filter-date"
+                type="date"
+                value={filterDate}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  setViewAll(false);
+                }}
+                disabled={viewAll}
+                className="w-40"
+              />
+            </div>
+            
+            <Button
+              onClick={() => setViewAll(!viewAll)}
+              variant={viewAll ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              {viewAll ? "Filtrar por fecha" : "Ver todas mis comisiones"}
+            </Button>
+          </div>
+          
+          <TabsList className="grid w-full grid-cols-2 mt-4">
             <TabsTrigger value="pendientes">
               Pendientes ({pendingCommissions.length})
             </TabsTrigger>
