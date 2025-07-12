@@ -3368,109 +3368,95 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`DB Storage: [OPTIMIZED] Obteniendo paquete ${id} con información del viaje`);
       
-      // OPTIMIZACIÓN: Usar JOIN para obtener package + trip en una sola consulta
-      const result = await this.db
-        .select({
-          // Campos del paquete
-          id: schema.packages.id,
-          senderName: schema.packages.senderName,
-          senderLastName: schema.packages.senderLastName,
-          senderPhone: schema.packages.senderPhone,
-          recipientName: schema.packages.recipientName,
-          recipientLastName: schema.packages.recipientLastName,
-          recipientPhone: schema.packages.recipientPhone,
-          packageDescription: schema.packages.packageDescription,
-          weight: schema.packages.weight,
-          price: schema.packages.price,
-          status: schema.packages.status,
-          tripId: schema.packages.tripId,
-          tripDetails: schema.packages.tripDetails,
-          companyId: schema.packages.companyId,
-          createdAt: schema.packages.createdAt,
-          updatedAt: schema.packages.updatedAt,
-          // Campos del trip
-          tripRecordId: schema.trips.id,
-          tripRouteId: schema.trips.routeId,
-          tripDriverId: schema.trips.driverId,
-          tripVehicleId: schema.trips.vehicleId,
-          tripData: schema.trips.tripData,
-          tripCreatedAt: schema.trips.createdAt,
-          tripUpdatedAt: schema.trips.updatedAt,
-          // Campos de la ruta
-          routeId: schema.routes.id,
-          routeName: schema.routes.name,
-          routeStops: schema.routes.stops,
-          routeCompanyId: schema.routes.companyId
-        })
-        .from(schema.packages)
-        .leftJoin(
-          schema.trips,
-          sql`${schema.trips.id} = CAST(
-            CASE 
-              WHEN ${schema.packages.tripId} LIKE '%_%' 
-              THEN SUBSTRING_INDEX(${schema.packages.tripId}, '_', 1)
-              ELSE ${schema.packages.tripId}
-            END AS UNSIGNED
-          )`
-        )
-        .leftJoin(schema.routes, eq(schema.routes.id, schema.trips.routeId))
-        .where(eq(schema.packages.id, id))
-        .limit(1);
-
-      if (!result || result.length === 0) {
+      // MÉTODO DIRECTO: Usar SQL directo para evitar problemas con Drizzle
+      const packageResult = await this.db.execute(sql`
+        SELECT * FROM packages WHERE id = ${id} LIMIT 1
+      `);
+      
+      if (!packageResult.rows || packageResult.rows.length === 0) {
         console.log(`DB Storage: [OPTIMIZED] Paquete ${id} no encontrado`);
         return undefined;
       }
 
-      const packageData = result[0];
-      console.log(`DB Storage: [OPTIMIZED] Paquete ${id} encontrado con datos del trip`);
+      const packageData = packageResult.rows[0] as any;
+      console.log(`DB Storage: [OPTIMIZED] Paquete ${id} encontrado`);
 
-      // Construir objeto trip si tenemos datos del trip
+      // Ahora obtenemos información del trip si existe
       let trip: TripWithRouteInfo | undefined;
-      if (packageData.tripRecordId) {
-        const route = {
-          id: packageData.routeId,
-          name: packageData.routeName,
-          stops: packageData.routeStops,
-          companyId: packageData.routeCompanyId
-        };
+      if (packageData.trip_id) {
+        // Extraer el recordId del tripId (formato: "214" o "214_9")
+        const recordId = packageData.trip_id.toString().split('_')[0];
+        
+        try {
+          const tripResult = await this.db.execute(sql`
+            SELECT * FROM trips WHERE id = ${parseInt(recordId)} LIMIT 1
+          `);
 
-        trip = {
-          id: packageData.tripRecordId,
-          routeId: packageData.tripRouteId,
-          driverId: packageData.tripDriverId,
-          vehicleId: packageData.tripVehicleId,
-          tripData: packageData.tripData,
-          companyId: packageData.companyId,
-          createdAt: packageData.tripCreatedAt,
-          updatedAt: packageData.tripUpdatedAt,
-          route: route
-        };
+          if (tripResult.rows && tripResult.rows.length > 0) {
+            const tripData = tripResult.rows[0] as any;
+            console.log(`DB Storage: [OPTIMIZED] Trip ${recordId} encontrado para paquete ${id}`);
+
+            // Obtener información de la ruta si existe
+            let route = undefined;
+            if (tripData.route_id) {
+              const routeResult = await this.db.execute(sql`
+                SELECT * FROM routes WHERE id = ${tripData.route_id} LIMIT 1
+              `);
+
+              if (routeResult.rows && routeResult.rows.length > 0) {
+                const routeData = routeResult.rows[0] as any;
+                route = {
+                  id: routeData.id,
+                  name: routeData.name,
+                  origin: routeData.origin,
+                  destination: routeData.destination,
+                  stops: routeData.stops,
+                  companyId: routeData.company_id
+                };
+                console.log(`DB Storage: [OPTIMIZED] Ruta ${tripData.route_id} encontrada para trip ${recordId}`);
+              }
+            }
+
+            trip = {
+              id: tripData.id,
+              routeId: tripData.route_id,
+              driverId: tripData.driver_id,
+              vehicleId: tripData.vehicle_id,
+              tripData: tripData.trip_data,
+              companyId: tripData.company_id,
+              createdAt: tripData.created_at,
+              updatedAt: tripData.updated_at,
+              route: route
+            };
+          }
+        } catch (tripError) {
+          console.warn(`DB Storage: Error al obtener trip ${recordId} para paquete ${id}:`, tripError);
+        }
       }
 
-      // Construir objeto package
-      const packageResult = {
+      // Construir objeto package con información del trip (convertir snake_case a camelCase)
+      const result = {
         id: packageData.id,
-        senderName: packageData.senderName,
-        senderLastName: packageData.senderLastName,
-        senderPhone: packageData.senderPhone,
-        recipientName: packageData.recipientName,
-        recipientLastName: packageData.recipientLastName,
-        recipientPhone: packageData.recipientPhone,
-        packageDescription: packageData.packageDescription,
+        senderName: packageData.sender_name,
+        senderLastName: packageData.sender_last_name,
+        senderPhone: packageData.sender_phone,
+        recipientName: packageData.recipient_name,
+        recipientLastName: packageData.recipient_last_name,
+        recipientPhone: packageData.recipient_phone,
+        packageDescription: packageData.package_description,
         weight: packageData.weight,
         price: packageData.price,
         status: packageData.status,
-        tripId: packageData.tripId,
-        tripDetails: packageData.tripDetails,
-        companyId: packageData.companyId,
-        createdAt: packageData.createdAt,
-        updatedAt: packageData.updatedAt,
+        tripId: packageData.trip_id,
+        tripDetails: packageData.trip_details,
+        companyId: packageData.company_id,
+        createdAt: packageData.created_at,
+        updatedAt: packageData.updated_at,
         trip: trip
       };
 
       console.log(`DB Storage: [OPTIMIZED] Paquete ${id} procesado exitosamente`);
-      return packageResult;
+      return result;
     } catch (error) {
       console.error(`DB Storage: Error al obtener paquete con información del viaje ${id}:`, error);
       throw error;

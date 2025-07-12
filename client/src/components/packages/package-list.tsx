@@ -822,24 +822,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                                   <Printer className="mr-2 h-4 w-4" />
                                   Imprimir Ticket
                                 </Button>
-                                <Button 
-                                  onClick={handlePrintTicket60mm} 
-                                  className="w-full"
-                                  size="lg"
-                                  variant="secondary"
-                                >
-                                  <Printer className="mr-2 h-4 w-4" />
-                                  Descargar boleto 60mm
-                                </Button>
-                                <Button 
-                                  onClick={handleShareTicket} 
-                                  className="w-full"
-                                  size="lg"
-                                  variant="outline"
-                                >
-                                  <Share2 className="mr-2 h-4 w-4" />
-                                  Compartir Ticket
-                                </Button>
+                      
                               </div>
                             </div>
                           )}

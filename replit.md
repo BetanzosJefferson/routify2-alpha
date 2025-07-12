@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 12, 2025** - CRITICAL FIX: Public package endpoint database error resolved:
+  - **ROOT CAUSE IDENTIFIED**: getPackageWithTripInfo function was using complex LEFT JOIN that returned null fields causing "Cannot convert undefined or null to object" error
+  - **DRIZZLE ISSUE**: Complex JOIN queries with nullable fields caused orderSelectedFields processing errors in Drizzle ORM
+  - **SOLUTION IMPLEMENTED**: Replaced complex JOIN with direct SQL queries using sql template literals
+  - **TECHNICAL APPROACH**: Used separate queries for package, trip, and route data to avoid null field conflicts
+  - **QUERY OPTIMIZATION**: Simplified to 3 separate queries instead of 1 complex JOIN to ensure reliable data retrieval
+  - **ERROR HANDLING**: Added robust error handling for trip and route lookups with proper fallbacks
+  - **FIELD MAPPING**: Implemented proper snake_case to camelCase conversion for database field compatibility
+  - **PUBLIC ACCESS**: Public package endpoint now returns complete package information with trip details
+  - **VERIFICATION**: Package ID 27 now returns full data including trip origin/destination and shipping details
+
 - **July 12, 2025** - COMPLETED: Mobile thermal ticket display optimization with direct download:
   - **ROOT CAUSE IDENTIFIED**: iOS and Android browsers automatically scale 60mm PDFs making them appear very small
   - **MOBILE ISSUE RESOLVED**: PDF viewers on mobile devices scale narrow PDFs (60mm) to fit screen, causing tiny display
