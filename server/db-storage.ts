@@ -1013,93 +1013,247 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
-    console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
+    console.log("[getReservationsOptimized] Iniciando consulta optimizada mejorada");
+    const startTime = Date.now();
     
     try {
-      // Consulta única con todos los JOINs necesarios
-      const query = db
-        .select({
-          // Campos de reservación
-          reservationId: schema.reservations.id,
-          reservationCompanyId: schema.reservations.companyId,
-          reservationStatus: schema.reservations.status,
-          reservationTripDetails: schema.reservations.tripDetails,
-          reservationTotalAmount: schema.reservations.totalAmount,
-          reservationEmail: schema.reservations.email,
-          reservationPhone: schema.reservations.phone,
-          reservationNotes: schema.reservations.notes,
-          reservationPaymentMethod: schema.reservations.paymentMethod,
-          reservationPaymentStatus: schema.reservations.paymentStatus,
-          reservationCreatedBy: schema.reservations.createdBy,
-          reservationCreatedAt: schema.reservations.createdAt,
-          reservationUpdatedAt: schema.reservations.updatedAt,
-          reservationPickupLocation: schema.reservations.pickupLocation,
-          reservationDropoffLocation: schema.reservations.dropoffLocation,
-          reservationSeatNumbers: schema.reservations.seatNumbers,
-          reservationCheckInTime: schema.reservations.checkInTime,
-          reservationBoardingStatus: schema.reservations.boardingStatus,
-          reservationCancellationReason: schema.reservations.cancellationReason,
-          reservationAdvancePayment: schema.reservations.advancePayment,
-          reservationRemainingBalance: schema.reservations.remainingBalance,
-          reservationCommissionAmount: schema.reservations.commissionAmount,
-          reservationPaidBy: schema.reservations.paidBy,
-          reservationOriginalAmount: schema.reservations.originalAmount,
-          
-          // Campos de trip
-          tripId: schema.trips.id,
-          tripCompanyId: schema.trips.companyId,
-          tripData: schema.trips.tripData,
-          tripCapacity: schema.trips.capacity,
-          tripVehicleId: schema.trips.vehicleId,
-          tripDriverId: schema.trips.driverId,
-          tripVisibility: schema.trips.visibility,
-          tripRouteId: schema.trips.routeId,
-          
-          // Campos de ruta
-          routeId: schema.routes.id,
-          routeName: schema.routes.name,
-          routeOrigin: schema.routes.origin,
-          routeDestination: schema.routes.destination,
-          routeStops: schema.routes.stops,
-          routeCompanyId: schema.routes.companyId,
-          
-          // Campos de conductor
-          driverId: schema.users.id,
-          driverFirstName: schema.users.firstName,
-          driverLastName: schema.users.lastName,
-          driverEmail: schema.users.email,
-          driverPhone: schema.users.phone,
-          
-          // Campos de vehículo
-          vehicleId: schema.vehicles.id,
-          vehicleModel: schema.vehicles.model,
-          vehiclePlates: schema.vehicles.plates,
-          vehicleBrand: schema.vehicles.brand,
-          vehicleCapacity: schema.vehicles.capacity,
-          
-
-        })
-        .from(schema.reservations)
-        // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}
-        // En lugar de esto, obtendremos trip data por separado
-        .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
-        .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
-        .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
+      // ESTRATEGIA OPTIMIZADA: Cargar datos en lotes para evitar N+1
       
-      // Aplicar filtros
+      // Paso 1: Obtener todas las reservaciones con filtros básicos
+      let reservationsQuery = db.select().from(schema.reservations);
+      
       if (companyId) {
         console.log(`[getReservationsOptimized] Filtrando por compañía: ${companyId}`);
-        query.where(eq(schema.reservations.companyId, companyId));
+        reservationsQuery = reservationsQuery.where(eq(schema.reservations.companyId, companyId));
       }
       
-      console.log("[getReservationsOptimized] Ejecutando consulta única con JOINs");
-      const results = await query;
-      console.log(`[getReservationsOptimized] Obtenidos ${results.length} resultados de la consulta`);
+      const reservations = await reservationsQuery;
+      console.log(`[getReservationsOptimized] Obtenidas ${reservations.length} reservaciones en ${Date.now() - startTime}ms`);
       
-      // Transformar resultados
+      if (reservations.length === 0) {
+        return [];
+      }
+      
+      // Paso 2: Extraer todos los IDs necesarios de una sola vez
+      const tripIds = new Set<number>();
+      const userIds = new Set<number>();
+      const reservationIds = reservations.map(r => r.id);
+      
+      // Extraer recordIds de tripDetails
+      for (const reservation of reservations) {
+        let tripDetails = null;
+        try {
+          tripDetails = typeof reservation.tripDetails === 'string' 
+            ? JSON.parse(reservation.tripDetails) 
+            : reservation.tripDetails;
+            
+          if (tripDetails && tripDetails.recordId) {
+            tripIds.add(tripDetails.recordId);
+          }
+        } catch (error) {
+          console.warn(`[getReservationsOptimized] Error parsing tripDetails for reservation ${reservation.id}`);
+        }
+        
+        if (reservation.createdBy) {
+          userIds.add(reservation.createdBy);
+        }
+      }
+      
+      console.log(`[getReservationsOptimized] IDs únicos: ${tripIds.size} trips, ${userIds.size} users`);
+      
+      // Paso 3: Cargar todos los trips con sus relaciones en una sola consulta
+      const tripsMap = new Map();
+      const routesMap = new Map();
+      const driversMap = new Map();
+      const vehiclesMap = new Map();
+      
+      if (tripIds.size > 0) {
+        const trips = await db.select().from(schema.trips)
+          .where(inArray(schema.trips.id, Array.from(tripIds)));
+          
+        // Mapear trips
+        trips.forEach(trip => {
+          tripsMap.set(trip.id, trip);
+        });
+        
+        // Obtener IDs de rutas, conductores y vehículos
+        const routeIds = new Set<number>();
+        const driverIds = new Set<number>();
+        const vehicleIds = new Set<number>();
+        
+        trips.forEach(trip => {
+          if (trip.routeId) routeIds.add(trip.routeId);
+          if (trip.driverId) driverIds.add(trip.driverId);
+          if (trip.vehicleId) vehicleIds.add(trip.vehicleId);
+        });
+        
+        // Cargar rutas
+        if (routeIds.size > 0) {
+          const routes = await db.select().from(schema.routes)
+            .where(inArray(schema.routes.id, Array.from(routeIds)));
+          routes.forEach(route => routesMap.set(route.id, route));
+        }
+        
+        // Cargar conductores
+        if (driverIds.size > 0) {
+          const drivers = await db.select().from(schema.users)
+            .where(inArray(schema.users.id, Array.from(driverIds)));
+          drivers.forEach(driver => driversMap.set(driver.id, driver));
+        }
+        
+        // Cargar vehículos
+        if (vehicleIds.size > 0) {
+          const vehicles = await db.select().from(schema.vehicles)
+            .where(inArray(schema.vehicles.id, Array.from(vehicleIds)));
+          vehicles.forEach(vehicle => vehiclesMap.set(vehicle.id, vehicle));
+        }
+      }
+      
+      // Paso 4: Cargar usuarios creadores
+      const creatorsMap = new Map();
+      if (userIds.size > 0) {
+        const creators = await db.select().from(schema.users)
+          .where(inArray(schema.users.id, Array.from(userIds)));
+        creators.forEach(user => creatorsMap.set(user.id, user));
+      }
+      
+      // Paso 5: Cargar todos los pasajeros de una sola vez
+      const passengersMap = new Map();
+      if (reservationIds.length > 0) {
+        const passengers = await db.select().from(schema.passengers)
+          .where(inArray(schema.passengers.reservationId, reservationIds));
+          
+        // Agrupar pasajeros por reservationId
+        passengers.forEach(passenger => {
+          if (!passengersMap.has(passenger.reservationId)) {
+            passengersMap.set(passenger.reservationId, []);
+          }
+          passengersMap.get(passenger.reservationId).push(passenger);
+        });
+      }
+      
+      console.log(`[getReservationsOptimized] Datos relacionados cargados en ${Date.now() - startTime}ms`);
+      
+      // Paso 6: Ensamblar las reservaciones con todos los datos
       const reservationsWithDetails: ReservationWithDetails[] = [];
       
-      for (const result of results) {
+      for (const reservation of reservations) {
+        // Parse tripDetails
+        let tripDetails = null;
+        try {
+          tripDetails = typeof reservation.tripDetails === 'string' 
+            ? JSON.parse(reservation.tripDetails) 
+            : reservation.tripDetails;
+        } catch (error) {
+          console.warn(`[getReservationsOptimized] Error parsing tripDetails for reservation ${reservation.id}`);
+          continue;
+        }
+        
+        if (!tripDetails || !tripDetails.recordId) {
+          continue;
+        }
+        
+        // Obtener trip del mapa
+        const trip = tripsMap.get(tripDetails.recordId);
+        if (!trip) {
+          console.warn(`[getReservationsOptimized] Trip ${tripDetails.recordId} not found for reservation ${reservation.id}`);
+          continue;
+        }
+        
+        // Aplicar filtro de conductor si es necesario
+        if (userRole === 'chofer' && currentUserId && trip.driverId !== currentUserId) {
+          continue;
+        }
+        
+        // Obtener datos relacionados de los mapas
+        const route = trip.routeId ? routesMap.get(trip.routeId) : null;
+        const driver = trip.driverId ? driversMap.get(trip.driverId) : null;
+        const vehicle = trip.vehicleId ? vehiclesMap.get(trip.vehicleId) : null;
+        const createdByUser = reservation.createdBy ? creatorsMap.get(reservation.createdBy) : null;
+        const passengers = passengersMap.get(reservation.id) || [];
+        
+        // Parse tripData para obtener información del segmento
+        let tripDataArray = [];
+        try {
+          tripDataArray = typeof trip.tripData === 'string'
+            ? JSON.parse(trip.tripData)
+            : trip.tripData;
+        } catch (error) {
+          console.warn(`[getReservationsOptimized] Error parsing tripData for trip ${trip.id}`);
+          continue;
+        }
+        
+        // Encontrar el segmento específico
+        let tripSegment = null;
+        if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+          // Formato nuevo: "recordId_segmentIndex"
+          const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+          tripSegment = tripDataArray[segmentIndex];
+        } else {
+          // Formato antiguo o primer segmento
+          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+          if (!tripSegment && tripDataArray.length > 0) {
+            tripSegment = tripDataArray[0];
+          }
+        }
+        
+        if (!tripSegment) {
+          console.warn(`[getReservationsOptimized] Trip segment not found for reservation ${reservation.id}`);
+          continue;
+        }
+        
+        // Encontrar el segmento principal
+        const mainTripSegment = tripDataArray.find(segment => segment.isMainTrip === true);
+        
+        // Construir objeto trip con toda la información
+        const tripWithDetails = {
+          id: tripDetails.tripId,
+          recordId: trip.id,
+          routeId: trip.routeId,
+          route: route,
+          origin: tripSegment.origin,
+          destination: tripSegment.destination,
+          departureDate: tripSegment.departureDate,
+          departureTime: tripSegment.departureTime,
+          arrivalTime: tripSegment.arrivalTime,
+          price: tripSegment.price,
+          availableSeats: tripSegment.availableSeats,
+          capacity: trip.capacity,
+          companyId: trip.companyId,
+          visibility: trip.visibility,
+          driver: driver,
+          vehicle: vehicle,
+          parentTrip: mainTripSegment ? {
+            origin: mainTripSegment.origin,
+            destination: mainTripSegment.destination,
+            departureDate: mainTripSegment.departureDate,
+            departureTime: mainTripSegment.departureTime,
+            arrivalTime: mainTripSegment.arrivalTime,
+            isMainTrip: true
+          } : null
+        };
+        
+        // Construir objeto reservación completo
+        const reservationWithDetails = {
+          ...reservation,
+          trip: tripWithDetails,
+          passengers: passengers,
+          createdByUser: createdByUser
+        };
+        
+        reservationsWithDetails.push(reservationWithDetails);
+      }
+      
+      console.log(`[getReservationsOptimized] Procesadas ${reservationsWithDetails.length} reservaciones en total: ${Date.now() - startTime}ms`);
+      console.log(`[getReservationsOptimized] Reducción de consultas: de ${reservations.length * 6} a ~6 consultas`);
+      
+      return reservationsWithDetails;
+      
+    } catch (error) {
+      console.error("[getReservationsOptimized] Error en consulta optimizada:", error);
+      throw error;
+    }
+  }
         // Reconstruir tripDetails
         let tripDetails = null;
         try {
