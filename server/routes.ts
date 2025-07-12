@@ -4452,7 +4452,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           commissionPaid: reservation.commissionPaid
         };
         
-        console.log(`[GET /commissions/reservations] Reservación ${reservation.id}: commissionPaid=${reservation.commissionPaid}`);
+        console.log(`[GET /commissions/reservations] Reservación ${reservation.id}: commissionPaid=${reservation.commissionPaid}, DB raw:`, {
+          id: reservation.id,
+          commissionPaid: reservation.commissionPaid,
+          allKeys: Object.keys(reservation)
+        });
         
         return transformedReservation;
       }));
