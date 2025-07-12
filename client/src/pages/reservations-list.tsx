@@ -199,10 +199,20 @@ function ReservationsListContent() {
       console.log(`[TRIP_INFO_DEBUG] Procesando reservación ${reservation.id}:`, {
         'tripDetails': reservation.tripDetails,
         'trip': reservation.trip,
-        'trip?.parentTrip': reservation.trip?.parentTrip,
         'trip?.driver': reservation.trip?.driver,
+        'trip?.parentTrip': reservation.trip?.parentTrip,
         'trip?.parentTrip?.driver': reservation.trip?.parentTrip?.driver,
         'tripDetails?.trip?.driver': reservation.tripDetails?.trip?.driver
+      });
+      
+      // DEBUG ESPECÍFICO: Mostrar información detallada del conductor
+      console.log(`[DRIVER_DEBUG] Reservación ${reservation.id} - Información del conductor:`, {
+        'trip?.driver?.firstName': reservation.trip?.driver?.firstName,
+        'trip?.driver?.lastName': reservation.trip?.driver?.lastName,
+        'trip?.driver?.id': reservation.trip?.driver?.id,
+        'trip?.parentTrip?.driver?.firstName': reservation.trip?.parentTrip?.driver?.firstName,
+        'trip?.parentTrip?.driver?.lastName': reservation.trip?.parentTrip?.driver?.lastName,
+        'trip?.parentTrip?.driver?.id': reservation.trip?.parentTrip?.driver?.id
       });
       
       // Buscar información del viaje padre si está disponible

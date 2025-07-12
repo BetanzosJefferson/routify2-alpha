@@ -1467,6 +1467,19 @@ export class DatabaseStorage implements IStorage {
           phone: driver.phone,
         } : null;
         
+        // DEBUG: Logging para verificar información del conductor
+        if (reservation.id === 81) {
+          console.log(`[DRIVER_DEBUG_BACKEND] Reservación ${reservation.id}:`, {
+            'tripRecord.driverId': tripRecord.driverId,
+            'driver encontrado': driver ? true : false,
+            'driver.first_name': driver?.first_name,
+            'driver.last_name': driver?.last_name,
+            'driver.firstName': driver?.firstName,
+            'driver.lastName': driver?.lastName,
+            'driverInfo construido': driverInfo
+          });
+        }
+        
         const vehicleInfo = vehicle ? {
           id: vehicle.id,
           plates: vehicle.plates,
