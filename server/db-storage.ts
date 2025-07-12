@@ -1555,7 +1555,7 @@ export class DatabaseStorage implements IStorage {
         };
         
         // Construir reservación completa
-        results.push({
+        const reservationResult = {
           id: reservation.id,
           companyId: reservation.companyId,
           status: reservation.status,
@@ -1575,7 +1575,8 @@ export class DatabaseStorage implements IStorage {
           checkInTime: reservation.checkInTime,
           boardingStatus: reservation.boardingStatus,
           cancellationReason: reservation.cancellationReason,
-          advancePayment: reservation.advancePayment,
+          advanceAmount: reservation.advanceAmount,
+          advancePaymentMethod: reservation.advancePaymentMethod,
           remainingBalance: reservation.remainingBalance,
           commissionAmount: reservation.commissionAmount,
           paidBy: reservation.paidBy,
@@ -1593,7 +1594,27 @@ export class DatabaseStorage implements IStorage {
             role: createdByUser.role,
             commissionPercentage: createdByUser.commissionPercentage,
           } : null
-        });
+        };
+
+        // DEBUG: Logging específico para reservación 579
+        if (reservation.id === 579) {
+          console.log(`[DEBUG_579] Datos de reservación 579 en método getReservations:`);
+          console.log(`  - DB totalAmount: ${reservation.totalAmount}`);
+          console.log(`  - DB advanceAmount: ${reservation.advanceAmount}`);
+          console.log(`  - DB advancePaymentMethod: ${reservation.advancePaymentMethod}`);
+          console.log(`  - DB paymentStatus: ${reservation.paymentStatus}`);
+          console.log(`  - DB paymentMethod: ${reservation.paymentMethod}`);
+          console.log(`  - Objeto final enviado:`, JSON.stringify({
+            id: reservationResult.id,
+            totalAmount: reservationResult.totalAmount,
+            advanceAmount: reservationResult.advanceAmount,
+            advancePaymentMethod: reservationResult.advancePaymentMethod,
+            paymentStatus: reservationResult.paymentStatus,
+            paymentMethod: reservationResult.paymentMethod
+          }, null, 2));
+        }
+
+        results.push(reservationResult);
       }
       
       const totalTime = Date.now() - startTime;
