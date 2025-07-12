@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 12, 2025** - CRITICAL FIX: Trip price editing functionality completely restored:
+  - **ROOT CAUSE IDENTIFIED**: Edit trip form was using PATCH endpoint which only updates vehicle, driver, capacity and visibility
+  - **MUTATION CORRECTED**: Changed from PATCH to PUT endpoint to enable full trip data updates including custom prices
+  - **SEGMENT PRICES INCLUDED**: Added `segmentPrices` and `stopTimes` to mutation data for custom price preservation
+  - **ENDPOINT COMPATIBILITY**: PUT endpoint already supports custom price updates via `segmentPrices` parameter
+  - **COMPREHENSIVE UPDATE**: Trip editing now updates all fields: route, dates, capacity, vehicle, driver, visibility, prices, and times
+  - **CUSTOM PRICES PRESERVED**: User-modified prices now properly saved instead of reverting to template defaults
+  - **FULL FUNCTIONALITY**: Trip editing system now works as intended with complete price customization support
+
 - **July 12, 2025** - ENHANCED: Commission management system with advanced filtering and bulk operations:
   - **COMMISSIONER FILTER**: Added dropdown to filter commissions by specific commissioner user
   - **BULK SELECTION**: Implemented "Seleccionar todo" button to select all visible commissions at once

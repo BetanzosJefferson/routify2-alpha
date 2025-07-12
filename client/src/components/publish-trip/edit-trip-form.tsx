@@ -625,16 +625,21 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     mutationFn: async (data: FormValues) => {
       console.log("Enviando datos para actualizar viaje:", data);
       
-      // Preparar datos de actualización - solo campos permitidos
+      // Preparar datos de actualización completos para endpoint PUT
       const updateData = {
+        routeId: selectedTemplate?.routeId || templateRouteQuery.data?.id,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        capacity: data.capacity,
         vehicleId: data.vehicleId === 0 ? null : data.vehicleId,
         driverId: data.driverId === 0 ? null : data.driverId,
-        capacity: data.capacity,
         visibility: data.visibility,
+        segmentPrices: data.segmentPrices || segmentPrices, // INCLUIR PRECIOS PERSONALIZADOS
+        stopTimes: data.stopTimes || stopTimes, // INCLUIR TIEMPOS PERSONALIZADOS
       };
       
-      console.log("Datos de actualización procesados:", updateData);
-      const res = await apiRequest("PATCH", `/api/trips/${tripId}`, updateData);
+      console.log("Datos de actualización procesados (incluyendo precios):", updateData);
+      const res = await apiRequest("PUT", `/api/trips/${tripId}`, updateData);
       return await res.json();
     },
     onSuccess: () => {
