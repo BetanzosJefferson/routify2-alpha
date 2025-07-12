@@ -22,15 +22,15 @@ const fakePhones = [
   '7441234583', '7441234584', '7441234585', '7441234586', '7441234587', '7441234588', '7441234589', '7441234590'
 ];
 
-const paymentMethods = ['efectivo', 'tarjeta', 'transferencia'];
-const statuses = ['confirmada', 'pendiente', 'cancelada'];
+const paymentMethods = ['efectivo', 'transferencia'];
+const statuses = ['confirmada', 'pendiente'];
 
 // Función para generar datos falsos
 function generateFakeReservation(index) {
   const firstName = fakeNames[Math.floor(Math.random() * fakeNames.length)];
   const lastName = fakeLastNames[Math.floor(Math.random() * fakeLastNames.length)];
   const phone = fakePhones[Math.floor(Math.random() * fakePhones.length)];
-  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${index}@fake.com`;
+  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${index}@test.com`;
   
   // Generar fechas aleatorias para los próximos 30 días
   const today = new Date();
@@ -43,22 +43,23 @@ function generateFakeReservation(index) {
   return {
     companyId: 'bamo-350045',
     status: statuses[Math.floor(Math.random() * statuses.length)],
-    tripDetails: JSON.stringify({
+    tripDetails: {
       tripId: Math.floor(Math.random() * 3) + 214, // 214, 215, o 216
       recordId: Math.floor(Math.random() * 3) + 214,
       seats: Math.floor(Math.random() * 3) + 1 // 1, 2, o 3 asientos
-    }),
+    },
     totalAmount: totalAmount,
     email: email,
     phone: phone,
     paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
-    paymentStatus: 'paid',
+    paymentStatus: 'pagado',
     advancePayment: advancePayment,
     remainingBalance: totalAmount - advancePayment,
-    seatNumbers: JSON.stringify([Math.floor(Math.random() * 40) + 1]),
+    seatNumbers: [Math.floor(Math.random() * 40) + 1],
+    numPassengers: 1,
     passengers: [
       {
-        name: firstName,
+        firstName: firstName,
         lastName: lastName,
         phone: phone,
         email: email,
