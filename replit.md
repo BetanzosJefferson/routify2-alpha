@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 12, 2025** - COMPLETED: UI optimizations and role permissions cleanup successfully implemented:
+  - **MOBILE COMMISSIONS UI**: Fixed mobile desbordamiento (overflow) issues in commission cards with responsive design
+  - **RESPONSIVE LAYOUT**: Optimized commission card layout for better mobile viewing with improved spacing and text wrapping
+  - **ROLE CLEANUP**: Eliminated "Mis reservaciones" section from commissioner role by removing "my-reservations" permission
+  - **PERMISSION REMOVAL**: Removed "my-reservations" from COMMISSIONER role permissions array
+  - **NAVIGATION CLEANUP**: Removed all references to "my-reservations" from navigation (topbar, sidebar, App.tsx)
+  - **FILE CLEANUP**: Deleted commissioner-reservations-page.tsx file completely
+  - **ARCHITECTURE SIMPLIFICATION**: Commissioners now only have access to trips, commissions, reservation requests, and cash operations
+  - **IMPROVED UX**: Mobile users now have better viewing experience in commission section without unnecessary navigation options
+  - **CLEANER CODEBASE**: Eliminated redundant components and simplified role-based permission system
+
 - **July 12, 2025** - COMPLETED: Critical date filtering optimization for trips table successfully implemented and verified:
   - **DATE FILTER OPTIMIZATION COMPLETE**: Successfully eliminated memory processing of 1000+ trip records for date filtering
   - **MASSIVE PERFORMANCE IMPROVEMENT**: Reduced average response time from 14,000ms to 303ms (97.8% improvement)

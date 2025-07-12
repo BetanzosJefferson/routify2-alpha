@@ -290,19 +290,6 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </NavLink>
                   )}
                   
-                  {/* Mis reservaciones */}
-                  {canAccess("my-reservations") && (
-                    <NavLink 
-                      active={window.location.pathname === "/my-reservations"}
-                      onClick={() => {
-                        setLocation("/my-reservations");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      Mis reservaciones
-                    </NavLink>
-                  )}
-                  
                   {/* Cupones */}
                   {canAccess("coupons") && (
                     <NavLink 

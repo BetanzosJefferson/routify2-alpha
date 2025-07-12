@@ -41,7 +41,6 @@ import UserCashBoxesPageRoute from "@/pages/user-cash-boxes-page";
 import ProfilePageRoute from "@/pages/profile-page";
 import { ReservationsListPage } from "@/pages/reservations-list";
 import { TemplatesPage } from "@/pages/templates-page";
-import CommissionerReservationsPage from "@/pages/commissioner-reservations-page";
 
 function Router() {
   return (
@@ -51,7 +50,7 @@ function Router() {
       <ProtectedRoute path="/trip/:tripId/passengers" component={PassengerListPage} />
       <ProtectedRoute path="/commissions" component={CommissionsPage} />
       <ProtectedRoute path="/my-commissions" component={MyCommissionsPage} />
-      <ProtectedRoute path="/my-reservations" component={CommissionerReservationsPage} />
+
       <ProtectedRoute path="/reservation-requests" component={ReservationRequestsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <ProtectedRoute path="/coupons" component={CouponsPage} />
