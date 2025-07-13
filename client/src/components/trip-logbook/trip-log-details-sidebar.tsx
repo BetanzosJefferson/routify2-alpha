@@ -297,16 +297,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="reservations" className="p-6 space-y-4 m-0">
                 {tripData.reservations.map((reservation: any) => {
-                  // Debug: ver qué campos de pago están disponibles
-                  console.log(`[Bitácora DEBUG] Reservación ${reservation.id}:`, {
-                    totalAmount: reservation.totalAmount,
-                    advancePayment: reservation.advancePayment,
-                    advancePaymentMethod: reservation.advancePaymentMethod,
-                    remainingAmount: reservation.remainingAmount,
-                    boardingPaymentMethod: reservation.boardingPaymentMethod,
-                    paymentMethod: reservation.paymentMethod,
-                    paymentStatus: reservation.paymentStatus
-                  });
+                  // Debug: ver TODOS los campos disponibles
+                  console.log(`[Bitácora DEBUG] Reservación ${reservation.id} - TODOS LOS CAMPOS:`, reservation);
                   
                   return (
                   <div key={reservation.id} className="border rounded-lg p-4">
