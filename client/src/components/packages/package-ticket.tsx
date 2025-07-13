@@ -91,7 +91,9 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
   
   y += 4;
   doc.setFontSize(8);
-  doc.text(formatDate(new Date(packageData.createdAt)), 29, y, { align: "center" });
+  // Usar tripDepartureDate si está disponible, sino usar createdAt
+  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
+  doc.text(formatDate(new Date(ticketDate)), 29, y, { align: "center" });
   
   // Remitente
   y += 6;
@@ -197,10 +199,11 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
     }
     
     // Fecha del viaje (siempre mostrar la fecha de salida del viaje)
-    if (packageData.shippingDate || packageData.tripDate) {
+    if (packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate) {
       y += 4;
-      const dateToUse = packageData.shippingDate ? new Date(packageData.shippingDate) : 
-                        (packageData.tripDate ? new Date(packageData.tripDate) : new Date());
+      const dateToUse = packageData.tripDepartureDate ? new Date(packageData.tripDepartureDate) :
+                        (packageData.shippingDate ? new Date(packageData.shippingDate) : 
+                        (packageData.tripDate ? new Date(packageData.tripDate) : new Date()));
       doc.text(`Fecha de envío: ${formatDate(dateToUse)}`, 5, y);
     }
     
@@ -547,7 +550,9 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
   
   y += 4;
   doc.setFontSize(8);
-  doc.text(formatDate(new Date(packageData.createdAt)), 30, y, { align: "center" });
+  // Usar tripDepartureDate si está disponible, sino usar createdAt
+  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
+  doc.text(formatDate(new Date(ticketDate)), 30, y, { align: "center" });
   
   // Remitente
   y += 6;

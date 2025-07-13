@@ -151,7 +151,10 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       
       // Filtro por fecha
       if (filters.date) {
-        const packageDate = formatDateToLocal(new Date(pkg.createdAt));
+        // Usar tripDepartureDate para filtrar por fecha del segmento específico
+        const packageDate = pkg.tripDepartureDate 
+          ? formatDateToLocal(new Date(pkg.tripDepartureDate))
+          : formatDateToLocal(new Date(pkg.createdAt));
         if (packageDate !== filters.date) {
           return false;
         }
