@@ -270,18 +270,16 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
   }
   
   y += 4;
-  console.log(`[TICKET 58MM DEBUG] Paquete #${packageData.id} - Estado de pago:`, {
-    'isPaid': packageData.isPaid,
-    'paymentMethod': packageData.paymentMethod,
-    'todasLasPropiedadesPago': Object.keys(packageData).filter(key => key.toLowerCase().includes('pay') || key.toLowerCase().includes('pago'))
-  });
-  
   if (packageData.isPaid) {
     doc.text(`Pagado`, 5, y);
-    y += 4;
-    doc.text(`Método: ${packageData.paymentMethod || 'efectivo'}`, 5, y);
   } else {
     doc.text('Pendiente de pago', 5, y);
+  }
+  
+  // Mostrar método de pago si está disponible
+  if (packageData.paymentMethod) {
+    y += 4;
+    doc.text(`Método: ${packageData.paymentMethod}`, 5, y);
   }
   
   // Código QR
@@ -744,10 +742,14 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
   y += 4;
   if (packageData.isPaid) {
     doc.text(`Pagado`, 5, y);
-    y += 4;
-    doc.text(`Método: ${packageData.paymentMethod || 'efectivo'}`, 5, y);
   } else {
     doc.text('Pendiente de pago', 5, y);
+  }
+  
+  // Mostrar método de pago si está disponible
+  if (packageData.paymentMethod) {
+    y += 4;
+    doc.text(`Método: ${packageData.paymentMethod}`, 5, y);
   }
   
   // Código QR
