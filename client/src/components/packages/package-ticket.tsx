@@ -92,8 +92,8 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
   
   y += 4;
   doc.setFontSize(8);
-  // Usar shippingDate como prioridad, luego tripDepartureDate, luego createdAt
-  const ticketDate = packageData.shippingDate || packageData.tripDepartureDate || packageData.tripDate || packageData.createdAt;
+  // Usar tripDepartureDate como prioridad, luego shippingDate, luego createdAt
+  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
   doc.text(formatDate(new Date(ticketDate)), 29, y, { align: "center" });
   
   // Remitente
@@ -551,13 +551,13 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
   
   y += 4;
   doc.setFontSize(8);
-  // Usar shippingDate como prioridad, luego tripDepartureDate, luego createdAt
-  const ticketDate = packageData.shippingDate || packageData.tripDepartureDate || packageData.tripDate || packageData.createdAt;
+  // Usar tripDepartureDate como prioridad, luego shippingDate, luego createdAt
+  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
   
   // Debug: Log para verificar el ticket 60mm
   console.log(`[TICKET 60MM DEBUG] Paquete #${packageData.id}:`, {
-    'shippingDate': packageData.shippingDate,
     'tripDepartureDate': packageData.tripDepartureDate,
+    'shippingDate': packageData.shippingDate,
     'tripDate': packageData.tripDate,
     'createdAt': packageData.createdAt,
     'ticketDate usado': ticketDate,

@@ -151,17 +151,19 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       
       // Filtro por fecha
       if (filters.date) {
-        // Usar shippingDate o tripDepartureDate para filtrar por fecha del segmento específico
-        const packageDate = pkg.shippingDate 
-          ? formatDateToLocal(new Date(pkg.shippingDate))
-          : (pkg.tripDepartureDate 
-            ? formatDateToLocal(new Date(pkg.tripDepartureDate))
+        // Usar tripDepartureDate para filtrar por fecha del segmento específico
+        const packageDate = pkg.tripDepartureDate 
+          ? formatDateToLocal(new Date(pkg.tripDepartureDate))
+          : (pkg.shippingDate 
+            ? formatDateToLocal(new Date(pkg.shippingDate))
             : formatDateToLocal(new Date(pkg.createdAt)));
         
         // Debug: Log para verificar el filtrado
         console.log(`[FILTRO FECHA DEBUG] Paquete #${pkg.id}:`, {
+          'TODAS LAS PROPIEDADES': Object.keys(pkg),
           'shippingDate': pkg.shippingDate,
           'tripDepartureDate': pkg.tripDepartureDate,
+          'tripDate': pkg.tripDate,
           'createdAt': pkg.createdAt,
           'packageDate calculado': packageDate,
           'filters.date': filters.date,
