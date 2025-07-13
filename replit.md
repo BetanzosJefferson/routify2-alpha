@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - CRITICAL FIX: Trip date regression issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: GET /trips/:id endpoint was incorrectly modifying trip data instead of only reading it
+  - **DATE REGRESSION PROBLEM**: Each access to GET endpoint moved dates backward by one day (13→12→11→10)
+  - **SOLUTION IMPLEMENTED**: Removed calculateSegmentDate function from GET endpoint completely
+  - **READ-ONLY ENDPOINT**: GET /trips/:id now only returns data without any modifications
+  - **CORRECT IMPLEMENTATION**: calculateSegmentDate function properly placed in POST /trips and PUT /trips/:id endpoints
+  - **VERIFICATION SUCCESS**: Multiple GET requests now return consistent dates without regression
+  - **TECHNICAL SOLUTION**: GET endpoints should never modify data - only CREATE/UPDATE operations should apply business logic
+  - **PRODUCTION READY**: Trip viewing no longer causes date drift - data integrity preserved
+  - **BEST PRACTICE**: Separated data reading from data processing operations correctly
+
 - **July 13, 2025** - CRITICAL FIX: Trip departureDate calculation for midnight-crossing segments completely implemented:
   - **ROOT CAUSE IDENTIFIED**: All segments were using same `startDate` regardless of crossing midnight, causing incorrect `departureDate` in database
   - **CALCULATESEQMENTDATE FUNCTION**: Created comprehensive function to calculate correct date for each segment based on departure time

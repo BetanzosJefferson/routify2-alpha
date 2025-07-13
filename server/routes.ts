@@ -1057,37 +1057,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Si llegamos aquí, el usuario tiene permiso para ver el viaje
-      
-      // APLICAR calculateSegmentDate automáticamente a todos los segmentos
-      if (trip.tripData && Array.isArray(trip.tripData)) {
-        console.log(`[GET /trips/${id}] Aplicando calculateSegmentDate a ${trip.tripData.length} segmentos`);
-        
-        // Usar la fecha del primer segmento si trip.departureDate es null
-        const tripStartDate = trip.departureDate || 
-                             (trip.tripData && trip.tripData.length > 0 ? trip.tripData[0].departureDate : null) || 
-                             getCurrentLocalDate();
-        const baseDate = new Date(tripStartDate);
-        console.log(`[GET /trips/${id}] Fecha base para cálculo: ${tripStartDate}`);
-        
-        trip.tripData = trip.tripData.map((segment, index) => {
-          const originalDate = segment.departureDate;
-          const calculatedDate = formatDateToLocal(
-            calculateSegmentDate(baseDate, segment.departureTime || segment.arrivalTime)
-          );
-          
-          if (originalDate !== calculatedDate) {
-            console.log(`[GET /trips/${id}] Segmento ${index}: ${originalDate} → ${calculatedDate} (${segment.departureTime || segment.arrivalTime})`);
-          }
-          
-          return {
-            ...segment,
-            departureDate: calculatedDate
-          };
-        });
-        
-        console.log(`[GET /trips/${id}] Recálculo de fechas completado`);
-      }
-      
       res.json(trip);
     } catch (error) {
       console.error(`Error al obtener viaje por ID: ${error}`);
