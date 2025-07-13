@@ -92,9 +92,15 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
   
   y += 4;
   doc.setFontSize(8);
-  // Usar tripDepartureDate como prioridad, luego shippingDate, luego createdAt
-  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
-  doc.text(formatDate(new Date(ticketDate)), 29, y, { align: "center" });
+  // Usar tripDepartureDate como prioridad, luego shippingDate, luego tripDate
+  // NUNCA usar createdAt como fallback
+  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate;
+  if (ticketDate) {
+    // NO usar new Date() para evitar problemas de timezone
+    doc.text(formatDate(ticketDate), 29, y, { align: "center" });
+  } else {
+    doc.text("Fecha no disponible", 29, y, { align: "center" });
+  }
   
   // Remitente
   y += 6;
@@ -551,20 +557,25 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
   
   y += 4;
   doc.setFontSize(8);
-  // Usar tripDepartureDate como prioridad, luego shippingDate, luego createdAt
-  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
+  // Usar tripDepartureDate como prioridad, luego shippingDate, luego tripDate
+  // NUNCA usar createdAt como fallback
+  const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate;
   
   // Debug: Log para verificar el ticket 60mm
   console.log(`[TICKET 60MM DEBUG] Paquete #${packageData.id}:`, {
     'tripDepartureDate': packageData.tripDepartureDate,
     'shippingDate': packageData.shippingDate,
     'tripDate': packageData.tripDate,
-    'createdAt': packageData.createdAt,
     'ticketDate usado': ticketDate,
-    'formatDate result': formatDate(new Date(ticketDate))
+    'formatDate result': ticketDate ? formatDate(ticketDate) : "Fecha no disponible"
   });
   
-  doc.text(formatDate(new Date(ticketDate)), 30, y, { align: "center" });
+  if (ticketDate) {
+    // NO usar new Date() para evitar problemas de timezone
+    doc.text(formatDate(ticketDate), 30, y, { align: "center" });
+  } else {
+    doc.text("Fecha no disponible", 30, y, { align: "center" });
+  }
   
   // Remitente
   y += 6;

@@ -166,16 +166,17 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
         // Solo usar fechas relacionadas con el viaje, nunca createdAt
         let packageDate = null;
         if (pkg.tripDepartureDate) {
+          // NO usar new Date() para strings de fecha - causa problemas de timezone
+          // Usar formatDateToLocal directamente con el string
           console.log(`[FECHA DEBUG] Procesando tripDepartureDate: "${pkg.tripDepartureDate}"`);
-          console.log(`[FECHA DEBUG] new Date(pkg.tripDepartureDate):`, new Date(pkg.tripDepartureDate));
-          console.log(`[FECHA DEBUG] formatDateToLocal result:`, formatDateToLocal(new Date(pkg.tripDepartureDate)));
-          packageDate = formatDateToLocal(new Date(pkg.tripDepartureDate));
+          packageDate = formatDateToLocal(pkg.tripDepartureDate);
+          console.log(`[FECHA DEBUG] formatDateToLocal result:`, packageDate);
         } else if (pkg.shippingDate) {
           console.log(`[FECHA DEBUG] Procesando shippingDate: "${pkg.shippingDate}"`);
-          packageDate = formatDateToLocal(new Date(pkg.shippingDate));
+          packageDate = formatDateToLocal(pkg.shippingDate);
         } else if (pkg.tripDate) {
           console.log(`[FECHA DEBUG] Procesando tripDate: "${pkg.tripDate}"`);
-          packageDate = formatDateToLocal(new Date(pkg.tripDate));
+          packageDate = formatDateToLocal(pkg.tripDate);
         }
         
         // Debug: Log para verificar el filtrado
