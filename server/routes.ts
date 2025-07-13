@@ -1494,39 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return days > 0 ? `${cleanedTime} +${days}d` : cleanedTime;
   }
 
-  // Función para calcular la fecha correcta de un segmento basada en su hora de salida
-  function calculateSegmentDate(baseDate: string, departureTime: string): string {
-    if (!departureTime) {
-      return baseDate;
-    }
-    
-    // Extraer el indicador de día del departureTime
-    const dayIndicatorMatch = departureTime.match(/\+(\d+)d$/);
-    if (dayIndicatorMatch) {
-      const dayOffset = parseInt(dayIndicatorMatch[1], 10);
-      const date = new Date(baseDate);
-      date.setDate(date.getDate() + dayOffset);
-      return formatDateToLocal(date);
-    }
-    
-    // Si no hay indicador de día, verificar si es AM temprano (posible día siguiente)
-    const [time, period] = departureTime.split(' ');
-    if (period === 'AM') {
-      const [hour] = time.split(':');
-      const hourNum = parseInt(hour, 10);
-      const hour24 = hourNum === 12 ? 0 : hourNum; // 12 AM = 0 en formato 24h
-      
-      // Si es entre 00:00 AM y 6:59 AM, asumir que es del día siguiente
-      if (hour24 >= 0 && hour24 <= 6) {
-        const date = new Date(baseDate);
-        date.setDate(date.getDate() + 1);
-        return formatDateToLocal(date);
-      }
-    }
-    
-    // Para horarios diurnos, mantener la fecha base
-    return baseDate;
-  }
+
   
   // Helper function to generate all possible segments between stops
   function generateAllPossibleSegments(route: RouteWithSegments) {
@@ -2228,9 +2196,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // PRESERVAR el tripId existente y actualizar solo campos modificados
-          const calculatedDepartureDate = calculateSegmentDate(
-            startDate || existingTrip.departureDate || getCurrentLocalDate(),
-            finalDepartureTime
+          const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
+          const baseDateObj = new Date(baseDateStr);
+          const calculatedDepartureDate = formatDateToLocal(
+            calculateSegmentDate(baseDateObj, finalDepartureTime)
           );
           
           newTripData.push({
@@ -2264,9 +2233,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey} (preservado): ${existingTrip.availableSeats} asientos (NO se cambió capacidad - trip: ${currentTrip.capacity}, recibido: ${capacity})`);
           }
           
-          const calculatedDepartureDate = calculateSegmentDate(
-            startDate || existingTrip.departureDate || getCurrentLocalDate(),
-            existingTrip.departureTime
+          const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
+          const baseDateObj = new Date(baseDateStr);
+          const calculatedDepartureDate = formatDateToLocal(
+            calculateSegmentDate(baseDateObj, existingTrip.departureTime)
           );
           
           newTripData.push({
