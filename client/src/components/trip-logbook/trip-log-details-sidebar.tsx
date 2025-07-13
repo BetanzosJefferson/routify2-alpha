@@ -304,8 +304,28 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         <p className="text-sm text-gray-600">{reservation.phone}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{formatCurrency(reservation.totalAmount)}</p>
-                        {getPaymentStatusBadge(reservation.paymentStatus)}
+                        <div className="space-y-1">
+                          {/* Anticipo (si existe) */}
+                          {reservation.advancePayment && reservation.advancePayment > 0 && (
+                            <div className="text-sm">
+                              <span className="text-green-600">Anticipo: {formatCurrency(reservation.advancePayment)}</span>
+                              <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
+                            </div>
+                          )}
+                          
+                          {/* Restante (si existe) */}
+                          {reservation.remainingAmount && reservation.remainingAmount > 0 && (
+                            <div className="text-sm">
+                              <span className="text-blue-600">Restante: {formatCurrency(reservation.remainingAmount)}</span>
+                              <span className="text-gray-500 ml-2">({reservation.boardingPaymentMethod})</span>
+                            </div>
+                          )}
+                          
+                          {/* Total */}
+                          <div className="font-bold text-lg">
+                            Total: {formatCurrency(reservation.totalAmount)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                     {reservation.passengers && reservation.passengers.length > 0 && (
