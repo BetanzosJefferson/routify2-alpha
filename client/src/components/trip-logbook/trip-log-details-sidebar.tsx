@@ -283,8 +283,14 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Ventas</p>
-              <p className="text-xl font-bold text-green-600">
-                {formatCurrency(ventasReales.ventas)} / {formatCurrency(ventasReales.totalPorVender)}
+              <p className="text-xl font-bold">
+                <span className={ventasReales.ventas === ventasReales.totalPorVender ? 'text-green-600' : 'text-gray-500'}>
+                  {formatCurrency(ventasReales.ventas)}
+                </span>
+                <span className="text-gray-400"> / </span>
+                <span className="text-green-600">
+                  {formatCurrency(ventasReales.totalPorVender)}
+                </span>
               </p>
             </div>
             <div className="text-center">

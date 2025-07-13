@@ -238,11 +238,17 @@ export function TripLogbook() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-600" />
+              <DollarSign className={`h-5 w-5 ${dayTotals.ventasReales === dayTotals.totalPorVender ? 'text-green-600' : 'text-gray-500'}`} />
               <div>
                 <p className="text-sm text-gray-600">Ventas</p>
-                <p className="text-xl font-bold text-green-600">
-                  {formatCurrency(dayTotals.ventasReales)} / {formatCurrency(dayTotals.totalPorVender)}
+                <p className="text-xl font-bold">
+                  <span className={dayTotals.ventasReales === dayTotals.totalPorVender ? 'text-green-600' : 'text-gray-500'}>
+                    {formatCurrency(dayTotals.ventasReales)}
+                  </span>
+                  <span className="text-gray-400"> / </span>
+                  <span className="text-green-600">
+                    {formatCurrency(dayTotals.totalPorVender)}
+                  </span>
                 </p>
               </div>
             </div>
