@@ -2117,6 +2117,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Procesar la nueva estructura de datos JSON
       const { routeId, startDate, endDate, capacity, segmentPrices, stopTimes, vehicleId, driverId, visibility } = req.body;
       
+      console.log(`[PUT /trips/${id}] ========== DIAGNÓSTICO DE FECHAS Y CAPACIDAD ==========`);
+      console.log(`[PUT /trips/${id}] startDate recibido del frontend:`, startDate);
+      console.log(`[PUT /trips/${id}] endDate recibido del frontend:`, endDate);
+      console.log(`[PUT /trips/${id}] currentTrip.departureDate:`, currentTrip.departureDate);
+      console.log(`[PUT /trips/${id}] getCurrentLocalDate():`, getCurrentLocalDate());
       console.log(`[PUT /trips/${id}] ========== DIAGNÓSTICO DE CAPACIDAD Y ASIENTOS ==========`);
       console.log(`[PUT /trips/${id}] segmentPrices recibidos:`, segmentPrices ? segmentPrices.length : 0);
       console.log(`[PUT /trips/${id}] stopTimes recibidos:`, stopTimes ? stopTimes.length : 0);
@@ -2200,7 +2205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // PRESERVAR el tripId existente y actualizar solo campos modificados
           const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
-          const baseDateObj = new Date(baseDateStr);
+          console.log(`[PUT /trips/${id}] [calculateSegmentDate] COMPONENTES: startDate="${startDate}", existingTrip.departureDate="${existingTrip.departureDate}", getCurrentLocalDate()="${getCurrentLocalDate()}"`);
+          const baseDateObj = normalizeToStartOfDay(baseDateStr);
           console.log(`[PUT /trips/${id}] [calculateSegmentDate] INPUT: baseDateStr="${baseDateStr}", finalDepartureTime="${finalDepartureTime}"`);
           const calculatedDepartureDate = formatDateToLocal(
             calculateSegmentDate(baseDateObj, finalDepartureTime)
@@ -2239,7 +2245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
-          const baseDateObj = new Date(baseDateStr);
+          console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED COMPONENTES: startDate="${startDate}", existingTrip.departureDate="${existingTrip.departureDate}", getCurrentLocalDate()="${getCurrentLocalDate()}"`);
+          const baseDateObj = normalizeToStartOfDay(baseDateStr);
           console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED INPUT: baseDateStr="${baseDateStr}", departureTime="${existingTrip.departureTime}"`);
           const calculatedDepartureDate = formatDateToLocal(
             calculateSegmentDate(baseDateObj, existingTrip.departureTime)
