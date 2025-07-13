@@ -628,17 +628,24 @@ export class DatabaseStorage implements IStorage {
     }
     
     // 🔥 OPTIMIZACIÓN CRÍTICA: Filtro de fecha a nivel SQL para evitar procesamiento en memoria
+    // MEJORADO: Incluir viajes que tienen CUALQUIER segmento en la fecha buscada (no solo el primer segmento)
     if (params.dateRange && params.dateRange.length > 0) {
-      console.log(`[searchTrips] [OPTIMIZED] Aplicando filtro SQL por rango de fechas:`, params.dateRange);
-      // Crear condiciones OR para cada fecha en el rango
+      console.log(`[searchTrips] [OPTIMIZED] Aplicando filtro SQL por rango de fechas (cualquier segmento):`, params.dateRange);
+      // Crear condiciones OR para cada fecha en el rango - buscar en cualquier segmento
       const dateConditions = params.dateRange.map(date => 
-        sql`${schema.trips.tripData}->0->>'departureDate' = ${date}`
+        sql`EXISTS (
+          SELECT 1 FROM jsonb_array_elements(trip_data) AS segment 
+          WHERE segment->>'departureDate' = ${date}
+        )`
       );
       condiciones.push(or(...dateConditions));
     } else if (params.date) {
-      console.log(`[searchTrips] [OPTIMIZED] 🔥 Aplicando filtro SQL por fecha específica: ${params.date}`);
-      // Usar SQL directo para filtrar por fecha en el primer segmento
-      condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
+      console.log(`[searchTrips] [OPTIMIZED] 🔥 Aplicando filtro SQL por fecha específica (cualquier segmento): ${params.date}`);
+      // Usar SQL directo para filtrar por fecha en CUALQUIER segmento, no solo el primero
+      condiciones.push(sql`EXISTS (
+        SELECT 1 FROM jsonb_array_elements(trip_data) AS segment 
+        WHERE segment->>'departureDate' = ${params.date}
+      )`);
     }
     
     // Aplicar filtro por conductor (driverId)

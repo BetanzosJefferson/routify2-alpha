@@ -122,12 +122,14 @@ Preferred communication style: Simple, everyday language.
 - **July 13, 2025** - COMPLETED: Midnight-crossing segment filtering logic fixed for improved user experience:
   - **USER ISSUE IDENTIFIED**: Segments crossing midnight appeared when filtering by parent trip date instead of actual departure date
   - **EXAMPLE PROBLEM**: Trip starts July 13 at 11:50 PM, segment departs July 14 at 1:48 AM but appeared in July 13 searches
-  - **SOLUTION IMPLEMENTED**: Added individual segment date filtering in searchTrips method mode expandido
+  - **SQL FILTER ENHANCED**: Modified SQL query to use `EXISTS` with `jsonb_array_elements` to include trips with ANY segment matching date
+  - **SEGMENT FILTERING ADDED**: Added individual segment date filtering in searchTrips method mode expandido
   - **TECHNICAL FIX**: Enhanced segment filtering to check `segment.departureDate === params.date` for each segment
   - **COMPREHENSIVE FILTERING**: Now supports both single date and date range filtering at segment level
   - **LOGICAL IMPROVEMENT**: Segments only appear when user searches for their actual departure date
   - **USER EXPERIENCE**: Searching July 13 shows segments departing July 13, July 14 shows segments departing July 14
   - **MIDNIGHT CROSSING SUPPORT**: Maintains support for overnight journeys with proper date-based filtering
+  - **VERIFIED WORKING**: Chilpancingo→Taxqueña segment at 1:48 AM now correctly appears in July 14 searches
 
 - **July 13, 2025** - COMPLETED: Trip publication date offset issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: Backend was using `new Date(tripData.startDate)` which caused timezone offset issues
