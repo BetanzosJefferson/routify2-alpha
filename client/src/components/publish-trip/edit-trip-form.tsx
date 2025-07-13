@@ -153,6 +153,19 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     },
     enabled: !!selectedTemplate?.routeId,
   });
+
+  // Fetch route data for stop ordering during edit
+  const routeQuery = useQuery({
+    queryKey: ["/api/routes", tripQuery.data?.routeId],
+    enabled: !!tripQuery.data?.routeId,
+    queryFn: async () => {
+      const response = await fetch(`/api/routes/${tripQuery.data.routeId}`);
+      if (!response.ok) {
+        throw new Error("Error al cargar datos de la ruta");
+      }
+      return response.json();
+    }
+  });
   
   // Consulta para obtener vehículos disponibles
   const vehiclesQuery = useQuery({
@@ -340,7 +353,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         }
       }
     }
-  }, [tripQuery.data, segmentPrices.length]);
+  }, [tripQuery.data, segmentPrices.length, routeQuery.data]);
 
   // Función para reconstruir los tiempos de parada DIRECTAMENTE desde datos de BD con orden correcto
   const reconstructStopTimesFromDatabaseSegments = (segmentPrices: SegmentTimePrice[]) => {
@@ -375,13 +388,16 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     // Obtener el orden correcto de las paradas desde la ruta (si está disponible)
     let orderedLocations: string[] = [];
     
-    if (templateRouteQuery.data) {
+    console.log("🔧 routeQuery.data disponible:", !!routeQuery.data);
+    
+    if (routeQuery.data) {
       // Usar el orden de la ruta: origen, paradas, destino
       orderedLocations = [
-        templateRouteQuery.data.origin,
-        ...(templateRouteQuery.data.stops || []),
-        templateRouteQuery.data.destination
+        routeQuery.data.origin,
+        ...(routeQuery.data.stops || []),
+        routeQuery.data.destination
       ];
+      console.log("🔧 Orden correcto desde ruta:", orderedLocations.slice(0, 5));
     } else {
       // Fallback: extraer ubicaciones únicas manteniendo el orden de aparición
       const allLocations: string[] = [];
@@ -394,6 +410,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         }
       });
       orderedLocations = allLocations;
+      console.log("🔧 Fallback: orden de aparición:", orderedLocations.slice(0, 5));
     }
     
     // Crear el array de tiempos de parada usando el orden correcto
