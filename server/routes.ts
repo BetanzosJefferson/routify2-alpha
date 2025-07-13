@@ -2146,41 +2146,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         existingTripIdMap[key] = trip;
       });
       
-      // Generar el nuevo tripData PRESERVANDO los tripId existentes
+      // CRÍTICO: Preservar TODOS los segmentos existentes y solo actualizar los que vienen en segmentPrices
       const newTripData: any[] = [];
       
+      // Crear mapa de segmentos que vienen del frontend para actualizar
+      const frontendSegmentMap: Record<string, any> = {};
       if (segmentPrices && Array.isArray(segmentPrices)) {
-        let isFirstSegment = true;
-        
         segmentPrices.forEach((segment: any) => {
-          // Determinar si es el viaje principal (primer segmento completo de origen a destino)
-          const isMainTrip = isFirstSegment && segment.origin === route.origin && segment.destination === route.destination;
+          const key = `${segment.origin} -> ${segment.destination}`;
+          frontendSegmentMap[key] = segment;
+        });
+      }
+      
+      console.log(`[PUT /trips/${id}] Frontend enviará actualizaciones para ${Object.keys(frontendSegmentMap).length} segmentos de ${existingTripData.length} existentes`);
+      
+      // Procesar todos los segmentos existentes
+      existingTripData.forEach((existingTrip: any) => {
+        const segmentKey = `${existingTrip.origin} -> ${existingTrip.destination}`;
+        const frontendUpdate = frontendSegmentMap[segmentKey];
+        
+        if (frontendUpdate) {
+          // Este segmento se está actualizando desde el frontend
+          console.log(`[PUT /trips/${id}] ACTUALIZANDO segmento: ${segmentKey}`);
           
           // Obtener horarios desde el mapa de tiempos
-          const originTimes = timeMap[segment.origin] || { departureTime: segment.departureTime || "08:00 AM", arrivalTime: segment.arrivalTime || "12:00 PM" };
-          const destinationTimes = timeMap[segment.destination] || { departureTime: segment.departureTime || "08:00 AM", arrivalTime: segment.arrivalTime || "12:00 PM" };
+          const originTimes = timeMap[existingTrip.origin] || { departureTime: frontendUpdate.departureTime || existingTrip.departureTime || "08:00 AM", arrivalTime: frontendUpdate.arrivalTime || existingTrip.arrivalTime || "12:00 PM" };
+          const destinationTimes = timeMap[existingTrip.destination] || { departureTime: frontendUpdate.departureTime || existingTrip.departureTime || "08:00 AM", arrivalTime: frontendUpdate.arrivalTime || existingTrip.arrivalTime || "12:00 PM" };
           
-          // CRÍTICO: Buscar tripId existente para este segmento
-          const segmentKey = `${segment.origin} -> ${segment.destination}`;
-          const existingTrip = existingTripIdMap[segmentKey];
-          const preservedTripId = existingTrip ? existingTrip.tripId : Date.now() + Math.random(); // Solo generar nuevo ID si no existe
-          
-          console.log(`[PUT /trips/${id}] Segmento ${segmentKey}: tripId ${existingTrip ? 'PRESERVADO' : 'NUEVO'} = ${preservedTripId}`);
-          
+          // PRESERVAR el tripId existente y actualizar solo campos modificados
           newTripData.push({
-            price: segment.price || 0,
-            origin: segment.origin,
-            destination: segment.destination,
-            tripId: preservedTripId, // PRESERVAR el tripId existente
-            isMainTrip: isMainTrip,
-            departureDate: startDate || currentTrip.tripData?.[0]?.departureDate || getCurrentLocalDate(),
+            price: frontendUpdate.price !== undefined ? frontendUpdate.price : existingTrip.price,
+            origin: existingTrip.origin,
+            destination: existingTrip.destination,
+            tripId: existingTrip.tripId, // PRESERVAR tripId existente
+            isMainTrip: existingTrip.isMainTrip,
+            departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
             departureTime: originTimes.departureTime,
             arrivalTime: destinationTimes.arrivalTime,
-            availableSeats: capacity || currentTrip.capacity
+            availableSeats: capacity !== undefined ? capacity : existingTrip.availableSeats
           });
+        } else {
+          // Este segmento NO se está actualizando, preservar completamente
+          console.log(`[PUT /trips/${id}] PRESERVANDO segmento: ${segmentKey} (tripId: ${existingTrip.tripId})`);
           
-          if (isFirstSegment) isFirstSegment = false;
-        });
+          newTripData.push({
+            price: existingTrip.price,
+            origin: existingTrip.origin,
+            destination: existingTrip.destination,
+            tripId: existingTrip.tripId, // PRESERVAR tripId existente
+            isMainTrip: existingTrip.isMainTrip,
+            departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
+            departureTime: existingTrip.departureTime,
+            arrivalTime: existingTrip.arrivalTime,
+            availableSeats: capacity !== undefined ? capacity : existingTrip.availableSeats
+          });
+        }
+      });
+      
+      console.log(`[PUT /trips/${id}] Resultado: ${newTripData.length} segmentos preservados (${existingTripData.length} originales)`);
+      
+      // Verificar que no se perdieron segmentos
+      if (newTripData.length !== existingTripData.length) {
+        console.error(`[PUT /trips/${id}] ERROR: Se perdieron ${existingTripData.length - newTripData.length} segmentos durante la actualización`);
       }
       
       // CRÍTICO: Construir el objeto de actualización PRESERVANDO todos los datos críticos

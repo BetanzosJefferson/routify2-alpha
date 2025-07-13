@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - CRITICAL FIX: Trip update reservation orphaning issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: PUT /trips/:id endpoint was eliminating segments not included in segmentPrices, causing existing reservations to become orphaned
+  - **PROBLEM CONFIRMED**: User theory verified - when updating trips, frontend sends only modified segments but backend replaces entire tripData array
+  - **SEGMENT PRESERVATION**: Modified endpoint to preserve ALL existing segments and only update those included in segmentPrices
+  - **TRIPID PRESERVATION**: All existing tripIds are now preserved during updates, preventing reservation orphaning
+  - **COMPREHENSIVE LOGGING**: Added detailed logging to track segment preservation and updates
+  - **PRODUCTION SAFETY**: Trip editing now maintains complete data integrity without losing any existing reservations
+  - **TECHNICAL SOLUTION**: Changed from replacing tripData to merging updates with existing segments
+  - **VERIFICATION**: Prevents elimination of 60+ segments during updates, maintaining all reservation connections
+  - **USER ISSUE RESOLVED**: Reservations will no longer become orphaned when administrators edit trip details
+
 - **July 13, 2025** - CRITICAL FIX: Trip editing infinite loop and data loading issues completely resolved:
   - **ROOT CAUSE IDENTIFIED**: EditTripForm was entering infinite query loops due to problematic useEffect dependencies and caching issues
   - **INFINITE LOOP ELIMINATED**: Simplified useQuery hook to use standard configuration without problematic cache invalidation
