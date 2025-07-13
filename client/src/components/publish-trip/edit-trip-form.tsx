@@ -483,7 +483,12 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     console.log("🔧 orderedLocations filtradas (solo con tiempo):", orderedLocations.filter(loc => locationTimes[loc]));
     console.log("🔧 RESULTADO FINAL - newStopTimes length:", newStopTimes.length);
     console.log("🔧 RESULTADO FINAL - Primeras 5 paradas:", newStopTimes.slice(0, 5).map(st => `${st.location}: ${st.hour}:${st.minute} ${st.ampm}`));
-    setStopTimes(ensureValidStopTimes(newStopTimes));
+    
+    // Debugging: Ver el resultado después de ensureValidStopTimes
+    const validatedTimes = ensureValidStopTimes(newStopTimes);
+    console.log("🔧 DESPUÉS DE VALIDACIÓN - Primeras 5 paradas:", validatedTimes.slice(0, 5).map(st => `${st.location}: ${st.hour}:${st.minute} ${st.ampm}`));
+    
+    setStopTimes(validatedTimes);
   };
 
   // ELIMINADO: Función que dependía de plantillas
