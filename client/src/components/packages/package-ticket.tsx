@@ -33,6 +33,8 @@ interface PackageData {
   tripDepartureDate?: string | Date;
   shippingDate?: string | Date;
   departureTime?: string;
+  tripDepartureTime?: string;
+  tripArrivalTime?: string;
   companyId?: string;
 }
 
@@ -214,16 +216,25 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
       doc.text(`Fecha de envío: ${formatDate(dateToUse)}`, 5, y);
     }
     
-    // Hora de envío (usando la hora de salida del viaje)
-    if (packageData.departureTime) {
+    // Hora de envío (usando la hora del segmento específico del viaje)
+    console.log(`[TICKET PDF DEBUG] Paquete #${packageData.id} - Propiedades de hora disponibles:`, {
+      'tripDepartureTime': packageData.tripDepartureTime,
+      'departureTime': packageData.departureTime,
+      'tripArrivalTime': packageData.tripArrivalTime,
+      'createdAt': packageData.createdAt,
+      'todasLasPropiedades': Object.keys(packageData).filter(key => key.toLowerCase().includes('time') || key.toLowerCase().includes('hora'))
+    });
+    
+    if (packageData.tripDepartureTime) {
       y += 4;
-      doc.text(`Hora de salida: ${formatTripTime(packageData.departureTime, true, 'standard')}`, 5, y);
-    } else if (packageData.createdAt) {
-      // Si no hay hora de salida disponible, usar la hora de creación como fallback
+      doc.text(`Hora de envío: ${formatTime(packageData.tripDepartureTime)}`, 5, y);
+    } else if (packageData.departureTime) {
       y += 4;
-      const date = new Date(packageData.createdAt);
-      const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-      doc.text(`Hora de envío: ${timeStr}`, 5, y);
+      doc.text(`Hora de envío: ${formatTime(packageData.departureTime)}`, 5, y);
+    } else {
+      // Si no hay hora de viaje disponible, no mostrar nada
+      // NUNCA usar createdAt para la hora de envío
+      console.warn(`[TICKET PDF] Paquete #${packageData.id} no tiene hora de viaje disponible`);
     }
   }
   
@@ -680,9 +691,17 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
     doc.text(`Fecha de envío: ${formatDate(dateToUse)}`, 5, y);
   }
   
-  if (packageData.departureTime) {
+  // Hora de envío (usando la hora del segmento específico del viaje)
+  if (packageData.tripDepartureTime) {
     y += 4;
-    doc.text(`Hora de salida: ${formatTripTime(packageData.departureTime, true, 'standard')}`, 5, y);
+    doc.text(`Hora de envío: ${formatTime(packageData.tripDepartureTime)}`, 5, y);
+  } else if (packageData.departureTime) {
+    y += 4;
+    doc.text(`Hora de envío: ${formatTime(packageData.departureTime)}`, 5, y);
+  } else {
+    // Si no hay hora de viaje disponible, no mostrar nada
+    // NUNCA usar createdAt para la hora de envío
+    console.warn(`[TICKET 60MM PDF] Paquete #${packageData.id} no tiene hora de viaje disponible`);
   }
   
   // Detalles del paquete
