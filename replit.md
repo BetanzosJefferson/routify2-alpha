@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - COMPLETED: Trip list organization simplified by removing archived/current/future filtering:
+  - **SIMPLIFIED INTERFACE**: Removed confusing tabs for "Actuales y Futuros" and "Archivados" in trip publication section
+  - **STREAMLINED LOGIC**: Eliminated complex date-based trip categorization that separated trips into archived vs current
+  - **SINGLE VIEW**: Now displays all trips in a unified date-grouped view using simple `groupedTrips` logic
+  - **IMPROVED UX**: Users no longer need to switch between tabs to see all their trips
+  - **CLEANER CODE**: Removed `currentTrips`, `archivedTrips`, and `showArchived` state variables
+  - **DATE-BASED ORGANIZATION**: Maintains chronological organization while removing artificial categorization
+  - **CONSISTENT BEHAVIOR**: All trips are now displayed uniformly regardless of their date relationship to "today"
+  - **FILTER INTEGRATION**: Date filtering now works seamlessly with the simplified single-view interface
+  - **PERFORMANCE MAINTAINED**: Keeps all existing performance optimizations while reducing interface complexity
+
 - **July 13, 2025** - CRITICAL FIX: Trip editing date offset issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: EditTripForm was using `new Date(dateString)` conversion causing timezone offset problems  
   - **DATE CONVERSION PROBLEM**: Each edit operation moved date back by one day due to UTC timezone conversion

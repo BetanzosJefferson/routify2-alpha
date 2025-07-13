@@ -121,7 +121,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   const today = normalizeToStartOfDay(getCurrentLocalDate());
   const [dateFilter, setDateFilter] = useState<Date | undefined>(today);
   const [showFilter, setShowFilter] = useState(true);
-  const [showArchived, setShowArchived] = useState(false);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<number | null>(null);
   const [routeFilter, setRouteFilter] = useState<string>("all");
@@ -387,76 +387,22 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   console.log("TripList: Después del filtrado, viajes restantes:", filteredTrips.length);
   console.log("TripList: Viajes filtrados:", filteredTrips.map(t => ({id: t.id, origin: t.origin, destination: t.destination, date: t.departureDate})));
 
-  // Obtener y organizar viajes, separando actuales y archivados
-  const { currentTrips, archivedTrips } = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalizamos "hoy" a las 00:00:00
+  // Agrupar viajes por fecha
+  const groupedTrips = useMemo(() => {
+    const grouped: Record<string, Trip[]> = {};
     
-    // Separamos viajes actuales y archivados
-    const current: Record<string, Trip[]> = {};
-    let archived: Trip[] = [];
-    
-    // Con la estructura optimizada, todos los viajes son principales
-    const mainTrips = filteredTrips;
-    
-    // Procesar viajes con estructura optimizada
-    mainTrips.forEach((trip: Trip) => {
-      // Con la estructura optimizada, usar directamente departureDate
-      const tripDates = trip.departureDate ? [trip.departureDate] : [];
-      
-      // Usar la primera fecha del viaje para determinar si es pasado o futuro
-      if (tripDates.length > 0) {
-        try {
-          const firstDate = normalizeToStartOfDay(tripDates[0]);
-          const isPastTrip = firstDate.getTime() <= today.getTime();
-          
-          console.log("TripList: Viaje", trip.id, "fecha:", tripDates[0], "normalizada:", firstDate, "hoy:", today, "¿es pasado?", isPastTrip);
-          
-          // CORRECCIÓN: Considerar viajes del día actual como "actuales", no "pasados"
-          if (isPastTrip && firstDate.getTime() < today.getTime()) {
-            // Agregar a archivados (solo una vez)
-            if (!archived.find(t => t.id === trip.id)) {
-              archived.push(trip);
-            }
-          } else {
-            const dateKey = format(firstDate, "yyyy-MM-dd");
-            if (!current[dateKey]) {
-              current[dateKey] = [];
-            }
-            // Agregar a actuales (solo una vez por fecha)
-            if (!current[dateKey].find(t => t.id === trip.id)) {
-              current[dateKey].push(trip);
-            }
-          }
-        } catch (error) {
-          console.error(`Error procesando fecha del viaje: ${error}`);
-        }
+    filteredTrips.forEach((trip: Trip) => {
+      const tripDateKey = trip.departureDate;
+      if (!grouped[tripDateKey]) {
+        grouped[tripDateKey] = [];
       }
+      grouped[tripDateKey].push(trip);
     });
     
-    // Ordenar viajes archivados por fecha (más reciente primero)
-    archived.sort((a, b) => {
-      // Obtener primera fecha disponible de cada viaje
-      const getFirstDate = (trip: any) => {
-        if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData[0]?.departureDate) {
-          return normalizeToStartOfDay(trip.tripData[0].departureDate);
-        }
-        return trip.departureDate ? normalizeToStartOfDay(trip.departureDate) : new Date(0);
-      };
-      
-      const dateA = getFirstDate(a);
-      const dateB = getFirstDate(b);
-      return dateB.getTime() - dateA.getTime(); // Orden descendente
-    });
-    
-    // Ordenar viajes actuales por hora dentro de cada fecha
-    Object.keys(current).forEach(dateKey => {
-      current[dateKey].sort((a, b) => {
-        // Obtener primera hora disponible de cada viaje
-        const getFirstTime = (trip: any) => {
-          if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData[0]?.departureTime) {
-            return trip.tripData[0].departureTime;
-          }
+    // Ordenar los viajes de cada fecha por hora de salida
+    Object.keys(grouped).forEach(dateKey => {
+      grouped[dateKey].sort((a: Trip, b: Trip) => {
+        const getFirstTime = (trip: Trip) => {
           return trip.departureTime || "00:00";
         };
         
@@ -464,11 +410,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
       });
     });
     
-    console.log("TripList: Separación de viajes - Actuales:", Object.keys(current).length, "días, Archivados:", archived.length);
-    console.log("TripList: Viajes actuales por fecha:", current);
-    console.log("TripList: Viajes archivados:", archived.map(t => ({id: t.id, date: t.departureDate})));
-    
-    return { currentTrips: current, archivedTrips: archived };
+    return grouped;
   }, [filteredTrips]);
 
   // Formatear fecha para encabezado
@@ -492,38 +434,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   return (
     <Card>
 
-      {/* Tabs para Actuales y Archivados */}
-      <div className="flex justify-center border-b">
-        <div className="w-full max-w-2xl flex">
-          <button
-            onClick={() => setShowArchived(false)}
-            className={`flex items-center justify-center py-2 px-4 flex-1 text-sm font-medium border-b-2 transition-colors relative ${
-              !showArchived 
-                ? "border-primary text-primary" 
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>Actuales y Futuros</span>
-            <span className="ml-1 bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-              {Object.values(currentTrips).reduce((sum, trips) => sum + trips.length, 0)}
-            </span>
-          </button>
-          
-          <button
-            onClick={() => setShowArchived(true)}
-            className={`flex items-center justify-center py-2 px-4 flex-1 text-sm font-medium border-b-2 transition-colors ${
-              showArchived 
-                ? "border-primary text-primary" 
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>Archivados</span>
-            <span className="ml-1 bg-muted text-muted-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-              {archivedTrips.length}
-            </span>
-          </button>
-        </div>
-      </div>
+
 
       {/* Filtros siempre visibles */}
       <div className="p-4 border-b">
@@ -609,17 +520,17 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
               No se encontraron viajes que coincidan con los criterios de búsqueda.
             </div>
           </div>
-        ) : !showArchived ? (
-          // Contenido de viajes actuales (pestaña 1)
+        ) : (
+          // Contenido de viajes
           <div className="space-y-6 mb-10">
-            {Object.entries(currentTrips).length === 0 ? (
+            {Object.entries(groupedTrips).length === 0 ? (
               <div className="text-center py-10">
                 <div className="text-muted-foreground">
-                  No hay viajes actuales o futuros disponibles.
+                  No hay viajes disponibles para la fecha seleccionada.
                 </div>
               </div>
             ) : (
-              Object.entries(currentTrips)
+              Object.entries(groupedTrips)
                 // Ordenar fechas de más cercana a más lejana
                 .sort(([dateKeyA], [dateKeyB]) => {
                   const dateA = new Date(dateKeyA);
@@ -786,171 +697,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                   </div>
                 </div>
               ))
-            )}
-          </div>
-        ) : (
-          // Contenido de viajes archivados (pestaña 2)
-          <div className="space-y-6 mb-10">
-            
-            {archivedTrips.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="text-muted-foreground">
-                  No hay viajes archivados disponibles.
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {archivedTrips.map((trip: Trip, index: number) => {
-                  // Variable para controlar si debemos mostrar un encabezado para este viaje
-                  const showDateHeader = index === 0 || 
-                    format(normalizeToStartOfDay(trip.departureDate), 'yyyy-MM-dd') !== 
-                    format(normalizeToStartOfDay(archivedTrips[index - 1].departureDate), 'yyyy-MM-dd');
-                    
-                  return (
-                    <div key={trip.id}>
-                      {/* Encabezado del día (solo se muestra una vez por cada fecha) */}
-                      {showDateHeader && (
-                        <div className="border-b pb-2 mb-4">
-                          <h4 className="text-base font-medium">
-                            Viajes para {format(normalizeToStartOfDay(trip.departureDate), 'd')} de {' '}
-                            {format(normalizeToStartOfDay(trip.departureDate), 'MMMM', { locale: es })} de {' '}
-                            {format(normalizeToStartOfDay(trip.departureDate), 'yyyy')}
-                          </h4>
-                        </div>
-                      )}
-                      
-                      {/* Tarjeta del viaje */}
-                      <div className="border rounded-lg overflow-hidden bg-card mb-4">
-                        <div className="flex flex-col lg:flex-row">
-                          <div className="p-4 lg:p-6 flex-1">
-                            <div className="flex justify-between items-start">
-                              <div className="flex">
-                                {/* Logo de compañía removido para optimización de rendimiento */}
-                                
-                                <div>
-                                  <div className="flex items-center text-sm text-muted-foreground">
-                                
-                                    <ClockIcon className="h-4 w-4 ml-4 mr-1" />
-                                    <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                              {/* Primera columna: Ruta */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start mb-2">
-                                  <MapPinIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Ruta</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Terminal {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Segunda columna: Vehículo */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start">
-                                  <CarIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Vehículo</p>
-                                    {trip.vehicleId || trip.assignedVehicle ? (
-                                      <p className="text-xs text-green-600 font-medium">
-                                        {trip.assignedVehicle ? 
-                                          `${trip.assignedVehicle.model} - ${trip.assignedVehicle.plateNumber}` :
-                                          `${vehicles.find((v: any) => v.id === trip.vehicleId)?.brand || ''} ${vehicles.find((v: any) => v.id === trip.vehicleId)?.model || ''} - ${vehicles.find((v: any) => v.id === trip.vehicleId)?.plates || ''}`
-                                        }
-                                      </p>
-                                    ) : (
-                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Tercera columna: Conductor */}
-                              <div className="bg-muted/50 p-3 rounded-md">
-                                <div className="flex items-start">
-                                  <UserIcon className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="text-sm font-medium">Conductor</p>
-                                    {trip.driverId || trip.assignedDriver ? (
-                                      <p className="text-xs text-green-600 font-medium">
-                                        {trip.assignedDriver ? 
-                                          `${trip.assignedDriver.firstName} ${trip.assignedDriver.lastName}` :
-                                          `${drivers.find((d: any) => d.id === trip.driverId)?.firstName || ''} ${drivers.find((d: any) => d.id === trip.driverId)?.lastName || ''}`
-                                        }
-                                      </p>
-                                    ) : (
-                                      <p className="text-xs text-red-500 font-medium">No asignado</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Estados del viaje y Reservaciones para viajes archivados */}
-                            <div className="mt-4 pt-4 border-t border-gray-100">
-                              <div className="flex flex-wrap items-center justify-between">
-                                <div className="flex gap-2 mb-2">
-                                  {/* Estado de visibilidad */}
-                                  {trip.visibility && (
-                                    <span className={`text-xs px-2 py-1 rounded-full ${
-                                      trip.visibility === 'publicado' 
-                                        ? 'bg-green-100 text-green-800' 
-                                        : trip.visibility === 'oculto' 
-                                          ? 'bg-gray-100 text-gray-800' 
-                                          : 'bg-red-100 text-red-800'
-                                    }`}>
-                                      {trip.visibility === 'publicado' 
-                                        ? 'Publicado' 
-                                        : trip.visibility === 'oculto' 
-                                          ? 'Oculto' 
-                                          : 'Cancelado'}
-                                    </span>
-                                  )}
-                                  
-                                  {/* Capacidad */}
-                                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                    Capacidad: {trip.capacity || 0}
-                                  </span>
-                                </div>
-                                
-                                {/* Información de asientos */}
-                                <div className="flex items-center">
-                                  <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                                  <span className="text-xs text-muted-foreground">
-                                    {trip.availableSeats}/{trip.capacity} asientos
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 lg:p-6 flex flex-row lg:flex-col items-center justify-between border-t lg:border-t-0 lg:border-l bg-muted/20">
-                            {/* Solo botón para ver detalles en viajes archivados */}
-                            <div className="flex gap-2 mt-0 lg:mt-4">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  window.location.href = `/edit-trip/${trip.id}`;
-                                }}
-                                className="h-8 w-8"
-                              >
-                                <PencilIcon className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             )}
           </div>
         )}
