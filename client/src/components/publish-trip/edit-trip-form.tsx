@@ -275,8 +275,12 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       // Convertir la fecha a formato YYYY-MM-DD para el input type="date"
       const formatDateForInput = (dateString: string) => {
         if (!dateString) return '';
-        const date = new Date(dateString);
-        return formatDateToLocal(date);
+        // Si ya está en formato YYYY-MM-DD, devolverlo directamente
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return dateString;
+        }
+        // Para otros formatos, usar formatDateToLocal de manera segura
+        return formatDateToLocal(dateString);
       };
       
       // Establecer fechas en formato correcto para input date

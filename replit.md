@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - CRITICAL FIX: Trip editing date offset issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: EditTripForm was using `new Date(dateString)` conversion causing timezone offset problems  
+  - **DATE CONVERSION PROBLEM**: Each edit operation moved date back by one day due to UTC timezone conversion
+  - **SOLUTION IMPLEMENTED**: Modified `formatDateForInput` function to handle YYYY-MM-DD format directly without Date object conversion
+  - **DIRECT FORMAT HANDLING**: Added regex check for YYYY-MM-DD format to return string directly
+  - **TIMEZONE SAFETY**: Eliminates Date object creation for already-formatted date strings
+  - **PROGRESSIVE DEGRADATION**: Maintains fallback to `formatDateToLocal` for non-standard date formats
+  - **USER EXPERIENCE**: Trip editing now preserves exact date without timezone drift across multiple edit operations
+
 - **July 13, 2025** - COMPLETED: Package PDF ticket payment method display implemented:
   - **PAYMENT METHOD DISPLAY**: PDF tickets now show payment method separately from payment status
   - **IMPROVED LAYOUT**: When paid, shows "Pagado" on one line and "Método: efectivo/tarjeta" on the next line
