@@ -30,7 +30,7 @@ import {
   TransactionSource,
   TransactionType
 } from "@shared/schema";
-import { getCurrentLocalDate, formatDateToLocal } from "./utils";
+import { getCurrentLocalDate, formatDateToLocal, normalizeToStartOfDay } from "./utils";
 // Constantes para roles y permisos de paqueterías
 const PACKAGE_ACCESS_ROLES = [
   UserRole.OWNER, 
@@ -1156,8 +1156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create a trip for each date in the range
-      const startDate = new Date(tripData.startDate);
-      const endDate = new Date(tripData.endDate);
+      const startDate = normalizeToStartOfDay(tripData.startDate);
+      const endDate = normalizeToStartOfDay(tripData.endDate);
       const createdTrips = [];
       
       // Generate all possible segments (direct and intermediate segments) - filtering now done in frontend

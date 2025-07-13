@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - COMPLETED: Trip publication date offset issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: Backend was using `new Date(tripData.startDate)` which caused timezone offset issues
+  - **DATE CONVERSION PROBLEM**: Frontend sends "2025-07-13" but backend converts to UTC causing day-before storage
+  - **SOLUTION IMPLEMENTED**: Replaced `new Date()` conversions with `normalizeToStartOfDay()` function
+  - **TIMEZONE SAFETY**: Added `normalizeToStartOfDay` import to prevent UTC conversion issues
+  - **CONSISTENT DATES**: Trip creation now preserves exact date from frontend without timezone drift
+  - **SYSTEM INTEGRATION**: Both startDate and endDate processing now use safe date normalization
+  - **USER EXPERIENCE**: Publishing trip on July 13th now correctly saves as July 13th in database
+
 - **July 13, 2025** - COMPLETED: Critical import fix for trip publication system:
   - **ROOT CAUSE RESOLVED**: Missing `formatDateToLocal` import in `server/routes.ts` was causing trip publication failures
   - **IMPORT CORRECTED**: Added `formatDateToLocal` to existing import statement from "./utils"
