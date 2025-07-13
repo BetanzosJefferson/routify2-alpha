@@ -2169,9 +2169,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Este segmento se está actualizando desde el frontend
           console.log(`[PUT /trips/${id}] ACTUALIZANDO segmento: ${segmentKey}`);
           
-          // Obtener horarios desde el mapa de tiempos
-          const originTimes = timeMap[existingTrip.origin] || { departureTime: frontendUpdate.departureTime || existingTrip.departureTime || "08:00 AM", arrivalTime: frontendUpdate.arrivalTime || existingTrip.arrivalTime || "12:00 PM" };
-          const destinationTimes = timeMap[existingTrip.destination] || { departureTime: frontendUpdate.departureTime || existingTrip.departureTime || "08:00 AM", arrivalTime: frontendUpdate.arrivalTime || existingTrip.arrivalTime || "12:00 PM" };
+          // Solo usar horarios del timeMap si se enviaron específicamente en el frontend
+          let finalDepartureTime = existingTrip.departureTime;
+          let finalArrivalTime = existingTrip.arrivalTime;
+          
+          // Solo actualizar horarios si vienen explícitamente en el frontendUpdate
+          if (frontendUpdate.departureTime !== undefined) {
+            finalDepartureTime = frontendUpdate.departureTime;
+          } else if (timeMap[existingTrip.origin]) {
+            // Solo usar timeMap si no hay horario específico en frontendUpdate
+            finalDepartureTime = timeMap[existingTrip.origin].departureTime;
+          }
+          
+          if (frontendUpdate.arrivalTime !== undefined) {
+            finalArrivalTime = frontendUpdate.arrivalTime;
+          } else if (timeMap[existingTrip.destination]) {
+            // Solo usar timeMap si no hay horario específico en frontendUpdate
+            finalArrivalTime = timeMap[existingTrip.destination].arrivalTime;
+          }
+          
+          console.log(`[PUT /trips/${id}] Horarios para ${segmentKey}: departure=${finalDepartureTime} (original: ${existingTrip.departureTime}), arrival=${finalArrivalTime} (original: ${existingTrip.arrivalTime})`);
           
           // PRESERVAR el tripId existente y actualizar solo campos modificados
           newTripData.push({
@@ -2181,8 +2198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tripId: existingTrip.tripId, // PRESERVAR tripId existente
             isMainTrip: existingTrip.isMainTrip,
             departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
-            departureTime: originTimes.departureTime,
-            arrivalTime: destinationTimes.arrivalTime,
+            departureTime: finalDepartureTime,
+            arrivalTime: finalArrivalTime,
             availableSeats: capacity !== undefined ? capacity : existingTrip.availableSeats
           });
         } else {
