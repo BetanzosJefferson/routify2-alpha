@@ -74,7 +74,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       console.log(`[PackageTripSelection] Received ${data.length} trips`);
       return data;
     },
-    enabled: hasSearched || (!origin.trim() && !destination.trim()), // Cargar por defecto o después de búsqueda
+    // CORREGIDO: Siempre cargar por defecto como en trip-list.tsx
     staleTime: 30000,
   });
 
@@ -335,18 +335,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       {/* Trips List */}
       {!isLoading && !error && (
         <div className="space-y-4">
-          {!hasSearched && !origin.trim() && !destination.trim() ? (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-medium">Para ver viajes disponibles</p>
-                  <p className="text-muted-foreground">
-                    Especifica el origen y/o destino en los filtros y presiona "Buscar Viajes"
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : trips.length === 0 ? (
+          {trips.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-2">
