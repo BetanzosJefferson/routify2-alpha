@@ -629,20 +629,39 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     mutationFn: async (data: FormValues) => {
       console.log("Enviando datos para actualizar viaje:", data);
       
-      // Preparar datos de actualización completos para endpoint PUT
+      // CRÍTICO: Preservar TODOS los datos del viaje original
+      const currentTripData = tripQuery.data;
+      if (!currentTripData) {
+        throw new Error("No se pueden cargar los datos del viaje original");
+      }
+      
+      // Preparar datos de actualización completos PRESERVANDO información crítica
       const updateData = {
-        routeId: selectedTemplate?.routeId || templateRouteQuery.data?.id,
+        // PRESERVAR datos originales críticos
+        routeId: currentTripData.routeId, // NO cambiar routeId en edición
+        templateId: currentTripData.templateId, // PRESERVAR templateId
+        createdBy: currentTripData.createdBy, // PRESERVAR creador
+        companyId: currentTripData.companyId, // PRESERVAR companyId
+        
+        // Permitir actualización de estos campos
         startDate: data.startDate,
         endDate: data.endDate,
         capacity: data.capacity,
         vehicleId: data.vehicleId === 0 ? null : data.vehicleId,
         driverId: data.driverId === 0 ? null : data.driverId,
         visibility: data.visibility,
-        segmentPrices: data.segmentPrices || segmentPrices, // INCLUIR PRECIOS PERSONALIZADOS
-        stopTimes: data.stopTimes || stopTimes, // INCLUIR TIEMPOS PERSONALIZADOS
+        
+        // PRESERVAR estructura completa del tripData con solo actualizaciones necesarias
+        segmentPrices: data.segmentPrices || segmentPrices, 
+        stopTimes: data.stopTimes || stopTimes,
+        
+        // PRESERVAR otros campos críticos
+        tripStatus: currentTripData.tripStatus,
+        createdAt: currentTripData.createdAt,
+        updatedAt: new Date().toISOString()
       };
       
-      console.log("Datos de actualización procesados (incluyendo precios):", updateData);
+      console.log("Datos de actualización SEGUROS (preservando información crítica):", updateData);
       const res = await apiRequest("PUT", `/api/trips/${tripId}`, updateData);
       return await res.json();
     },

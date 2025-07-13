@@ -2183,16 +2183,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Construir el objeto de actualización con solo las columnas de la tabla
+      // CRÍTICO: Construir el objeto de actualización PRESERVANDO todos los datos críticos
       const updateData = {
         tripData: newTripData,
         capacity: capacity !== undefined ? capacity : currentTrip.capacity,
         vehicleId: vehicleId !== undefined ? vehicleId : currentTrip.vehicleId,
         driverId: driverId !== undefined ? driverId : currentTrip.driverId,
         visibility: visibility || currentTrip.visibility,
-        routeId: routeId !== undefined ? routeId : currentTrip.routeId,
-        companyId: currentTrip.companyId // Preservar companyId existente
+        
+        // PRESERVAR datos críticos que NO deben cambiar en edición
+        routeId: currentTrip.routeId, // NO cambiar routeId en edición
+        templateId: currentTrip.templateId, // PRESERVAR templateId
+        createdBy: currentTrip.createdBy, // PRESERVAR creador
+        companyId: currentTrip.companyId, // PRESERVAR companyId
+        tripStatus: currentTrip.tripStatus, // PRESERVAR estado del viaje
+        createdAt: currentTrip.createdAt, // PRESERVAR fecha de creación
+        updatedAt: new Date().toISOString() // Solo actualizar timestamp
       };
+      
+      console.log(`[PUT /trips/${id}] DATOS ORIGINALES PRESERVADOS:`, {
+        routeId: currentTrip.routeId,
+        templateId: currentTrip.templateId,
+        createdBy: currentTrip.createdBy,
+        companyId: currentTrip.companyId,
+        tripStatus: currentTrip.tripStatus
+      });
       
       console.log(`[PUT /trips/${id}] Actualizando viaje con datos:`, updateData);
       
