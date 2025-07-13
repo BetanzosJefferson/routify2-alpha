@@ -119,14 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 13, 2025** - CRITICAL FIX: Trip editing data loss issue completely resolved:
+- **July 13, 2025** - CRITICAL FIX: Trip editing data loss issue and caching problem completely resolved:
   - **ROOT CAUSE IDENTIFIED**: EditTripForm was not preserving critical trip data during updates, causing reservations to become "orphaned" 
   - **FRONTEND SOLUTION**: Modified mutation to preserve ALL original trip data (routeId, templateId, createdBy, companyId, tripStatus, createdAt)
   - **BACKEND SOLUTION**: Enhanced PUT endpoint to explicitly preserve critical fields that should never change during editing
+  - **CACHING ISSUE RESOLVED**: Added cache invalidation on form open and forced fresh data queries to prevent stale data
   - **DATA INTEGRITY**: Trip editing now maintains complete data consistency, preventing reservation orphaning in production
   - **PRESERVED FIELDS**: routeId, templateId, createdBy, companyId, tripStatus, createdAt - only allow updates to capacity, driver, vehicle, visibility
   - **PRODUCTION SAFETY**: Eliminated critical bug that was causing data corruption when administrators edited trip details
   - **COMPREHENSIVE LOGGING**: Added detailed logging to track data preservation and detect any future issues
+  - **CACHE MANAGEMENT**: Implemented proper cache invalidation and forced fresh queries to ensure real database data is always loaded
 
 - **July 13, 2025** - COMPLETED: Privacy restrictions for checador and chofer roles in reservation details:
   - **PHONE PRIVACY**: Removed phone number visibility for checador and chofer roles in reservation details sidebar

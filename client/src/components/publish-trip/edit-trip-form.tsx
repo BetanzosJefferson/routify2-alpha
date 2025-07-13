@@ -86,6 +86,16 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
+  // CRÍTICO: Invalidar caché cuando se abre el formulario de edición
+  useEffect(() => {
+    if (tripId) {
+      console.log(`🔄 EditTripForm: Invalidando caché para viaje ${tripId}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin-trips"] });
+    }
+  }, [tripId]);
+  
   // Helper para validar y asegurar formato correcto de stopTimes
   const ensureValidStopTimes = (times: any[]): StopTime[] => {
     return times.map(time => {
@@ -108,16 +118,27 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   
   const [stopTimes, setStopTimes] = useState<StopTime[]>([]);
   
-  // Fetch tripData
+  // Fetch tripData - FORZAR CONSULTA DIRECTA A BASE DE DATOS
   const tripQuery = useQuery({
-    queryKey: ["/api/trips", tripId],
+    queryKey: ["/api/trips", tripId, "edit", Date.now()], // Clave única para evitar caché
     enabled: !!tripId,
+    staleTime: 0, // Nunca usar datos obsoletos
+    cacheTime: 0, // No guardar en caché
     queryFn: async () => {
-      const response = await fetch(`/api/trips/${tripId}`);
+      console.log(`🔄 EditTripForm: Consultando datos del viaje ${tripId} directamente de la base de datos`);
+      const response = await fetch(`/api/trips/${tripId}?_t=${Date.now()}`, {
+        // Forzar nueva consulta con timestamp
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!response.ok) {
         throw new Error("Error al cargar datos del viaje");
       }
-      return await response.json();
+      const data = await response.json();
+      console.log(`✅ EditTripForm: Datos cargados desde BD:`, data);
+      return data;
     }
   });
 
