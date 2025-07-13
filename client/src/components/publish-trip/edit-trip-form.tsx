@@ -362,26 +362,73 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     console.log("🔧 Reconstruyendo tiempos DIRECTAMENTE desde BD con orden correcto de ruta");
     
     // Crear un mapa de tiempos por ubicación
-    const locationTimes: Record<string, { hour: string; minute: string; ampm: "AM" | "PM" }> = {};
+    const locationTimes: Record<string, { hour: string; minute: string; ampm: "AM" | "PM"; displayTime: string }> = {};
     
+    // Función helper para extraer indicador de día
+    const extractDayIndicator = (timeString: string): number => {
+      if (!timeString) return 0;
+      const dayIndicatorMatch = timeString.match(/\+(\d+)d$/);
+      return dayIndicatorMatch ? parseInt(dayIndicatorMatch[1], 10) : 0;
+    };
+
+    // Función helper para procesar tiempo con indicador de día
+    const processTimeWithDayIndicator = (timeString: string): { hour: string; minute: string; ampm: "AM" | "PM"; displayTime: string } => {
+      // Limpiar el tiempo removiendo el indicador de día
+      const cleanTime = timeString.replace(/\s*\+\d+d$/, '').trim();
+      const [time, period] = cleanTime.split(' ');
+      const [hour, minute] = time.split(':');
+      const ampm = period as "AM" | "PM";
+      
+      // Extraer el indicador de día
+      const dayOffset = extractDayIndicator(timeString);
+      
+      // Si no tiene indicador de día, verificar si es AM temprano (posible día siguiente)
+      if (dayOffset === 0 && ampm === 'AM') {
+        const hourNum = parseInt(hour, 10);
+        const hour24 = hourNum === 12 ? 0 : hourNum; // 12 AM = 0 en formato 24h
+        
+        // Si es entre 00:00 AM y 6:59 AM, asumir que es del día siguiente
+        if (hour24 >= 0 && hour24 <= 6) {
+          return {
+            hour,
+            minute,
+            ampm,
+            displayTime: `${cleanTime} (+1 día)`
+          };
+        }
+      }
+      
+      // Si tiene indicador de día, mantenerlo
+      if (dayOffset > 0) {
+        return {
+          hour,
+          minute,
+          ampm,
+          displayTime: `${cleanTime} (+${dayOffset} día${dayOffset > 1 ? 's' : ''})`
+        };
+      }
+      
+      // Para horarios diurnos, mostrar sin indicador
+      return {
+        hour,
+        minute,
+        ampm,
+        displayTime: cleanTime
+      };
+    };
+
     // Procesar cada segmento para extraer tiempos
     segmentPrices.forEach(segment => {
       // Si tiene tiempo de salida
       if (segment.departureTime) {
-        const [time, period] = segment.departureTime.split(' ');
-        const [hour, minute] = time.split(':');
-        const ampm = period as "AM" | "PM";
-        
-        locationTimes[segment.origin] = { hour, minute, ampm };
+        const processed = processTimeWithDayIndicator(segment.departureTime);
+        locationTimes[segment.origin] = processed;
       }
       
       // Si tiene tiempo de llegada
       if (segment.arrivalTime) {
-        const [time, period] = segment.arrivalTime.split(' ');
-        const [hour, minute] = time.split(':');
-        const ampm = period as "AM" | "PM";
-        
-        locationTimes[segment.destination] = { hour, minute, ampm };
+        const processed = processTimeWithDayIndicator(segment.arrivalTime);
+        locationTimes[segment.destination] = processed;
       }
     });
     
@@ -417,7 +464,9 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     const newStopTimes = orderedLocations.map((location, index) => {
       if (locationTimes[location]) {
         return {
-          ...locationTimes[location],
+          hour: locationTimes[location].hour,
+          minute: locationTimes[location].minute,
+          ampm: locationTimes[location].ampm,
           location
         };
       } else {
@@ -432,6 +481,9 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     });
     
     console.log("🔧 Tiempos de parada reconstruidos con orden correcto:", newStopTimes);
+    console.log("🔧 Tiempos con indicadores de día:", orderedLocations.map(loc => 
+      locationTimes[loc] ? `${loc}: ${locationTimes[loc].displayTime}` : `${loc}: Sin datos`
+    ));
     setStopTimes(ensureValidStopTimes(newStopTimes));
   };
 
@@ -988,10 +1040,50 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
                               />
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                              {segment.departureTime || "Pendiente"}
+                              {segment.departureTime ? (
+                                <span>
+                                  {segment.departureTime.replace(/\s*\+\d+d$/, '')}
+                                  {segment.departureTime.includes('+') && (
+                                    <span className="text-xs text-orange-600 ml-1">
+                                      ({segment.departureTime.match(/\+(\d+)d$/)?.[0] || '+1d'})
+                                    </span>
+                                  )}
+                                  {!segment.departureTime.includes('+') && segment.departureTime.includes('AM') && (
+                                    (() => {
+                                      const [time] = segment.departureTime.split(' ');
+                                      const [hour] = time.split(':');
+                                      const hourNum = parseInt(hour, 10);
+                                      const hour24 = hourNum === 12 ? 0 : hourNum;
+                                      return hour24 >= 0 && hour24 <= 6 ? (
+                                        <span className="text-xs text-orange-600 ml-1">(+1 día)</span>
+                                      ) : null;
+                                    })()
+                                  )}
+                                </span>
+                              ) : "Pendiente"}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                              {segment.arrivalTime || "Pendiente"}
+                              {segment.arrivalTime ? (
+                                <span>
+                                  {segment.arrivalTime.replace(/\s*\+\d+d$/, '')}
+                                  {segment.arrivalTime.includes('+') && (
+                                    <span className="text-xs text-orange-600 ml-1">
+                                      ({segment.arrivalTime.match(/\+(\d+)d$/)?.[0] || '+1d'})
+                                    </span>
+                                  )}
+                                  {!segment.arrivalTime.includes('+') && segment.arrivalTime.includes('AM') && (
+                                    (() => {
+                                      const [time] = segment.arrivalTime.split(' ');
+                                      const [hour] = time.split(':');
+                                      const hourNum = parseInt(hour, 10);
+                                      const hour24 = hourNum === 12 ? 0 : hourNum;
+                                      return hour24 >= 0 && hour24 <= 6 ? (
+                                        <span className="text-xs text-orange-600 ml-1">(+1 día)</span>
+                                      ) : null;
+                                    })()
+                                  )}
+                                </span>
+                              ) : "Pendiente"}
                             </td>
                           </tr>
                         ))}
