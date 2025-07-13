@@ -2113,8 +2113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { routeId, startDate, endDate, capacity, segmentPrices, stopTimes, vehicleId, driverId, visibility } = req.body;
       
       console.log(`[PUT /trips/${id}] Procesando actualización con nueva estructura JSON`);
-      console.log(`[PUT /trips/${id}] segmentPrices recibidos:`, segmentPrices);
-      console.log(`[PUT /trips/${id}] stopTimes recibidos:`, stopTimes);
+      console.log(`[PUT /trips/${id}] segmentPrices recibidos:`, segmentPrices ? segmentPrices.length : 0);
+      console.log(`[PUT /trips/${id}] stopTimes recibidos:`, stopTimes ? stopTimes.length : 0);
       
       // Obtener información de la ruta para generar segmentos completos
       const route = await storage.getRoute(routeId || currentTrip.routeId);
