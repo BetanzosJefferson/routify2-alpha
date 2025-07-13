@@ -64,13 +64,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 
@@ -91,7 +84,6 @@ interface Trip {
   visibility?: string;
   routeName?: string;
   companyName?: string;
-  // Información de vehículo y conductor asignados (opcional)
   assignedVehicle?: {
     id: number;
     model: string;
@@ -113,7 +105,6 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tripToDelete, setTripToDelete] = useState<number | null>(null);
   
@@ -404,23 +395,37 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                           <div className="flex flex-col lg:flex-row">
                             <div className="p-4 lg:p-6 flex-1">
                               <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center">
-                                  <div className="flex items-center text-sm text-muted-foreground">
-                                    <ClockIcon className="h-4 w-4 mr-1" />
-                                    <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
+                                <div className="flex">
+                                  <div>
+                                    <div className="flex items-center text-sm text-muted-foreground mb-2">
+                                      <ClockIcon className="h-4 w-4 mr-1" />
+                                      <span>{formatTime(trip.departureTime)} - {formatTime(trip.arrivalTime)}</span>
+                                      <span className="ml-4 text-blue-600">
+                                        {formatDate(trip.departureDate)}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                                 
-                                <div className="flex gap-2">
-                                  {trip.visibility && (
-                                    <Badge variant={
-                                      trip.visibility === 'publicado' ? 'default' :
-                                      trip.visibility === 'oculto' ? 'secondary' : 'destructive'
-                                    }>
-                                      {trip.visibility === 'publicado' ? 'Publicado' :
-                                       trip.visibility === 'oculto' ? 'Oculto' : 'Cancelado'}
-                                    </Badge>
-                                  )}
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onEditTrip(trip.id)}
+                                    className="h-8 w-8"
+                                    title="Editar viaje"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteClick(trip.id)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    title="Eliminar viaje"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
                               
@@ -432,7 +437,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                     <div>
                                       <p className="text-sm font-medium">Ruta</p>
                                       <p className="text-xs text-muted-foreground">
-                                        {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
+                                        Terminal {trip.origin?.split(' - ')[1] || ''} → {trip.destination?.split(' - ')[1] || ''}
                                       </p>
                                     </div>
                                   </div>
@@ -479,54 +484,40 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                                 </div>
                               </div>
                               
-                              {/* Información adicional */}
-                              <div className="flex flex-wrap items-center justify-between pt-3 border-t">
-                                <div className="flex items-center gap-4">
+                              {/* Estados del viaje */}
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex flex-wrap items-center justify-between">
+                                  <div className="flex gap-2 mb-2">
+                                    {/* Estado de visibilidad */}
+                                    {trip.visibility && (
+                                      <span className={`text-xs px-2 py-1 rounded-full ${
+                                        trip.visibility === 'publicado' 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : trip.visibility === 'oculto' 
+                                            ? 'bg-gray-100 text-gray-800' 
+                                            : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {trip.visibility === 'publicado' 
+                                          ? 'Publicado' 
+                                          : trip.visibility === 'oculto' 
+                                            ? 'Oculto' 
+                                            : 'Cancelado'}
+                                      </span>
+                                    )}
+                                    
+                                    {/* Capacidad */}
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                      Capacidad: {trip.capacity || 0}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* Información de asientos */}
                                   <div className="flex items-center">
                                     <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                                    <span className="text-sm text-muted-foreground">
+                                    <span className="text-xs text-muted-foreground">
                                       {trip.availableSeats}/{trip.capacity} asientos
                                     </span>
                                   </div>
-                                  <Badge variant="secondary">
-                                    {getStopsCount(trip)} paradas
-                                  </Badge>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleAssignVehicle(trip.id)}
-                                  >
-                                    <CarIcon className="h-4 w-4 mr-1" />
-                                    Vehículo
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleAssignDriver(trip.id)}
-                                  >
-                                    <UserIcon className="h-4 w-4 mr-1" />
-                                    Conductor
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => onEditTrip(trip.id)}
-                                  >
-                                    <PencilIcon className="h-4 w-4 mr-1" />
-                                    Editar
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDeleteClick(trip.id)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <TrashIcon className="h-4 w-4 mr-1" />
-                                    Eliminar
-                                  </Button>
                                 </div>
                               </div>
                             </div>
