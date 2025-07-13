@@ -337,7 +337,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
 
   // Cargar precios de segmentos y tiempos de parada una vez que la ruta está cargada
   useEffect(() => {
-    if (tripQuery.data && templateRouteQuery.data && !form.formState.isDirty) {
+    if (tripQuery.data && templateRouteQuery.data && segmentPrices.length === 0) {
       const tripData = tripQuery.data;
       console.log("🔧 Procesando tripData para edición:", tripData);
       
@@ -384,7 +384,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         }
       }
     }
-  }, [tripQuery.data, templateRouteQuery.data]);
+  }, [tripQuery.data, templateRouteQuery.data, segmentPrices.length]);
 
   // Función para reconstruir los tiempos de parada a partir de tripData segments
   const reconstructStopTimesFromTripDataSegments = (segmentPrices: SegmentTimePrice[]) => {
