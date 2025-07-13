@@ -296,7 +296,19 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="reservations" className="p-6 space-y-4 m-0">
-                {tripData.reservations.map((reservation: any) => (
+                {tripData.reservations.map((reservation: any) => {
+                  // Debug: ver qué campos de pago están disponibles
+                  console.log(`[Bitácora DEBUG] Reservación ${reservation.id}:`, {
+                    totalAmount: reservation.totalAmount,
+                    advancePayment: reservation.advancePayment,
+                    advancePaymentMethod: reservation.advancePaymentMethod,
+                    remainingAmount: reservation.remainingAmount,
+                    boardingPaymentMethod: reservation.boardingPaymentMethod,
+                    paymentMethod: reservation.paymentMethod,
+                    paymentStatus: reservation.paymentStatus
+                  });
+                  
+                  return (
                   <div key={reservation.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
@@ -328,6 +340,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         </div>
                       </div>
                     </div>
+                    
                     {reservation.passengers && reservation.passengers.length > 0 && (
                       <div className="mt-2">
                         <p className="text-sm font-medium">Pasajeros:</p>
@@ -339,7 +352,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
                 
                 {tripData.reservations.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
