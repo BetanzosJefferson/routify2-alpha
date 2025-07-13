@@ -133,9 +133,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
 
   // Consulta para obtener viajes filtrados por fecha con respuesta optimizada
   const { data: trips = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/admin-trips', 'optimized', dateFilter?.toISOString().split('T')[0]],
+    queryKey: ['/api/admin-trips', 'optimized', dateFilter ? formatDateForApiQuery(dateFilter) : ''],
     queryFn: async () => {
-      const dateParam = dateFilter ? `&date=${dateFilter.toISOString().split('T')[0]}` : '';
+      const dateParam = dateFilter ? `&date=${formatDateForApiQuery(dateFilter)}` : '';
       const res = await apiRequest('GET', `/api/admin-trips?optimizedResponse=true${dateParam}`);
       const data = await res.json();
       console.log("TripList: Datos recibidos del backend:", data);
