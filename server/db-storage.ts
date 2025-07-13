@@ -880,13 +880,20 @@ export class DatabaseStorage implements IStorage {
         // Check seat availability filter
         let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
         
-        console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}`);
+        // 🔥 NUEVO: Filtro de fecha por segmento individual (para viajes que cruzan medianoche)
+        let dateMatch = true;
+        if (params.date) {
+          dateMatch = segment.departureDate === params.date;
+          console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} date filter: "${params.date}" vs "${segment.departureDate}" => ${dateMatch}`);
+        } else if (params.dateRange && params.dateRange.length > 0) {
+          dateMatch = params.dateRange.includes(segment.departureDate);
+          console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} date range filter: [${params.dateRange.join(', ')}] includes "${segment.departureDate}" => ${dateMatch}`);
+        }
         
-        // 🔥 FECHA YA FILTRADA EN SQL - no necesita filtro adicional para modo expandido
-        // Solo aplicar filtros de origen, destino y asientos
+        console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}, date: ${dateMatch}`);
         
-        // Only include segment if it matches all filters (date already filtered at SQL level)
-        if (originMatch && destMatch && seatMatch) {
+        // Only include segment if it matches all filters (including individual segment date)
+        if (originMatch && destMatch && seatMatch && dateMatch) {
           // Create a unique identifier for this segment using recordId_segmentIndex format
           const uniqueTripId = `${trip.id}_${segmentIndex}`;
           
