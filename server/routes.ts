@@ -2131,7 +2131,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       console.log(`[PUT /trips/${id}] hasTimeChanges: ${hasTimeChanges}`);
-      console.log(`[PUT /trips/${id}] segmentPrices detallado:`, JSON.stringify(segmentPrices, null, 2));
+      if (hasTimeChanges) {
+        console.log(`[PUT /trips/${id}] Se detectaron cambios de horario`);
+      } else {
+        console.log(`[PUT /trips/${id}] NO se detectaron cambios de horario - preservando horarios existentes`);
+      }
       
       if (stopTimes && Array.isArray(stopTimes) && hasTimeChanges) {
         console.log(`[PUT /trips/${id}] Construyendo timeMap desde stopTimes porque hay cambios de horario`);
