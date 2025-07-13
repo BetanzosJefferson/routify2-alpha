@@ -342,28 +342,17 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     }
   }, [tripQuery.data, segmentPrices.length]);
 
-  // Función para reconstruir los tiempos de parada DIRECTAMENTE desde datos de BD
+  // Función para reconstruir los tiempos de parada DIRECTAMENTE desde datos de BD con orden correcto
   const reconstructStopTimesFromDatabaseSegments = (segmentPrices: SegmentTimePrice[]) => {
     if (!segmentPrices || segmentPrices.length === 0) return;
     
-    console.log("🔧 Reconstruyendo tiempos DIRECTAMENTE desde BD, sin plantillas");
+    console.log("🔧 Reconstruyendo tiempos DIRECTAMENTE desde BD con orden correcto de ruta");
     
-    // Extraer todas las ubicaciones únicas de los segmentos guardados en BD
-    const allLocations: string[] = [];
+    // Crear un mapa de tiempos por ubicación
     const locationTimes: Record<string, { hour: string; minute: string; ampm: "AM" | "PM" }> = {};
     
-    // Procesar cada segmento para extraer ubicaciones y tiempos
+    // Procesar cada segmento para extraer tiempos
     segmentPrices.forEach(segment => {
-      // Agregar origen si no existe
-      if (!allLocations.includes(segment.origin)) {
-        allLocations.push(segment.origin);
-      }
-      
-      // Agregar destino si no existe
-      if (!allLocations.includes(segment.destination)) {
-        allLocations.push(segment.destination);
-      }
-      
       // Si tiene tiempo de salida
       if (segment.departureTime) {
         const [time, period] = segment.departureTime.split(' ');
@@ -383,8 +372,32 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       }
     });
     
-    // Crear el array de tiempos de parada usando solo datos de BD
-    const newStopTimes = allLocations.map((location, index) => {
+    // Obtener el orden correcto de las paradas desde la ruta (si está disponible)
+    let orderedLocations: string[] = [];
+    
+    if (templateRouteQuery.data) {
+      // Usar el orden de la ruta: origen, paradas, destino
+      orderedLocations = [
+        templateRouteQuery.data.origin,
+        ...(templateRouteQuery.data.stops || []),
+        templateRouteQuery.data.destination
+      ];
+    } else {
+      // Fallback: extraer ubicaciones únicas manteniendo el orden de aparición
+      const allLocations: string[] = [];
+      segmentPrices.forEach(segment => {
+        if (!allLocations.includes(segment.origin)) {
+          allLocations.push(segment.origin);
+        }
+        if (!allLocations.includes(segment.destination)) {
+          allLocations.push(segment.destination);
+        }
+      });
+      orderedLocations = allLocations;
+    }
+    
+    // Crear el array de tiempos de parada usando el orden correcto
+    const newStopTimes = orderedLocations.map((location, index) => {
       if (locationTimes[location]) {
         return {
           ...locationTimes[location],
@@ -401,7 +414,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       }
     });
     
-    console.log("🔧 Tiempos de parada reconstruidos DIRECTAMENTE desde BD:", newStopTimes);
+    console.log("🔧 Tiempos de parada reconstruidos con orden correcto:", newStopTimes);
     setStopTimes(ensureValidStopTimes(newStopTimes));
   };
 
