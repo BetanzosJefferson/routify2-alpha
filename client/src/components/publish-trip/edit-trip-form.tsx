@@ -772,7 +772,8 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
           </div>
           
           {/* Detalles de precios y tiempos */}
-          {selectedTemplate && templateRouteQuery.data && (
+          {/* EDITADO: Mostrar siempre los datos en modo edición, sin depender de selectedTemplate */}
+          {(segmentPrices.length > 0 || stopTimes.length > 0) && (
             <Tabs defaultValue="segments">
               <TabsList className="mb-2 w-full flex flex-wrap justify-start">
                 <TabsTrigger value="segments" className="flex-grow text-xs sm:text-sm">
@@ -991,34 +992,26 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
                   
                   {/* Vista móvil de tiempos de parada */}
                   <div className="md:hidden space-y-4">
-                    {templateRouteQuery.data && (
-                      <>
-                        {[
-                          templateRouteQuery.data.origin,
-                          ...(templateRouteQuery.data.stops || []),
-                          templateRouteQuery.data.destination
-                        ].map((location, index) => (
-                          <div key={index} className="bg-white p-3 border rounded-md space-y-2">
-                            <div className="flex flex-col space-y-1">
-                              <div className="text-xs font-medium text-gray-500">
-                                {index === 0 ? "Origen" : index === ([templateRouteQuery.data.origin, ...(templateRouteQuery.data.stops || []), templateRouteQuery.data.destination].length - 1) ? "Destino" : `Parada ${index}`}
-                              </div>
-                              <div className="text-sm">{location}</div>
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                              <div className="text-xs font-medium text-gray-500">Hora</div>
-                              <TimeInput
-                                key={`time-input-mobile-${index}-${stopTimes[index]?.hour || '08'}-${stopTimes[index]?.minute || '00'}-${stopTimes[index]?.ampm || 'AM'}`}
-                                value={stopTimes[index] ? `${stopTimes[index]?.hour}:${stopTimes[index]?.minute} ${stopTimes[index]?.ampm}` : "08:00 AM"}
-                                onChange={(timeString) => {
-                                  updateStopTime(index, timeString);
-                                }}
-                              />
-                            </div>
+                    {stopTimes.map((stopTime, index) => (
+                      <div key={index} className="bg-white p-3 border rounded-md space-y-2">
+                        <div className="flex flex-col space-y-1">
+                          <div className="text-xs font-medium text-gray-500">
+                            {index === 0 ? "Origen" : index === (stopTimes.length - 1) ? "Destino" : `Parada ${index}`}
                           </div>
-                        ))}
-                      </>
-                    )}
+                          <div className="text-sm">{stopTime.location}</div>
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <div className="text-xs font-medium text-gray-500">Hora</div>
+                          <TimeInput
+                            key={`time-input-mobile-${index}-${stopTime.hour || '08'}-${stopTime.minute || '00'}-${stopTime.ampm || 'AM'}`}
+                            value={`${stopTime.hour}:${stopTime.minute} ${stopTime.ampm}`}
+                            onChange={(timeString) => {
+                              updateStopTime(index, timeString);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   
                   {/* Vista escritorio de tiempos de parada */}
@@ -1035,25 +1028,21 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {templateRouteQuery.data && [
-                          templateRouteQuery.data.origin,
-                          ...(templateRouteQuery.data.stops || []),
-                          templateRouteQuery.data.destination
-                        ].map((location, index) => (
+                        {stopTimes.map((stopTime, index) => (
                           <tr key={index}>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                               {index === 0 ? (
-                                <span className="font-medium">Origen: {location}</span>
-                              ) : index === ([templateRouteQuery.data.origin, ...(templateRouteQuery.data.stops || []), templateRouteQuery.data.destination].length - 1) ? (
-                                <span className="font-medium">Destino: {location}</span>
+                                <span className="font-medium">Origen: {stopTime.location}</span>
+                              ) : index === (stopTimes.length - 1) ? (
+                                <span className="font-medium">Destino: {stopTime.location}</span>
                               ) : (
-                                <span>Parada {index}: {location}</span>
+                                <span>Parada {index}: {stopTime.location}</span>
                               )}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                               <TimeInput
-                                key={`time-input-desktop-${index}-${stopTimes[index]?.hour || '08'}-${stopTimes[index]?.minute || '00'}-${stopTimes[index]?.ampm || 'AM'}`}
-                                value={stopTimes[index] ? `${stopTimes[index]?.hour}:${stopTimes[index]?.minute} ${stopTimes[index]?.ampm}` : "08:00 AM"}
+                                key={`time-input-desktop-${index}-${stopTime.hour || '08'}-${stopTime.minute || '00'}-${stopTime.ampm || 'AM'}`}
+                                value={`${stopTime.hour}:${stopTime.minute} ${stopTime.ampm}`}
                                 onChange={(timeString) => {
                                   updateStopTime(index, timeString);
                                 }}
