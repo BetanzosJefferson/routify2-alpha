@@ -36,7 +36,7 @@ export function TripLogbook() {
     date: selectedDate // Filtrar reservaciones por fecha seleccionada
   });
   const { data: packages = [], isLoading: isLoadingPackages } = usePackages({
-    date: selectedDate // Filtrar paquetes por fecha seleccionada
+    // No filtrar paquetes por fecha para obtener todos los asociados a viajes
   });
   const { data: trips = [], isLoading: isLoadingTrips } = useTrips({
     date: selectedDate, // Filtrar viajes por fecha seleccionada
@@ -90,18 +90,39 @@ export function TripLogbook() {
       groups[tripKey].totalSales += reservation.totalAmount || 0;
     });
 
-    // Agregar paqueterías a los grupos existentes
+    // Agregar paqueterías a los grupos existentes basándose en recordId del viaje padre
     dateFilteredPackages.forEach((pkg: any) => {
       const tripDetails = pkg.tripDetails as any;
       if (!tripDetails) return;
 
-      const recordId = tripDetails.recordId;
+      // Extraer recordId del viaje padre (ejemplo: "1223_0" -> "1223")
+      let recordId = tripDetails.recordId;
+      if (typeof recordId === 'string' && recordId.includes('_')) {
+        recordId = recordId.split('_')[0];
+      }
+      recordId = parseInt(recordId);
+
       const tripKey = `${recordId}`;
 
       // Si el grupo existe, agregar el paquete
       if (groups[tripKey]) {
         groups[tripKey].packages.push(pkg);
         groups[tripKey].totalSales += pkg.price || 0;
+      } else {
+        // Si no existe el grupo, crear uno nuevo para el viaje padre
+        // Buscar información del viaje padre en los trips disponibles
+        const parentTrip = trips.find((trip: any) => trip.id === recordId);
+        if (parentTrip) {
+          groups[tripKey] = {
+            recordId,
+            tripInfo: parentTrip,
+            reservations: [],
+            packages: [pkg],
+            totalSales: pkg.price || 0,
+            totalExpenses: 0,
+            netProfit: 0
+          };
+        }
       }
     });
 
@@ -111,7 +132,7 @@ export function TripLogbook() {
     });
 
     return Object.values(groups);
-  }, [dateFilteredReservations, dateFilteredPackages]);
+  }, [dateFilteredReservations, dateFilteredPackages, trips]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
