@@ -463,24 +463,17 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     }
     
     // Crear el array de tiempos de parada usando el orden correcto
-    const newStopTimes = orderedLocations.map((location, index) => {
-      if (locationTimes[location]) {
+    // Solo incluir ubicaciones que tienen tiempos asignados, pero mantener el orden geográfico
+    const newStopTimes = orderedLocations
+      .filter(location => locationTimes[location]) // Solo ubicaciones con tiempos
+      .map((location, index) => {
         return {
           hour: locationTimes[location].hour,
           minute: locationTimes[location].minute,
           ampm: locationTimes[location].ampm,
           location
         };
-      } else {
-        // Si no hay información para esta ubicación, usar valor predeterminado
-        return {
-          hour: "08",
-          minute: "00",
-          ampm: "AM" as "AM" | "PM",
-          location
-        };
-      }
-    });
+      });
     
     console.log("🔧 Tiempos de parada reconstruidos con orden correcto:", newStopTimes);
     console.log("🔧 Tiempos con indicadores de día:", orderedLocations.map(loc => 
@@ -488,6 +481,8 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     ));
     console.log("🔧 locationTimes disponibles:", Object.keys(locationTimes));
     console.log("🔧 orderedLocations filtradas (solo con tiempo):", orderedLocations.filter(loc => locationTimes[loc]));
+    console.log("🔧 RESULTADO FINAL - newStopTimes length:", newStopTimes.length);
+    console.log("🔧 RESULTADO FINAL - Primeras 5 paradas:", newStopTimes.slice(0, 5).map(st => `${st.location}: ${st.hour}:${st.minute} ${st.ampm}`));
     setStopTimes(ensureValidStopTimes(newStopTimes));
   };
 
