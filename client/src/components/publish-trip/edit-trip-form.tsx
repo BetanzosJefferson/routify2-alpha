@@ -86,16 +86,6 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   
-  // CRÍTICO: Invalidar caché cuando se abre el formulario de edición
-  useEffect(() => {
-    if (tripId) {
-      console.log(`🔄 EditTripForm: Invalidando caché para viaje ${tripId}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/trips", tripId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin-trips"] });
-    }
-  }, [tripId]);
-  
   // Helper para validar y asegurar formato correcto de stopTimes
   const ensureValidStopTimes = (times: any[]): StopTime[] => {
     return times.map(time => {
@@ -118,28 +108,10 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   
   const [stopTimes, setStopTimes] = useState<StopTime[]>([]);
   
-  // Fetch tripData - FORZAR CONSULTA DIRECTA A BASE DE DATOS
+  // Fetch tripData - CONSULTA SIMPLE
   const tripQuery = useQuery({
-    queryKey: ["/api/trips", tripId, "edit", Date.now()], // Clave única para evitar caché
+    queryKey: ["/api/trips", tripId],
     enabled: !!tripId,
-    staleTime: 0, // Nunca usar datos obsoletos
-    cacheTime: 0, // No guardar en caché
-    queryFn: async () => {
-      console.log(`🔄 EditTripForm: Consultando datos del viaje ${tripId} directamente de la base de datos`);
-      const response = await fetch(`/api/trips/${tripId}?_t=${Date.now()}`, {
-        // Forzar nueva consulta con timestamp
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      if (!response.ok) {
-        throw new Error("Error al cargar datos del viaje");
-      }
-      const data = await response.json();
-      console.log(`✅ EditTripForm: Datos cargados desde BD:`, data);
-      return data;
-    }
   });
 
   // Fetch templates for dropdown
@@ -337,7 +309,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         form.setValue("visibility", TripVisibility.PUBLISHED);
       }
     }
-  }, [tripQuery.data, templatesQuery.data, form]);
+  }, [tripQuery.data, templatesQuery.data]);
 
   // Cargar precios de segmentos y tiempos de parada una vez que la ruta está cargada
   useEffect(() => {
@@ -388,7 +360,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         }
       }
     }
-  }, [tripQuery.data, templateRouteQuery.data, form]);
+  }, [tripQuery.data, templateRouteQuery.data]);
 
   // Función para reconstruir los tiempos de parada a partir de tripData segments
   const reconstructStopTimesFromTripDataSegments = (segmentPrices: SegmentTimePrice[]) => {
