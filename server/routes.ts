@@ -2122,33 +2122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Route not found" });
       }
       
-      // Crear un mapa de horarios desde stopTimes
-      const timeMap: Record<string, { departureTime: string; arrivalTime: string }> = {};
-      
-      // Detectar si se están enviando cambios de horario reales
-      const hasTimeChanges = segmentPrices && segmentPrices.some((segment: any) => 
-        segment.departureTime !== undefined || segment.arrivalTime !== undefined
-      );
-      
-      console.log(`[PUT /trips/${id}] hasTimeChanges: ${hasTimeChanges}`);
-      if (hasTimeChanges) {
-        console.log(`[PUT /trips/${id}] Se detectaron cambios de horario`);
-      } else {
-        console.log(`[PUT /trips/${id}] NO se detectaron cambios de horario - preservando horarios existentes`);
-      }
-      
-      if (stopTimes && Array.isArray(stopTimes) && hasTimeChanges) {
-        console.log(`[PUT /trips/${id}] Construyendo timeMap desde stopTimes porque hay cambios de horario`);
-        stopTimes.forEach((stop: any, index: number) => {
-          const time = `${stop.hour}:${stop.minute} ${stop.ampm}`;
-          timeMap[stop.location] = {
-            departureTime: time,
-            arrivalTime: index < stopTimes.length - 1 ? stopTimes[index + 1] ? `${stopTimes[index + 1].hour}:${stopTimes[index + 1].minute} ${stopTimes[index + 1].ampm}` : time : time
-          };
-        });
-      } else if (stopTimes && Array.isArray(stopTimes)) {
-        console.log(`[PUT /trips/${id}] Ignorando stopTimes porque no hay cambios explícitos de horario`);
-      }
+      // NO usar timeMap - solo horarios explícitos del frontend
+      console.log(`[PUT /trips/${id}] Usando solo horarios explícitos del frontend, ignorando timeMap`);
       
       // PRESERVAR los tripId existentes del tripData original
       const existingTripData = Array.isArray(currentTrip.tripData) ? currentTrip.tripData : [];
@@ -2191,19 +2166,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Solo actualizar horarios si vienen explícitamente en el frontendUpdate
           if (frontendUpdate.departureTime !== undefined) {
             finalDepartureTime = frontendUpdate.departureTime;
-          } else if (hasTimeChanges && timeMap[existingTrip.origin]) {
-            // Solo usar timeMap si hay cambios de horario reales
-            finalDepartureTime = timeMap[existingTrip.origin].departureTime;
           }
           
           if (frontendUpdate.arrivalTime !== undefined) {
             finalArrivalTime = frontendUpdate.arrivalTime;
-          } else if (hasTimeChanges && timeMap[existingTrip.destination]) {
-            // Solo usar timeMap si hay cambios de horario reales
-            finalArrivalTime = timeMap[existingTrip.destination].arrivalTime;
           }
           
+          // ELIMINAR completamente el uso de timeMap - solo usar horarios explícitos del frontend
+          
           console.log(`[PUT /trips/${id}] Horarios para ${segmentKey}: departure=${finalDepartureTime} (original: ${existingTrip.departureTime}), arrival=${finalArrivalTime} (original: ${existingTrip.arrivalTime})`);
+          
+          // Calcular asientos disponibles correctamente
+          let calculatedAvailableSeats = existingTrip.availableSeats;
+          
+          // Solo recalcular si se cambió la capacidad
+          if (capacity !== undefined && capacity !== existingTrip.capacity) {
+            const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
+            calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
+            console.log(`[PUT /trips/${id}] Recalculando asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+          }
           
           // PRESERVAR el tripId existente y actualizar solo campos modificados
           newTripData.push({
@@ -2215,11 +2196,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
             departureTime: finalDepartureTime,
             arrivalTime: finalArrivalTime,
-            availableSeats: capacity !== undefined ? capacity : existingTrip.availableSeats
+            availableSeats: calculatedAvailableSeats,
+            capacity: capacity !== undefined ? capacity : existingTrip.capacity
           });
         } else {
           // Este segmento NO se está actualizando, preservar completamente
           console.log(`[PUT /trips/${id}] PRESERVANDO segmento: ${segmentKey} (tripId: ${existingTrip.tripId})`);
+          
+          // Calcular asientos disponibles correctamente para segmentos preservados
+          let calculatedAvailableSeats = existingTrip.availableSeats;
+          
+          // Solo recalcular si se cambió la capacidad
+          if (capacity !== undefined && capacity !== existingTrip.capacity) {
+            const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
+            calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
+            console.log(`[PUT /trips/${id}] Recalculando asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+          }
           
           newTripData.push({
             price: existingTrip.price,
@@ -2230,7 +2222,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
             departureTime: existingTrip.departureTime,
             arrivalTime: existingTrip.arrivalTime,
-            availableSeats: capacity !== undefined ? capacity : existingTrip.availableSeats
+            availableSeats: calculatedAvailableSeats,
+            capacity: capacity !== undefined ? capacity : existingTrip.capacity
           });
         }
       });
