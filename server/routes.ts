@@ -1057,6 +1057,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Si llegamos aquí, el usuario tiene permiso para ver el viaje
+      
+      // APLICAR calculateSegmentDate automáticamente a todos los segmentos
+      if (trip.tripData && Array.isArray(trip.tripData)) {
+        console.log(`[GET /trips/${id}] Aplicando calculateSegmentDate a ${trip.tripData.length} segmentos`);
+        
+        const baseDate = new Date(trip.departureDate || getCurrentLocalDate());
+        
+        trip.tripData = trip.tripData.map((segment, index) => {
+          const originalDate = segment.departureDate;
+          const calculatedDate = formatDateToLocal(
+            calculateSegmentDate(baseDate, segment.departureTime || segment.arrivalTime)
+          );
+          
+          if (originalDate !== calculatedDate) {
+            console.log(`[GET /trips/${id}] Segmento ${index}: ${originalDate} → ${calculatedDate} (${segment.departureTime || segment.arrivalTime})`);
+          }
+          
+          return {
+            ...segment,
+            departureDate: calculatedDate
+          };
+        });
+        
+        console.log(`[GET /trips/${id}] Recálculo de fechas completado`);
+      }
+      
       res.json(trip);
     } catch (error) {
       console.error(`Error al obtener viaje por ID: ${error}`);
@@ -1434,7 +1460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Función para calcular la fecha real de un segmento basándose en su horario
   function calculateSegmentDate(baseDate: Date, timeString: string): Date {
+    console.log(`[calculateSegmentDate] 🔥 FUNCIÓN EJECUTADA: baseDate=${formatDateToLocal(baseDate)}, timeString="${timeString}"`);
+    
     if (!timeString) {
+      console.log(`[calculateSegmentDate] ❌ timeString vacío, retornando baseDate`);
       return new Date(baseDate);
     }
     
@@ -2198,9 +2227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // PRESERVAR el tripId existente y actualizar solo campos modificados
           const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
           const baseDateObj = new Date(baseDateStr);
+          console.log(`[PUT /trips/${id}] [calculateSegmentDate] INPUT: baseDateStr="${baseDateStr}", finalDepartureTime="${finalDepartureTime}"`);
           const calculatedDepartureDate = formatDateToLocal(
             calculateSegmentDate(baseDateObj, finalDepartureTime)
           );
+          console.log(`[PUT /trips/${id}] [calculateSegmentDate] OUTPUT: calculatedDepartureDate="${calculatedDepartureDate}"`)
           
           newTripData.push({
             price: frontendUpdate.price !== undefined ? frontendUpdate.price : existingTrip.price,
@@ -2235,9 +2266,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
           const baseDateObj = new Date(baseDateStr);
+          console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED INPUT: baseDateStr="${baseDateStr}", departureTime="${existingTrip.departureTime}"`);
           const calculatedDepartureDate = formatDateToLocal(
             calculateSegmentDate(baseDateObj, existingTrip.departureTime)
           );
+          console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED OUTPUT: calculatedDepartureDate="${calculatedDepartureDate}"`)
           
           newTripData.push({
             price: existingTrip.price,
