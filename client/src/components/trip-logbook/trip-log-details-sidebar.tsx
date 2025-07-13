@@ -297,8 +297,9 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="reservations" className="p-6 space-y-4 m-0">
                 {tripData.reservations.map((reservation: any) => {
-                  // Debug: ver TODOS los campos disponibles
-                  console.log(`[Bitácora DEBUG] Reservación ${reservation.id} - TODOS LOS CAMPOS:`, reservation);
+                  // Calcular el restante
+                  const advanceAmount = reservation.advanceAmount || 0;
+                  const remainingAmount = reservation.totalAmount - advanceAmount;
                   
                   return (
                   <div key={reservation.id} className="border rounded-lg p-4">
@@ -310,18 +311,18 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                       <div className="text-right">
                         <div className="space-y-1">
                           {/* Anticipo (si existe) */}
-                          {reservation.advancePayment && reservation.advancePayment > 0 && (
+                          {advanceAmount > 0 && (
                             <div className="text-sm">
-                              <span className="text-green-600">Anticipo: {formatCurrency(reservation.advancePayment)}</span>
+                              <span className="text-green-600">Anticipo: {formatCurrency(advanceAmount)}</span>
                               <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
                             </div>
                           )}
                           
                           {/* Restante (si existe) */}
-                          {reservation.remainingAmount && reservation.remainingAmount > 0 && (
+                          {remainingAmount > 0 && (
                             <div className="text-sm">
-                              <span className="text-blue-600">Restante: {formatCurrency(reservation.remainingAmount)}</span>
-                              <span className="text-gray-500 ml-2">({reservation.boardingPaymentMethod})</span>
+                              <span className="text-blue-600">Restante: {formatCurrency(remainingAmount)}</span>
+                              <span className="text-gray-500 ml-2">({reservation.paymentMethod})</span>
                             </div>
                           )}
                           
