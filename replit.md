@@ -119,6 +119,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - ARCHITECTURAL IMPROVEMENT: Global date handling system implemented for consistent timezone-safe date operations:
+  - **ROOT CAUSE RESOLVED**: Multiple date calculation inconsistencies across frontend and backend causing UTC conversion issues
+  - **GLOBAL FUNCTIONS CREATED**: 
+    - `getCurrentLocalDate()`: Returns current date in YYYY-MM-DD format without UTC conversion
+    - `formatDateToLocal()`: Converts any date to local YYYY-MM-DD format safely
+    - `normalizeToStartOfDay()`: Creates normalized Date objects without timezone issues
+  - **BACKEND UTILITY**: Created `server/utils.ts` with timezone-safe date functions using manual component extraction
+  - **FRONTEND UTILITY**: Enhanced `client/src/lib/utils.ts` with matching functions for consistency
+  - **IMPLEMENTATION**: Uses `getFullYear()`, `getMonth() + 1`, `getDate()` with `padStart()` instead of `toISOString().split('T')[0]`
+  - **BACKEND INTEGRATION**: Updated `/api/admin-trips` endpoint to use `getCurrentLocalDate()` function
+  - **FRONTEND INTEGRATION**: Updated trip-list component to use global date functions
+  - **CONSISTENCY ACHIEVED**: Both frontend and backend now use identical date calculation logic
+  - **TIMEZONE SAFETY**: Eliminates all UTC conversion issues that caused date offset problems
+  - **SCALABILITY**: Provides foundation for consistent date handling across entire application
+  - **VERIFICATION**: Backend logs confirm correct date calculation: "aplicando fecha actual: 2025-07-12"
+
 - **July 12, 2025** - CRITICAL FIX: Trip price editing functionality completely restored:
   - **ROOT CAUSE IDENTIFIED**: Edit trip form was using PATCH endpoint which only updates vehicle, driver, capacity and visibility
   - **MUTATION CORRECTED**: Changed from PATCH to PUT endpoint to enable full trip data updates including custom prices

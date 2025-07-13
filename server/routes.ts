@@ -30,6 +30,7 @@ import {
   TransactionSource,
   TransactionType
 } from "@shared/schema";
+import { getCurrentLocalDate } from "./utils";
 // Constantes para roles y permisos de paqueterías
 const PACKAGE_ACCESS_ROLES = [
   UserRole.OWNER, 
@@ -532,12 +533,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // OPTIMIZACIÓN: Si no hay filtro de fecha específico, usar fecha actual por defecto
       if (!date && !origin && !destination) {
-        // Usar fecha local sin conversión UTC para evitar problemas de zona horaria
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const today = `${year}-${month}-${day}`;
+        // Usar función global para obtener fecha actual sin problemas de zona horaria
+        const today = getCurrentLocalDate();
         searchParams.date = today;
         console.log(`[GET /api/admin-trips] Sin filtros específicos - aplicando fecha actual: ${today}`);
       }
