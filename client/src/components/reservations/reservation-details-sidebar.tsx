@@ -616,8 +616,8 @@ export function ReservationDetailsSidebar({
                       </div>
                     </div>
 
-                    {/* Teléfono de contacto con botón para copiar */}
-                    {reservation.phone && (
+                    {/* Teléfono de contacto con botón para copiar - oculto para checador y chofer */}
+                    {reservation.phone && user?.role !== 'checador' && user?.role !== 'chofer' && (
                       <div className="text-sm mb-3">
                         <div className="text-xs text-gray-500">Contacto</div>
                         <div className="font-medium flex items-center">
