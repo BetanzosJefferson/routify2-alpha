@@ -129,14 +129,15 @@ Preferred communication style: Simple, everyday language.
   - **EXAMPLE FIXED**: $1200 with $650 coupon = $550 final, $100 advance = $450 remaining (was showing incorrect amounts)
   - **TECHNICAL SOLUTION**: Eliminated frontend discount calculation, centralizing all coupon logic in backend for data integrity
 
-- **July 13, 2025** - CRITICAL FIX: Trip update availableSeats modification issue completely resolved:
-  - **ROOT CAUSE IDENTIFIED**: PUT /trips/:id endpoint was incorrectly comparing `capacity !== existingTrip.capacity` (segment level) instead of `capacity !== currentTrip.capacity` (trip level)
-  - **CAPACITY COMPARISON BUG**: System was thinking capacity changed when it was just being sent from frontend with same value
-  - **UNNECESSARY RECALCULATION**: `availableSeats` were being recalculated even when user didn't modify capacity
-  - **SOLUTION IMPLEMENTED**: Fixed comparison to use `currentTrip.capacity` (trip level) for accurate capacity change detection
-  - **ENHANCED LOGGING**: Added detailed logging to show trip vs received capacity values for debugging
-  - **SEAT PRESERVATION**: Now only recalculates `availableSeats` when capacity actually changes, not when it's just sent from frontend
-  - **USER EXPERIENCE**: Trip updates now preserve seat availability correctly when user only modifies prices, times, or other non-capacity fields
+- **July 13, 2025** - CRITICAL FIX: Trip update availableSeats duplication issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: PATCH /trips/:id endpoint was incorrectly recalculating `availableSeats` even when capacity hadn't changed
+  - **CAPACITY COMPARISON BUG**: System was recalculating seat availability when user only updated operator/driver assignments
+  - **UNNECESSARY RECALCULATION**: `availableSeats` were being set to full capacity instead of capacity minus occupied seats
+  - **SOLUTION IMPLEMENTED**: Enhanced PATCH endpoint to only recalculate `availableSeats` when `newCapacity !== currentTrip.capacity`
+  - **INTELLIGENT SEAT CALCULATION**: Now properly calculates `availableSeats = capacity - occupiedSeats` based on existing reservations
+  - **ENHANCED LOGGING**: Added detailed logging to show capacity changes and seat calculations for debugging
+  - **SEAT PRESERVATION**: Now only recalculates `availableSeats` when capacity actually changes, not on operator-only updates
+  - **USER EXPERIENCE**: Trip updates now preserve seat availability correctly when user only modifies drivers, vehicles, or other non-capacity fields
 
 - **July 13, 2025** - COMPLETED: Reservation list interface improved by removing Estado column and repositioning status badges:
   - **USER REQUEST**: Removed "Estado" column that was causing alignment issues for non-cancelled reservations

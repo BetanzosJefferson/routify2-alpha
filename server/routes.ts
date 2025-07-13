@@ -2422,19 +2422,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? parseInt(req.body.capacity, 10) 
           : req.body.capacity;
         
-        updateData.capacity = newCapacity;
-        
-        // IMPORTANTE: También actualizar availableSeats en todos los segmentos del trip_data
-        if (currentTrip.tripData && Array.isArray(currentTrip.tripData)) {
-          console.log(`Actualizando availableSeats de ${currentTrip.tripData.length} segmentos a ${newCapacity}`);
+        // CRÍTICO: Solo actualizar disponibilidad si la capacidad realmente cambió
+        if (newCapacity !== currentTrip.capacity) {
+          console.log(`🔄 CAPACIDAD CAMBIADA: ${currentTrip.capacity} → ${newCapacity}`);
           
-          const updatedTripData = currentTrip.tripData.map((segment: any) => ({
-            ...segment,
-            availableSeats: newCapacity
-          }));
+          updateData.capacity = newCapacity;
           
-          updateData.tripData = updatedTripData;
-          console.log(`Trip data actualizado con nueva capacidad para ${updatedTripData.length} segmentos`);
+          // IMPORTANTE: Recalcular availableSeats basado en reservas existentes
+          if (currentTrip.tripData && Array.isArray(currentTrip.tripData)) {
+            console.log(`Recalculando availableSeats para ${currentTrip.tripData.length} segmentos`);
+            
+            // Obtener reservas existentes para este viaje
+            const existingReservations = await storage.getReservations(currentTrip.companyId);
+            const tripReservations = existingReservations.filter(r => 
+              r.tripDetails?.recordId === currentTrip.id && 
+              r.status !== 'cancelled'
+            );
+            
+            console.log(`📊 Reservas activas encontradas: ${tripReservations.length}`);
+            
+            const updatedTripData = currentTrip.tripData.map((segment: any) => {
+              // Contar reservas para este segmento específico
+              const segmentReservations = tripReservations.filter(r => 
+                r.tripDetails?.tripId === segment.tripId
+              );
+              
+              const occupiedSeats = segmentReservations.reduce((sum, r) => 
+                sum + (r.passengersData?.length || 0), 0
+              );
+              
+              const availableSeats = newCapacity - occupiedSeats;
+              
+              console.log(`📍 Segmento ${segment.tripId}: ${occupiedSeats} ocupados, ${availableSeats} disponibles`);
+              
+              return {
+                ...segment,
+                capacity: newCapacity,
+                availableSeats: Math.max(0, availableSeats)
+              };
+            });
+            
+            updateData.tripData = updatedTripData;
+            console.log(`Trip data actualizado con nueva capacidad y disponibilidad recalculada`);
+          }
+        } else {
+          console.log(`⚠️  CAPACIDAD NO CAMBIÓ: ${currentTrip.capacity} (no se actualizará availableSeats)`);
         }
       }
       
