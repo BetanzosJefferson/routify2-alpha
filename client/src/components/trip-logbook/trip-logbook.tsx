@@ -154,12 +154,32 @@ export function TripLogbook() {
 
   // Totales generales del día
   const dayTotals = useMemo(() => {
-    const totalSales = groupedTrips.reduce((sum, trip) => sum + trip.totalSales, 0);
-    const totalTrips = groupedTrips.length;
-    const totalReservations = groupedTrips.reduce((sum, trip) => sum + trip.reservations.length, 0);
-    const totalPackages = groupedTrips.reduce((sum, trip) => sum + trip.packages.length, 0);
+    let totalPorVender = 0;
+    let ventasReales = 0;
+    let totalTrips = groupedTrips.length;
+    let totalReservations = 0;
+    let totalPackages = 0;
 
-    return { totalSales, totalTrips, totalReservations, totalPackages };
+    groupedTrips.forEach(trip => {
+      totalReservations += trip.reservations.length;
+      totalPackages += trip.packages.length;
+
+      // Calcular para reservaciones
+      trip.reservations.forEach((reservation: any) => {
+        totalPorVender += reservation.totalAmount;
+        const advanceAmount = reservation.advanceAmount || 0;
+        ventasReales += advanceAmount;
+      });
+
+      // Calcular para paqueterías
+      trip.packages.forEach((pkg: any) => {
+        totalPorVender += pkg.price || 0;
+        // Asumir que paqueterías están pagadas (podrías verificar un campo de estado si existe)
+        ventasReales += pkg.price || 0;
+      });
+    });
+
+    return { totalPorVender, ventasReales, totalTrips, totalReservations, totalPackages };
   }, [groupedTrips]);
 
   if (isLoadingReservations || isLoadingPackages || isLoadingTrips) {
@@ -220,8 +240,10 @@ export function TripLogbook() {
             <div className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600">Ventas Totales</p>
-                <p className="text-xl font-bold text-green-600">{formatCurrency(dayTotals.totalSales)}</p>
+                <p className="text-sm text-gray-600">Ventas</p>
+                <p className="text-xl font-bold text-green-600">
+                  {formatCurrency(dayTotals.ventasReales)} / {formatCurrency(dayTotals.totalPorVender)}
+                </p>
               </div>
             </div>
           </CardContent>

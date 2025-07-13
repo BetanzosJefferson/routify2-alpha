@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -224,7 +224,29 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   };
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const netProfit = tripData.totalSales - totalExpenses;
+  
+  // Calcular ventas reales vs total por vender para este viaje
+  const ventasReales = useMemo(() => {
+    let ventas = 0;
+    let totalPorVender = 0;
+    
+    // Calcular de reservaciones
+    tripData.reservations.forEach((reservation: any) => {
+      totalPorVender += reservation.totalAmount;
+      const advanceAmount = reservation.advanceAmount || 0;
+      ventas += advanceAmount;
+    });
+    
+    // Calcular de paqueterías
+    tripData.packages.forEach((pkg: any) => {
+      totalPorVender += pkg.price || 0;
+      ventas += pkg.price || 0; // Asumir que paqueterías están pagadas
+    });
+    
+    return { ventas, totalPorVender };
+  }, [tripData.reservations, tripData.packages]);
+  
+  const netProfit = ventasReales.ventas - totalExpenses;
   const budgetVariance = budget > 0 ? ((totalExpenses - budget) / budget) * 100 : 0;
 
   // Obtener información del viaje padre para horarios
@@ -260,8 +282,10 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
         <div className="p-6 border-b bg-gray-50">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="text-sm text-gray-600">Ventas Totales</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(tripData.totalSales)}</p>
+              <p className="text-sm text-gray-600">Ventas</p>
+              <p className="text-xl font-bold text-green-600">
+                {formatCurrency(ventasReales.ventas)} / {formatCurrency(ventasReales.totalPorVender)}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-600">Gastos Totales</p>
