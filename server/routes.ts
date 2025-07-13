@@ -745,14 +745,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // CRÍTICO: Asegurar que la fecha SIEMPRE esté presente en la clave del cache
       if (!cacheKey.date && !cacheKey.dateRange) {
         // Si no hay fecha específica, usar fecha actual
-        const today = new Date().toISOString().split('T')[0];
+        const today = getCurrentLocalDate();
         cacheKey.date = today;
         console.log(`[GET /trips] Fecha no especificada, usando fecha actual: ${today}`);
       }
       
       // OPTIMIZACIÓN: Si no hay filtros específicos, aplicar fecha actual por defecto
       if (!origin && !destination && !date && !dateRange && !isSubTrip) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getCurrentLocalDate();
         cacheKey.date = today;
         console.log(`[GET /trips] Sin filtros específicos - aplicando fecha actual: ${today}`);
       }
@@ -1235,7 +1235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (crossesMidnight) {
         // Solo procesar la fecha de salida para viajes nocturnos
         datesToProcess.push(new Date(startDate));
-        console.log(`⚠️ Viaje nocturno detectado: Solo se creará para fecha de salida ${startDate.toISOString().split('T')[0]}`);
+        console.log(`⚠️ Viaje nocturno detectado: Solo se creará para fecha de salida ${formatDateToLocal(startDate)}`);
       } else {
         // Procesar todas las fechas del rango para viajes diurnos
         for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
@@ -1246,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Iterar por cada fecha a procesar
       for (const date of datesToProcess) {
-        const currentDateStr = date.toISOString().split('T')[0];
+        const currentDateStr = formatDateToLocal(date);
         console.log(`\n=== CREANDO VIAJE PARA FECHA: ${currentDateStr} ===`);
         
         // Crear el array de combinaciones para trip_data de esta fecha específica
@@ -1264,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tripId: Date.now(),
           origin: route.origin,
           destination: route.destination,
-          departureDate: mainDepartureDate.toISOString().split('T')[0],
+          departureDate: formatDateToLocal(mainDepartureDate),
           departureTime: departureTime.replace(/\s*\+\d+d$/, ''),
           arrivalTime: arrivalTime.replace(/\s*\+\d+d$/, ''),
           price: mainSegmentPrice?.price || 450,
@@ -1273,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         console.log(`Viaje principal: ${route.origin} → ${route.destination}`);
-        console.log(`  departureTime: ${departureTime} → departureDate: ${mainDepartureDate.toISOString().split('T')[0]}`);
+        console.log(`  departureTime: ${departureTime} → departureDate: ${formatDateToLocal(mainDepartureDate)}`);
         
         // Agregar solo los segmentos que vienen desde el frontend (ya filtrados por combinaciones habilitadas)
         for (const segmentFromFrontend of tripData.segmentPrices || []) {
@@ -1295,7 +1295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tripId: Math.floor(Date.now() + Math.random() * 1000),
             origin: segmentFromFrontend.origin,
             destination: segmentFromFrontend.destination,
-            departureDate: segmentDepartureDate.toISOString().split('T')[0],
+            departureDate: formatDateToLocal(segmentDepartureDate),
             departureTime: segmentDepartureTime.replace(/\s*\+\d+d$/, ''),
             arrivalTime: segmentArrivalTime.replace(/\s*\+\d+d$/, ''),
             price: segmentPrice,
@@ -1304,7 +1304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           
           console.log(`Segmento: ${segmentFromFrontend.origin} → ${segmentFromFrontend.destination}`);
-          console.log(`  departureTime: ${segmentDepartureTime} → departureDate: ${segmentDepartureDate.toISOString().split('T')[0]}`);
+          console.log(`  departureTime: ${segmentDepartureTime} → departureDate: ${formatDateToLocal(segmentDepartureDate)}`);
         }
         
         console.log(`\nCreando viaje para ${currentDateStr} con ${tripCombinations.length} segmentos`);
@@ -1446,7 +1446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Si ya tiene indicador de día, usarlo directamente
         const resultDate = new Date(baseDate);
         resultDate.setDate(resultDate.getDate() + dayOffset);
-        console.log(`  [calculateSegmentDate] Usando indicador existente +${dayOffset}d: ${timeString} → ${resultDate.toISOString().split('T')[0]}`);
+        console.log(`  [calculateSegmentDate] Usando indicador existente +${dayOffset}d: ${timeString} → ${formatDateToLocal(resultDate)}`);
         return resultDate;
       }
       
@@ -1471,14 +1471,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!isNaN(hour24) && !isNaN(minute) && hour24 >= 0 && hour24 <= 6) {
             const nextDay = new Date(baseDate);
             nextDay.setDate(nextDay.getDate() + 1);
-            console.log(`  [calculateSegmentDate] Horario AM temprano detectado: ${timeString} (${hour24}:${minute.toString().padStart(2, '0')}) → ${nextDay.toISOString().split('T')[0]} (+1 día)`);
+            console.log(`  [calculateSegmentDate] Horario AM temprano detectado: ${timeString} (${hour24}:${minute.toString().padStart(2, '0')}) → ${formatDateToLocal(nextDay)} (+1 día)`);
             return nextDay;
           }
         }
       }
       
       // Para otros casos, usar la fecha base
-      console.log(`  [calculateSegmentDate] Horario diurno: ${timeString} → ${baseDate.toISOString().split('T')[0]} (mismo día)`);
+      console.log(`  [calculateSegmentDate] Horario diurno: ${timeString} → ${formatDateToLocal(baseDate)} (mismo día)`);
       return new Date(baseDate);
       
     } catch (error) {
@@ -2173,7 +2173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             destination: segment.destination,
             tripId: preservedTripId, // PRESERVAR el tripId existente
             isMainTrip: isMainTrip,
-            departureDate: startDate || currentTrip.tripData?.[0]?.departureDate || new Date().toISOString().split('T')[0],
+            departureDate: startDate || currentTrip.tripData?.[0]?.departureDate || getCurrentLocalDate(),
             departureTime: originTimes.departureTime,
             arrivalTime: destinationTimes.arrivalTime,
             availableSeats: capacity || currentTrip.capacity
@@ -4356,7 +4356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // OPTIMIZACIÓN: Filtrar por fecha - por defecto fecha actual, personalizable o todas
       if (!viewAll) {
-        const targetDate = filterDate || new Date().toISOString().split('T')[0]; // Usar fecha especificada o fecha actual
+        const targetDate = filterDate || getCurrentLocalDate(); // Usar fecha especificada o fecha actual
         
         comissionerReservations = comissionerReservations.filter(reservation => {
           // Obtener fecha del viaje desde trip_details o trip
@@ -4396,14 +4396,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Si no hay fecha del viaje, usar fecha de creación como fallback
             if (!tripDate && reservation.createdAt) {
-              tripDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+              tripDate = formatDateToLocal(new Date(reservation.createdAt));
             }
             
           } catch (error) {
             console.error(`[GET /commissions/reservations] Error obteniendo fecha del viaje:`, error);
             // Fallback a fecha de creación
             if (reservation.createdAt) {
-              tripDate = new Date(reservation.createdAt).toISOString().split('T')[0];
+              tripDate = formatDateToLocal(new Date(reservation.createdAt));
             }
           }
           
@@ -5974,7 +5974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // OPTIMIZACIÓN: Si no hay filtro de fecha específico, usar fecha actual por defecto
       let dateFilter = date as string;
       if (!date) {
-        dateFilter = new Date().toISOString().split('T')[0];
+        dateFilter = getCurrentLocalDate();
         console.log(`[GET /taquilla/packages] Sin filtro de fecha - aplicando fecha actual: ${dateFilter}`);
       }
       

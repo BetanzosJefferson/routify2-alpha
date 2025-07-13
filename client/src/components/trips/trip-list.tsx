@@ -185,7 +185,7 @@ interface SearchParams {
   visibility?: 'publicado';
 }
 
-import { normalizeToStartOfDay, formatDateForInput, formatDateForApiQuery } from "@/lib/utils";
+import { normalizeToStartOfDay, formatDateForInput, formatDateToLocal } from "@/lib/utils";
 
 export function TripList() {
   // Obtener la fecha actual formateada como YYYY-MM-DD en hora local

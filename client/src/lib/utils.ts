@@ -135,13 +135,13 @@ export function isSameLocalDay(dateA: Date | string, dateB: Date | string): bool
   if (typeof dateA === 'string') {
     dateStringA = dateA.includes('T') ? dateA.split('T')[0] : dateA;
   } else {
-    dateStringA = dateA.toISOString().split('T')[0];
+    dateStringA = formatDateToLocal(dateA);
   }
   
   if (typeof dateB === 'string') {
     dateStringB = dateB.includes('T') ? dateB.split('T')[0] : dateB;
   } else {
-    dateStringB = dateB.toISOString().split('T')[0];
+    dateStringB = formatDateToLocal(dateB);
   }
   
   return dateStringA === dateStringB;
@@ -236,7 +236,7 @@ export function formatDateForInput(date: Date | string): string {
     }
     // Para otros formatos, normalizar
     const normalizedDate = normalizeToStartOfDay(date);
-    return dateToLocalISOString(normalizedDate);
+    return formatDateToLocal(normalizedDate);
   }
 }
 
@@ -436,49 +436,9 @@ export function groupSegmentsByCity(segments: any[]): {
   return { cityGroups, cityPairs };
 }
 
-/**
- * Convierte un objeto Date a una cadena ISO para ser usada en inputs tipo date YYYY-MM-DD
- * Este método está diseñado para evitar los problemas de zona horaria
- * @param date - Fecha a convertir 
- * @returns Cadena en formato ISO YYYY-MM-DD
- */
-export function dateToLocalISOString(date: Date): string {
-  // Extraer componentes de fecha en hora local
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // los meses son 0-indexados
-  const day = String(date.getDate()).padStart(2, '0');
-  
-  // Retornar en formato YYYY-MM-DD
-  return `${year}-${month}-${day}`;
-}
+// ELIMINADO: dateToLocalISOString - usar formatDateToLocal() en su lugar
 
-/**
- * Formatea una fecha para su uso en filtros de API de manera segura con zonas horarias
- * @param date - Fecha a formatear
- * @returns Cadena de fecha en formato ISO para uso en consultas
- */
-export function formatDateForApiQuery(date: Date | string): string {
-  // Si es un objeto Date, extraer componentes directamente para evitar 
-  // problemas de zona horaria
-  if (date instanceof Date) {
-    // Usar los componentes locales de la fecha
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    console.log(`[formatDateForApiQuery] Fecha por componentes: ${year}-${month}-${day}`);
-    return `${year}-${month}-${day}`;
-  } else {
-    // Para strings en formato YYYY-MM-DD, devolverlas directamente
-    if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      console.log(`[formatDateForApiQuery] Fecha string válida: ${date}`);
-      return date;
-    }
-    
-    // Para otros formatos, normalizar primero
-    const normalizedDate = normalizeToStartOfDay(date);
-    return dateToLocalISOString(normalizedDate);
-  }
-}
+// ELIMINADO: formatDateForApiQuery - usar formatDateToLocal() en su lugar
 
 /**
  * Crea un objeto Date a partir de una cadena YYYY-MM-DD respetando la zona horaria local

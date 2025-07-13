@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, formatDateToLocal } from "@/lib/utils";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { hasRoleAccess } from "@/lib/role-based-permissions";
@@ -151,7 +151,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       
       // Filtro por fecha
       if (filters.date) {
-        const packageDate = new Date(pkg.createdAt).toISOString().split('T')[0];
+        const packageDate = formatDateToLocal(new Date(pkg.createdAt));
         if (packageDate !== filters.date) {
           return false;
         }

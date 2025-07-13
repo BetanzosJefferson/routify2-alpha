@@ -22,7 +22,7 @@ interface ExtendedTripInfo extends TripWithRouteInfo {
   destinationTerminal?: string;
   routeName?: string;
 }
-import { normalizeToStartOfDay, formatDateForInput, formatDateForApiQuery } from "@/lib/utils";
+import { normalizeToStartOfDay, formatDateForInput, formatDateToLocal } from "@/lib/utils";
 
 interface SearchParams {
   origin?: string;
@@ -139,7 +139,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
       const params: SearchParams = {};
       if (origin) params.origin = origin;
       if (destination) params.destination = destination;
-      if (date) params.date = formatDateForApiQuery(date);
+      if (date) params.date = formatDateToLocal(date);
       
       // Always add visibility parameter
       params.visibility = 'publicado';

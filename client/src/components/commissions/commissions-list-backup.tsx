@@ -21,7 +21,7 @@ import {
   CalendarDays,
   Eye
 } from "lucide-react";
-import { cn, formatPrice, generateReservationId } from "@/lib/utils";
+import { cn, formatPrice, generateReservationId, getCurrentLocalDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -51,7 +51,7 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
   // Estados para filtros
   const [filterDate, setFilterDate] = useState<string>(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return getCurrentLocalDate();
   });
   const [viewAll, setViewAll] = useState(false);
 

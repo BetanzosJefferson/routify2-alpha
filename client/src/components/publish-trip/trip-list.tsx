@@ -7,10 +7,8 @@ import {
   isSameLocalDay, 
   formatDate, 
   formatDateForInput, 
-  dateToLocalISOString,
-  formatDateForApiQuery,
-  getCurrentLocalDate,
-  formatDateToLocal
+  formatDateToLocal,
+  getCurrentLocalDate
 } from "@/lib/utils";
 import { formatTripTime } from "@/lib/trip-utils";
 import { 
@@ -136,9 +134,9 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
 
   // Consulta para obtener viajes filtrados por fecha con respuesta optimizada
   const { data: trips = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/admin-trips', 'optimized', dateFilter ? formatDateForApiQuery(dateFilter) : ''],
+    queryKey: ['/api/admin-trips', 'optimized', dateFilter ? formatDateToLocal(dateFilter) : ''],
     queryFn: async () => {
-      const dateParam = dateFilter ? `&date=${formatDateForApiQuery(dateFilter)}` : '';
+      const dateParam = dateFilter ? `&date=${formatDateToLocal(dateFilter)}` : '';
       const res = await apiRequest('GET', `/api/admin-trips?optimizedResponse=true${dateParam}`);
       const data = await res.json();
       console.log("TripList: Datos recibidos del backend:", data);

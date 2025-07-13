@@ -30,7 +30,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { TimeInput } from "@/components/ui/time-input";
 import { publishTripValidationSchema, type Route, type RouteWithSegments, type SegmentPrice, TripVisibility } from "@shared/schema";
 import { z } from "zod";
-import { generateSegmentsFromRoute, isSameCity, getCityName, groupSegmentsByCity } from "@/lib/utils";
+import { generateSegmentsFromRoute, isSameCity, getCityName, groupSegmentsByCity, formatDateToLocal } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Esquema de validación específico para edición (solo campos editables)
@@ -276,7 +276,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       const formatDateForInput = (dateString: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toISOString().split('T')[0];
+        return formatDateToLocal(date);
       };
       
       // Establecer fechas en formato correcto para input date

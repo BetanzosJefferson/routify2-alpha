@@ -48,6 +48,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getCurrentLocalDate } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -275,7 +276,7 @@ export default function CouponsPage() {
 
   // Helper para mostrar el estado del cupón
   const getStatusBadge = (coupon: Coupon) => {
-    const now = new Date();
+    const now = getCurrentLocalDate();
     const expiresAt = new Date(coupon.expiresAt);
     
     if (!coupon.isActive) {
@@ -287,7 +288,7 @@ export default function CouponsPage() {
       );
     }
     
-    if (expiresAt < now) {
+    if (expiresAt < new Date(now)) {
       return (
         <Badge variant="outline" className="gap-1 text-orange-500 border-orange-500">
           <AlertCircle size={14} />

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
-import { formatDateForInput, formatDateForApiQuery, formatDate } from "@/lib/utils";
+import { formatDateForInput, formatDateToLocal, formatDate } from "@/lib/utils";
 import { TripWithRouteInfo } from "@shared/schema";
 import { LocationAdapter } from "@/components/ui/location-adapter";
 import { LocationOption } from "@/components/ui/location-selector";
@@ -95,7 +95,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
 
   // Manejar búsqueda
   const handleSearch = () => {
-    const formattedDate = formatDateForApiQuery(date);
+    const formattedDate = formatDateToLocal(date);
     console.log(`[PackageTripSelection] Searching with filters:`, {
       originalDate: date,
       formattedDate,

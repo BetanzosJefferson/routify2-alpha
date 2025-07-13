@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Loader2, Receipt, DollarSign, ArrowRight, CreditCard, Scissors, FileText, Download } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateToLocal } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -104,7 +104,7 @@ const TransactionBox: React.FC = () => {
       // Preparar la configuración para el ticket
       const ticketConfig = {
         title: "CORTE DE CAJA",
-        date: new Date().toLocaleString("es-MX"),
+        date: formatDateToLocal(new Date()),
         user: user?.firstName + " " + user?.lastName || "Usuario",
         company: user?.companyId || "Empresa",
         transactions: transactions,

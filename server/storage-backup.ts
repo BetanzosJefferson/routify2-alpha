@@ -30,6 +30,7 @@ import {
   BoxCutoff,
   InsertBoxCutoff,
 } from "@shared/schema";
+import { formatDateToLocal } from "./utils";
 
 export interface IStorage {
   // Route methods
@@ -593,7 +594,7 @@ export class MemStorage implements IStorage {
       
       // Filtrar por fecha si se proporciona
       if (dateFilter) {
-        const tripDate = tripWithRoute.departureDate.toISOString().split('T')[0];
+        const tripDate = formatDateToLocal(tripWithRoute.departureDate);
         if (tripDate !== dateFilter) continue;
       }
       

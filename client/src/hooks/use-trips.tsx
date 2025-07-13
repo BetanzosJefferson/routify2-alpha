@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Trip, TripWithRouteInfo } from "@shared/schema";
 import { useAuth } from "./use-auth";
-import { formatDateForApiQuery } from "@/lib/utils";
+import { formatDateToLocal } from "@/lib/utils";
 
 type UseTripsOptions = {
   enabled?: boolean;
@@ -44,7 +44,7 @@ export function useTrips(options: UseTripsOptions = {}) {
             // De lo contrario, normalizarla para asegurar consistencia
             const normalizedDate = departureDate.includes('-') && departureDate.split('-').length === 3
               ? departureDate
-              : formatDateForApiQuery(new Date(departureDate));
+              : formatDateToLocal(new Date(departureDate));
               
             console.log(`[useTrips] Fecha normalizada para API: ${normalizedDate} (original: ${departureDate})`);
             params.append("date", normalizedDate);
