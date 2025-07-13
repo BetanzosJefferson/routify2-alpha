@@ -532,7 +532,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // OPTIMIZACIÓN: Si no hay filtro de fecha específico, usar fecha actual por defecto
       if (!date && !origin && !destination) {
-        const today = new Date().toISOString().split('T')[0];
+        // Usar fecha local sin conversión UTC para evitar problemas de zona horaria
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         searchParams.date = today;
         console.log(`[GET /api/admin-trips] Sin filtros específicos - aplicando fecha actual: ${today}`);
       }

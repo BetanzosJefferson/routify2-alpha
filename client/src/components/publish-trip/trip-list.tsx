@@ -117,7 +117,8 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   // OPTIMIZACIÓN: Por defecto filtrar solo por fecha actual para evitar sobrecarga
-  const today = new Date();
+  // Usar fecha local sin conversión UTC para evitar problemas de zona horaria
+  const today = normalizeToStartOfDay(new Date());
   const [dateFilter, setDateFilter] = useState<Date | undefined>(today);
   const [showFilter, setShowFilter] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
