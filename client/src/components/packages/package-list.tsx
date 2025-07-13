@@ -151,21 +151,32 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       
       // Filtro por fecha
       if (filters.date) {
-        // Usar tripDepartureDate para filtrar por fecha del segmento específico
+        // Solo usar tripDepartureDate para filtrar por fecha del segmento específico
+        // NUNCA usar createdAt como fallback porque no tiene sentido lógico
         console.log(`[FILTRO FECHA DEBUG] Evaluando condiciones para paquete #${pkg.id}:`, {
           'pkg.tripDepartureDate': pkg.tripDepartureDate,
           'typeof pkg.tripDepartureDate': typeof pkg.tripDepartureDate,
           'pkg.tripDepartureDate evaluado': !!pkg.tripDepartureDate,
           'pkg.shippingDate': pkg.shippingDate,
           'pkg.shippingDate evaluado': !!pkg.shippingDate,
-          'pkg.createdAt': pkg.createdAt,
+          'pkg.tripDate': pkg.tripDate,
+          'pkg.tripDate evaluado': !!pkg.tripDate,
         });
         
-        const packageDate = pkg.tripDepartureDate 
-          ? formatDateToLocal(new Date(pkg.tripDepartureDate))
-          : (pkg.shippingDate 
-            ? formatDateToLocal(new Date(pkg.shippingDate))
-            : formatDateToLocal(new Date(pkg.createdAt)));
+        // Solo usar fechas relacionadas con el viaje, nunca createdAt
+        let packageDate = null;
+        if (pkg.tripDepartureDate) {
+          console.log(`[FECHA DEBUG] Procesando tripDepartureDate: "${pkg.tripDepartureDate}"`);
+          console.log(`[FECHA DEBUG] new Date(pkg.tripDepartureDate):`, new Date(pkg.tripDepartureDate));
+          console.log(`[FECHA DEBUG] formatDateToLocal result:`, formatDateToLocal(new Date(pkg.tripDepartureDate)));
+          packageDate = formatDateToLocal(new Date(pkg.tripDepartureDate));
+        } else if (pkg.shippingDate) {
+          console.log(`[FECHA DEBUG] Procesando shippingDate: "${pkg.shippingDate}"`);
+          packageDate = formatDateToLocal(new Date(pkg.shippingDate));
+        } else if (pkg.tripDate) {
+          console.log(`[FECHA DEBUG] Procesando tripDate: "${pkg.tripDate}"`);
+          packageDate = formatDateToLocal(new Date(pkg.tripDate));
+        }
         
         // Debug: Log para verificar el filtrado
         console.log(`[FILTRO FECHA DEBUG] Paquete #${pkg.id}:`, {
@@ -173,13 +184,13 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
           'shippingDate': pkg.shippingDate,
           'tripDepartureDate': pkg.tripDepartureDate,
           'tripDate': pkg.tripDate,
-          'createdAt': pkg.createdAt,
           'packageDate calculado': packageDate,
           'filters.date': filters.date,
           'coincide': packageDate === filters.date
         });
         
-        if (packageDate !== filters.date) {
+        // Si no hay fecha de viaje válida, excluir el paquete del filtro
+        if (!packageDate || packageDate !== filters.date) {
           return false;
         }
       }
