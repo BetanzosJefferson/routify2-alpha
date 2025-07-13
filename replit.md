@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - COMPLETED: Bitácora section now shows all reservations and packages without payment restrictions:
+  - **REMOVED RESTRICTIONS**: Eliminated payment status filtering that only showed paid/advance reservations
+  - **COMPLETE VISIBILITY**: Now displays all reservations and packages associated with trips regardless of payment status
+  - **IMPROVED COVERAGE**: Users can now see comprehensive trip data including pending payments
+  - **UPDATED INTERFACE**: Modified description to reflect "complete trip registry with all reservations and packages"
+  - **ENHANCED TRACKING**: Bitácora now provides full visibility into trip operations without payment-based limitations
+  - **BETTER ANALYTICS**: More accurate trip performance metrics including all associated bookings
+
 - **July 13, 2025** - COMPLETED: Trip list organization simplified by removing archived/current/future filtering:
   - **SIMPLIFIED INTERFACE**: Removed confusing tabs for "Actuales y Futuros" and "Archivados" in trip publication section
   - **STREAMLINED LOGIC**: Eliminated complex date-based trip categorization that separated trips into archived vs current

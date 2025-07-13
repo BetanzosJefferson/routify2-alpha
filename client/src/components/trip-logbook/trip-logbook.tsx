@@ -46,25 +46,14 @@ export function TripLogbook() {
   // Log para depuración de rendimiento
   console.log(`[Bitácora] Datos cargados - Reservaciones: ${reservations.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
 
-  // Filtrar reservaciones válidas para bitácora
+  // Mostrar todas las reservaciones asociadas a los viajes
   const validReservations = useMemo(() => {
-    return reservations.filter((reservation: any) => {
-      // Incluir pagadas completamente
-      if (reservation.paymentStatus === 'pagado') return true;
-      
-      // Incluir con anticipo
-      if (reservation.paymentStatus === 'anticipo' || (reservation.advanceAmount && reservation.advanceAmount > 0)) return true;
-      
-      // Incluir canceladas (sin reembolso - asumimos que las canceladas aquí no tienen reembolso)
-      if (reservation.status === 'cancelada') return true;
-      
-      return false;
-    });
+    return reservations; // Mostrar todas las reservaciones sin filtros de pago
   }, [reservations]);
 
-  // Filtrar paqueterías válidas para bitácora
+  // Mostrar todas las paqueterías asociadas a los viajes
   const validPackages = useMemo(() => {
-    return packages.filter((pkg: any) => pkg.isPaid === true);
+    return packages; // Mostrar todos los paquetes sin filtros de pago
   }, [packages]);
 
   // Los datos ya vienen filtrados por fecha desde el backend
@@ -170,7 +159,7 @@ export function TripLogbook() {
             Bitácora de Viajes
           </h1>
           <p className="text-gray-600 mt-1">
-            Registro financiero de viajes con ventas confirmadas
+            Registro completo de viajes con todas las reservaciones y paqueterías
           </p>
         </div>
         
@@ -195,7 +184,7 @@ export function TripLogbook() {
           <div>
             <p className="text-sm font-medium text-blue-900">Información mostrada</p>
             <p className="text-sm text-blue-700">
-              Solo se toman en cuenta reservaciones y paqueterías pagadas, o con anticipos
+              Se muestran todas las reservaciones y paqueterías asociadas a los viajes
             </p>
           </div>
         </div>
