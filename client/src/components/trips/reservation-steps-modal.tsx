@@ -348,11 +348,12 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       return;
     }
     
-    // Validate advance payment
-    if (advanceAmount > totalPrice) {
+    // Validate advance payment against final price (with discount)
+    const finalPrice = couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice;
+    if (advanceAmount > finalPrice) {
       toast({
         title: "Monto de anticipo inválido",
-        description: "El anticipo no puede ser mayor que el precio total",
+        description: "El anticipo no puede ser mayor que el precio final con descuento",
         variant: "destructive",
       });
       setCurrentStep(2); // Go back to payment step
@@ -361,8 +362,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     
     // Determine payment status based on advance amount
     let currentPaymentStatus: typeof PaymentStatus.PENDING | typeof PaymentStatus.PAID = PaymentStatus.PENDING;
-    const finalPrice = couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice;
-    if (advanceAmount >= finalPrice) {
+    const finalPriceForStatus = couponVerified && couponDiscount > 0 ? totalPrice - couponDiscount : totalPrice;
+    if (advanceAmount >= finalPriceForStatus) {
       currentPaymentStatus = PaymentStatus.PAID;
     }
     
@@ -371,11 +372,8 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     
     // Usamos el teléfono ya normalizado de la validación anterior
     
-    // Calcular el precio total aplicando el descuento del cupón si corresponde
-    const finalTotalPrice = couponVerified && couponDiscount > 0 
-      ? totalPrice - couponDiscount 
-      : totalPrice;
-    
+    // CRÍTICO: Enviar el precio ORIGINAL al backend (sin aplicar descuento)
+    // El backend se encarga de calcular el descuento correctamente
     const reservationData: ReservationFormData = {
       tripDetails: {
         recordId: typeof trip.id === 'string' && trip.id.includes('_') ? trip.id.split('_')[0] : trip.id, // ID del viaje padre (sin sufijo)
@@ -386,7 +384,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       passengers,
       email: email.trim() || null, // Guardar null si está vacío para consistencia
       phone: normalizedPhone, // Usar el teléfono ya normalizado
-      totalAmount: finalTotalPrice,
+      totalAmount: totalPrice, // PRECIO ORIGINAL (sin descuento) - el backend aplicará el descuento
       paymentMethod,
       paymentStatus: currentPaymentStatus,
       advanceAmount: advanceAmount,

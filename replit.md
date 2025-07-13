@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - CRITICAL FIX: Coupon system double-discount calculation error completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: Frontend was applying discount and sending final price to backend, then backend applied discount again
+  - **DOUBLE DISCOUNTING BUG**: System was calculating discount twice: once in frontend (finalTotalPrice = totalPrice - couponDiscount) and once in backend (finalAmount = totalAmount - discountAmount)
+  - **CALCULATION FLOW CORRECTED**: Frontend now sends original price (totalAmount: totalPrice) and backend handles discount calculation
+  - **VALIDATION FIXED**: Frontend advance payment validation now uses final discounted price for comparison
+  - **FIELD CONSISTENCY**: Fixed inconsistent use of couponDiscount vs discountAmount fields in reservation detail modal
+  - **DISPLAY HARMONIZED**: All PDF generation and UI display now use consistent discountAmount field from backend
+  - **EXAMPLE FIXED**: $1200 with $650 coupon = $550 final, $100 advance = $450 remaining (was showing incorrect amounts)
+  - **TECHNICAL SOLUTION**: Eliminated frontend discount calculation, centralizing all coupon logic in backend for data integrity
+
 - **July 13, 2025** - CRITICAL FIX: Trip update availableSeats modification issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: PUT /trips/:id endpoint was incorrectly comparing `capacity !== existingTrip.capacity` (segment level) instead of `capacity !== currentTrip.capacity` (trip level)
   - **CAPACITY COMPARISON BUG**: System was thinking capacity changed when it was just being sent from frontend with same value

@@ -448,20 +448,20 @@ export default function ReservationDetailsModal({
         // Debug: Ver datos del cupón
         console.log("🔍 DEBUG PDF - Datos cupón:", {
           couponCode: reservation.couponCode,
-          couponDiscount: reservation.couponDiscount,
+          discountAmount: reservation.discountAmount,
           totalAmount: reservation.totalAmount,
-          hasDiscount: reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0
+          hasDiscount: reservation.couponCode && reservation.discountAmount && reservation.discountAmount > 0
         });
         
         // Si hay descuento, el precio original es el total + descuento
-        if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
-          originalPrice = reservation.totalAmount + reservation.couponDiscount;
+        if (reservation.couponCode && reservation.discountAmount && reservation.discountAmount > 0) {
+          originalPrice = reservation.totalAmount + reservation.discountAmount;
           finalPrice = reservation.totalAmount; // El totalAmount ya tiene el descuento aplicado
           
           console.log("🔍 DEBUG PDF - Precios calculados:", {
             originalPrice,
             finalPrice,
-            discount: reservation.couponDiscount
+            discount: reservation.discountAmount
           });
         }
 
@@ -473,11 +473,11 @@ export default function ReservationDetailsModal({
         paymentY += 8;
 
         // Información del cupón y descuento (si existe)
-        if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
+        if (reservation.couponCode && reservation.discountAmount && reservation.discountAmount > 0) {
           doc.setTextColor(...colors.muted);
           doc.text('Descuento:', paymentX, paymentY);
           doc.setTextColor(220, 53, 69); // Color rojo para descuento
-          doc.text(`-${formatPrice(reservation.couponDiscount)}`, paymentX + 35, paymentY);
+          doc.text(`-${formatPrice(reservation.discountAmount)}`, paymentX + 35, paymentY);
           paymentY += 8;
         }
 
@@ -834,8 +834,8 @@ export default function ReservationDetailsModal({
       let finalPrice = reservation.totalAmount;
       
       // Si hay descuento, el precio original es el total + descuento
-      if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
-        originalPrice = reservation.totalAmount + reservation.couponDiscount;
+      if (reservation.couponCode && reservation.discountAmount && reservation.discountAmount > 0) {
+        originalPrice = reservation.totalAmount + reservation.discountAmount;
         finalPrice = reservation.totalAmount; // El totalAmount ya tiene el descuento aplicado
       }
       
@@ -843,11 +843,11 @@ export default function ReservationDetailsModal({
       doc.text(`Precio original: ${formatPrice(originalPrice)}`, 5, y);
       
       // Cupón de descuento (si existe)
-      if (reservation.couponCode && reservation.couponDiscount && reservation.couponDiscount > 0) {
+      if (reservation.couponCode && reservation.discountAmount && reservation.discountAmount > 0) {
         y += 3;
         doc.text(`Cupon aplicado: ${reservation.couponCode}`, 5, y);
         y += 3;
-        doc.text(`Descuento: -${formatPrice(reservation.couponDiscount)}`, 5, y);
+        doc.text(`Descuento: -${formatPrice(reservation.discountAmount)}`, 5, y);
         y += 3;
         doc.text(`Total: ${formatPrice(finalPrice)}`, 5, y);
       }
@@ -1017,7 +1017,7 @@ export default function ReservationDetailsModal({
       doc.setFont("courier", "normal");
       
       // Calcular precio final después del descuento
-      const finalPrice = reservation.couponDiscount > 0 ? reservation.totalAmount - reservation.couponDiscount : reservation.totalAmount;
+      const finalPrice = reservation.discountAmount > 0 ? reservation.totalAmount - reservation.discountAmount : reservation.totalAmount;
       
       if (reservation.advanceAmount && reservation.advanceAmount > 0) {
         // Anticipo con método de pago
