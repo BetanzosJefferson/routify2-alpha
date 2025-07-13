@@ -30,7 +30,7 @@ import {
   TransactionSource,
   TransactionType
 } from "@shared/schema";
-import { getCurrentLocalDate } from "./utils";
+import { getCurrentLocalDate, formatDateToLocal } from "./utils";
 // Constantes para roles y permisos de paqueterías
 const PACKAGE_ACCESS_ROLES = [
   UserRole.OWNER, 
