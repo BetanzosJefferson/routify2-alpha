@@ -436,6 +436,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     let orderedLocations: string[] = [];
     
     console.log("🔧 routeQuery.data disponible:", !!routeQuery.data);
+    console.log("🔧 routeQuery.data completo:", routeQuery.data);
     
     if (routeQuery.data) {
       // Usar el orden de la ruta: origen, paradas, destino
@@ -445,6 +446,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         routeQuery.data.destination
       ];
       console.log("🔧 Orden correcto desde ruta:", orderedLocations.slice(0, 5));
+      console.log("🔧 Cantidad total de ubicaciones en ruta:", orderedLocations.length);
     } else {
       // Fallback: extraer ubicaciones únicas manteniendo el orden de aparición
       const allLocations: string[] = [];
@@ -484,6 +486,8 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     console.log("🔧 Tiempos con indicadores de día:", orderedLocations.map(loc => 
       locationTimes[loc] ? `${loc}: ${locationTimes[loc].displayTime}` : `${loc}: Sin datos`
     ));
+    console.log("🔧 locationTimes disponibles:", Object.keys(locationTimes));
+    console.log("🔧 orderedLocations filtradas (solo con tiempo):", orderedLocations.filter(loc => locationTimes[loc]));
     setStopTimes(ensureValidStopTimes(newStopTimes));
   };
 
