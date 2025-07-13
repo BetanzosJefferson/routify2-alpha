@@ -152,6 +152,15 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
       // Filtro por fecha
       if (filters.date) {
         // Usar tripDepartureDate para filtrar por fecha del segmento específico
+        console.log(`[FILTRO FECHA DEBUG] Evaluando condiciones para paquete #${pkg.id}:`, {
+          'pkg.tripDepartureDate': pkg.tripDepartureDate,
+          'typeof pkg.tripDepartureDate': typeof pkg.tripDepartureDate,
+          'pkg.tripDepartureDate evaluado': !!pkg.tripDepartureDate,
+          'pkg.shippingDate': pkg.shippingDate,
+          'pkg.shippingDate evaluado': !!pkg.shippingDate,
+          'pkg.createdAt': pkg.createdAt,
+        });
+        
         const packageDate = pkg.tripDepartureDate 
           ? formatDateToLocal(new Date(pkg.tripDepartureDate))
           : (pkg.shippingDate 
