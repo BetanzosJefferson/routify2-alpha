@@ -682,7 +682,6 @@ export function ReservationList() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asientos</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pago</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   {user?.role !== "taquilla" && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creado por</th>
                   )}
@@ -737,6 +736,21 @@ export function ReservationList() {
                       <div className="text-sm font-medium text-gray-900">
                         {reservation.passengers[0]?.firstName} {reservation.passengers[0]?.lastName}
                         {reservation.passengers.length > 1 && ` +${reservation.passengers.length - 1}`}
+                        {/* Estado badge al lado del nombre */}
+                        {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') && (
+                          <Badge
+                            variant="outline"
+                            className={`ml-2 ${
+                              reservation.status === 'canceledAndRefund'
+                                ? "bg-blue-100 text-blue-800 border-blue-200"
+                                : "bg-red-100 text-red-800 border-red-200"
+                            }`}
+                          >
+                            {reservation.status === 'canceledAndRefund' 
+                              ? 'CANCELADA Y REEMBOLSADA' 
+                              : 'CANCELADA'}
+                          </Badge>
+                        )}
                       </div>
                       <div className="text-sm text-gray-500">{reservation.email}</div>
                       <div className="text-sm text-gray-500">Tel: {reservation.phone}</div>
@@ -837,23 +851,6 @@ export function ReservationList() {
                         )}
                       </div>
                     </td>
-                    {/* Mostrar estado de cancelación si aplica */}
-                    {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge
-                          variant="outline"
-                          className={
-                            reservation.status === 'canceledAndRefund'
-                              ? "bg-blue-100 text-blue-800 border-blue-200"
-                              : "bg-red-100 text-red-800 border-red-200"
-                          }
-                        >
-                          {reservation.status === 'canceledAndRefund' 
-                            ? 'CANCELADA Y REEMBOLSADA' 
-                            : 'CANCELADA'}
-                        </Badge>
-                      </td>
-                    )}
                     {user?.role !== "taquilla" && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         {/* Mostrar información de la empresa de origen si es una transferencia */}

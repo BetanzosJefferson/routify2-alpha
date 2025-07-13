@@ -119,6 +119,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - COMPLETED: Reservation list interface improved by removing Estado column and repositioning status badges:
+  - **USER REQUEST**: Removed "Estado" column that was causing alignment issues for non-cancelled reservations
+  - **STATUS DISPLAY**: Moved cancellation status badges to display next to passenger names instead of separate column
+  - **IMPROVED LAYOUT**: Reservations now have consistent column alignment regardless of cancellation status
+  - **VISUAL ENHANCEMENT**: Status badges (CANCELADA, CANCELADA Y REEMBOLSADA) now appear inline with passenger names
+  - **CLEANER INTERFACE**: Eliminated empty Estado column cells that were disrupting table layout
+  - **SPACE OPTIMIZATION**: More efficient use of table space by integrating status into existing Pasajero column
+
+- **July 13, 2025** - COMPLETED: Cancelled reservation filter completely removed from reservation list:
+  - **SIMPLIFIED INTERFACE**: Eliminated activeTab state variable and all tab-related UI components
+  - **UNIFIED VIEW**: All reservations (active and cancelled) now display in single consolidated list
+  - **REMOVED COMPLEXITY**: Eliminated confusing tab navigation between "Actuales" and "Canceladas"
+  - **MAINTAINED FUNCTIONALITY**: Preserved all cancellation status display and payment styling
+  - **IMPROVED UX**: Users no longer need to switch tabs to view all reservation states
+  - **COMPREHENSIVE CLEANUP**: Fixed all activeTab references to use direct status checks
+
 - **July 13, 2025** - CRITICAL FIX: Trip update reservation orphaning issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: PUT /trips/:id endpoint was eliminating segments not included in segmentPrices, causing existing reservations to become orphaned
   - **PROBLEM CONFIRMED**: User theory verified - when updating trips, frontend sends only modified segments but backend replaces entire tripData array
