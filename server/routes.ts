@@ -1493,6 +1493,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const cleanedTime = timeString.replace(/\s*\+\d+d$/, '');
     return days > 0 ? `${cleanedTime} +${days}d` : cleanedTime;
   }
+
+  // Función para calcular la fecha correcta de un segmento basada en su hora de salida
+  function calculateSegmentDate(baseDate: string, departureTime: string): string {
+    if (!departureTime) {
+      return baseDate;
+    }
+    
+    // Extraer el indicador de día del departureTime
+    const dayIndicatorMatch = departureTime.match(/\+(\d+)d$/);
+    if (dayIndicatorMatch) {
+      const dayOffset = parseInt(dayIndicatorMatch[1], 10);
+      const date = new Date(baseDate);
+      date.setDate(date.getDate() + dayOffset);
+      return formatDateToLocal(date);
+    }
+    
+    // Si no hay indicador de día, verificar si es AM temprano (posible día siguiente)
+    const [time, period] = departureTime.split(' ');
+    if (period === 'AM') {
+      const [hour] = time.split(':');
+      const hourNum = parseInt(hour, 10);
+      const hour24 = hourNum === 12 ? 0 : hourNum; // 12 AM = 0 en formato 24h
+      
+      // Si es entre 00:00 AM y 6:59 AM, asumir que es del día siguiente
+      if (hour24 >= 0 && hour24 <= 6) {
+        const date = new Date(baseDate);
+        date.setDate(date.getDate() + 1);
+        return formatDateToLocal(date);
+      }
+    }
+    
+    // Para horarios diurnos, mantener la fecha base
+    return baseDate;
+  }
   
   // Helper function to generate all possible segments between stops
   function generateAllPossibleSegments(route: RouteWithSegments) {
@@ -2194,18 +2228,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // PRESERVAR el tripId existente y actualizar solo campos modificados
+          const calculatedDepartureDate = calculateSegmentDate(
+            startDate || existingTrip.departureDate || getCurrentLocalDate(),
+            finalDepartureTime
+          );
+          
           newTripData.push({
             price: frontendUpdate.price !== undefined ? frontendUpdate.price : existingTrip.price,
             origin: existingTrip.origin,
             destination: existingTrip.destination,
             tripId: existingTrip.tripId, // PRESERVAR tripId existente
             isMainTrip: existingTrip.isMainTrip,
-            departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
+            departureDate: calculatedDepartureDate,
             departureTime: finalDepartureTime,
             arrivalTime: finalArrivalTime,
             availableSeats: calculatedAvailableSeats,
             capacity: capacity !== undefined ? capacity : existingTrip.capacity
           });
+          
+          console.log(`[PUT /trips/${id}] Fecha calculada para ${segmentKey}: ${calculatedDepartureDate} (basada en ${finalDepartureTime})`);
         } else {
           // Este segmento NO se está actualizando, preservar completamente
           console.log(`[PUT /trips/${id}] PRESERVANDO segmento: ${segmentKey} (tripId: ${existingTrip.tripId})`);
@@ -2223,18 +2264,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey} (preservado): ${existingTrip.availableSeats} asientos (NO se cambió capacidad - trip: ${currentTrip.capacity}, recibido: ${capacity})`);
           }
           
+          const calculatedDepartureDate = calculateSegmentDate(
+            startDate || existingTrip.departureDate || getCurrentLocalDate(),
+            existingTrip.departureTime
+          );
+          
           newTripData.push({
             price: existingTrip.price,
             origin: existingTrip.origin,
             destination: existingTrip.destination,
             tripId: existingTrip.tripId, // PRESERVAR tripId existente
             isMainTrip: existingTrip.isMainTrip,
-            departureDate: startDate || existingTrip.departureDate || getCurrentLocalDate(),
+            departureDate: calculatedDepartureDate,
             departureTime: existingTrip.departureTime,
             arrivalTime: existingTrip.arrivalTime,
             availableSeats: calculatedAvailableSeats,
             capacity: capacity !== undefined ? capacity : existingTrip.capacity
           });
+          
+          console.log(`[PUT /trips/${id}] Fecha calculada para ${segmentKey} (preservado): ${calculatedDepartureDate} (basada en ${existingTrip.departureTime})`);
         }
       });
       

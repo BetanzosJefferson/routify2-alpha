@@ -119,6 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - CRITICAL FIX: Trip departureDate calculation for midnight-crossing segments completely implemented:
+  - **ROOT CAUSE IDENTIFIED**: All segments were using same `startDate` regardless of crossing midnight, causing incorrect `departureDate` in database
+  - **CALCULATESEQMENTDATE FUNCTION**: Created comprehensive function to calculate correct date for each segment based on departure time
+  - **AUTOMATIC DETECTION**: Detects AM times between 00:00-06:59 as next day, applies +1 day offset automatically
+  - **DAY INDICATOR SUPPORT**: Processes existing day indicators (+1d, +2d) from trip data for multi-day journeys
+  - **BACKEND INTEGRATION**: Integrated `calculateSegmentDate` into PUT /trips/:id endpoint for trip updates
+  - **INTERFACE ENHANCEMENT**: Added visual day indicators in orange text for next-day times in edit trip form
+  - **FRONTEND HELPERS**: Added `extractDayIndicator` and `processTimeWithDayIndicator` functions for UI display
+  - **TECHNICAL SOLUTION**: Replaced hardcoded `startDate` with calculated dates based on segment departure times
+  - **EXPECTED BEHAVIOR**: Segments with 01:48 AM, 05:33 AM will have departureDate of next day (2025-07-14)
+  - **PRODUCTION READY**: Trip editing now correctly calculates and saves departureDate for each segment individually
+
 - **July 13, 2025** - CRITICAL FIX: Trip editing template dependency issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: EditTripForm was incorrectly reconstructing trip data from templates instead of using database values
   - **TEMPLATE DEPENDENCY ELIMINATED**: Removed ALL template dependencies from trip editing process
