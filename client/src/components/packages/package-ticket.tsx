@@ -217,14 +217,6 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
     }
     
     // Hora de envío (usando la hora del segmento específico del viaje)
-    console.log(`[TICKET PDF DEBUG] Paquete #${packageData.id} - Propiedades de hora disponibles:`, {
-      'tripDepartureTime': packageData.tripDepartureTime,
-      'departureTime': packageData.departureTime,
-      'tripArrivalTime': packageData.tripArrivalTime,
-      'createdAt': packageData.createdAt,
-      'todasLasPropiedades': Object.keys(packageData).filter(key => key.toLowerCase().includes('time') || key.toLowerCase().includes('hora'))
-    });
-    
     if (packageData.tripDepartureTime) {
       y += 4;
       doc.text(`Hora de envío: ${formatTime(packageData.tripDepartureTime)}`, 5, y);
@@ -278,13 +270,13 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
   }
   
   y += 4;
-  doc.text(
-    packageData.isPaid 
-      ? `Pagado (${packageData.paymentMethod || 'efectivo'})` 
-      : 'Pendiente de pago', 
-    5, 
-    y
-  );
+  if (packageData.isPaid) {
+    doc.text(`Pagado`, 5, y);
+    y += 4;
+    doc.text(`Método: ${packageData.paymentMethod || 'efectivo'}`, 5, y);
+  } else {
+    doc.text('Pendiente de pago', 5, y);
+  }
   
   // Código QR
   if (qrCodeDataUrl) {
@@ -744,13 +736,13 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
   }
   
   y += 4;
-  doc.text(
-    packageData.isPaid 
-      ? `Pagado (${packageData.paymentMethod || 'efectivo'})` 
-      : 'Pendiente de pago', 
-    5, 
-    y
-  );
+  if (packageData.isPaid) {
+    doc.text(`Pagado`, 5, y);
+    y += 4;
+    doc.text(`Método: ${packageData.paymentMethod || 'efectivo'}`, 5, y);
+  } else {
+    doc.text('Pendiente de pago', 5, y);
+  }
   
   // Código QR
   if (qrCodeDataUrl) {

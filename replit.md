@@ -119,6 +119,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - COMPLETED: Package PDF ticket payment method display implemented:
+  - **PAYMENT METHOD DISPLAY**: PDF tickets now show payment method separately from payment status
+  - **IMPROVED LAYOUT**: When paid, shows "Pagado" on one line and "Método: efectivo/tarjeta" on the next line
+  - **CONSISTENT FORMATTING**: Applied to both 58mm and 60mm thermal ticket generation functions
+  - **ENHANCED DETAILS**: Package detalles section now includes complete payment information for better record keeping
+  - **USER EXPERIENCE**: Thermal tickets now provide complete payment visibility for both paid and pending packages
+
 - **July 13, 2025** - COMPLETED: Package system date consistency completely resolved:
   - **DATE DISPLAY FIXED**: Package cards now correctly show segment date (14/07/2025) using `pkg.tripDepartureDate` instead of non-existent `pkg.tripDate`
   - **FILTERING CORRECTED**: Package date filtering now uses `tripDepartureDate` instead of `createdAt` for accurate segment-based filtering
