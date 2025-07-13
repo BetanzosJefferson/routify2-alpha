@@ -2125,7 +2125,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crear un mapa de horarios desde stopTimes
       const timeMap: Record<string, { departureTime: string; arrivalTime: string }> = {};
       
-      if (stopTimes && Array.isArray(stopTimes)) {
+      // Detectar si se están enviando cambios de horario reales
+      const hasTimeChanges = segmentPrices && segmentPrices.some((segment: any) => 
+        segment.departureTime !== undefined || segment.arrivalTime !== undefined
+      );
+      
+      console.log(`[PUT /trips/${id}] hasTimeChanges: ${hasTimeChanges}`);
+      
+      if (stopTimes && Array.isArray(stopTimes) && hasTimeChanges) {
+        console.log(`[PUT /trips/${id}] Construyendo timeMap desde stopTimes porque hay cambios de horario`);
         stopTimes.forEach((stop: any, index: number) => {
           const time = `${stop.hour}:${stop.minute} ${stop.ampm}`;
           timeMap[stop.location] = {
@@ -2133,6 +2141,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             arrivalTime: index < stopTimes.length - 1 ? stopTimes[index + 1] ? `${stopTimes[index + 1].hour}:${stopTimes[index + 1].minute} ${stopTimes[index + 1].ampm}` : time : time
           };
         });
+      } else if (stopTimes && Array.isArray(stopTimes)) {
+        console.log(`[PUT /trips/${id}] Ignorando stopTimes porque no hay cambios explícitos de horario`);
       }
       
       // PRESERVAR los tripId existentes del tripData original
@@ -2176,15 +2186,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Solo actualizar horarios si vienen explícitamente en el frontendUpdate
           if (frontendUpdate.departureTime !== undefined) {
             finalDepartureTime = frontendUpdate.departureTime;
-          } else if (timeMap[existingTrip.origin]) {
-            // Solo usar timeMap si no hay horario específico en frontendUpdate
+          } else if (hasTimeChanges && timeMap[existingTrip.origin]) {
+            // Solo usar timeMap si hay cambios de horario reales
             finalDepartureTime = timeMap[existingTrip.origin].departureTime;
           }
           
           if (frontendUpdate.arrivalTime !== undefined) {
             finalArrivalTime = frontendUpdate.arrivalTime;
-          } else if (timeMap[existingTrip.destination]) {
-            // Solo usar timeMap si no hay horario específico en frontendUpdate
+          } else if (hasTimeChanges && timeMap[existingTrip.destination]) {
+            // Solo usar timeMap si hay cambios de horario reales
             finalArrivalTime = timeMap[existingTrip.destination].arrivalTime;
           }
           
