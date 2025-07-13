@@ -108,10 +108,20 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
   
   const [stopTimes, setStopTimes] = useState<StopTime[]>([]);
   
-  // Fetch tripData - CONSULTA SIMPLE
+  // Fetch tripData - CONSULTA SIMPLE CON LOGGING
   const tripQuery = useQuery({
     queryKey: ["/api/trips", tripId],
     enabled: !!tripId,
+    queryFn: async () => {
+      console.log(`🔄 EditTripForm: Cargando datos del viaje ${tripId}`);
+      const response = await fetch(`/api/trips/${tripId}`);
+      if (!response.ok) {
+        throw new Error("Error al cargar datos del viaje");
+      }
+      const data = await response.json();
+      console.log(`✅ EditTripForm: Datos cargados:`, data);
+      return data;
+    }
   });
 
   // Fetch templates for dropdown
@@ -238,25 +248,30 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
 
   // Cargar los datos del viaje cuando se obtienen de la API
   useEffect(() => {
-    if (tripQuery.data && !form.formState.isDirty) {
+    console.log("🔄 EditTripForm: useEffect ejecutándose");
+    console.log("🔄 tripQuery.data:", tripQuery.data);
+    console.log("🔄 templatesQuery.data:", templatesQuery.data);
+    console.log("🔄 form.formState.isDirty:", form.formState.isDirty);
+    
+    if (tripQuery.data && templatesQuery.data && !form.formState.isDirty) {
       const tripData = tripQuery.data;
-      console.log("Datos de viaje cargados para edición:", tripData);
+      console.log("✅ EditTripForm: Datos de viaje cargados para edición:", tripData);
       
       // Buscar template para esta ruta
-      const templateForRoute = templatesQuery.data?.find(
+      const templateForRoute = templatesQuery.data.find(
         (template: any) => template.routeId === tripData.routeId
       );
       
       if (templateForRoute) {
-        console.log("Template encontrado para la ruta:", templateForRoute);
+        console.log("✅ EditTripForm: Template encontrado para la ruta:", templateForRoute);
         form.setValue("templateId", templateForRoute.id);
         setSelectedTemplateId(templateForRoute.id);
         setSelectedTemplate(templateForRoute);
       } else {
-        console.warn("No se encontró template para routeId:", tripData.routeId);
+        console.warn("⚠️ EditTripForm: No se encontró template para routeId:", tripData.routeId);
         // En modo edición, usar el primer template disponible como fallback
         if (templatesQuery.data && templatesQuery.data.length > 0) {
-          console.log("Usando primer template disponible como fallback");
+          console.log("🔄 EditTripForm: Usando primer template disponible como fallback");
           form.setValue("templateId", templatesQuery.data[0].id);
           setSelectedTemplateId(templatesQuery.data[0].id);
           setSelectedTemplate(templatesQuery.data[0]);
@@ -284,32 +299,41 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       }
       
       const formattedDate = formatDateForInput(departureDate || tripData.date || tripData.departureDate);
-      console.log("🔧 Fecha formateada para input:", formattedDate);
+      console.log("✅ EditTripForm: Fecha formateada para input:", formattedDate);
       
       form.setValue("startDate", formattedDate);
       form.setValue("endDate", formattedDate);
       
       // Establecer capacidad
       form.setValue("capacity", tripData.capacity);
+      console.log("✅ EditTripForm: Capacidad establecida:", tripData.capacity);
       
       // Establecer vehículo y conductor si existen
       if (tripData.vehicleId) {
         form.setValue("vehicleId", tripData.vehicleId);
+        console.log("✅ EditTripForm: Vehículo establecido:", tripData.vehicleId);
       }
       
       if (tripData.driverId) {
         form.setValue("driverId", tripData.driverId);
+        console.log("✅ EditTripForm: Conductor establecido:", tripData.driverId);
       }
       
       // Establecer visibilidad y estado del viaje
       if (tripData.visibility) {
         form.setValue("visibility", tripData.visibility);
+        console.log("✅ EditTripForm: Visibilidad establecida:", tripData.visibility);
       } else {
         // Valor por defecto: publicado
         form.setValue("visibility", TripVisibility.PUBLISHED);
+        console.log("✅ EditTripForm: Visibilidad por defecto: PUBLISHED");
       }
+      
+      console.log("✅ EditTripForm: Todos los datos del formulario han sido cargados");
+    } else {
+      console.log("⚠️ EditTripForm: Esperando datos - tripQuery.data:", !!tripQuery.data, "templatesQuery.data:", !!templatesQuery.data, "isDirty:", form.formState.isDirty);
     }
-  }, [tripQuery.data, templatesQuery.data]);
+  }, [tripQuery.data, templatesQuery.data, form.formState.isDirty]);
 
   // Cargar precios de segmentos y tiempos de parada una vez que la ruta está cargada
   useEffect(() => {
