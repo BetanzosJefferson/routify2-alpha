@@ -205,36 +205,8 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     mode: "onChange",
   });
 
-  // Update segment prices when template route changes
-  useEffect(() => {
-    if (templateRouteQuery.data) {
-      const route = templateRouteQuery.data;
-      
-      // Verificar que route.segments existe antes de usar filter
-      if (route.segments && Array.isArray(route.segments)) {
-        const segments = route.segments.filter(
-          segment => segment && segment.origin && segment.destination && 
-          !isSameCity(segment.origin, segment.destination)
-        );
-        
-        // Mantener los precios existentes si ya están cargados
-        if (segmentPrices.length > 0) {
-          console.log("Manteniendo precios de segmentos existentes:", segmentPrices);
-        } else {
-          const segmentPricesWithDefaultValues = segments.map(segment => ({
-            origin: segment.origin,
-            destination: segment.destination,
-            price: 0
-          }));
-          
-          setSegmentPrices(segmentPricesWithDefaultValues);
-          form.setValue("segmentPrices", segmentPricesWithDefaultValues);
-        }
-      } else {
-        console.warn("No se encontraron segmentos en la ruta seleccionada o la estructura es incorrecta", route);
-      }
-    }
-  }, [templateRouteQuery.data, form]);
+  // ELIMINADO: Ya no dependemos de plantillas para cargar datos de edición
+  // Los datos se cargan directamente desde la base de datos
 
   // Handle template selection
   const handleTemplateChange = (templateId: string) => {
@@ -246,38 +218,22 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     form.setValue("templateId", id);
   };
 
-  // Cargar los datos del viaje cuando se obtienen de la API
+  // Cargar los datos del viaje DIRECTAMENTE desde la base de datos SIN plantillas
   useEffect(() => {
-    console.log("🔄 EditTripForm: useEffect ejecutándose");
+    console.log("🔄 EditTripForm: Cargando datos directamente desde base de datos");
     console.log("🔄 tripQuery.data:", tripQuery.data);
-    console.log("🔄 templatesQuery.data:", templatesQuery.data);
     console.log("🔄 form.formState.isDirty:", form.formState.isDirty);
     
-    if (tripQuery.data && templatesQuery.data && !form.formState.isDirty) {
+    if (tripQuery.data && !form.formState.isDirty) {
       const tripData = tripQuery.data;
-      console.log("✅ EditTripForm: Datos de viaje cargados para edición:", tripData);
+      console.log("✅ EditTripForm: Datos de viaje cargados DIRECTAMENTE de BD:", tripData);
       
-      // Buscar template para esta ruta
-      const templateForRoute = templatesQuery.data.find(
-        (template: any) => template.routeId === tripData.routeId
-      );
-      
-      if (templateForRoute) {
-        console.log("✅ EditTripForm: Template encontrado para la ruta:", templateForRoute);
-        form.setValue("templateId", templateForRoute.id);
-        setSelectedTemplateId(templateForRoute.id);
-        setSelectedTemplate(templateForRoute);
-      } else {
-        console.warn("⚠️ EditTripForm: No se encontró template para routeId:", tripData.routeId);
-        // En modo edición, usar el primer template disponible como fallback
-        if (templatesQuery.data && templatesQuery.data.length > 0) {
-          console.log("🔄 EditTripForm: Usando primer template disponible como fallback");
-          form.setValue("templateId", templatesQuery.data[0].id);
-          setSelectedTemplateId(templatesQuery.data[0].id);
-          setSelectedTemplate(templatesQuery.data[0]);
-        } else {
-          form.setValue("templateId", 0);
-        }
+      // ELIMINADO: Lógica de plantillas - usamos datos directos de BD
+      // NO buscamos template, usamos el templateId guardado tal como está
+      if (tripData.templateId) {
+        form.setValue("templateId", tripData.templateId);
+        setSelectedTemplateId(tripData.templateId);
+        console.log("✅ EditTripForm: TemplateId preservado desde BD:", tripData.templateId);
       }
       
       // Convertir la fecha a formato YYYY-MM-DD para el input type="date"
@@ -329,21 +285,21 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         console.log("✅ EditTripForm: Visibilidad por defecto: PUBLISHED");
       }
       
-      console.log("✅ EditTripForm: Todos los datos del formulario han sido cargados");
+      console.log("✅ EditTripForm: Todos los datos del formulario han sido cargados DIRECTAMENTE de BD");
     } else {
-      console.log("⚠️ EditTripForm: Esperando datos - tripQuery.data:", !!tripQuery.data, "templatesQuery.data:", !!templatesQuery.data, "isDirty:", form.formState.isDirty);
+      console.log("⚠️ EditTripForm: Esperando datos - tripQuery.data:", !!tripQuery.data, "isDirty:", form.formState.isDirty);
     }
-  }, [tripQuery.data, templatesQuery.data, form.formState.isDirty]);
+  }, [tripQuery.data, form.formState.isDirty]);
 
-  // Cargar precios de segmentos y tiempos de parada una vez que la ruta está cargada
+  // Cargar precios de segmentos y tiempos DIRECTAMENTE desde la base de datos
   useEffect(() => {
-    if (tripQuery.data && templateRouteQuery.data && segmentPrices.length === 0) {
+    if (tripQuery.data && segmentPrices.length === 0) {
       const tripData = tripQuery.data;
-      console.log("🔧 Procesando tripData para edición:", tripData);
+      console.log("🔧 Procesando tripData para edición DIRECTAMENTE desde BD:", tripData);
       
-      // Extraer los precios de segmentos desde tripData JSON
+      // Extraer los precios de segmentos desde tripData JSON (datos guardados en BD)
       if (tripData.tripData && Array.isArray(tripData.tripData) && tripData.tripData.length > 0) {
-        console.log("🔧 Extrayendo precios desde tripData JSON:", tripData.tripData);
+        console.log("🔧 Extrayendo precios desde tripData JSON guardado en BD:", tripData.tripData);
         
         // Convertir tripData a segmentPrices formato esperado por el formulario
         const extractedSegmentPrices = tripData.tripData.map((segment: any) => ({
@@ -354,7 +310,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
           arrivalTime: segment.arrivalTime
         }));
         
-        console.log("🔧 Precios de segmentos extraídos:", extractedSegmentPrices);
+        console.log("🔧 Precios de segmentos extraídos DIRECTAMENTE de BD:", extractedSegmentPrices);
         
         // Actualizar los precios en el estado local
         setSegmentPrices(extractedSegmentPrices);
@@ -362,12 +318,12 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         // Asignar valores al formulario
         form.setValue("segmentPrices", extractedSegmentPrices);
         
-        // Reconstruir los tiempos de parada a partir de los segmentos
-        reconstructStopTimesFromTripDataSegments(extractedSegmentPrices);
+        // Reconstruir los tiempos de parada SIN USAR PLANTILLAS
+        reconstructStopTimesFromDatabaseSegments(extractedSegmentPrices);
       }
       // Fallback: usar segmentPrices si existe (compatibilidad con versiones anteriores)
       else if (tripData.segmentPrices && Array.isArray(tripData.segmentPrices) && tripData.segmentPrices.length > 0) {
-        console.log("🔧 Usando segmentPrices legacy:", tripData.segmentPrices);
+        console.log("🔧 Usando segmentPrices legacy desde BD:", tripData.segmentPrices);
         
         // Actualizar los precios en el estado local
         setSegmentPrices(tripData.segmentPrices);
@@ -379,29 +335,35 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         if (tripData.stopTimes && Array.isArray(tripData.stopTimes)) {
           setStopTimes(ensureValidStopTimes(tripData.stopTimes));
         } else {
-          // Intentar reconstruir los tiempos de parada a partir de los tiempos de segmentos
-          reconstructStopTimesFromSegments(tripData.segmentPrices);
+          // Intentar reconstruir los tiempos de parada SIN USAR PLANTILLAS
+          reconstructStopTimesFromDatabaseSegments(tripData.segmentPrices);
         }
       }
     }
-  }, [tripQuery.data, templateRouteQuery.data, segmentPrices.length]);
+  }, [tripQuery.data, segmentPrices.length]);
 
-  // Función para reconstruir los tiempos de parada a partir de tripData segments
-  const reconstructStopTimesFromTripDataSegments = (segmentPrices: SegmentTimePrice[]) => {
-    if (!templateRouteQuery.data || !segmentPrices || segmentPrices.length === 0) return;
+  // Función para reconstruir los tiempos de parada DIRECTAMENTE desde datos de BD
+  const reconstructStopTimesFromDatabaseSegments = (segmentPrices: SegmentTimePrice[]) => {
+    if (!segmentPrices || segmentPrices.length === 0) return;
     
-    // Obtener todas las ubicaciones de la ruta (origen, paradas, destino)
-    const allLocations = [
-      templateRouteQuery.data.origin,
-      ...(templateRouteQuery.data.stops || []),
-      templateRouteQuery.data.destination
-    ];
+    console.log("🔧 Reconstruyendo tiempos DIRECTAMENTE desde BD, sin plantillas");
     
-    // Crear un mapa para almacenar los tiempos por ubicación
+    // Extraer todas las ubicaciones únicas de los segmentos guardados en BD
+    const allLocations: string[] = [];
     const locationTimes: Record<string, { hour: string; minute: string; ampm: "AM" | "PM" }> = {};
     
-    // Procesar cada segmento para extraer tiempos
+    // Procesar cada segmento para extraer ubicaciones y tiempos
     segmentPrices.forEach(segment => {
+      // Agregar origen si no existe
+      if (!allLocations.includes(segment.origin)) {
+        allLocations.push(segment.origin);
+      }
+      
+      // Agregar destino si no existe
+      if (!allLocations.includes(segment.destination)) {
+        allLocations.push(segment.destination);
+      }
+      
       // Si tiene tiempo de salida
       if (segment.departureTime) {
         const [time, period] = segment.departureTime.split(' ');
@@ -421,7 +383,7 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       }
     });
     
-    // Crear el array de tiempos de parada
+    // Crear el array de tiempos de parada usando solo datos de BD
     const newStopTimes = allLocations.map((location, index) => {
       if (locationTimes[location]) {
         return {
@@ -439,66 +401,11 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
       }
     });
     
-    console.log("🔧 Tiempos de parada reconstruidos desde tripData:", newStopTimes);
+    console.log("🔧 Tiempos de parada reconstruidos DIRECTAMENTE desde BD:", newStopTimes);
     setStopTimes(ensureValidStopTimes(newStopTimes));
   };
 
-  // Función para reconstruir los tiempos de parada a partir de los tiempos de segmentos
-  const reconstructStopTimesFromSegments = (segmentPrices: SegmentTimePrice[]) => {
-    if (!templateRouteQuery.data || !segmentPrices || segmentPrices.length === 0) return;
-    
-    // Obtener todas las ubicaciones de la ruta (origen, paradas, destino)
-    const allLocations = [
-      templateRouteQuery.data.origin,
-      ...(templateRouteQuery.data.stops || []),
-      templateRouteQuery.data.destination
-    ];
-    
-    // Crear un mapa para almacenar los tiempos por ubicación
-    const locationTimes: Record<string, { hour: string; minute: string; ampm: "AM" | "PM" }> = {};
-    
-    // Procesar cada segmento para extraer tiempos
-    segmentPrices.forEach(segment => {
-      // Si tiene tiempo de salida
-      if (segment.departureTime) {
-        const [time, period] = segment.departureTime.split(' ');
-        const [hour, minute] = time.split(':');
-        const ampm = period as "AM" | "PM";
-        
-        locationTimes[segment.origin] = { hour, minute, ampm };
-      }
-      
-      // Si tiene tiempo de llegada
-      if (segment.arrivalTime) {
-        const [time, period] = segment.arrivalTime.split(' ');
-        const [hour, minute] = time.split(':');
-        const ampm = period as "AM" | "PM";
-        
-        locationTimes[segment.destination] = { hour, minute, ampm };
-      }
-    });
-    
-    // Crear el array de tiempos de parada
-    const newStopTimes = allLocations.map((location, index) => {
-      if (locationTimes[location]) {
-        return {
-          ...locationTimes[location],
-          location
-        };
-      } else {
-        // Si no hay información para esta ubicación, usar valor predeterminado
-        return {
-          hour: "08",
-          minute: "00",
-          ampm: "AM" as "AM" | "PM",
-          location
-        };
-      }
-    });
-    
-    // Aplicar los tiempos reconstruidos
-    setStopTimes(ensureValidStopTimes(newStopTimes));
-  };
+  // ELIMINADO: Función que dependía de plantillas
 
   // Actualizar precio de uno o más segmentos
   const updateSegmentPrice = (segmentIndex: number, price: number) => {
@@ -562,23 +469,18 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     form.setValue("segmentPrices", updatedSegmentPrices);
   };
 
-  // Actualizar el tiempo de parada directamente desde el input
+  // Actualizar el tiempo de parada directamente SOLO modificando el tiempo específico
   const updateStopTime = (index: number, timeString: string) => {
-    console.log("Actualizando tiempo de parada...", index, timeString);
+    console.log("Actualizando tiempo de parada SIN recalcular automáticamente...", index, timeString);
     
     const [time, period] = timeString.split(' ');
     const [hour, minute] = time.split(':');
     const ampm = period as "AM" | "PM";
     
-    // Obtener la ubicación para este índice
+    // Obtener la ubicación para este índice usando datos de BD
     let stopLocation = "";
-    if (templateRouteQuery.data) {
-      const allLocations = [
-        templateRouteQuery.data.origin,
-        ...(templateRouteQuery.data.stops || []),
-        templateRouteQuery.data.destination
-      ];
-      stopLocation = allLocations[index] || "";
+    if (stopTimes[index]) {
+      stopLocation = stopTimes[index].location;
     }
     
     // Actualizar el array de tiempos, incluyendo la ubicación
@@ -596,47 +498,13 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     // Actualizar el estado con los valores validados
     setStopTimes(validatedStopTimes);
     
-    // Actualizar tiempos de segmentos automáticamente
-    updateSegmentTimesFromStops(validatedStopTimes);
+    // ELIMINADO: Ya no recalculamos automáticamente los tiempos de segmentos
+    // El usuario debe confirmar los cambios si quiere aplicar nuevos tiempos
+    console.log("✅ Tiempo de parada actualizado SIN recalcular segmentos");
   };
 
-  // Función para calcular los tiempos de los segmentos basados en los tiempos de las paradas
-  const updateSegmentTimesFromStops = (stopTimeArray: StopTime[]) => {
-    if (!templateRouteQuery.data) return;
-    
-    // Obtener todas las ubicaciones (origen, paradas, destino)
-    const allLocations = [
-      templateRouteQuery.data.origin,
-      ...(templateRouteQuery.data.stops || []),
-      templateRouteQuery.data.destination
-    ];
-    
-    // Para cada segmento, encontrar el tiempo de salida y llegada correspondiente
-    const updatedSegmentPrices = segmentPrices.map(segment => {
-      // Encontrar índice del origen en allLocations
-      const originIndex = allLocations.findIndex(location => location === segment.origin);
-      // Encontrar índice del destino en allLocations
-      const destinationIndex = allLocations.findIndex(location => location === segment.destination);
-      
-      if (originIndex !== -1 && destinationIndex !== -1 && 
-          stopTimeArray[originIndex] && stopTimeArray[destinationIndex]) {
-        // Formatear tiempos
-        const departureTime = `${stopTimeArray[originIndex]?.hour}:${stopTimeArray[originIndex]?.minute} ${stopTimeArray[originIndex]?.ampm}`;
-        const arrivalTime = `${stopTimeArray[destinationIndex]?.hour}:${stopTimeArray[destinationIndex]?.minute} ${stopTimeArray[destinationIndex]?.ampm}`;
-        
-        return {
-          ...segment,
-          departureTime,
-          arrivalTime
-        };
-      }
-      return segment;
-    });
-    
-    // Actualizar el estado y el formulario
-    setSegmentPrices(updatedSegmentPrices);
-    form.setValue("segmentPrices", updatedSegmentPrices);
-  };
+  // ELIMINADO: Función que recalculaba automáticamente los tiempos de segmentos
+  // Ahora los tiempos se preservan tal como están en la base de datos
 
   // Importar useLocation para redirección en React
   const [, navigate] = useLocation();
@@ -714,16 +582,8 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
     console.log("🔄 StopTimes disponibles:", stopTimes);
     console.log("🔄 SegmentPrices disponibles:", segmentPrices);
     
-    // Validar que los campos requeridos estén presentes
-    if (!data.templateId || data.templateId === 0) {
-      console.error("❌ Error: templateId no válido:", data.templateId);
-      toast({
-        variant: "destructive",
-        title: "Error de validación",
-        description: "La plantilla no está seleccionada correctamente."
-      });
-      return;
-    }
+    // ELIMINADO: Validación de plantilla - no es crítica para edición
+    // En modo edición, preservamos el templateId existente de la BD
     
     if (!data.startDate || !data.endDate) {
       console.error("❌ Error: fechas no válidas:", { startDate: data.startDate, endDate: data.endDate });
@@ -764,38 +624,13 @@ export function EditTripForm({ tripId }: EditTripFormProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Sección básica del formulario */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Selector de plantilla (deshabilitado en edición) */}
-            <FormField
-              control={form.control}
-              name="templateId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Plantilla</FormLabel>
-                  <Select
-                    disabled={true} // Siempre deshabilitado en modo edición
-                    value={String(field.value) || ""}
-                    onValueChange={() => {}} // No se puede cambiar
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione una plantilla" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {templatesQuery.data?.map((template: any) => (
-                        <SelectItem key={template.id} value={String(template.id)}>
-                          {template.name} ({template.route?.origin} → {template.route?.destination})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    La plantilla no se puede cambiar al editar un viaje.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* ELIMINADO: Selector de plantilla - no es necesario en edición */}
+            <div className="col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <strong>Modo Edición:</strong> Los datos se cargan directamente desde la base de datos, 
+                preservando horarios y precios personalizados sin recálculos automáticos.
+              </p>
+            </div>
             
             {/* Capacidad del vehículo */}
             <FormField
