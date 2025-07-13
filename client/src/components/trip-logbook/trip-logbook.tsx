@@ -106,12 +106,14 @@ export function TripLogbook() {
       const tripDetails = pkg.tripDetails as any;
       if (!tripDetails) return;
 
-      // Extraer recordId del viaje padre (ejemplo: "1223_0" -> "1223")
-      let recordId = tripDetails.recordId;
+      // Extraer recordId del viaje padre del tripId (ejemplo: "1223_98_98" -> "1223")
+      let recordId = tripDetails.recordId || tripDetails.tripId;
       if (typeof recordId === 'string' && recordId.includes('_')) {
         recordId = recordId.split('_')[0];
       }
       recordId = parseInt(recordId);
+      
+      console.log(`[Bitácora DEBUG] Procesando paquete ${pkg.id}: tripId=${tripDetails.tripId}, recordId extraído=${recordId}`);
 
       const tripKey = `${recordId}`;
 
