@@ -2112,9 +2112,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Procesar la nueva estructura de datos JSON
       const { routeId, startDate, endDate, capacity, segmentPrices, stopTimes, vehicleId, driverId, visibility } = req.body;
       
-      console.log(`[PUT /trips/${id}] Procesando actualización con nueva estructura JSON`);
+      console.log(`[PUT /trips/${id}] ========== DIAGNÓSTICO DE CAPACIDAD Y ASIENTOS ==========`);
       console.log(`[PUT /trips/${id}] segmentPrices recibidos:`, segmentPrices ? segmentPrices.length : 0);
       console.log(`[PUT /trips/${id}] stopTimes recibidos:`, stopTimes ? stopTimes.length : 0);
+      console.log(`[PUT /trips/${id}] capacity recibida del frontend:`, capacity);
+      console.log(`[PUT /trips/${id}] capacity actual del viaje:`, currentTrip.capacity);
+      console.log(`[PUT /trips/${id}] Primer segmento actual:`, currentTrip.tripData?.[0]);
+      console.log(`[PUT /trips/${id}] ===============================================================`);
       
       // Obtener información de la ruta para generar segmentos completos
       const route = await storage.getRoute(routeId || currentTrip.routeId);
@@ -2176,14 +2180,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[PUT /trips/${id}] Horarios para ${segmentKey}: departure=${finalDepartureTime} (original: ${existingTrip.departureTime}), arrival=${finalArrivalTime} (original: ${existingTrip.arrivalTime})`);
           
-          // Calcular asientos disponibles correctamente
+          // PRESERVAR asientos existentes - NO recalcular automáticamente
           let calculatedAvailableSeats = existingTrip.availableSeats;
           
-          // Solo recalcular si se cambió la capacidad
+          // SOLO recalcular si la capacidad realmente cambió (no solo fue enviada)
           if (capacity !== undefined && capacity !== existingTrip.capacity) {
             const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
             calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
-            console.log(`[PUT /trips/${id}] Recalculando asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+          } else {
+            console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey}: ${existingTrip.availableSeats} asientos (capacidad sin cambios: ${existingTrip.capacity})`);
           }
           
           // PRESERVAR el tripId existente y actualizar solo campos modificados
@@ -2203,14 +2209,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Este segmento NO se está actualizando, preservar completamente
           console.log(`[PUT /trips/${id}] PRESERVANDO segmento: ${segmentKey} (tripId: ${existingTrip.tripId})`);
           
-          // Calcular asientos disponibles correctamente para segmentos preservados
+          // PRESERVAR asientos existentes - NO recalcular automáticamente
           let calculatedAvailableSeats = existingTrip.availableSeats;
           
-          // Solo recalcular si se cambió la capacidad
+          // SOLO recalcular si la capacidad realmente cambió (no solo fue enviada)
           if (capacity !== undefined && capacity !== existingTrip.capacity) {
             const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
             calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
-            console.log(`[PUT /trips/${id}] Recalculando asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+          } else {
+            console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey} (preservado): ${existingTrip.availableSeats} asientos (capacidad sin cambios: ${existingTrip.capacity})`);
           }
           
           newTripData.push({
