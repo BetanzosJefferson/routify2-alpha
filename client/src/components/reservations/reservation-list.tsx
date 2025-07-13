@@ -128,8 +128,7 @@ export function ReservationList() {
   // Modal de detalles de reservación
   const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  // Ya no necesitamos pestañas, solo mostramos las reservaciones por fecha
-  const [activeTab, setActiveTab] = useState("upcoming");
+  // Ya no usamos pestañas de canceladas - mostramos todas las reservaciones
 
   // Estados adicionales para mejorar la UX
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -171,18 +170,8 @@ export function ReservationList() {
     }
   }, [isLoading, reservationsError]);
 
-  // Filtrar reservaciones canceladas para mostrar en pestaña separada
-  const canceledReservations = reservations?.filter(
-    (reservation) => reservation.status === 'canceled' || reservation.status === 'canceledAndRefund'
-  ) || [];
-
-  // Mostrar solo las reservaciones confirmadas (no canceladas)
-  const confirmedReservations = reservations?.filter(
-    (reservation) => reservation.status === 'confirmed'
-  ) || [];
-
-  // Obtener las reservaciones según la pestaña activa
-  const activeReservations = activeTab === "canceled" ? canceledReservations : confirmedReservations;
+  // Mostrar todas las reservaciones sin filtrar por estado
+  const allReservations = reservations || [];
 
   // Function to handle sorting
   const getSortedReservations = (reservations: ReservationWithDetails[]) => {
@@ -219,7 +208,7 @@ export function ReservationList() {
   };
 
   // Filter reservations based on search term and date filter
-  const filteredReservations = getSortedReservations(activeReservations.filter((reservation) => {
+  const filteredReservations = getSortedReservations(allReservations.filter((reservation) => {
     // Aplicar filtro de búsqueda
     let matchesSearch = true;
     if (searchTerm) {
@@ -554,41 +543,11 @@ export function ReservationList() {
     <div className="py-6">
       <Card>
         <CardHeader className="pb-4 pt-4 px-4">
-          {/* Título y botones de categoría */}
+          {/* Título */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
-              {activeTab === "canceled" ? (
-                <>
-                  <XIcon className="h-5 w-5 text-red-600" />
-                  <CardTitle className="text-lg">Canceladas</CardTitle>
-                </>
-              ) : (
-                <>
-                  <CalendarIcon className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">Reservaciones</CardTitle>
-                </>
-              )}
-            </div>
-
-            {/* Botón de reservaciones canceladas */}
-            <div className="flex gap-2">
-              <Button
-                variant={activeTab === "canceled" ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  // Si ya está activo el filtro "canceled", quitarlo (volver a "upcoming")
-                  if (activeTab === "canceled") {
-                    setActiveTab("upcoming");
-                  } else {
-                    setActiveTab("canceled");
-                  }
-                }}
-                className="gap-1"
-              >
-                <XIcon className="h-4 w-4" />
-                Canceladas
-                <Badge variant="secondary" className="ml-1">{canceledReservations.length}</Badge>
-              </Button>
+              <UserIcon className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg">Reservaciones</CardTitle>
             </div>
           </div>
 
@@ -723,9 +682,7 @@ export function ReservationList() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asientos</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pago</th>
-                  {activeTab === "canceled" && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  )}
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   {user?.role !== "taquilla" && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creado por</th>
                   )}
@@ -804,7 +761,7 @@ export function ReservationList() {
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">
                           {/* Si está cancelado mostrar tratamiento especial */}
-                          {activeTab === "canceled" ? (
+                          {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') ? (
                             <>
                               {/* Si está pagado, mostrar el valor total normalmente */}
                               {reservation.paymentStatus === 'pagado' ? (
@@ -845,17 +802,10 @@ export function ReservationList() {
                         </div>
 
                         {(!reservation.advanceAmount || reservation.advanceAmount <= 0) ? (
-                          activeTab === "canceled" ? (
-                            <div className="flex text-xs">
-                              <span className="text-gray-500">Método de pago:</span>
-                              <span className="ml-1">{reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}</span>
-                            </div>
-                          ) : (
-                            <div className="flex text-xs">
-                              <span className="text-gray-500">Método de pago:</span>
-                              <span className="ml-1">{reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}</span>
-                            </div>
-                          )
+                          <div className="flex text-xs">
+                            <span className="text-gray-500">Método de pago:</span>
+                            <span className="ml-1">{reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}</span>
+                          </div>
                         ) : (
                           <>
                             <div className="text-xs mb-1 flex">
@@ -869,19 +819,12 @@ export function ReservationList() {
                             {reservation.advanceAmount < reservation.totalAmount && (
                               <div className="text-xs flex">
                                 <span className="text-gray-500">{reservation.paymentStatus === 'pagado' ? 'Pagó:' : 'Resta:'}</span>
-                                {/* Si está cancelado pero pagado, mostrar normal; si está cancelado y pendiente, tachar */}
-                                {activeTab === "canceled" ? (
-                                  reservation.paymentStatus === 'pagado' ? (
-                                    <span className="font-medium ml-1">
-                                      {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
-                                      <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
-                                    </span>
-                                  ) : (
-                                    <span className="font-medium ml-1 line-through text-gray-500">
-                                      {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
-                                      <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
-                                    </span>
-                                  )
+                                {/* Mostrar con estilo especial si está cancelado y pendiente */}
+                                {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') && reservation.paymentStatus !== 'pagado' ? (
+                                  <span className="font-medium ml-1 line-through text-gray-500">
+                                    {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
+                                    <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
+                                  </span>
                                 ) : (
                                   <span className="font-medium ml-1">
                                     {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
@@ -894,7 +837,8 @@ export function ReservationList() {
                         )}
                       </div>
                     </td>
-                    {activeTab === "canceled" && (
+                    {/* Mostrar estado de cancelación si aplica */}
+                    {(reservation.status === 'canceled' || reservation.status === 'canceledAndRefund') && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge
                           variant="outline"
@@ -1031,9 +975,7 @@ export function ReservationList() {
             </table>
           ) : (
             <div className="text-center p-8 text-gray-500">
-              {activeTab === "canceled"
-                ? "No hay reservaciones canceladas disponibles."
-                : "No hay reservaciones disponibles."}
+              No hay reservaciones disponibles.
             </div>
           )}
         </div>
@@ -1109,9 +1051,7 @@ export function ReservationList() {
             </div>
           ) : (
             <div className="text-center p-8 text-gray-500 text-sm">
-              {activeTab === "canceled"
-                ? "No hay reservaciones canceladas disponibles."
-                : "No hay reservaciones disponibles."}
+              No hay reservaciones disponibles.
             </div>
           )}
         </div>
