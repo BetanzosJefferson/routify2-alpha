@@ -365,11 +365,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                             <span className="text-muted-foreground text-lg">→</span>
                             <MapPin className="h-4 w-4 text-red-600" />
                             <span className="font-medium text-lg">{trip.destination}</span>
-                            {trip.route?.name && (
-                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                                {trip.route.name}
-                              </span>
-                            )}
+                           
                           </div>
 
                           {/* Fecha y horarios */}

@@ -667,7 +667,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                 <div>
                   <CardTitle className="text-lg">Paquete #{pkg.id}</CardTitle>
                   <CardDescription className="text-sm">
-                    {pkg.tripDate ? formatDate(new Date(pkg.tripDate)) : formatDate(new Date(pkg.createdAt))}
+                    {pkg.tripDepartureDate ? formatDate(new Date(pkg.tripDepartureDate)) : formatDate(new Date(pkg.createdAt))}
                   </CardDescription>
                 </div>
                 <div className="text-right">
