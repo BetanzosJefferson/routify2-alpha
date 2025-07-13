@@ -759,20 +759,34 @@ export function ReservationDetailsSidebar({
                   <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 text-sm mb-3">
                     <div>
                       <div className="text-xs text-gray-500">Remitente</div>
-                      <div className="font-medium flex items-center">
-                        <Phone className="h-3 w-3 mr-1 text-gray-500 flex-shrink-0" />
-                        <a href={`tel:${pkg.senderPhone}`} className="text-orange-600 hover:underline text-xs md:text-sm truncate">
-                          {pkg.senderPhone}
-                        </a>
+                      <div className="font-medium">
+                        <div className="text-xs md:text-sm text-orange-600">
+                          {pkg.senderName} {pkg.senderLastName}
+                        </div>
+                        {user?.role !== 'checador' && user?.role !== 'chofer' && pkg.senderPhone && (
+                          <div className="flex items-center mt-1">
+                            <Phone className="h-3 w-3 mr-1 text-gray-500 flex-shrink-0" />
+                            <a href={`tel:${pkg.senderPhone}`} className="text-orange-600 hover:underline text-xs md:text-sm truncate">
+                              {pkg.senderPhone}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-500">Destinatario</div>
-                      <div className="font-medium flex items-center">
-                        <Phone className="h-3 w-3 mr-1 text-gray-500 flex-shrink-0" />
-                        <a href={`tel:${pkg.recipientPhone}`} className="text-orange-600 hover:underline text-xs md:text-sm truncate">
-                          {pkg.recipientPhone}
-                        </a>
+                      <div className="font-medium">
+                        <div className="text-xs md:text-sm text-orange-600">
+                          {pkg.recipientName} {pkg.recipientLastName}
+                        </div>
+                        {user?.role !== 'checador' && user?.role !== 'chofer' && pkg.recipientPhone && (
+                          <div className="flex items-center mt-1">
+                            <Phone className="h-3 w-3 mr-1 text-gray-500 flex-shrink-0" />
+                            <a href={`tel:${pkg.recipientPhone}`} className="text-orange-600 hover:underline text-xs md:text-sm truncate">
+                              {pkg.recipientPhone}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -119,6 +119,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 13, 2025** - COMPLETED: Privacy restrictions for checador and chofer roles in reservation details:
+  - **PHONE PRIVACY**: Removed phone number visibility for checador and chofer roles in reservation details sidebar
+  - **PACKAGE CONTACT INFO**: Updated package information display to show names instead of phone numbers for restricted roles
+  - **SENDER/RECIPIENT NAMES**: Fixed display of sender and recipient names in package details (previously missing)
+  - **CONDITIONAL DISPLAY**: Phone numbers only shown for admin, owner, and taquilla roles
+  - **CLEAN UI**: No permission messages shown - information simply hidden for restricted roles
+  - **COMPREHENSIVE COVERAGE**: Applied to both passenger reservations and package information sections
+
+- **July 13, 2025** - COMPLETED: Bitácora sales display format updated with conditional color coding:
+  - **FORMAT CHANGE**: Changed from "Ventas Totales" to "Ventas: $600 / $700" format showing actual vs potential sales
+  - **CONDITIONAL COLORING**: Green when fully sold (ventas reales = total por vender), gray when partially sold
+  - **VISUAL HIERARCHY**: Actual sales amount uses conditional color, total amount always green, separator gray
+  - **MODAL CONSISTENCY**: Applied same format and coloring to trip details modal
+  - **CALCULATION ACCURACY**: Ventas reales = advance payments + package payments, Total = all potential revenue
+  - **ICON COLORING**: Dollar sign icon follows same conditional coloring logic
+
 - **July 13, 2025** - COMPLETED: Bitácora section now shows all reservations and packages without payment restrictions:
   - **REMOVED RESTRICTIONS**: Eliminated payment status filtering that only showed paid/advance reservations
   - **COMPLETE VISIBILITY**: Now displays all reservations and packages associated with trips regardless of payment status
