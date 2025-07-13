@@ -450,12 +450,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         <span>Gastado:</span>
                         <span>{formatCurrency(totalExpenses)}</span>
                       </div>
-                      <div className="flex justify-between text-sm font-medium">
-                        <span>Variación:</span>
-                        <span className={budgetVariance > 0 ? 'text-red-600' : 'text-green-600'}>
-                          {budgetVariance > 0 ? '+' : ''}{budgetVariance.toFixed(1)}%
-                        </span>
-                      </div>
+                     
                     </div>
                   )}
                 </div>

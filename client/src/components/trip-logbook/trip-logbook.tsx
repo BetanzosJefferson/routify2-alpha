@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Calendar, FileText, DollarSign, Package, Users, Truck, UserCheck, Clock } from "lucide-react";
+import { Calendar, FileText, DollarSign, Package, Users, Truck, UserCheck, Clock, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,10 +159,12 @@ export function TripLogbook() {
     let totalTrips = groupedTrips.length;
     let totalReservations = 0;
     let totalPackages = 0;
+    let totalExpenses = 0;
 
     groupedTrips.forEach(trip => {
       totalReservations += trip.reservations.length;
       totalPackages += trip.packages.length;
+      totalExpenses += trip.totalExpenses;
 
       // Calcular para reservaciones
       trip.reservations.forEach((reservation: any) => {
@@ -179,7 +181,9 @@ export function TripLogbook() {
       });
     });
 
-    return { totalPorVender, ventasReales, totalTrips, totalReservations, totalPackages };
+    const netProfit = ventasReales - totalExpenses;
+
+    return { totalPorVender, ventasReales, totalTrips, totalReservations, totalPackages, totalExpenses, netProfit };
   }, [groupedTrips]);
 
   if (isLoadingReservations || isLoadingPackages || isLoadingTrips) {
@@ -234,7 +238,7 @@ export function TripLogbook() {
       </div>
 
       {/* Métricas del día */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -286,6 +290,32 @@ export function TripLogbook() {
               <div>
                 <p className="text-sm text-gray-600">Paqueterías</p>
                 <p className="text-xl font-bold text-orange-600">{dayTotals.totalPackages}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="text-sm text-gray-600">Gastos Totales</p>
+                <p className="text-xl font-bold text-red-600">{formatCurrency(dayTotals.totalExpenses)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className={`h-5 w-5 ${dayTotals.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+              <div>
+                <p className="text-sm text-gray-600">Ganancia Neta</p>
+                <p className={`text-xl font-bold ${dayTotals.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(dayTotals.netProfit)}
+                </p>
               </div>
             </div>
           </CardContent>
