@@ -1062,7 +1062,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (trip.tripData && Array.isArray(trip.tripData)) {
         console.log(`[GET /trips/${id}] Aplicando calculateSegmentDate a ${trip.tripData.length} segmentos`);
         
-        const baseDate = new Date(trip.departureDate || getCurrentLocalDate());
+        // Usar la fecha del primer segmento si trip.departureDate es null
+        const tripStartDate = trip.departureDate || 
+                             (trip.tripData && trip.tripData.length > 0 ? trip.tripData[0].departureDate : null) || 
+                             getCurrentLocalDate();
+        const baseDate = new Date(tripStartDate);
+        console.log(`[GET /trips/${id}] Fecha base para cálculo: ${tripStartDate}`);
         
         trip.tripData = trip.tripData.map((segment, index) => {
           const originalDate = segment.departureDate;
