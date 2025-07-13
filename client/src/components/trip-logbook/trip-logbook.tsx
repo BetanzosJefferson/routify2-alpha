@@ -45,6 +45,16 @@ export function TripLogbook() {
 
   // Log para depuración de rendimiento
   console.log(`[Bitácora] Datos cargados - Reservaciones: ${reservations.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
+  
+  // Debug: mostrar información detallada de los paquetes
+  console.log(`[Bitácora DEBUG] Paquetes recibidos:`, packages.map(pkg => ({
+    id: pkg.id,
+    tripId: pkg.tripId,
+    recordId: pkg.tripDetails?.recordId,
+    shippingDate: pkg.shippingDate,
+    tripDepartureDate: pkg.tripDepartureDate,
+    createdAt: pkg.createdAt
+  })));
 
   // Mostrar todas las reservaciones asociadas a los viajes
   const validReservations = useMemo(() => {
