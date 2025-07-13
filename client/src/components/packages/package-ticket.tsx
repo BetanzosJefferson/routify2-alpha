@@ -270,6 +270,12 @@ export async function generatePackageTicketPDF(packageData: PackageData, company
   }
   
   y += 4;
+  console.log(`[TICKET 58MM DEBUG] Paquete #${packageData.id} - Estado de pago:`, {
+    'isPaid': packageData.isPaid,
+    'paymentMethod': packageData.paymentMethod,
+    'todasLasPropiedadesPago': Object.keys(packageData).filter(key => key.toLowerCase().includes('pay') || key.toLowerCase().includes('pago'))
+  });
+  
   if (packageData.isPaid) {
     doc.text(`Pagado`, 5, y);
     y += 4;
