@@ -50,6 +50,7 @@ export function TripLogbook() {
   console.log(`[Bitácora DEBUG] Paquetes recibidos:`, packages.map(pkg => ({
     id: pkg.id,
     tripId: pkg.tripId,
+    tripDetails: pkg.tripDetails,
     recordId: pkg.tripDetails?.recordId,
     shippingDate: pkg.shippingDate,
     tripDepartureDate: pkg.tripDepartureDate,
