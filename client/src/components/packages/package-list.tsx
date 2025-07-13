@@ -155,6 +155,16 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
         const packageDate = pkg.tripDepartureDate 
           ? formatDateToLocal(new Date(pkg.tripDepartureDate))
           : formatDateToLocal(new Date(pkg.createdAt));
+        
+        // Debug: Log para verificar el filtrado
+        console.log(`[FILTRO FECHA DEBUG] Paquete #${pkg.id}:`, {
+          'tripDepartureDate': pkg.tripDepartureDate,
+          'createdAt': pkg.createdAt,
+          'packageDate calculado': packageDate,
+          'filters.date': filters.date,
+          'coincide': packageDate === filters.date
+        });
+        
         if (packageDate !== filters.date) {
           return false;
         }

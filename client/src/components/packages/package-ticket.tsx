@@ -30,6 +30,7 @@ interface PackageData {
   segmentOrigin?: string;
   segmentDestination?: string;
   tripDate?: string | Date;
+  tripDepartureDate?: string | Date;
   shippingDate?: string | Date;
   departureTime?: string;
   companyId?: string;
@@ -552,6 +553,17 @@ export async function generatePackageTicket60mmPDF(packageData: PackageData, com
   doc.setFontSize(8);
   // Usar tripDepartureDate si está disponible, sino usar createdAt
   const ticketDate = packageData.tripDepartureDate || packageData.shippingDate || packageData.tripDate || packageData.createdAt;
+  
+  // Debug: Log para verificar el ticket 60mm
+  console.log(`[TICKET 60MM DEBUG] Paquete #${packageData.id}:`, {
+    'tripDepartureDate': packageData.tripDepartureDate,
+    'shippingDate': packageData.shippingDate,
+    'tripDate': packageData.tripDate,
+    'createdAt': packageData.createdAt,
+    'ticketDate usado': ticketDate,
+    'formatDate result': formatDate(new Date(ticketDate))
+  });
+  
   doc.text(formatDate(new Date(ticketDate)), 30, y, { align: "center" });
   
   // Remitente
