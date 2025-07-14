@@ -15,12 +15,17 @@ export function useCommissionTicketGenerator() {
       // Debug: Mostrar los datos de la reservación
       console.log('🔍 Datos de la reservación para ticket:', reservation);
 
+      // Obtener el nombre del pasajero desde la tabla passengers
+      const passengerName = reservation.passengers && reservation.passengers.length > 0 
+        ? `${reservation.passengers[0].firstName} ${reservation.passengers[0].lastName}`.trim()
+        : 'Pasajero';
+
       // Mapear los datos de la reservación al formato esperado por la función
       const reservationData = {
         id: reservation.id,
-        passengerName: reservation.tripDetails?.passengerName || 'Pasajero',
-        phone: reservation.tripDetails?.phone || '',
-        email: reservation.tripDetails?.email || '',
+        passengerName: passengerName,
+        phone: reservation.phone || '',
+        email: reservation.email || '',
         origin: reservation.specificOrigin || reservation.trip?.route?.origin || '',
         destination: reservation.specificDestination || reservation.trip?.route?.destination || '',
         departureDate: reservation.trip?.departureDate || '',
@@ -33,9 +38,9 @@ export function useCommissionTicketGenerator() {
         paymentMethod: reservation.paymentMethod || 'Efectivo', // Método de pago restante
         advancePaymentMethod: reservation.advancePaymentMethod || 'Efectivo', // Método de pago del anticipo
         numPassengers: reservation.tripDetails?.seats || 1,
-        passengers: [{ 
-          firstName: reservation.tripDetails?.passengerName?.split(' ')[0] || 'Pasajero', 
-          lastName: reservation.tripDetails?.passengerName?.split(' ')[1] || '' 
+        passengers: reservation.passengers || [{ 
+          firstName: passengerName.split(' ')[0] || 'Pasajero', 
+          lastName: passengerName.split(' ')[1] || '' 
         }],
         couponCode: reservation.couponCode || null,
       };

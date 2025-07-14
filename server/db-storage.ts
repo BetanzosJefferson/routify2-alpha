@@ -1116,14 +1116,24 @@ export class DatabaseStorage implements IStorage {
           vehicleBrand: schema.vehicles.brand,
           vehicleCapacity: schema.vehicles.capacity,
           
+          // Campos de pasajero
+          passengerId: schema.passengers.id,
+          passengerFirstName: schema.passengers.firstName,
+          passengerLastName: schema.passengers.lastName,
+          passengerDocumentType: schema.passengers.documentType,
+          passengerDocumentNumber: schema.passengers.documentNumber,
+          passengerAge: schema.passengers.age,
+          passengerSeat: schema.passengers.seat,
 
         })
         .from(schema.reservations)
         // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}
         // En lugar de esto, obtendremos trip data por separado
+        .leftJoin(schema.trips, sql`${schema.trips.id} = CAST(${schema.reservations.tripDetails}->'recordId' AS INTEGER)`)
         .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
-        .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
+        .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
+        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id));
       
       // Aplicar filtros
       if (companyId) {
@@ -1191,8 +1201,17 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
         
-        // Obtener pasajeros (aún requiere consulta separada pero optimizada)
-        const passengers = await this.getPassengers(result.reservationId);
+        // Construir datos de pasajeros desde el LEFT JOIN
+        const passengers = result.passengerId ? [{
+          id: result.passengerId,
+          firstName: result.passengerFirstName,
+          lastName: result.passengerLastName,
+          documentType: result.passengerDocumentType,
+          documentNumber: result.passengerDocumentNumber,
+          age: result.passengerAge,
+          seat: result.passengerSeat,
+          reservationId: result.reservationId
+        }] : [];
         
         // Construir objetos de información
         const route = result.routeId ? {
