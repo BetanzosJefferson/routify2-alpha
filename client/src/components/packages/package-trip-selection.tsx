@@ -145,51 +145,67 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
   const handleTripSelect = (trip: TripWithRouteInfo) => {
     console.log(`[PackageTripSelection] Trip selected:`, trip);
     
-    // Si el viaje tiene tripData con múltiples segmentos Y no se buscó con filtros específicos,
-    // mostrar modal de selección. Si se buscó con filtros específicos, es una combinación específica.
     const hasSpecificFilters = origin.trim() || destination.trim();
     
-    if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1 && !hasSpecificFilters) {
-      console.log(`[PackageTripSelection] Trip has ${trip.tripData.length} segments and no specific filters, showing segment selection modal`);
-      setSelectedTrip(trip);
-      setShowSegmentModal(true);
-    } else {
-      // Es un viaje simple, tiene un segmento, o es una combinación específica filtrada
-      console.log(`[PackageTripSelection] Selecting trip directly - hasSpecificFilters: ${hasSpecificFilters}, segments: ${trip.tripData?.length || 1}`);
+    // NUEVA LÓGICA: Siempre seleccionar directamente el viaje principal
+    // Solo mostrar modal en casos muy específicos donde sea realmente necesario
+    
+    if (hasSpecificFilters && trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1) {
+      // Si hay filtros específicos, encontrar el segmento que coincida
+      const matchingSegmentIndex = trip.tripData.findIndex((segment: any) => {
+        const originMatch = !origin.trim() || segment.origin.toLowerCase().includes(origin.toLowerCase());
+        const destinationMatch = !destination.trim() || segment.destination.toLowerCase().includes(destination.toLowerCase());
+        return originMatch && destinationMatch;
+      });
       
-      // Si es una búsqueda específica y tiene múltiples segmentos, necesitamos encontrar el segmento correcto
-      if (hasSpecificFilters && trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1) {
-        // Encontrar el segmento que coincida con los filtros aplicados
-        const matchingSegmentIndex = trip.tripData.findIndex((segment: any) => {
-          const originMatch = !origin.trim() || segment.origin.toLowerCase().includes(origin.toLowerCase());
-          const destinationMatch = !destination.trim() || segment.destination.toLowerCase().includes(destination.toLowerCase());
-          return originMatch && destinationMatch;
-        });
+      if (matchingSegmentIndex !== -1) {
+        console.log(`[PackageTripSelection] Found matching segment at index ${matchingSegmentIndex}`);
+        const segment = trip.tripData[matchingSegmentIndex];
+        const selectedSegment = {
+          ...trip,
+          id: `${trip.id}_${matchingSegmentIndex}`,
+          tripData: [segment],
+          origin: segment.origin,
+          destination: segment.destination,
+          departureDate: segment.departureDate,
+          departureTime: segment.departureTime,
+          arrivalTime: segment.arrivalTime,
+          availableSeats: segment.availableSeats
+        };
         
-        if (matchingSegmentIndex !== -1) {
-          console.log(`[PackageTripSelection] Found matching segment at index ${matchingSegmentIndex}`);
-          const segment = trip.tripData[matchingSegmentIndex];
-          const selectedSegment = {
-            ...trip,
-            id: `${trip.id}_${matchingSegmentIndex}`,
-            tripData: [segment],
-            origin: segment.origin,
-            destination: segment.destination,
-            departureDate: segment.departureDate,
-            departureTime: segment.departureTime,
-            arrivalTime: segment.arrivalTime,
-            availableSeats: segment.availableSeats
-          };
-          
-          console.log(`[PackageTripSelection] Segment ${matchingSegmentIndex} constructed:`, selectedSegment);
-          onTripSelect(selectedSegment);
-          return;
-        }
+        console.log(`[PackageTripSelection] Segment ${matchingSegmentIndex} constructed:`, selectedSegment);
+        onTripSelect(selectedSegment);
+        return;
       }
-      
-      // Fallback: seleccionar el viaje tal como está
-      onTripSelect(trip);
     }
+    
+    // COMPORTAMIENTO PRINCIPAL: Seleccionar directamente el viaje principal
+    // Si el viaje tiene tripData con múltiples segmentos, usar el segmento principal (isMainTrip: true)
+    if (trip.tripData && Array.isArray(trip.tripData) && trip.tripData.length > 1) {
+      const mainSegment = trip.tripData.find((segment: any) => segment.isMainTrip === true);
+      if (mainSegment) {
+        console.log(`[PackageTripSelection] Using main segment directly:`, mainSegment);
+        const selectedMainTrip = {
+          ...trip,
+          id: trip.id, // Mantener ID original del viaje principal
+          tripData: [mainSegment],
+          origin: mainSegment.origin,
+          destination: mainSegment.destination,
+          departureDate: mainSegment.departureDate,
+          departureTime: mainSegment.departureTime,
+          arrivalTime: mainSegment.arrivalTime,
+          availableSeats: mainSegment.availableSeats
+        };
+        
+        console.log(`[PackageTripSelection] Main trip selected directly:`, selectedMainTrip);
+        onTripSelect(selectedMainTrip);
+        return;
+      }
+    }
+    
+    // Fallback: seleccionar el viaje tal como está
+    console.log(`[PackageTripSelection] Selecting trip as-is (fallback):`, trip);
+    onTripSelect(trip);
   };
 
   // Manejar selección de segmento específico
