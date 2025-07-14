@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 14, 2025** - CRITICAL FIX: Package action buttons duplicate transaction prevention completely implemented:
+  - **ROOT CAUSE IDENTIFIED**: "Marcar como pagado" and "Marcar como entregado" buttons could be clicked multiple times creating duplicate transactions
+  - **IMMEDIATE PAGE RELOAD**: Implemented `window.location.reload()` after successful API call to prevent any possibility of duplicate clicks
+  - **LOADING STATE PROTECTION**: Added `isMarkingAsPaid` and `isMarkingAsDelivered` states with early return guards
+  - **VISUAL FEEDBACK**: Added animated spinners (Loader2) during processing to show user that action is in progress
+  - **COMPREHENSIVE SOLUTION**: Both payment and delivery buttons now completely prevent duplicate transactions
+  - **USER EXPERIENCE**: Page reloads immediately after successful action, showing the most current package state
+  - **TECHNICAL IMPLEMENTATION**: Replaced `await packageQuery.refetch()` with `window.location.reload()` for guaranteed state refresh
+  - **PRODUCTION READY**: Package scanning now completely safe from duplicate transaction creation
+
 - **July 14, 2025** - CRITICAL FIX: Coupon system UI display issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: Frontend was showing `totalAmount` instead of final discounted price in reservation list
   - **PRICE DISPLAY CORRECTED**: Now shows original price struck through and final price in green when coupon is applied

@@ -266,15 +266,10 @@ export default function PackageDetailPage() {
         throw new Error("Error al actualizar el estado de pago");
       }
       
-      // Recargar los datos del paquete
-      console.log("Paquete marcado como pagado, recargando datos...");
-      await packageQuery.refetch();
+      // Recargar la página inmediatamente para mostrar el estado más reciente
+      console.log("Paquete marcado como pagado, recargando página...");
+      window.location.reload();
       
-      toast({
-        title: "¡Éxito!",
-        description: "El paquete ha sido marcado como pagado",
-        variant: "default",
-      });
     } catch (error) {
       console.error("Error al marcar como pagado:", error);
       toast({
@@ -282,7 +277,6 @@ export default function PackageDetailPage() {
         description: "No se pudo marcar el paquete como pagado",
         variant: "destructive",
       });
-    } finally {
       setIsMarkingAsPaid(false);
     }
   };
@@ -319,15 +313,10 @@ export default function PackageDetailPage() {
         throw new Error("Error al actualizar el estado de entrega");
       }
       
-      // Recargar los datos del paquete
-      console.log("Paquete marcado como entregado, recargando datos...");
-      await packageQuery.refetch();
+      // Recargar la página inmediatamente para mostrar el estado más reciente
+      console.log("Paquete marcado como entregado, recargando página...");
+      window.location.reload();
       
-      toast({
-        title: "¡Éxito!",
-        description: "El paquete ha sido marcado como entregado",
-        variant: "default",
-      });
     } catch (error) {
       console.error("Error al marcar como entregado:", error);
       toast({
@@ -335,7 +324,6 @@ export default function PackageDetailPage() {
         description: "No se pudo marcar el paquete como entregado",
         variant: "destructive",
       });
-    } finally {
       setIsMarkingAsDelivered(false);
     }
   };
