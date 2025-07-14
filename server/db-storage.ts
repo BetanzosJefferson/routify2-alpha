@@ -818,34 +818,23 @@ export class DatabaseStorage implements IStorage {
         // MODO OPTIMIZADO: Retornar un solo objeto por viaje sin expansión de segmentos
         console.log(`[searchTrips] [OPTIMIZED] Modo optimizado: Procesando viaje ${trip.id} como objeto único`);
         
-        // CORRECCIÓN: Si hay filtro de fecha, usar el segmento que coincide con la fecha buscada
-        let representativeSegment = tripDataArray[0]; // Por defecto, usar el primer segmento
-        
-        if (params.date) {
-          // Buscar el segmento que coincide con la fecha buscada
-          const matchingSegment = tripDataArray.find(segment => segment.departureDate === params.date);
-          if (matchingSegment) {
-            representativeSegment = matchingSegment;
-            console.log(`[searchTrips] [OPTIMIZED] Viaje ${trip.id} - Usando segmento con fecha ${params.date} como representativo`);
-          } else {
-            console.log(`[searchTrips] [OPTIMIZED] Viaje ${trip.id} - No se encontró segmento con fecha ${params.date}, usando primer segmento`);
-          }
-        }
-        
-        if (representativeSegment) {
-          // 🔥 FECHA YA FILTRADA EN SQL - usando segmento apropiado para la fecha buscada
-          tripsWithRouteInfo.push({
+        // Usar el primer segmento como representativo del viaje completo
+        const firstSegment = tripDataArray[0];
+        if (firstSegment) {
+          // 🔥 FECHA YA FILTRADA EN SQL - no necesita filtro adicional
+          // El filtro de fecha se aplica ahora a nivel de base de datos para mejor rendimiento
+            tripsWithRouteInfo.push({
             ...trip,
             // Mantener ID original para viaje principal
             id: trip.id,
-            // Usar datos del segmento representativo (primer segmento o el que coincide con fecha)
+            // Usar datos del primer segmento como representativos
             origin: route.origin,
             destination: route.destination,
-            departureDate: representativeSegment.departureDate,
-            departureTime: representativeSegment.departureTime,
-            arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || representativeSegment.arrivalTime,
-            price: representativeSegment.price,
-            availableSeats: representativeSegment.availableSeats,
+            departureDate: firstSegment.departureDate,
+            departureTime: firstSegment.departureTime,
+            arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || firstSegment.arrivalTime,
+            price: firstSegment.price,
+            availableSeats: firstSegment.availableSeats,
             // Solo metadatos esenciales, NO incluir tripData completo ni logos
             route: {
               id: route.id,

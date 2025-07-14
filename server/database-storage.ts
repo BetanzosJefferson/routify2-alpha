@@ -444,13 +444,10 @@ export class DatabaseStorage implements IStorage {
     
     // Aplicar filtro de fecha o rango de fechas usando JSONB
     if (params.dateRange && params.dateRange.length > 0) {
-      console.log(`[searchTrips] Filtro por rango de fechas (cualquier segmento):`, params.dateRange);
+      console.log(`[searchTrips] Filtro por rango de fechas:`, params.dateRange);
       
       const dateConditions = params.dateRange.map(date => {
-        return sql`EXISTS (
-          SELECT 1 FROM jsonb_array_elements(${schema.trips.tripData}) AS segment 
-          WHERE segment->>'departureDate' = ${date}
-        )`;
+        return sql`DATE(${schema.trips.tripData}->>'departureDate') = ${date}`;
       });
       
       if (dateConditions.length === 1) {
@@ -459,12 +456,9 @@ export class DatabaseStorage implements IStorage {
         condiciones.push(or(...dateConditions));
       }
     } else if (params.date) {
-      console.log(`[searchTrips] 🔥 Aplicando filtro SQL por fecha específica (cualquier segmento): ${params.date}`);
-      // CORRECCIÓN: Buscar en CUALQUIER segmento del viaje, no solo el primer segmento
-      condiciones.push(sql`EXISTS (
-        SELECT 1 FROM jsonb_array_elements(${schema.trips.tripData}) AS segment 
-        WHERE segment->>'departureDate' = ${params.date}
-      )`);
+      console.log(`[searchTrips] 🔥 Aplicando filtro SQL por fecha específica: ${params.date}`);
+      // Aplicar filtro SQL de fecha directamente para mejor rendimiento
+      condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
     }
     
     // Aplicar filtro por conductor (driverId)
@@ -650,7 +644,7 @@ export class DatabaseStorage implements IStorage {
             },
             numStops: route.stops.length,
             companyName: companyData.companyName,
-            companyLogo: companyData.companyLogo,
+            // NO incluir companyLogo para reducir payload
             assignedVehicle: assignedVehicle ? {
               id: assignedVehicle.id,
               model: assignedVehicle.model,
