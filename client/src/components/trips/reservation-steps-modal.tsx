@@ -238,6 +238,13 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       let response;
       if (isCommissioner) {
         // El endpoint /api/reservation-requests espera passengersData en lugar de passengers
+        console.log("DEBUG: Variables de cupón antes de enviar:", {
+          couponCode: data.couponCode,
+          couponVerified,
+          couponDiscount,
+          totalPrice
+        });
+        
         const adaptedData = {
           tripDetails: data.tripDetails,
           passengersData: data.passengers,
@@ -249,7 +256,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
           advancePaymentMethod: data.advancePaymentMethod,
           paymentMethod: data.paymentMethod,
           notes: data.notes,
-          couponCode: data.couponCode,
+          couponCode: data.couponCode || null,
           discountAmount: couponVerified && couponDiscount > 0 ? couponDiscount : 0,
           originalAmount: totalPrice
         };
