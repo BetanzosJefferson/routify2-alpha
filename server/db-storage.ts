@@ -3590,10 +3590,10 @@ export class DatabaseStorage implements IStorage {
       const result = {
         id: packageData.id,
         senderName: packageData.sender_name,
-        senderLastName: packageData.sender_last_name,
+        senderLastName: packageData.sender_lastname,
         senderPhone: packageData.sender_phone,
         recipientName: packageData.recipient_name,
-        recipientLastName: packageData.recipient_last_name,
+        recipientLastName: packageData.recipient_lastname,
         recipientPhone: packageData.recipient_phone,
         packageDescription: packageData.package_description,
         weight: packageData.weight,
@@ -3604,6 +3604,17 @@ export class DatabaseStorage implements IStorage {
         companyId: packageData.company_id,
         createdAt: packageData.created_at,
         updatedAt: packageData.updated_at,
+        // Campos adicionales de paquetería
+        usesSeats: packageData.uses_seats,
+        seatsQuantity: packageData.seats_quantity,
+        paymentMethod: packageData.payment_method,
+        paidBy: packageData.paid_by,
+        createdBy: packageData.created_by,
+        deliveredAt: packageData.delivered_at,
+        deliveredBy: packageData.delivered_by,
+        // CRÍTICO: Mapear campos de estado que el frontend espera en camelCase
+        isPaid: packageData.is_paid,
+        deliveryStatus: packageData.delivery_status,
         trip: trip
       };
 
