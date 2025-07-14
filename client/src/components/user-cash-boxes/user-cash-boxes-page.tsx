@@ -58,7 +58,7 @@ interface Transaction {
 }
 
 interface UserCashBoxData {
-    userId: number;
+    userId: number | string; // Actualizado para manejar IDs únicos de cortes
     userName: string;
     userEmail: string;
     userRole: string;
@@ -72,11 +72,12 @@ interface UserCashBoxData {
     hasPendingCutoff: boolean;
     allTransactionsCutoff: boolean;
     hasCompletedCutoff: boolean; // Nueva propiedad para rastrear transacciones con corte
+    cutoffId?: number; // ID del corte para transacciones agrupadas
 }
 
 export function UserCashBoxesPage() {
     const { toast } = useToast();
-    const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set());
+    const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
     const [showAmounts, setShowAmounts] = useState(true);
     const [selectedUserFilter, setSelectedUserFilter] = useState<string>("all"); // Estado para filtro de usuario
     const [selectedCutoffFilter, setSelectedCutoffFilter] = useState<string>("all"); // Estado para filtro de corte
@@ -199,62 +200,111 @@ export function UserCashBoxesPage() {
             });
         }
 
-        // Filtrar las transacciones individuales según el estado de corte seleccionado
+        // Filtrar y agrupar las transacciones individuales según el estado de corte seleccionado
         if (selectedCutoffFilter !== "all") {
             currentFiltered = currentFiltered.map(userBox => {
-                let filteredTransactions = userBox.transactions;
-                
                 if (selectedCutoffFilter === "pending") {
                     // Solo mostrar transacciones pendientes (cutoff_id null)
-                    filteredTransactions = userBox.transactions.filter((transaction: any) => 
+                    const filteredTransactions = userBox.transactions.filter((transaction: any) => 
                         transaction.cutoff_id === null || transaction.cutoff_id === undefined
                     );
+
+                    // Recalcular totales basados en las transacciones filtradas
+                    let totalCash = 0;
+                    let totalTransfer = 0;
+                    let totalAmount = 0;
+
+                    filteredTransactions.forEach((transaction: any) => {
+                        const amount = transaction.details?.details?.monto || 0;
+                        const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+                        
+                        totalAmount += amount;
+                        
+                        if (paymentMethod === "efectivo") {
+                            totalCash += amount;
+                        } else {
+                            totalTransfer += amount;
+                        }
+                    });
+
+                    return {
+                        ...userBox,
+                        transactions: filteredTransactions,
+                        totalCash,
+                        totalTransfer,
+                        totalAmount,
+                        transactionCount: filteredTransactions.length
+                    };
                 } else if (selectedCutoffFilter === "completed") {
-                    // Solo mostrar transacciones con corte realizado (cutoff_id no null)
-                    filteredTransactions = userBox.transactions.filter((transaction: any) => 
+                    // NUEVA LÓGICA: Agrupar por valor único de cutoff_id
+                    const transactionsWithCutoff = userBox.transactions.filter((transaction: any) => 
                         transaction.cutoff_id !== null && transaction.cutoff_id !== undefined
                     );
+                    
+                    // Agrupar transacciones por cutoff_id
+                    const groupedByCutoff = transactionsWithCutoff.reduce((groups: any, transaction: any) => {
+                        const cutoffId = transaction.cutoff_id;
+                        if (!groups[cutoffId]) {
+                            groups[cutoffId] = [];
+                        }
+                        groups[cutoffId].push(transaction);
+                        return groups;
+                    }, {});
+                    
+                    // Crear múltiples entradas del usuario, una por cada cutoff_id
+                    const userBoxesForCutoffs = Object.entries(groupedByCutoff).map(([cutoffId, transactions]: [string, any]) => {
+                        let totalCash = 0;
+                        let totalTransfer = 0;
+                        let totalAmount = 0;
+
+                        transactions.forEach((transaction: any) => {
+                            const amount = transaction.details?.details?.monto || 0;
+                            const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+                            
+                            totalAmount += amount;
+                            
+                            if (paymentMethod === "efectivo") {
+                                totalCash += amount;
+                            } else {
+                                totalTransfer += amount;
+                            }
+                        });
+
+                        return {
+                            ...userBox,
+                            userId: `${userBox.userId}_cutoff_${cutoffId}`, // ID único para cada corte
+                            userName: `${userBox.userName} (Corte #${cutoffId})`, // Nombre descriptivo
+                            transactions: transactions,
+                            totalCash,
+                            totalTransfer,
+                            totalAmount,
+                            transactionCount: transactions.length,
+                            cutoffId: parseInt(cutoffId) // Agregar referencia al cutoff_id
+                        };
+                    });
+                    
+                    // Retornar array de usuarios agrupados por corte
+                    return userBoxesForCutoffs;
                 }
-
-                // Recalcular totales basados en las transacciones filtradas
-                let totalCash = 0;
-                let totalTransfer = 0;
-                let totalAmount = 0;
-
-                filteredTransactions.forEach((transaction: any) => {
-                    const amount = transaction.details?.details?.monto || 0;
-                    const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
-                    
-                    totalAmount += amount;
-                    
-                    if (paymentMethod === "efectivo") {
-                        totalCash += amount;
-                    } else {
-                        totalTransfer += amount;
-                    }
-                });
-
-                return {
-                    ...userBox,
-                    transactions: filteredTransactions,
-                    totalCash,
-                    totalTransfer,
-                    totalAmount,
-                    transactionCount: filteredTransactions.length
-                };
+                return userBox;
             });
+            
+            // Aplanar el array en caso de que haya múltiples entradas por usuario (para cortes realizados)
+            currentFiltered = currentFiltered.flat();
         }
 
         return currentFiltered;
     }, [allUserCashBoxes, selectedUserFilter, selectedCutoffFilter]);
 
 
-    const toggleUserExpansion = (userId: number) => {
+    const toggleUserExpansion = (userId: number | string) => {
         const newExpanded = new Set(expandedUsers);
-        if (newExpanded.has(userId)) {
-            newExpanded.delete(userId);
+        const userIdStr = userId.toString();
+        
+        if (newExpanded.has(userIdStr)) {
+            newExpanded.delete(userIdStr);
         } else {
-            newExpanded.add(userId);
+            newExpanded.add(userIdStr);
         }
         setExpandedUsers(newExpanded);
     };
@@ -461,7 +511,7 @@ export function UserCashBoxesPage() {
                                             onClick={() => toggleUserExpansion(userBox.userId)}
                                         >
                                             <div className="flex items-center space-x-4">
-                                                {expandedUsers.has(userBox.userId) ? (
+                                                {expandedUsers.has(userBox.userId.toString()) ? (
                                                     <ChevronDown className="h-4 w-4" />
                                                 ) : (
                                                     <ChevronRight className="h-4 w-4" />

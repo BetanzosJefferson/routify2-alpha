@@ -119,6 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 14, 2025** - CRITICAL FIX: User cash boxes cutoff grouping logic completely corrected:
+  - **ROOT CAUSE IDENTIFIED**: System was filtering transactions by `cutoff_id !== null` but not grouping by specific cutoff_id values
+  - **GROUPING PROBLEM**: Multiple transactions with different cutoff_id values were being shown as single group
+  - **EXAMPLE ISSUE**: Alejandra Guzmán showing 24 transactions together instead of separate groups per cutoff
+  - **SOLUTION IMPLEMENTED**: Modified filteredUserCashBoxes logic to group transactions by unique cutoff_id values
+  - **CUTOFF-SPECIFIC GROUPING**: Each unique cutoff_id now creates separate user entry with descriptive naming
+  - **ENHANCED DISPLAY**: Users now appear as "User Name (Corte #5)", "User Name (Corte #7)" etc.
+  - **PROPER CALCULATIONS**: Each cutoff group shows correct transaction count and totals for that specific cutoff
+  - **INTERFACE UPDATES**: Updated userId handling to support string IDs for unique cutoff identification
+  - **TECHNICAL SOLUTION**: Used `Object.entries(groupedByCutoff).map()` to create separate entries per cutoff_id
+  - **PRODUCTION READY**: Cutoff filtering now accurately shows transaction groups by specific cutoff periods
+
 - **July 14, 2025** - CRITICAL FIX: Package trip selection behavior corrected for main trip selection:
   - **ROOT CAUSE IDENTIFIED**: When users selected main trips (default view), system incorrectly showed segment selection modal
   - **USER EXPECTATION**: Selecting a main trip should proceed directly, not show additional segment options
