@@ -119,6 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 14, 2025** - CRITICAL FIX: Trip date filtering logic completely corrected for intelligent main trip vs segment filtering:
+  - **ROOT CAUSE IDENTIFIED**: System was showing wrong trips based on ANY segment date instead of main trip date in default mode
+  - **INTELLIGENT FILTERING IMPLEMENTED**: Created dual-mode filtering system based on search context
+  - **MODO POR DEFECTO**: When `isSubTrip=false` and no origin/destination filters → Only shows trips where **first segment** (`isMainTrip: true`) matches search date
+  - **MODO BÚSQUEDA ESPECÍFICA**: When origin/destination filters present → Shows **any segment** matching criteria regardless of main trip date
+  - **EXAMPLE BEHAVIOR**: 
+    - Searching "14/07/2025" (default mode) → Shows only trips that **start** on 14/07/2025
+    - Searching "Gas de la Giovanna" + "14/07/2025" → Shows segments departing 14/07/2025 from that stop, even if main trip started 13/07/2025
+  - **SQL FILTER OPTIMIZATION**: Uses `tripData->0->>'departureDate'` for main trip filtering vs `EXISTS` for segment filtering
+  - **USER EXPERIENCE**: Default trip view now shows chronologically correct trips while maintaining full search flexibility
+  - **TECHNICAL SOLUTION**: Implemented `hasOriginDestinationFilters` logic to detect search context and apply appropriate filtering
+  - **PRODUCTION READY**: Both modes working correctly - main trip filtering prevents confusion, segment filtering enables complete search capability
+
 - **July 13, 2025** - CRITICAL FIX: Trip date regression issue completely resolved:
   - **ROOT CAUSE IDENTIFIED**: GET /trips/:id endpoint was incorrectly modifying trip data instead of only reading it
   - **DATE REGRESSION PROBLEM**: Each access to GET endpoint moved dates backward by one day (13→12→11→10)
