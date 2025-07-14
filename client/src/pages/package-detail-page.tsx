@@ -29,7 +29,8 @@ import {
   ChevronsRight,
   Share2,
   Printer,
-  QrCode
+  QrCode,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -45,6 +46,8 @@ export default function PackageDetailPage() {
   const { user } = useAuth();
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [isSameCompany, setIsSameCompany] = useState<boolean>(false);
+  const [isMarkingAsPaid, setIsMarkingAsPaid] = useState<boolean>(false);
+  const [isMarkingAsDelivered, setIsMarkingAsDelivered] = useState<boolean>(false);
   const packageId = params?.id ? parseInt(params.id) : 0;
 
   // Consultar los detalles del paquete desde la API
@@ -233,7 +236,11 @@ export default function PackageDetailPage() {
 
   // Manejo de marcado como pagado
   const handleMarkAsPaid = async () => {
+    if (isMarkingAsPaid) return; // Evitar clicks múltiples
+    
     try {
+      setIsMarkingAsPaid(true);
+      
       toast({
         title: "Procesando...",
         description: "Marcando paquete como pagado",
@@ -275,12 +282,18 @@ export default function PackageDetailPage() {
         description: "No se pudo marcar el paquete como pagado",
         variant: "destructive",
       });
+    } finally {
+      setIsMarkingAsPaid(false);
     }
   };
   
   // Manejo de marcado como entregado
   const handleMarkAsDelivered = async () => {
+    if (isMarkingAsDelivered) return; // Evitar clicks múltiples
+    
     try {
+      setIsMarkingAsDelivered(true);
+      
       toast({
         title: "Procesando...",
         description: "Marcando paquete como entregado",
@@ -322,6 +335,8 @@ export default function PackageDetailPage() {
         description: "No se pudo marcar el paquete como entregado",
         variant: "destructive",
       });
+    } finally {
+      setIsMarkingAsDelivered(false);
     }
   };
 
@@ -437,9 +452,14 @@ export default function PackageDetailPage() {
                 <Button 
                   className="w-full bg-green-600 hover:bg-green-700" 
                   onClick={handleMarkAsPaid}
+                  disabled={isMarkingAsPaid || isMarkingAsDelivered}
                 >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Marcar como pagado
+                  {isMarkingAsPaid ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                  )}
+                  {isMarkingAsPaid ? "Procesando..." : "Marcar como pagado"}
                 </Button>
               )}
               
@@ -447,9 +467,14 @@ export default function PackageDetailPage() {
                 <Button 
                   className="w-full bg-blue-600 hover:bg-blue-700" 
                   onClick={handleMarkAsDelivered}
+                  disabled={isMarkingAsDelivered || isMarkingAsPaid}
                 >
-                  <Truck className="mr-2 h-4 w-4" />
-                  Marcar como entregado
+                  {isMarkingAsDelivered ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Truck className="mr-2 h-4 w-4" />
+                  )}
+                  {isMarkingAsDelivered ? "Procesando..." : "Marcar como entregado"}
                 </Button>
               )}
             </div>
