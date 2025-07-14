@@ -212,7 +212,7 @@ export async function generateReservationTicket60mmPDF(reservationData: Reservat
   if (reservationData.advanceAmount > 0) {
     doc.text(`Anticipo: ${formatPrice(reservationData.advanceAmount)}`, 5, y);
     y += 3;
-    doc.text(`Método: ${reservationData.advancePaymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+    doc.text(`Método: ${reservationData.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
     y += 3;
     
     // Restante
@@ -220,11 +220,11 @@ export async function generateReservationTicket60mmPDF(reservationData: Reservat
     if (remaining > 0) {
       doc.text(`Restante: ${formatPrice(remaining)}`, 5, y);
       y += 3;
-      doc.text(`Método: ${reservationData.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+      doc.text(`Método: ${reservationData.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
       y += 3;
     }
   } else {
-    doc.text(`Pago: ${reservationData.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+    doc.text(`Pago: ${reservationData.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
     y += 3;
   }
   
@@ -441,7 +441,7 @@ export async function generateReservationTicket60mmPDFWithDownload(reservationDa
   if (reservationData.advanceAmount > 0) {
     doc.text(`Anticipo: ${formatPrice(reservationData.advanceAmount)}`, 5, y);
     y += 3;
-    doc.text(`Método: ${reservationData.advancePaymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+    doc.text(`Método: ${reservationData.advancePaymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
     y += 3;
     
     // Restante
@@ -449,11 +449,11 @@ export async function generateReservationTicket60mmPDFWithDownload(reservationDa
     if (remaining > 0) {
       doc.text(`Restante: ${formatPrice(remaining)}`, 5, y);
       y += 3;
-      doc.text(`Método: ${reservationData.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+      doc.text(`Método: ${reservationData.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
       y += 3;
     }
   } else {
-    doc.text(`Pago: ${reservationData.paymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}`, 5, y);
+    doc.text(`Pago: ${reservationData.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'}`, 5, y);
     y += 3;
   }
   

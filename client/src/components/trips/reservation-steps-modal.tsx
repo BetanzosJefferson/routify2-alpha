@@ -2157,14 +2157,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
             </div>
             
             <DialogFooter className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                variant="outline" 
-                onClick={handlePrintTicket60mm} 
-                className="w-full sm:w-auto"
-              >
-                <PrinterIcon className="w-4 h-4 mr-2" />
-                Imprimir boleto 60mm
-              </Button>
+           
               <Button 
                 onClick={handleDownloadTicket60mmPDF}
                 className="w-full sm:w-auto"

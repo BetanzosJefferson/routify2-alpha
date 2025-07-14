@@ -12,12 +12,15 @@ export function useCommissionTicketGenerator() {
         description: "Generando boleto de 60mm, por favor espera...",
       });
 
+      // Debug: Mostrar los datos de la reservación
+      console.log('🔍 Datos de la reservación para ticket:', reservation);
+
       // Mapear los datos de la reservación al formato esperado por la función
       const reservationData = {
         id: reservation.id,
-        passengerName: reservation.passengerName || 'Pasajero',
-        phone: reservation.phone || '',
-        email: reservation.email || '',
+        passengerName: reservation.tripDetails?.passengerName || 'Pasajero',
+        phone: reservation.tripDetails?.phone || '',
+        email: reservation.tripDetails?.email || '',
         origin: reservation.specificOrigin || reservation.trip?.route?.origin || '',
         destination: reservation.specificDestination || reservation.trip?.route?.destination || '',
         departureDate: reservation.trip?.departureDate || '',
@@ -27,12 +30,12 @@ export function useCommissionTicketGenerator() {
         originalPrice: reservation.originalAmount || reservation.totalAmount || 0,
         couponDiscount: reservation.discountAmount || 0,
         advanceAmount: reservation.advanceAmount || 0,
-        paymentMethod: reservation.paymentMethod || 'Efectivo',
-        advancePaymentMethod: reservation.advancePaymentMethod || 'Efectivo',
+        paymentMethod: reservation.paymentMethod || 'Efectivo', // Método de pago restante
+        advancePaymentMethod: reservation.advancePaymentMethod || 'Efectivo', // Método de pago del anticipo
         numPassengers: reservation.tripDetails?.seats || 1,
         passengers: [{ 
-          firstName: reservation.passengerName?.split(' ')[0] || 'Pasajero', 
-          lastName: reservation.passengerName?.split(' ')[1] || '' 
+          firstName: reservation.tripDetails?.passengerName?.split(' ')[0] || 'Pasajero', 
+          lastName: reservation.tripDetails?.passengerName?.split(' ')[1] || '' 
         }],
         couponCode: reservation.couponCode || null,
       };
