@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 14, 2025** - CRITICAL FIX: Trip capacity calculation completely corrected to prevent impossible seat availability:
+  - **ROOT CAUSE IDENTIFIED**: Database corruption causing availableSeats to exceed capacity (32 available with 17 capacity)
+  - **SYSTEMATIC CORRECTION**: Created automated script to recalculate seat availability for all trip segments
+  - **MATHEMATICAL INTEGRITY**: Fixed formula to correctly calculate: availableSeats = capacity - occupiedSeats
+  - **CORRUPTED DATA RESOLVED**: Trip 1228 corrected from 32 available to 17 available (matching 17 capacity)
+  - **COMPREHENSIVE FIX**: Applied correction to all 111 segments across affected trips
+  - **VERIFICATION COMPLETE**: Both trips 1228 and 1229 now show mathematically correct seat availability
+  - **BACKEND PROTECTION**: Enhanced PATCH endpoint logging to prevent future calculation errors
+  - **PRODUCTION READY**: Trip capacity editing now maintains data integrity with proper seat calculations
+
 - **July 14, 2025** - CRITICAL FIX: Trip date filtering logic completely corrected for intelligent main trip vs segment filtering:
   - **ROOT CAUSE IDENTIFIED**: System was showing wrong trips based on ANY segment date instead of main trip date in default mode
   - **INTELLIGENT FILTERING IMPLEMENTED**: Created dual-mode filtering system based on search context

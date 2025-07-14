@@ -2479,9 +2479,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 r.tripDetails?.tripId === segment.tripId
               );
               
-              const occupiedSeats = segmentReservations.reduce((sum, r) => 
-                sum + (r.passengersData?.length || 0), 0
-              );
+              const occupiedSeats = segmentReservations.reduce((sum, r) => {
+                const passengersCount = r.tripDetails?.passengersData?.length || 0;
+                console.log(`📋 Reserva ${r.id} en segmento ${segment.tripId}: ${passengersCount} pasajeros`);
+                return sum + passengersCount;
+              }, 0);
               
               const availableSeats = newCapacity - occupiedSeats;
               
