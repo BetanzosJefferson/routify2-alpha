@@ -2856,7 +2856,7 @@ export class DatabaseStorage implements IStorage {
         tripDetails: requestData.trip_details,
         
         // Información financiera
-        totalAmount: requestData.total_amount,
+        totalAmount: requestData.total_amount - (requestData.discount_amount || 0), // Precio final después del descuento
         advanceAmount: requestData.advance_amount || 0,
         discountAmount: requestData.discount_amount || 0,
         originalAmount: requestData.original_amount || requestData.total_amount,
