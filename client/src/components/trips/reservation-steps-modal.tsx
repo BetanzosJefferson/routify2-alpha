@@ -248,7 +248,10 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
           advanceAmount: data.advanceAmount,
           advancePaymentMethod: data.advancePaymentMethod,
           paymentMethod: data.paymentMethod,
-          notes: data.notes
+          notes: data.notes,
+          couponCode: data.couponCode,
+          discountAmount: couponVerified && couponDiscount > 0 ? couponDiscount : 0,
+          originalAmount: totalPrice
         };
         
         console.log("Datos adaptados para solicitud:", JSON.stringify(adaptedData, null, 2));
