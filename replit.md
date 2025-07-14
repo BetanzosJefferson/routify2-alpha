@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 14, 2025** - CRITICAL FIX: Coupon system UI display issue completely resolved:
+  - **ROOT CAUSE IDENTIFIED**: Frontend was showing `totalAmount` instead of final discounted price in reservation list
+  - **PRICE DISPLAY CORRECTED**: Now shows original price struck through and final price in green when coupon is applied
+  - **PAYMENT CALCULATION FIXED**: Remaining amount now correctly calculated based on final price after discount
+  - **VISUAL ENHANCEMENT**: Added clear visual distinction between original price and discounted price
+  - **COMPREHENSIVE FIX**: Applied to all payment scenarios (pending, advance, full payment)
+  - **VERIFICATION COMPLETE**: Database stores correct coupon data, frontend now displays it properly
+  - **USER EXPERIENCE**: Reservation list now clearly shows discount applied and correct final amounts
+
 - **July 14, 2025** - CRITICAL FIX: Trip capacity calculation completely corrected to prevent impossible seat availability:
   - **ROOT CAUSE IDENTIFIED**: Database corruption causing availableSeats to exceed capacity (32 available with 17 capacity)
   - **SYSTEMATIC CORRECTION**: Created automated script to recalculate seat availability for all trip segments

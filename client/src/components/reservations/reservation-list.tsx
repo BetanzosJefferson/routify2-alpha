@@ -795,7 +795,17 @@ export function ReservationList() {
                               )}
                             </>
                           ) : (
-                            <span className="text-sm font-medium">{formatPrice(reservation.totalAmount)}</span>
+                            <span className="text-sm font-medium">
+                              {/* Mostrar precio final con descuento aplicado si existe */}
+                              {reservation.discountAmount > 0 ? (
+                                <span className="flex items-center space-x-2">
+                                  <span className="line-through text-gray-500">{formatPrice(reservation.originalAmount || reservation.totalAmount)}</span>
+                                  <span className="text-green-600 font-semibold">{formatPrice(reservation.totalAmount - reservation.discountAmount)}</span>
+                                </span>
+                              ) : (
+                                formatPrice(reservation.totalAmount)
+                              )}
+                            </span>
                           )}
                           <Badge
                             variant={reservation.paymentStatus === 'pagado' ? "outline" : "secondary"}
@@ -830,7 +840,11 @@ export function ReservationList() {
                               </span>
                             </div>
 
-                            {reservation.advanceAmount < reservation.totalAmount && (
+                            {(() => {
+                              // Calcular el precio final con descuento aplicado
+                              const finalPrice = reservation.totalAmount - (reservation.discountAmount || 0);
+                              return reservation.advanceAmount < finalPrice;
+                            })() && (
                               <div className="text-xs flex">
                                 <span className="text-gray-500">{reservation.paymentStatus === 'pagado' ? 'Pagó:' : 'Resta:'}</span>
                                 {/* Mostrar con estilo especial si está cancelado y pendiente */}
@@ -841,7 +855,12 @@ export function ReservationList() {
                                   </span>
                                 ) : (
                                   <span className="font-medium ml-1">
-                                    {formatPrice(reservation.totalAmount - (reservation.advanceAmount || 0))}{" "}
+                                    {/* Calcular el precio final con descuento aplicado */}
+                                    {(() => {
+                                      const finalPrice = reservation.totalAmount - (reservation.discountAmount || 0);
+                                      const remainingAmount = finalPrice - (reservation.advanceAmount || 0);
+                                      return formatPrice(remainingAmount);
+                                    })()}{" "}
                                     <span className="font-normal">({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})</span>
                                   </span>
                                 )}
