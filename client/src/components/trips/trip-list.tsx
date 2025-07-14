@@ -488,7 +488,7 @@ export function TripList() {
                   type="date"
                   className="pl-10"
                   value={date}
-                  min={yesterday}
+                  min={getYesterday()}
                   onChange={(e) => setDate(e.target.value)}
                 />
               </div>
