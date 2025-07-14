@@ -339,15 +339,63 @@ export default function ReservationRequestsPage() {
                     <h3 className="font-semibold text-base">Información de Pago</h3>
 
                     <div className="grid grid-cols-1 gap-2 text-sm">
-                      <div className="flex items-center">
-                        <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                        <div>
-                          <span className="font-medium">Total:</span>{" "}
-                          <span className="text-muted-foreground font-semibold">
-                            {formatPrice(requestData.total_amount || 0)}
-                          </span>
+                      {/* Información del cupón si existe */}
+                      {requestData.coupon_code && (
+                        <>
+                          <div className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-orange-500" />
+                            <div>
+                              <span className="font-medium">Cupón:</span>{" "}
+                              <span className="text-muted-foreground font-semibold">
+                                {requestData.coupon_code}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                            <div>
+                              <span className="font-medium">Precio original:</span>{" "}
+                              <span className="text-muted-foreground">
+                                {formatPrice(requestData.original_amount || requestData.total_amount || 0)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-red-500" />
+                            <div>
+                              <span className="font-medium">Descuento:</span>{" "}
+                              <span className="text-red-500 font-semibold">
+                                -{formatPrice(requestData.discount_amount || 0)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-green-600" />
+                            <div>
+                              <span className="font-medium">Total final:</span>{" "}
+                              <span className="text-green-600 font-semibold">
+                                {formatPrice((requestData.original_amount || requestData.total_amount || 0) - (requestData.discount_amount || 0))}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Total normal cuando no hay cupón */}
+                      {!requestData.coupon_code && (
+                        <div className="flex items-center">
+                          <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                          <div>
+                            <span className="font-medium">Total:</span>{" "}
+                            <span className="text-muted-foreground font-semibold">
+                              {formatPrice(requestData.total_amount || 0)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="flex items-center">
                         <CreditCard className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
