@@ -7,7 +7,7 @@ interface CacheEntry {
 
 class TripCache {
   private cache = new Map<string, CacheEntry>();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  private readonly CACHE_DURATION = 1 * 60 * 1000; // 1 minuto para viajes que cambian frecuentemente
   private readonly MAX_CACHE_SIZE = 50; // Máximo 50 búsquedas en caché
 
   // Generar key único basado en parámetros de búsqueda

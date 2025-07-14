@@ -476,12 +476,7 @@ function ReservationsListContent() {
                     </div>
                   </div>
                   
-                  {/* Contador de reservaciones */}
-                  <div className="bg-white/20 px-2 md:px-3 py-1 rounded-full flex-shrink-0">
-                    <span className="text-xs md:text-sm font-medium">
-                      {groupData.reservations.length} reservación{groupData.reservations.length !== 1 ? 'es' : ''}
-                    </span>
-                  </div>
+                 
                 </div>
               </div>
 

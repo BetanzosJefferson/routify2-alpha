@@ -188,16 +188,16 @@ interface SearchParams {
 import { normalizeToStartOfDay, formatDateForInput, formatDateToLocal } from "@/lib/utils";
 
 export function TripList() {
-  // Obtener la fecha actual formateada como YYYY-MM-DD en hora local
-  const today = formatDateForInput(new Date());
-
-  // Calcular fechas permitidas (ayer, hoy, mañana)
-  const yesterday = formatDateForInput(new Date(Date.now() - 24 * 60 * 60 * 1000));
-  const tomorrow = formatDateForInput(new Date(Date.now() + 24 * 60 * 60 * 1000));
+  // Función para obtener la fecha actual siempre actualizada
+  const getCurrentDate = () => formatDateForInput(new Date());
+  
+  // Calcular fechas permitidas (ayer, hoy, mañana) dinámicamente
+  const getYesterday = () => formatDateForInput(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const getTomorrow = () => formatDateForInput(new Date(Date.now() + 24 * 60 * 60 * 1000));
 
   // Initialize searchParams. Default to isSubTrip: 'false' for initial load.
   // This will be conditionally removed if a specific search is performed.
-  const [searchParams, setSearchParams] = useState<SearchParams>({ date: today, isSubTrip: 'false' });
+  const [searchParams, setSearchParams] = useState<SearchParams>({ date: getCurrentDate(), isSubTrip: 'false' });
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<TripWithRouteInfo | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -207,7 +207,7 @@ export function TripList() {
   // Form state
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(getCurrentDate());
   const [seats, setSeats] = useState("");
   
   // Referencias para actualización automática
@@ -217,10 +217,18 @@ export function TripList() {
   // Función para actualizar datos automáticamente
   const refreshTripData = async () => {
     try {
-      // Invalidar caché
-      tripCache.clear();
+      // Verificar si cambió el día y actualizar fecha
+      const currentDate = getCurrentDate();
+      if (currentDate !== date && !hasSearched) {
+        setDate(currentDate);
+        setSearchParams(prev => ({ ...prev, date: currentDate }));
+        console.log('[AUTO-UPDATE] Fecha actualizada automáticamente:', currentDate);
+      }
       
-      // Invalidar consultas
+      // Invalidar caché completamente
+      tripCache.invalidate();
+      
+      // Invalidar consultas específicas
       await queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
       
       setLastUpdate(new Date());
@@ -238,7 +246,7 @@ export function TripList() {
         clearInterval(updateIntervalRef.current);
       }
     };
-  }, [queryClient]);
+  }, [queryClient, date, hasSearched]);
 
   // Efecto para actualización automática cada minuto (filtro de tiempo) - DESHABILITADO
   // useEffect(() => {
