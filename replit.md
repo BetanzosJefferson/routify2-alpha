@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 15, 2025** - ENHANCED: Bitácora section filtering logic improved for accurate financial tracking:
+  - **INTELLIGENT RESERVATION FILTERING**: Added logic to exclude reservations that don't represent actual income
+  - **EXCLUDED CASES**: Cancelled reservations with refunds (no income) and cancelled reservations without advance payment (no income)  
+  - **INCLUDED CASES**: Cancelled reservations with advance payment (partial income) and cancelled reservations that were fully paid (full income)
+  - **FINANCIAL ACCURACY**: Bitácora now shows only reservations that contributed to company revenue
+  - **LOGGING ENHANCEMENT**: Added detailed logging to track filtering results (X → Y reservations, Z excluded)
+  - **BUSINESS LOGIC**: Aligns with real-world business scenarios where cancelled bookings without payment don't impact finances
+  - **PERFORMANCE MAINTAINED**: Filtering applied at frontend level without affecting backend query performance
+
 - **July 15, 2025** - ENHANCED: Package management section redesigned with comprehensive details and simplified colorimetry:
   - **DETAILED PACKAGE INFORMATION**: Complete redesign of package cards showing origin/destination, departure date/time, delivery status, and contact information
   - **CONSISTENT COLORIMETRY**: Applied same border color system as reservations (green=paid, red=unpaid) to package cards

@@ -43,13 +43,39 @@ export function TripLogbook() {
     isSubTrip: false // Solo viajes principales para mejor rendimiento
   });
 
-  // Log para depuración de rendimiento
-  console.log(`[Bitácora] Datos cargados - Reservaciones: ${reservations.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
-
-  // Mostrar todas las reservaciones asociadas a los viajes
+  // Filtrar reservaciones para excluir las que no representan ingresos
   const validReservations = useMemo(() => {
-    return reservations; // Mostrar todas las reservaciones sin filtros de pago
-  }, [reservations]);
+    const filtered = reservations.filter((reservation: any) => {
+      // Si no está cancelada, siempre incluir
+      if (reservation.status !== 'cancelled') {
+        return true;
+      }
+      
+      // Si está cancelada, verificar si representa un ingreso
+      const hasAdvance = (reservation.advanceAmount || 0) > 0;
+      const wasFullyPaid = (reservation.advanceAmount || 0) >= (reservation.totalAmount || 0);
+      const isRefunded = reservation.status === 'cancelled' && reservation.refunded;
+      
+      // Excluir reservaciones canceladas Y reembolsadas (no representan ingreso)
+      if (isRefunded) {
+        return false;
+      }
+      
+      // Excluir reservaciones canceladas SIN anticipo (no representan ingreso)
+      if (!hasAdvance && !wasFullyPaid) {
+        return false;
+      }
+      
+      // Incluir reservaciones canceladas CON anticipo o que estaban pagadas (representan ingreso)
+      return hasAdvance || wasFullyPaid;
+    });
+    
+    // Log para depuración de filtrado
+    console.log(`[Bitácora] Filtrado de reservaciones: ${reservations.length} → ${filtered.length} (excluidas ${reservations.length - filtered.length} sin ingreso)`);
+    console.log(`[Bitácora] Datos cargados - Reservaciones: ${filtered.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
+    
+    return filtered;
+  }, [reservations, packages.length, trips.length]);
 
   // Mostrar todas las paqueterías asociadas a los viajes
   const validPackages = useMemo(() => {
