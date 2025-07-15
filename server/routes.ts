@@ -2378,8 +2378,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para obtener preview de eliminación masiva
-  app.get(apiRouter("/trips/bulk-delete/preview"), isAuthenticated, async (req: Request, res: Response) => {
+  // Endpoint para obtener count de eliminación masiva
+  app.get(apiRouter("/trips/bulk-delete/count"), isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { startDate, endDate } = req.query;
       
@@ -2394,14 +2394,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtener el usuario autenticado
       const { user } = req as any;
       
-      console.log(`[GET /trips/bulk-delete/preview] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
-      console.log(`[GET /trips/bulk-delete/preview] Rango de fechas: ${startDate} a ${endDate}`);
+      console.log(`[GET /trips/bulk-delete/count] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      console.log(`[GET /trips/bulk-delete/count] Rango de fechas: ${startDate} a ${endDate}`);
       
       // Validar permisos
       if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
         return res.status(403).json({ 
           error: "Acceso denegado", 
-          details: "No tiene permisos para ver el preview de eliminación masiva" 
+          details: "No tiene permisos para ver el conteo de eliminación masiva" 
         });
       }
       
@@ -2409,7 +2409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedStartDate = normalizeToStartOfDay(new Date(startDate as string));
       const normalizedEndDate = normalizeToStartOfDay(new Date(endDate as string));
       
-      console.log(`[GET /trips/bulk-delete/preview] Fechas normalizadas: ${normalizedStartDate} a ${normalizedEndDate}`);
+      console.log(`[GET /trips/bulk-delete/count] Fechas normalizadas: ${normalizedStartDate} a ${normalizedEndDate}`);
       
       // Obtener viajes en el rango de fechas
       const tripsInRange = await storage.getTripsInDateRange(
@@ -2418,38 +2418,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.companyId || user.company
       );
       
-      console.log(`[GET /trips/bulk-delete/preview] Encontrados ${tripsInRange.length} viajes en el rango`);
-      
-      // Contar reservaciones asociadas
-      let totalReservations = 0;
-      for (const trip of tripsInRange) {
-        const reservations = await db
-          .select({ count: sql`count(*)` })
-          .from(schema.reservations)
-          .where(sql`(${schema.reservations.tripDetails}->>'recordId')::integer = ${trip.id}`);
-        
-        totalReservations += parseInt(reservations[0].count.toString());
-      }
+      console.log(`[GET /trips/bulk-delete/count] Encontrados ${tripsInRange.length} viajes en el rango`);
       
       const result = {
-        tripsCount: tripsInRange.length,
-        reservationsCount: totalReservations,
-        trips: tripsInRange.map(trip => ({
-          id: trip.id,
-          departureDate: trip.tripData?.[0]?.departureDate || 'N/A',
-          // Extract origin and destination from tripData
-          origin: trip.tripData?.[0]?.origin || 'N/A',
-          destination: trip.tripData?.[trip.tripData.length - 1]?.destination || 'N/A'
-        }))
+        tripsCount: tripsInRange.length
       };
       
-      console.log(`[GET /trips/bulk-delete/preview] Resultado:`, result);
+      console.log(`[GET /trips/bulk-delete/count] Resultado:`, result);
       
       res.json(result);
     } catch (error: any) {
-      console.error(`[GET /trips/bulk-delete/preview] Error:`, error.message);
+      console.error(`[GET /trips/bulk-delete/count] Error:`, error.message);
       res.status(500).json({ 
-        error: "Error interno del servidor al obtener preview",
+        error: "Error interno del servidor al obtener conteo",
         details: error.message 
       });
     }

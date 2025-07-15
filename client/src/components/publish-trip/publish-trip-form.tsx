@@ -103,16 +103,7 @@ export function PublishTripForm() {
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [bulkDeleteStartDate, setBulkDeleteStartDate] = useState("");
   const [bulkDeleteEndDate, setBulkDeleteEndDate] = useState("");
-  const [bulkDeletePreview, setBulkDeletePreview] = useState<{
-    tripsCount: number;
-    reservationsCount: number;
-    trips: Array<{
-      id: number;
-      departureDate: string;
-      origin: string;
-      destination: string;
-    }>;
-  } | null>(null);
+  const [bulkDeleteCount, setBulkDeleteCount] = useState<number>(0);
   // Helper para validar y asegurar formato correcto de stopTimes
   const ensureValidStopTimes = (times: any[]): StopTime[] => {
     return times
@@ -807,7 +798,7 @@ export function PublishTripForm() {
       setBulkDeleteStartDate("");
       setBulkDeleteEndDate("");
       setBulkDeleteModalOpen(false);
-      setBulkDeletePreview(null);
+      setBulkDeleteCount(0);
 
       // Refresh queries
       queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
@@ -823,49 +814,42 @@ export function PublishTripForm() {
     },
   });
 
-  const fetchBulkDeletePreview = async () => {
+  const fetchBulkDeleteCount = async () => {
     if (!bulkDeleteStartDate || !bulkDeleteEndDate) {
+      setBulkDeleteCount(0);
       return;
     }
 
     if (bulkDeleteStartDate > bulkDeleteEndDate) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "La fecha de inicio no puede ser posterior a la fecha de fin.",
-      });
+      setBulkDeleteCount(0);
       return;
     }
 
     try {
-      const response = await fetch(`/api/trips/bulk-delete/preview?startDate=${bulkDeleteStartDate}&endDate=${bulkDeleteEndDate}`);
+      const response = await fetch(`/api/trips/bulk-delete/count?startDate=${bulkDeleteStartDate}&endDate=${bulkDeleteEndDate}`);
       
       if (!response.ok) {
-        throw new Error("Error al obtener preview");
+        throw new Error("Error al obtener conteo");
       }
       
       const data = await response.json();
-      setBulkDeletePreview(data);
+      setBulkDeleteCount(data.tripsCount || 0);
     } catch (error) {
-      console.error("Error fetching bulk delete preview:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al obtener el preview de eliminación.",
-      });
+      console.error("Error fetching bulk delete count:", error);
+      setBulkDeleteCount(0);
     }
   };
 
-  // Ejecutar preview automáticamente cuando cambien las fechas
+  // Ejecutar count automáticamente cuando cambien las fechas
   useEffect(() => {
     if (bulkDeleteStartDate && bulkDeleteEndDate) {
       const timeoutId = setTimeout(() => {
-        fetchBulkDeletePreview();
+        fetchBulkDeleteCount();
       }, 500); // Debounce de 500ms
       
       return () => clearTimeout(timeoutId);
     } else {
-      setBulkDeletePreview(null);
+      setBulkDeleteCount(0);
     }
   }, [bulkDeleteStartDate, bulkDeleteEndDate]);
 
@@ -1166,47 +1150,28 @@ export function PublishTripForm() {
                     onChange={(e) => setBulkDeleteEndDate(e.target.value)}
                     placeholder="Fecha de fin"
                   />
-                </div>
-                
-                {/* Preview de eliminación */}
-                {bulkDeletePreview && (
-                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-medium text-yellow-800 mb-2">
-                      Preview de eliminación
-                    </h4>
-                    <div className="text-sm text-yellow-700 space-y-2">
-                      <p>
-                        <strong>Viajes a eliminar:</strong> {bulkDeletePreview.tripsCount}
-                      </p>
-                      <p>
-                        <strong>Reservaciones a cancelar:</strong> {bulkDeletePreview.reservationsCount}
-                      </p>
-                      {bulkDeletePreview.trips.length > 0 && (
-                        <details className="mt-2">
-                          <summary className="cursor-pointer font-medium">
-                            Ver detalles de viajes
-                          </summary>
-                          <div className="mt-2 max-h-40 overflow-y-auto">
-                            {bulkDeletePreview.trips.map((trip) => (
-                              <div key={trip.id} className="text-xs bg-white p-2 border rounded mb-1">
-                                <div><strong>ID:</strong> {trip.id}</div>
-                                <div><strong>Fecha:</strong> {trip.departureDate}</div>
-                                <div><strong>Ruta:</strong> {trip.origin} → {trip.destination}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </details>
+                  {/* Contador simple */}
+                  {bulkDeleteStartDate && bulkDeleteEndDate && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      {bulkDeleteCount > 0 ? (
+                        <span className="text-red-600 font-medium">
+                          {bulkDeleteCount} viajes se eliminarán
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">
+                          No hay viajes en este rango de fechas
+                        </span>
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
                     onClick={() => {
                       setBulkDeleteModalOpen(false);
-                      setBulkDeletePreview(null);
+                      setBulkDeleteCount(0);
                       setBulkDeleteStartDate("");
                       setBulkDeleteEndDate("");
                     }}
@@ -1216,7 +1181,7 @@ export function PublishTripForm() {
                   <Button
                     variant="destructive"
                     onClick={handleBulkDelete}
-                    disabled={bulkDeleteMutation.isPending || !bulkDeletePreview || bulkDeletePreview.tripsCount === 0}
+                    disabled={bulkDeleteMutation.isPending || bulkDeleteCount === 0}
                   >
                     {bulkDeleteMutation.isPending ? "Eliminando..." : "Eliminar viajes"}
                   </Button>
