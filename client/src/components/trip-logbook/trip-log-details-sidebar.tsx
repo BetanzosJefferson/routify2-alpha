@@ -257,6 +257,14 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   
+  // Calcular total de asientos ocupados
+  const totalSeats = useMemo(() => {
+    return tripData.reservations.reduce((total, reservation) => {
+      const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
+      return total + seatCount;
+    }, 0);
+  }, [tripData.reservations]);
+  
   // Calcular ventas reales vs total por vender para este viaje
   const ventasReales = useMemo(() => {
     let ventas = 0;
@@ -364,7 +372,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
             <TabsList className="grid w-full grid-cols-3 bg-white border-b">
               <TabsTrigger value="reservations">
                 <Users className="h-4 w-4 mr-2" />
-                Reservaciones ({tripData.reservations.length})
+                Asientos ({totalSeats})
               </TabsTrigger>
               <TabsTrigger value="packages">
                 <Package className="h-4 w-4 mr-2" />

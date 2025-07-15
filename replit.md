@@ -147,6 +147,11 @@ Preferred communication style: Simple, everyday language.
     - Refunded reservations: $0 both in actual sales and potential sales
     - Normal reservations: Full price as potential if pending, actual amount if paid
     - Example: Cancelled reservation + $500 packages now shows "$600 / $600" instead of "$600 / $700"
+  - **SIDEBAR SEAT COUNTER**: Enhanced bitácora sidebar to show seat count instead of reservation count:
+    - Changed from "Reservaciones (1)" to "Asientos (1)" in tab display
+    - Calculates total seats using seatCount or passengers.length for each reservation
+    - Provides more meaningful occupancy information for trip management
+    - Maintains Users icon as appropriate visual indicator for passenger capacity
 
 - **July 15, 2025** - ENHANCED: Bitácora section filtering logic improved for accurate financial tracking:
   - **INTELLIGENT RESERVATION FILTERING**: Added logic to exclude reservations that don't represent actual income

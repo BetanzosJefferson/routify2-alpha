@@ -217,11 +217,10 @@ export function TripLogbook() {
     let totalPorVender = 0;
     let ventasReales = 0;
     let totalTrips = groupedTrips.length;
-    let totalReservations = 0;
+    let totalPassengers = 0;
     let totalPackages = 0;
 
     groupedTrips.forEach(trip => {
-      totalReservations += trip.reservations.length;
       totalPackages += trip.packages.length;
 
       // Calcular para reservaciones
@@ -229,6 +228,10 @@ export function TripLogbook() {
         const advanceAmount = reservation.advanceAmount || 0;
         const isCanceled = reservation.status === 'canceled';
         const isRefunded = reservation.status === 'canceledAndRefund';
+        const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
+        
+        // Contar pasajeros/asientos
+        totalPassengers += seatCount;
         
         // Calcular ventas reales según el estado
         if (isRefunded) {
@@ -259,7 +262,7 @@ export function TripLogbook() {
       });
     });
 
-    return { totalPorVender, ventasReales, totalTrips, totalReservations, totalPackages };
+    return { totalPorVender, ventasReales, totalTrips, totalPassengers, totalPackages };
   }, [groupedTrips]);
 
   if (isLoadingReservations || isLoadingPackages || isLoadingTrips) {
@@ -352,8 +355,8 @@ export function TripLogbook() {
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-sm text-gray-600">Reservaciones</p>
-                <p className="text-xl font-bold text-purple-600">{dayTotals.totalReservations}</p>
+                <p className="text-sm text-gray-600">Pasajeros</p>
+                <p className="text-xl font-bold text-purple-600">{dayTotals.totalPassengers}</p>
               </div>
             </div>
           </CardContent>
@@ -423,12 +426,17 @@ export function TripLogbook() {
                   </div>
                 </div>
                 
-                {/* Reservaciones */}
+                {/* Pasajeros */}
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-green-600" />
                   <div>
-                    <p className="text-xs text-green-600 font-medium uppercase">Reservaciones</p>
-                    <p className="text-sm font-semibold">{tripData.reservations.length}</p>
+                    <p className="text-xs text-green-600 font-medium uppercase">Pasajeros</p>
+                    <p className="text-sm font-semibold">
+                      {tripData.reservations.reduce((total, reservation) => {
+                        const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
+                        return total + seatCount;
+                      }, 0)}
+                    </p>
                   </div>
                 </div>
                 
