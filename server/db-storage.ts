@@ -4068,8 +4068,22 @@ export class DatabaseStorage implements IStorage {
 
       const result = await db
         .select({
-          origin: sql<string>`${schema.trips.tripData}->0->>'origin'`,
-          destination: sql<string>`${schema.trips.tripData}->-1->>'destination'`,
+          origin: sql<string>`
+            CASE 
+              WHEN ${schema.reservations.tripDetails}->>'tripId' ~ '_' THEN
+                ${schema.trips.tripData}->CAST(SPLIT_PART(${schema.reservations.tripDetails}->>'tripId', '_', 2) AS INTEGER)->>'origin'
+              ELSE
+                ${schema.trips.tripData}->0->>'origin'
+            END
+          `,
+          destination: sql<string>`
+            CASE 
+              WHEN ${schema.reservations.tripDetails}->>'tripId' ~ '_' THEN
+                ${schema.trips.tripData}->CAST(SPLIT_PART(${schema.reservations.tripDetails}->>'tripId', '_', 2) AS INTEGER)->>'destination'
+              ELSE
+                ${schema.trips.tripData}->-1->>'destination'
+            END
+          `,
           totalReservations: sql<number>`COUNT(*)`,
           totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
           averageRevenuePerReservation: sql<number>`COALESCE(AVG(${schema.reservations.totalAmount}), 0)`
@@ -4078,8 +4092,22 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(schema.trips, sql`CAST(${schema.reservations.tripDetails}->>'recordId' AS INTEGER) = ${schema.trips.id}`)
         .where(and(...baseConditions))
         .groupBy(
-          sql`${schema.trips.tripData}->0->>'origin'`,
-          sql`${schema.trips.tripData}->-1->>'destination'`
+          sql`
+            CASE 
+              WHEN ${schema.reservations.tripDetails}->>'tripId' ~ '_' THEN
+                ${schema.trips.tripData}->CAST(SPLIT_PART(${schema.reservations.tripDetails}->>'tripId', '_', 2) AS INTEGER)->>'origin'
+              ELSE
+                ${schema.trips.tripData}->0->>'origin'
+            END
+          `,
+          sql`
+            CASE 
+              WHEN ${schema.reservations.tripDetails}->>'tripId' ~ '_' THEN
+                ${schema.trips.tripData}->CAST(SPLIT_PART(${schema.reservations.tripDetails}->>'tripId', '_', 2) AS INTEGER)->>'destination'
+              ELSE
+                ${schema.trips.tripData}->-1->>'destination'
+            END
+          `
         )
         .having(sql`COUNT(*) > 0`)
         .orderBy(sql`COUNT(*) DESC`, sql`COALESCE(SUM(${schema.reservations.totalAmount}), 0) DESC`);
