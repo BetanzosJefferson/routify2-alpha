@@ -413,7 +413,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
                         <span className={`font-medium ${reservation.checkedIn ? 'text-green-600' : 'text-red-600'}`}>
-                          {reservation.checkedIn ? 'Confirmado' : 'Pendiente'}
+                          {reservation.checkedIn ? 'Check-in' : 'No check-in'}
                         </span>
                       </div>
 
