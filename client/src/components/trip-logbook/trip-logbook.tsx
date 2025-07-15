@@ -55,8 +55,8 @@ export function TripLogbook() {
     })));
     
     const filtered = reservations.filter((reservation: any) => {
-      // Si no está cancelada, siempre incluir
-      if (reservation.status !== 'canceled') {
+      // Si no está cancelada en ninguna forma, siempre incluir
+      if (reservation.status !== 'canceled' && reservation.status !== 'canceledAndRefund') {
         return true;
       }
       

@@ -119,6 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 15, 2025** - CRITICAL FIX: Bitácora reservation filtering completely corrected for accurate financial tracking:
+  - **ROOT CAUSE IDENTIFIED**: System was incorrectly including cancelled reservations without advance payment (no company income)
+  - **FIELD MAPPING CORRECTIONS**: Fixed bitácora to use correct database fields (`checkedBy` instead of `checkedIn`, `paymentStatus` field priority)
+  - **DUAL CANCELLATION HANDLING**: Enhanced filtering to handle both 'canceled' and 'canceledAndRefund' statuses correctly
+  - **INTELLIGENT EXCLUSION LOGIC**: Implemented comprehensive filtering that excludes reservations with no income potential
+  - **EXCLUDED SCENARIOS**: Cancelled reservations with no advance payment, cancelled and refunded reservations (no net income)
+  - **INCLUDED SCENARIOS**: Cancelled reservations with advance payment (partial income), confirmed reservations (all income)
+  - **PAYMENT STATUS PRIORITY**: Uses database `paymentStatus` field instead of calculating based on amounts
+  - **CHECK-IN FIELD CORRECTION**: Fixed from `reservation.checkedIn` to `reservation.checkedBy` to match database schema
+  - **DETAILED LOGGING**: Added comprehensive logging to track filtering decisions and debug reservation inclusion/exclusion
+  - **BUSINESS LOGIC ALIGNMENT**: Bitácora now accurately reflects only reservations that contributed to company revenue
+  - **FINANCIAL ACCURACY**: Eliminated artificial revenue inflation from cancelled bookings without payments
+
 - **July 15, 2025** - ENHANCED: Bitácora section filtering logic improved for accurate financial tracking:
   - **INTELLIGENT RESERVATION FILTERING**: Added logic to exclude reservations that don't represent actual income
   - **EXCLUDED CASES**: Cancelled reservations with refunds (no income) and cancelled reservations without advance payment (no income)  
