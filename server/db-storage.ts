@@ -376,15 +376,15 @@ export class DatabaseStorage implements IStorage {
     
     // Filtro por rango de fechas usando JSON_EXTRACT para obtener la fecha del primer segmento
     conditions.push(
-      gte(schema.trips.tripData.op('->')(0).op('->>')('departureDate'), startDate),
-      lte(schema.trips.tripData.op('->')(0).op('->>')('departureDate'), endDate)
+      sql`JSON_EXTRACT(${schema.trips.tripData}, '$[0].departureDate') >= ${startDate}`,
+      sql`JSON_EXTRACT(${schema.trips.tripData}, '$[0].departureDate') <= ${endDate}`
     );
     
     const trips = await db
       .select()
       .from(schema.trips)
       .where(and(...conditions))
-      .orderBy(schema.trips.tripData.op('->')(0).op('->>')('departureDate'));
+      .orderBy(sql`JSON_EXTRACT(${schema.trips.tripData}, '$[0].departureDate')`);
     
     console.log(`[getTripsInDateRange] Encontrados ${trips.length} viajes en el rango especificado`);
     

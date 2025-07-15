@@ -119,6 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 15, 2025** - COMPLETED: Bulk trip deletion system with reservation cancellation fully implemented:
+  - **BACKEND INFRASTRUCTURE**: Created `cancelReservationsByTripId` method in db-storage.ts for proper reservation cancellation
+  - **PREVIEW ENDPOINT**: Added `/api/trips/bulk-delete/preview` endpoint to show deletion impact before execution
+  - **RESERVATION MANAGEMENT**: System now cancels (not deletes) associated reservations before trip deletion
+  - **SMART CANCELLATION**: Only cancels reservations that aren't already cancelled, adds reason "Viaje eliminado por administrador"
+  - **COMPREHENSIVE PREVIEW**: Shows count of trips to delete, reservations to cancel, and detailed trip information
+  - **AUTOMATIC UPDATES**: Frontend automatically fetches preview when date range is selected with debounce
+  - **ENHANCED UI**: Modal displays preview information with expandable trip details
+  - **IMPROVED MESSAGING**: Success messages now include information about cancelled reservations
+  - **QUERY OPTIMIZATION**: Fixed SQL syntax for date range queries using JSON_EXTRACT
+  - **ERROR HANDLING**: Comprehensive error handling for both preview and deletion operations
+  - **CACHE INVALIDATION**: Proper cache invalidation after bulk operations affect multiple queries
+
 - **July 14, 2025** - ENHANCED: Reservation list filtering system with route and time filters:
   - **NEW FILTER CONTROLS**: Added "Ruta" and "Hora" filter dropdowns to reservations-list.tsx
   - **ROUTE FILTERING**: Users can filter by origin-destination pairs (e.g., "Acapulco de Juarez, Guerrero → Coyoacan, Ciudad de Mexico")
