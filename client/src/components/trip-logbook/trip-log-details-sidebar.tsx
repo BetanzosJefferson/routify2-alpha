@@ -490,10 +490,6 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
               <TabsContent value="packages" className="p-6 space-y-3 m-0">
                 {tripData.packages.map((pkg: any) => {
-                  // Debug: Log package data
-                  console.log('Package data:', pkg);
-                  console.log('Package tripDetails:', pkg.tripDetails);
-                  
                   // Determinar estado de pago para paqueterías
                   const packagePaymentStatus = pkg.paymentStatus === 'paid' ? 'pagado' : 'pendiente';
                   
@@ -535,17 +531,17 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                       {/* Información del viaje en una sola sección */}
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-blue-600" />
+                          <Package className="h-4 w-4 text-gray-600" />
                           <span className="font-medium">Descripción:</span>
                           <span>{pkg.packageDescription || 'Sin descripción'}</span>
                           <span className="text-gray-300">|</span>
-                          <MapPin className="h-4 w-4 text-green-600" />
+                          <MapPin className="h-4 w-4 text-gray-600" />
                           <span className="font-medium">Ruta:</span>
                           <span>{pkg.tripDetails?.origin || pkg.tripDetails?.segmentOrigin || 'N/A'} → {pkg.tripDetails?.destination || pkg.tripDetails?.segmentDestination || 'N/A'}</span>
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-orange-600" />
+                          <Clock className="h-4 w-4 text-gray-600" />
                           <span className="font-medium">Salida:</span>
                           <span>
                             {formatDate(pkg.tripDetails?.departureDate || pkg.tripDepartureDate || pkg.shippingDate || '')} - {formatTime(pkg.tripDetails?.departureTime || pkg.tripDepartureTime || pkg.departureTime || '')}
@@ -563,22 +559,22 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
                         {/* Información de contactos */}
                         <div className="flex items-center gap-2 text-sm">
-                          <Users className="h-4 w-4 text-purple-600" />
+                          <Users className="h-4 w-4 text-gray-600" />
                           <span className="font-medium">Contactos:</span>
                           <span>
-                            <span className="text-blue-600 font-medium">Remitente: {pkg.senderName || 'Sin nombre'}</span>
+                            <span className="font-medium">Remitente: {pkg.senderName || 'Sin nombre'}</span>
                             <span className="text-gray-500 ml-1">({pkg.senderPhone || 'Sin teléfono'})</span>
                           </span>
                           <span className="text-gray-300 mx-1">|</span>
                           <span>
-                            <span className="text-green-600 font-medium">Destinatario: {pkg.recipientName || 'Sin nombre'}</span>
+                            <span className="font-medium">Destinatario: {pkg.recipientName || 'Sin nombre'}</span>
                             <span className="text-gray-500 ml-1">({pkg.recipientPhone || 'Sin teléfono'})</span>
                           </span>
                         </div>
 
                         {/* Información de pago */}
                         <div className="flex items-center gap-2 text-sm">
-                          <CreditCard className="h-4 w-4 text-purple-600" />
+                          <CreditCard className="h-4 w-4 text-gray-600" />
                           <span className="font-medium">Pago:</span>
                           <span className={`font-medium ${packagePaymentStatus === 'pagado' ? 'text-green-600' : 'text-red-600'}`}>
                             {packagePaymentStatus === 'pagado' ? 'Pagado completo' : 'Pendiente de pago'}

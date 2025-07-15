@@ -119,15 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 15, 2025** - ENHANCED: Package management section redesigned with comprehensive details and payment status colorimetry:
+- **July 15, 2025** - ENHANCED: Package management section redesigned with comprehensive details and simplified colorimetry:
   - **DETAILED PACKAGE INFORMATION**: Complete redesign of package cards showing origin/destination, departure date/time, delivery status, and contact information
   - **CONSISTENT COLORIMETRY**: Applied same border color system as reservations (green=paid, red=unpaid) to package cards
+  - **SIMPLIFIED VISUAL DESIGN**: Reduced color complexity in icons and labels using neutral gray for better readability
   - **COMPREHENSIVE CONTACT DISPLAY**: Shows sender and recipient names with phone numbers in organized layout
   - **DELIVERY STATUS INDICATORS**: Clear icons and text showing "Entregado" (delivered) vs "No entregado" (not delivered) with appropriate colors
   - **PAYMENT METHOD DISPLAY**: Shows payment method alongside payment status with color-coded indicators
   - **STRUCTURED LAYOUT**: Organized information with icons for different data types (Package, MapPin, Clock, Users, CreditCard)
-  - **VISUAL IMPROVEMENTS**: Enhanced readability with proper spacing, separators, and color hierarchy
+  - **VISUAL IMPROVEMENTS**: Enhanced readability with proper spacing, separators, and simplified color hierarchy
   - **CONSISTENT DESIGN**: Matches reservation card design patterns for unified user experience
+  - **TRIPDETAILS INTEGRATION**: Fixed data source to use tripDetails JSON for accurate origin/destination display
 
 - **July 15, 2025** - ENHANCED: Commission percentage input with improved precision and Bitácora passenger details display:
   - **COMMISSION PRECISION**: Updated user commission percentage field to support decimal values (0.01 step) instead of 0.5 increments
