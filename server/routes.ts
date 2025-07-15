@@ -8305,9 +8305,13 @@ function setupPackageRoutes(app: Express) {
         });
       }
       
-      console.log(`[GET /statistics/coupon-usage] Obteniendo estadísticas para compañía: ${companyId}`);
+      // Obtener parámetros de fecha
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
       
-      const statistics = await storage.getCouponUsageStatistics(companyId);
+      console.log(`[GET /statistics/coupon-usage] Obteniendo estadísticas para compañía: ${companyId}, fechas: ${startDate} - ${endDate}`);
+      
+      const statistics = await storage.getCouponUsageStatistics(companyId, startDate, endDate);
       
       console.log(`[GET /statistics/coupon-usage] Encontradas ${statistics.length} estadísticas de cupones`);
       
@@ -8316,6 +8320,100 @@ function setupPackageRoutes(app: Express) {
       console.error("[GET /statistics/coupon-usage] Error:", error);
       res.status(500).json({ 
         error: "Error al obtener estadísticas de cupones",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para estadísticas de rutas más concurridas
+  app.get(apiRouter("/statistics/popular-routes"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /statistics/popular-routes] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver estadísticas (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver estadísticas" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      // Obtener parámetros de fecha
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      console.log(`[GET /statistics/popular-routes] Obteniendo estadísticas para compañía: ${companyId}, fechas: ${startDate} - ${endDate}`);
+      
+      const statistics = await storage.getPopularRoutesStatistics(companyId, startDate, endDate);
+      
+      console.log(`[GET /statistics/popular-routes] Encontradas ${statistics.length} estadísticas de rutas`);
+      
+      res.json(statistics);
+    } catch (error: any) {
+      console.error("[GET /statistics/popular-routes] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener estadísticas de rutas",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para estadísticas de ingreso de pasajeros
+  app.get(apiRouter("/statistics/passenger-intake"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /statistics/passenger-intake] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver estadísticas (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver estadísticas" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      // Obtener parámetros de fecha
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      console.log(`[GET /statistics/passenger-intake] Obteniendo estadísticas para compañía: ${companyId}, fechas: ${startDate} - ${endDate}`);
+      
+      const statistics = await storage.getPassengerIntakeStatistics(companyId, startDate, endDate);
+      
+      console.log(`[GET /statistics/passenger-intake] Encontradas ${statistics.length} estadísticas de ingreso`);
+      
+      res.json(statistics);
+    } catch (error: any) {
+      console.error("[GET /statistics/passenger-intake] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener estadísticas de ingreso de pasajeros",
         details: error.message 
       });
     }

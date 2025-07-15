@@ -231,6 +231,32 @@ export interface IStorage {
   
   // Box cutoff methods
   createBoxCutoff(cutoffData: schema.InsertBoxCutoff): Promise<schema.BoxCutoff>;
+  
+  // Statistics methods
+  getCouponUsageStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    userId: number;
+    userName: string;
+    totalCouponsUsed: number;
+    totalDiscountAmount: number;
+    averageDiscountPerCoupon: number;
+  }[]>;
+  
+  getPopularRoutesStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    origin: string;
+    destination: string;
+    totalReservations: number;
+    totalRevenue: number;
+    averageRevenuePerReservation: number;
+  }[]>;
+  
+  getPassengerIntakeStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    userId: number;
+    userName: string;
+    totalReservationsCreated: number;
+    totalPassengersAdded: number;
+    totalRevenueGenerated: number;
+    averageRevenuePerReservation: number;
+  }[]>;
 }
 
 // Importamos la clase DatabaseStorage desde el archivo separado

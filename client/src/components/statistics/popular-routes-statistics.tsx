@@ -6,18 +6,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, TrendingUp, DollarSign, Target, Calendar, RotateCcw } from "lucide-react";
+import { MapPin, Route, Trophy, Medal, Award, Calendar, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 
-interface CouponUsageStatistic {
-  userId: number;
-  userName: string;
-  totalCouponsUsed: number;
-  totalDiscountAmount: number;
-  averageDiscountPerCoupon: number;
+interface PopularRouteStatistic {
+  origin: string;
+  destination: string;
+  totalReservations: number;
+  totalRevenue: number;
+  averageRevenuePerReservation: number;
 }
 
-export default function CouponUsageStatistics() {
+export default function PopularRoutesStatistics() {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30); // Últimos 30 días por defecto
@@ -28,16 +28,16 @@ export default function CouponUsageStatistics() {
     return format(new Date(), 'yyyy-MM-dd');
   });
 
-  const { data: statistics, isLoading, error } = useQuery<CouponUsageStatistic[]>({
-    queryKey: ["/api/statistics/coupon-usage", startDate, endDate],
+  const { data: statistics, isLoading, error } = useQuery<PopularRouteStatistic[]>({
+    queryKey: ["/api/statistics/popular-routes", startDate, endDate],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
-      const response = await fetch(`/api/statistics/coupon-usage?${params}`);
+      const response = await fetch(`/api/statistics/popular-routes?${params}`);
       if (!response.ok) {
-        throw new Error("Error al obtener estadísticas de cupones");
+        throw new Error("Error al obtener estadísticas de rutas");
       }
       return response.json();
     },
@@ -56,8 +56,8 @@ export default function CouponUsageStatistics() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Estadísticas de Uso de Cupones
+              <Route className="h-5 w-5" />
+              Rutas más Concurridas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -76,8 +76,8 @@ export default function CouponUsageStatistics() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Estadísticas de Uso de Cupones
+              <Route className="h-5 w-5" />
+              Rutas más Concurridas
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -96,13 +96,13 @@ export default function CouponUsageStatistics() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Estadísticas de Uso de Cupones
+              <Route className="h-5 w-5" />
+              Rutas más Concurridas
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">No hay estadísticas de cupones disponibles</div>
+              <div className="text-gray-500">No hay estadísticas de rutas disponibles</div>
             </div>
           </CardContent>
         </Card>
@@ -111,9 +111,9 @@ export default function CouponUsageStatistics() {
   }
 
   // Calcular totales
-  const totalCouponsUsed = statistics.reduce((sum, stat) => sum + stat.totalCouponsUsed, 0);
-  const totalDiscountAmount = statistics.reduce((sum, stat) => sum + stat.totalDiscountAmount, 0);
-  const averageDiscountOverall = totalCouponsUsed > 0 ? totalDiscountAmount / totalCouponsUsed : 0;
+  const totalReservations = statistics.reduce((sum, stat) => sum + stat.totalReservations, 0);
+  const totalRevenue = statistics.reduce((sum, stat) => sum + stat.totalRevenue, 0);
+  const averageRevenueOverall = totalReservations > 0 ? totalRevenue / totalReservations : 0;
 
   return (
     <div className="space-y-6">
@@ -167,10 +167,10 @@ export default function CouponUsageStatistics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Cupones Usados</p>
-                <p className="text-2xl font-bold">{totalCouponsUsed}</p>
+                <p className="text-sm font-medium text-gray-600">Total Reservaciones</p>
+                <p className="text-2xl font-bold">{totalReservations}</p>
               </div>
-              <Target className="h-8 w-8 text-blue-500" />
+              <Route className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -179,10 +179,10 @@ export default function CouponUsageStatistics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Descuentos</p>
-                <p className="text-2xl font-bold">${totalDiscountAmount.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600">Ingresos Totales</p>
+                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+              <MapPin className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -191,49 +191,53 @@ export default function CouponUsageStatistics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Promedio por Cupón</p>
-                <p className="text-2xl font-bold">${averageDiscountOverall.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600">Promedio por Reservación</p>
+                <p className="text-2xl font-bold">${averageRevenueOverall.toFixed(2)}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-orange-500" />
+              <Trophy className="h-8 w-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabla de estadísticas por usuario */}
+      {/* Tabla de estadísticas por ruta */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Uso de Cupones por Usuario
+            <MapPin className="h-5 w-5" />
+            Rutas más Concurridas
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Usuario</TableHead>
-                <TableHead className="text-center">Cupones Usados</TableHead>
-                <TableHead className="text-center">Total Descuentos</TableHead>
-                <TableHead className="text-center">Promedio por Cupón</TableHead>
+                <TableHead>Origen</TableHead>
+                <TableHead>Destino</TableHead>
+                <TableHead className="text-center">Reservaciones</TableHead>
+                <TableHead className="text-center">Ingresos</TableHead>
+                <TableHead className="text-center">Promedio</TableHead>
                 <TableHead className="text-center">Ranking</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {statistics.map((stat, index) => (
-                <TableRow key={stat.userId}>
-                  <TableCell className="font-medium">{stat.userName}</TableCell>
+                <TableRow key={`${stat.origin}-${stat.destination}`}>
+                  <TableCell className="font-medium">{stat.origin}</TableCell>
+                  <TableCell className="font-medium">{stat.destination}</TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="secondary">{stat.totalCouponsUsed}</Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="text-green-600 font-medium">
-                      ${stat.totalDiscountAmount.toFixed(2)}
+                    <span className="font-semibold text-blue-600">
+                      {stat.totalReservations}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="text-blue-600 font-medium">
-                      ${stat.averageDiscountPerCoupon.toFixed(2)}
+                    <span className="font-semibold text-green-600">
+                      ${stat.totalRevenue.toFixed(2)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-semibold text-orange-600">
+                      ${stat.averageRevenuePerReservation.toFixed(2)}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">

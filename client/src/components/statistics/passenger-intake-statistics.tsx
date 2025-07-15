@@ -6,18 +6,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, TrendingUp, DollarSign, Target, Calendar, RotateCcw } from "lucide-react";
+import { Users, UserCheck, Trophy, Medal, Award, Calendar, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 
-interface CouponUsageStatistic {
+interface PassengerIntakeStatistic {
   userId: number;
   userName: string;
-  totalCouponsUsed: number;
-  totalDiscountAmount: number;
-  averageDiscountPerCoupon: number;
+  totalReservationsCreated: number;
+  totalPassengersAdded: number;
+  totalRevenueGenerated: number;
+  averageRevenuePerReservation: number;
 }
 
-export default function CouponUsageStatistics() {
+export default function PassengerIntakeStatistics() {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30); // Últimos 30 días por defecto
@@ -28,16 +29,16 @@ export default function CouponUsageStatistics() {
     return format(new Date(), 'yyyy-MM-dd');
   });
 
-  const { data: statistics, isLoading, error } = useQuery<CouponUsageStatistic[]>({
-    queryKey: ["/api/statistics/coupon-usage", startDate, endDate],
+  const { data: statistics, isLoading, error } = useQuery<PassengerIntakeStatistic[]>({
+    queryKey: ["/api/statistics/passenger-intake", startDate, endDate],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
-      const response = await fetch(`/api/statistics/coupon-usage?${params}`);
+      const response = await fetch(`/api/statistics/passenger-intake?${params}`);
       if (!response.ok) {
-        throw new Error("Error al obtener estadísticas de cupones");
+        throw new Error("Error al obtener estadísticas de ingreso de pasajeros");
       }
       return response.json();
     },
@@ -56,8 +57,8 @@ export default function CouponUsageStatistics() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Estadísticas de Uso de Cupones
+              <Users className="h-5 w-5" />
+              Ingreso de Pasajeros
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -76,8 +77,8 @@ export default function CouponUsageStatistics() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Estadísticas de Uso de Cupones
+              <Users className="h-5 w-5" />
+              Ingreso de Pasajeros
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -96,13 +97,13 @@ export default function CouponUsageStatistics() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Estadísticas de Uso de Cupones
+              <Users className="h-5 w-5" />
+              Ingreso de Pasajeros
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center h-32">
-              <div className="text-gray-500">No hay estadísticas de cupones disponibles</div>
+              <div className="text-gray-500">No hay estadísticas de ingreso de pasajeros disponibles</div>
             </div>
           </CardContent>
         </Card>
@@ -111,9 +112,10 @@ export default function CouponUsageStatistics() {
   }
 
   // Calcular totales
-  const totalCouponsUsed = statistics.reduce((sum, stat) => sum + stat.totalCouponsUsed, 0);
-  const totalDiscountAmount = statistics.reduce((sum, stat) => sum + stat.totalDiscountAmount, 0);
-  const averageDiscountOverall = totalCouponsUsed > 0 ? totalDiscountAmount / totalCouponsUsed : 0;
+  const totalReservations = statistics.reduce((sum, stat) => sum + stat.totalReservationsCreated, 0);
+  const totalPassengers = statistics.reduce((sum, stat) => sum + stat.totalPassengersAdded, 0);
+  const totalRevenue = statistics.reduce((sum, stat) => sum + stat.totalRevenueGenerated, 0);
+  const averageRevenueOverall = totalReservations > 0 ? totalRevenue / totalReservations : 0;
 
   return (
     <div className="space-y-6">
@@ -162,15 +164,15 @@ export default function CouponUsageStatistics() {
       </Card>
 
       {/* Tarjetas de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Cupones Usados</p>
-                <p className="text-2xl font-bold">{totalCouponsUsed}</p>
+                <p className="text-sm font-medium text-gray-600">Total Reservaciones</p>
+                <p className="text-2xl font-bold">{totalReservations}</p>
               </div>
-              <Target className="h-8 w-8 text-blue-500" />
+              <UserCheck className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -179,10 +181,10 @@ export default function CouponUsageStatistics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Descuentos</p>
-                <p className="text-2xl font-bold">${totalDiscountAmount.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600">Total Pasajeros</p>
+                <p className="text-2xl font-bold">{totalPassengers}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+              <Users className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -191,10 +193,22 @@ export default function CouponUsageStatistics() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Promedio por Cupón</p>
-                <p className="text-2xl font-bold">${averageDiscountOverall.toFixed(2)}</p>
+                <p className="text-sm font-medium text-gray-600">Ingresos Totales</p>
+                <p className="text-2xl font-bold">${totalRevenue.toFixed(2)}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-orange-500" />
+              <Trophy className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Promedio por Reservación</p>
+                <p className="text-2xl font-bold">${averageRevenueOverall.toFixed(2)}</p>
+              </div>
+              <Medal className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -204,8 +218,8 @@ export default function CouponUsageStatistics() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Uso de Cupones por Usuario
+            <Users className="h-5 w-5" />
+            Ranking de Usuarios por Ingreso de Pasajeros
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -213,9 +227,10 @@ export default function CouponUsageStatistics() {
             <TableHeader>
               <TableRow>
                 <TableHead>Usuario</TableHead>
-                <TableHead className="text-center">Cupones Usados</TableHead>
-                <TableHead className="text-center">Total Descuentos</TableHead>
-                <TableHead className="text-center">Promedio por Cupón</TableHead>
+                <TableHead className="text-center">Reservaciones</TableHead>
+                <TableHead className="text-center">Pasajeros</TableHead>
+                <TableHead className="text-center">Ingresos</TableHead>
+                <TableHead className="text-center">Promedio</TableHead>
                 <TableHead className="text-center">Ranking</TableHead>
               </TableRow>
             </TableHeader>
@@ -224,16 +239,23 @@ export default function CouponUsageStatistics() {
                 <TableRow key={stat.userId}>
                   <TableCell className="font-medium">{stat.userName}</TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="secondary">{stat.totalCouponsUsed}</Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <span className="text-green-600 font-medium">
-                      ${stat.totalDiscountAmount.toFixed(2)}
+                    <span className="font-semibold text-blue-600">
+                      {stat.totalReservationsCreated}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="text-blue-600 font-medium">
-                      ${stat.averageDiscountPerCoupon.toFixed(2)}
+                    <span className="font-semibold text-green-600">
+                      {stat.totalPassengersAdded}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-semibold text-orange-600">
+                      ${stat.totalRevenueGenerated.toFixed(2)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-semibold text-purple-600">
+                      ${stat.averageRevenuePerReservation.toFixed(2)}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">

@@ -3986,16 +3986,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Método para obtener estadísticas de uso de cupones por usuario
-  async getCouponUsageStatistics(companyId: string): Promise<{
+  async getCouponUsageStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
     userId: number;
     userName: string;
     totalCouponsUsed: number;
     totalDiscountAmount: number;
     averageDiscountPerCoupon: number;
   }[]> {
-    console.log(`DB Storage: Obteniendo estadísticas de cupones para compañía ${companyId}`);
+    console.log(`DB Storage: Obteniendo estadísticas de cupones para compañía ${companyId}, fechas: ${startDate} - ${endDate}`);
     
     try {
+      // Construir condiciones de filtrado
+      const baseConditions = [
+        eq(schema.reservations.companyId, companyId),
+        eq(schema.users.companyId, companyId),
+        isNotNull(schema.reservations.couponCode)
+      ];
+
+      // Agregar filtros de fecha si se proporcionan
+      if (startDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) >= ${startDate}`);
+      }
+      if (endDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) <= ${endDate}`);
+      }
+
       const result = await db
         .select({
           userId: schema.reservations.createdBy,
@@ -4006,13 +4021,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(schema.reservations)
         .innerJoin(schema.users, eq(schema.reservations.createdBy, schema.users.id))
-        .where(
-          and(
-            eq(schema.reservations.companyId, companyId),
-            eq(schema.users.companyId, companyId),
-            isNotNull(schema.reservations.couponCode)
-          )
-        )
+        .where(and(...baseConditions))
         .groupBy(schema.reservations.createdBy, schema.users.firstName, schema.users.lastName)
         .having(sql`COUNT(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN 1 END) > 0`)
         .orderBy(sql`COUNT(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN 1 END) DESC`);
@@ -4028,6 +4037,123 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error(`DB Storage: Error al obtener estadísticas de cupones:`, error);
+      throw error;
+    }
+  }
+
+  // Método para obtener estadísticas de rutas más concurridas
+  async getPopularRoutesStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    origin: string;
+    destination: string;
+    totalReservations: number;
+    totalRevenue: number;
+    averageRevenuePerReservation: number;
+  }[]> {
+    console.log(`DB Storage: Obteniendo estadísticas de rutas populares para compañía ${companyId}, fechas: ${startDate} - ${endDate}`);
+    
+    try {
+      // Construir condiciones de filtrado
+      const baseConditions = [
+        eq(schema.reservations.companyId, companyId),
+        ne(schema.reservations.status, 'cancelled') // Excluir canceladas
+      ];
+
+      // Agregar filtros de fecha si se proporcionan
+      if (startDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) >= ${startDate}`);
+      }
+      if (endDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) <= ${endDate}`);
+      }
+
+      const result = await db
+        .select({
+          origin: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.origin'))`,
+          destination: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.destination'))`,
+          totalReservations: sql<number>`COUNT(*)`,
+          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
+          averageRevenuePerReservation: sql<number>`COALESCE(AVG(${schema.reservations.totalAmount}), 0)`
+        })
+        .from(schema.reservations)
+        .where(and(...baseConditions))
+        .groupBy(
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.origin'))`,
+          sql`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.destination'))`
+        )
+        .having(sql`COUNT(*) > 0`)
+        .orderBy(sql`COUNT(*) DESC`, sql`COALESCE(SUM(${schema.reservations.totalAmount}), 0) DESC`);
+
+      console.log(`DB Storage: Encontradas ${result.length} estadísticas de rutas populares para compañía ${companyId}`);
+      
+      return result.map(row => ({
+        origin: row.origin || 'Origen no especificado',
+        destination: row.destination || 'Destino no especificado',
+        totalReservations: Number(row.totalReservations),
+        totalRevenue: Number(row.totalRevenue),
+        averageRevenuePerReservation: Number(row.averageRevenuePerReservation)
+      }));
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener estadísticas de rutas populares:`, error);
+      throw error;
+    }
+  }
+
+  // Método para obtener estadísticas de ingreso de pasajeros por usuario
+  async getPassengerIntakeStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    userId: number;
+    userName: string;
+    totalReservationsCreated: number;
+    totalPassengersAdded: number;
+    totalRevenueGenerated: number;
+    averageRevenuePerReservation: number;
+  }[]> {
+    console.log(`DB Storage: Obteniendo estadísticas de ingreso de pasajeros para compañía ${companyId}, fechas: ${startDate} - ${endDate}`);
+    
+    try {
+      // Construir condiciones de filtrado
+      const baseConditions = [
+        eq(schema.reservations.companyId, companyId),
+        eq(schema.users.companyId, companyId),
+        isNotNull(schema.reservations.createdBy),
+        ne(schema.reservations.status, 'cancelled') // Excluir canceladas
+      ];
+
+      // Agregar filtros de fecha si se proporcionan
+      if (startDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) >= ${startDate}`);
+      }
+      if (endDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) <= ${endDate}`);
+      }
+
+      const result = await db
+        .select({
+          userId: schema.reservations.createdBy,
+          userName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
+          totalReservationsCreated: sql<number>`COUNT(*)`,
+          totalPassengersAdded: sql<number>`COALESCE(SUM(JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.seats'))), 0)`,
+          totalRevenueGenerated: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
+          averageRevenuePerReservation: sql<number>`COALESCE(AVG(${schema.reservations.totalAmount}), 0)`
+        })
+        .from(schema.reservations)
+        .innerJoin(schema.users, eq(schema.reservations.createdBy, schema.users.id))
+        .where(and(...baseConditions))
+        .groupBy(schema.reservations.createdBy, schema.users.firstName, schema.users.lastName)
+        .having(sql`COUNT(*) > 0`)
+        .orderBy(sql`COUNT(*) DESC`, sql`COALESCE(SUM(${schema.reservations.totalAmount}), 0) DESC`);
+
+      console.log(`DB Storage: Encontradas ${result.length} estadísticas de ingreso de pasajeros para compañía ${companyId}`);
+      
+      return result.map(row => ({
+        userId: row.userId,
+        userName: row.userName,
+        totalReservationsCreated: Number(row.totalReservationsCreated),
+        totalPassengersAdded: Number(row.totalPassengersAdded),
+        totalRevenueGenerated: Number(row.totalRevenueGenerated),
+        averageRevenuePerReservation: Number(row.averageRevenuePerReservation)
+      }));
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener estadísticas de ingreso de pasajeros:`, error);
       throw error;
     }
   }
