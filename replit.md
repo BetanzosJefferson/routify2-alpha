@@ -119,6 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 14, 2025** - ENHANCED: Reservation list filtering system with route and time filters:
+  - **NEW FILTER CONTROLS**: Added "Ruta" and "Hora" filter dropdowns to reservations-list.tsx
+  - **ROUTE FILTERING**: Users can filter by origin-destination pairs (e.g., "Acapulco de Juarez, Guerrero → Coyoacan, Ciudad de Mexico")
+  - **TIME FILTERING**: Users can filter by departure time (e.g., "23:50 PM") using exact time matching
+  - **DYNAMIC OPTIONS**: Filter options are generated dynamically from available trip data
+  - **IMPROVED LAYOUT**: Reorganized filters in two rows - text search on first row, route/time filters on second row
+  - **RESPONSIVE DESIGN**: Mobile-friendly layout with proper spacing and icon indicators (MapPin, Clock)
+  - **CLEAR FILTERS**: Enhanced "Limpiar filtros" button activates when any filter is applied
+  - **FILTER INTEGRATION**: Added finalFilteredReservations logic to combine date, route, and time filtering
+  - **TECHNICAL IMPLEMENTATION**: Added routeFilter and timeFilter state variables with proper filter application
+  - **USER EXPERIENCE**: Streamlined reservation browsing with precise filtering by route and departure time
+
 - **July 14, 2025** - CRITICAL FIX: User cash boxes cutoff grouping logic completely corrected:
   - **ROOT CAUSE IDENTIFIED**: System was filtering transactions by `cutoff_id !== null` but not grouping by specific cutoff_id values
   - **GROUPING PROBLEM**: Multiple transactions with different cutoff_id values were being shown as single group

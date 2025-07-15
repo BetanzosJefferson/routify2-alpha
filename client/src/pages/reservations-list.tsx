@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
@@ -21,6 +22,8 @@ function ReservationsListContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [hasError, setHasError] = useState(false);
+  const [routeFilter, setRouteFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
   
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
@@ -291,17 +294,56 @@ function ReservationsListContent() {
     return filtered;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
 
+  // Aplicar filtros adicionales de ruta y hora
+  const finalFilteredReservations = Object.entries(filteredGroupedReservations).reduce((filtered, [groupKey, group]) => {
+    let includeGroup = true;
+    
+    // Filtro de ruta
+    if (routeFilter !== "all" && group.tripInfo) {
+      const routeString = `${group.tripInfo.origin} → ${group.tripInfo.destination}`;
+      if (routeString !== routeFilter) {
+        includeGroup = false;
+      }
+    }
+    
+    // Filtro de hora
+    if (timeFilter !== "all" && group.tripInfo) {
+      if (group.tripInfo.departureTime !== timeFilter) {
+        includeGroup = false;
+      }
+    }
+    
+    if (includeGroup) {
+      filtered[groupKey] = group;
+    }
+    
+    return filtered;
+  }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
+
   // Agregar logging adicional para debug
   console.log(`[FILTER_DEBUG] Total grupos antes del filtrado: ${Object.keys(groupedReservations).length}`);
   console.log(`[FILTER_DEBUG] Fecha de búsqueda: ${searchDate}`);
-  console.log(`[FILTER_DEBUG] Total grupos después del filtrado: ${Object.keys(filteredGroupedReservations).length}`);
+  console.log(`[FILTER_DEBUG] Total grupos después del filtrado: ${Object.keys(finalFilteredReservations).length}`);
   console.log(`[DRIVER_FILTER] Es conductor: ${isDriver}, Reservaciones filtradas: ${filteredReservations.length} de ${reservations.length}`);
 
+  // Generar opciones de filtro dinámicamente
+  const availableRoutes = Array.from(new Set(
+    Object.values(groupedReservations)
+      .filter(group => group.tripInfo)
+      .map(group => `${group.tripInfo.origin} → ${group.tripInfo.destination}`)
+  )).sort();
+
+  const availableTimes = Array.from(new Set(
+    Object.values(groupedReservations)
+      .filter(group => group.tripInfo?.departureTime)
+      .map(group => group.tripInfo.departureTime)
+  )).sort();
+
   // Paginación aplicada a los grupos filtrados
-  const totalGroups = Object.keys(filteredGroupedReservations).length;
+  const totalGroups = Object.keys(finalFilteredReservations).length;
   const totalPages = Math.ceil(totalGroups / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedGroups = Object.entries(filteredGroupedReservations).slice(startIndex, startIndex + itemsPerPage);
+  const paginatedGroups = Object.entries(finalFilteredReservations).slice(startIndex, startIndex + itemsPerPage);
 
   const handleTripClick = (recordId: string, tripInfo: any, reservations: ReservationWithDetails[]) => {
     setSelectedTrip({
@@ -368,7 +410,7 @@ function ReservationsListContent() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Reservaciones en Lista</h1>
               <div className="text-sm text-gray-600 mt-1">
-                Total: {filteredReservations.length} reservaciones en {Object.keys(filteredGroupedReservations).length} viajes
+                Total: {filteredReservations.length} reservaciones en {Object.keys(finalFilteredReservations).length} viajes
               </div>
             </div>
             
@@ -398,9 +440,10 @@ function ReservationsListContent() {
             </div>
           </div>
           
-          {/* Filtro de búsqueda */}
-          <div className="flex flex-col md:flex-row gap-3 mt-4 pt-4 border-t">
-            <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* Filtros */}
+          <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+            {/* Primera fila: Búsqueda por texto */}
+            <div className="flex items-center gap-2 w-full">
               <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <Input
                 placeholder="Buscar por nombre, teléfono..."
@@ -410,20 +453,61 @@ function ReservationsListContent() {
               />
             </div>
             
-            {/* Botón para limpiar filtros */}
-            {searchTerm && (
-              <Button
-                onClick={() => {
-                  setSearchTerm("");
-                }}
-                size="sm"
-                variant="outline"
-                className="whitespace-nowrap"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Limpiar filtros
-              </Button>
-            )}
+            {/* Segunda fila: Filtros de ruta y hora */}
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Filtro de ruta */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <Select value={routeFilter} onValueChange={setRouteFilter}>
+                  <SelectTrigger className="w-full md:w-[250px]">
+                    <SelectValue placeholder="Filtrar por ruta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las rutas</SelectItem>
+                    {availableRoutes.map(route => (
+                      <SelectItem key={route} value={route}>
+                        {route}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Filtro de hora */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <Select value={timeFilter} onValueChange={setTimeFilter}>
+                  <SelectTrigger className="w-full md:w-[150px]">
+                    <SelectValue placeholder="Filtrar por hora" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las horas</SelectItem>
+                    {availableTimes.map(time => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Botón para limpiar filtros */}
+              {(searchTerm || routeFilter !== "all" || timeFilter !== "all") && (
+                <Button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setRouteFilter("all");
+                    setTimeFilter("all");
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Limpiar filtros
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
