@@ -3984,4 +3984,51 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Método para obtener estadísticas de uso de cupones por usuario
+  async getCouponUsageStatistics(companyId: string): Promise<{
+    userId: number;
+    userName: string;
+    totalCouponsUsed: number;
+    totalDiscountAmount: number;
+    averageDiscountPerCoupon: number;
+  }[]> {
+    console.log(`DB Storage: Obteniendo estadísticas de cupones para compañía ${companyId}`);
+    
+    try {
+      const result = await db
+        .select({
+          userId: schema.reservations.createdBy,
+          userName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
+          totalCouponsUsed: sql<number>`COUNT(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN 1 END)`,
+          totalDiscountAmount: sql<number>`COALESCE(SUM(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN ${schema.reservations.discountAmount} ELSE 0 END), 0)`,
+          averageDiscountPerCoupon: sql<number>`COALESCE(AVG(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN ${schema.reservations.discountAmount} ELSE NULL END), 0)`
+        })
+        .from(schema.reservations)
+        .innerJoin(schema.users, eq(schema.reservations.createdBy, schema.users.id))
+        .where(
+          and(
+            eq(schema.reservations.companyId, companyId),
+            eq(schema.users.companyId, companyId),
+            isNotNull(schema.reservations.couponCode)
+          )
+        )
+        .groupBy(schema.reservations.createdBy, schema.users.firstName, schema.users.lastName)
+        .having(sql`COUNT(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN 1 END) > 0`)
+        .orderBy(sql`COUNT(CASE WHEN ${schema.reservations.couponCode} IS NOT NULL THEN 1 END) DESC`);
+
+      console.log(`DB Storage: Encontradas ${result.length} estadísticas de cupones para compañía ${companyId}`);
+      
+      return result.map(row => ({
+        userId: row.userId,
+        userName: row.userName,
+        totalCouponsUsed: Number(row.totalCouponsUsed),
+        totalDiscountAmount: Number(row.totalDiscountAmount),
+        averageDiscountPerCoupon: Number(row.averageDiscountPerCoupon)
+      }));
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener estadísticas de cupones:`, error);
+      throw error;
+    }
+  }
 }

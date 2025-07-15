@@ -41,6 +41,7 @@ import UserCashBoxesPageRoute from "@/pages/user-cash-boxes-page";
 import ProfilePageRoute from "@/pages/profile-page";
 import { ReservationsListPage } from "@/pages/reservations-list";
 import { TemplatesPage } from "@/pages/templates-page";
+import StatisticsPage from "@/pages/statistics-page";
 
 function Router() {
   return (
@@ -71,6 +72,7 @@ function Router() {
       <ProtectedRoute path="/publish-trip" component={PublishTripPageRoute} />
       <ProtectedRoute path="/trips" component={TripsPageRoute} />
       <ProtectedRoute path="/user-cash-boxes" component={UserCashBoxesPageRoute} />
+      <ProtectedRoute path="/statistics" component={StatisticsPage} />
       <ProtectedRoute path="/profile" component={ProfilePageRoute} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/register/:token" component={RegisterPage} />

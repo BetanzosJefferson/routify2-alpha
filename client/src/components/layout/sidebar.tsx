@@ -22,7 +22,8 @@ import {
   Users,
   ArrowRightLeft,
   ReceiptIcon,
-  Wallet
+  Wallet,
+  BarChart3
 } from "lucide-react";
 
 interface SidebarProps {
@@ -330,8 +331,21 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
           )}
 
+          {/* Estadísticas */}
+          {canAccess("statistics") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<BarChart3 className="h-5 w-5" />} 
+                active={location === "/statistics"}
+                onClick={() => setLocation("/statistics")}
+              >
+                Estadísticas
+              </NavItem>
+            </div>
+          )}
+
           {/* Línea separadora */}
-          {(canAccess("trip-summary") || canAccess("cash-box") || canAccess("cutoff-history") || canAccess("user-cash-boxes") || canAccess("commissions") || canAccess("coupons")) && (canAccess("users") || canAccess("vehicles")) && (
+          {(canAccess("trip-summary") || canAccess("cash-box") || canAccess("cutoff-history") || canAccess("user-cash-boxes") || canAccess("commissions") || canAccess("coupons") || canAccess("statistics")) && (canAccess("users") || canAccess("vehicles")) && (
             <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
           )}
           

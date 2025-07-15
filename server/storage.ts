@@ -61,6 +61,15 @@ export interface IStorage {
   
   // Sistema de Cajas y operaciones de caja han sido eliminados
   
+  // Statistics methods
+  getCouponUsageStatistics(companyId: string): Promise<{
+    userId: number;
+    userName: string;
+    totalCouponsUsed: number;
+    totalDiscountAmount: number;
+    averageDiscountPerCoupon: number;
+  }[]>;
+  
   // Trip methods
   getTrips(companyId?: string): Promise<TripWithRouteInfo[]>;
   getTrip(id: number): Promise<Trip | undefined>;

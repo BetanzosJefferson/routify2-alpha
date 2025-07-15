@@ -303,6 +303,19 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </NavLink>
                   )}
                   
+                  {/* Estadísticas */}
+                  {canAccess("statistics") && (
+                    <NavLink 
+                      active={window.location.pathname === "/statistics"}
+                      onClick={() => {
+                        setLocation("/statistics");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Estadísticas
+                    </NavLink>
+                  )}
+                  
                   {/* Usuarios */}
                   {canAccess("users") && (
                     <NavLink 

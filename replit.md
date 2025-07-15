@@ -119,6 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 15, 2025** - COMPLETED: Statistics section with coupon usage analysis fully implemented:
+  - **BACKEND INFRASTRUCTURE**: Created `getCouponUsageStatistics()` method in storage interface and db-storage implementation
+  - **STATISTICS ENDPOINT**: Added `/api/statistics/coupon-usage` endpoint with role-based access control (owner/admin only)
+  - **COMPREHENSIVE QUERY**: SQL query joins reservations and users tables to calculate coupon usage statistics
+  - **FRONTEND COMPONENTS**: Created `coupon-usage-statistics.tsx` component with detailed statistics display
+  - **STATISTICS PAGE**: Built `statistics-page.tsx` with tabbed interface for future statistics sections
+  - **NAVIGATION INTEGRATION**: Added "statistics" section to role permissions and navigation (sidebar/topbar)
+  - **VISUAL ANALYTICS**: Summary cards showing total coupons used, total discounts, and average per coupon
+  - **USER RANKING**: Table displaying users ranked by coupon usage with color-coded badges
+  - **RESPONSIVE DESIGN**: Mobile-friendly layout with proper grid system and responsive tables
+  - **ROLE PERMISSIONS**: Restricted access to owners and administrators only for sensitive business data
+  - **EXPANDABLE ARCHITECTURE**: Tabbed interface ready for future statistics sections (sales, users, trips)
+
 - **July 15, 2025** - COMPLETED: Bulk trip deletion system with reservation cancellation fully implemented:
   - **BACKEND INFRASTRUCTURE**: Created `cancelReservationsByTripId` method in db-storage.ts for proper reservation cancellation
   - **PREVIEW ENDPOINT**: Added `/api/trips/bulk-delete/preview` endpoint to show deletion impact before execution

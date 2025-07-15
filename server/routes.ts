@@ -8259,4 +8259,47 @@ function setupPackageRoutes(app: Express) {
       res.status(500).json({ error: "Error al limpiar cache" });
     }
   });
+
+  // Endpoint para estadísticas de uso de cupones
+  app.get(apiRouter("/statistics/coupon-usage"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /statistics/coupon-usage] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver estadísticas (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver estadísticas" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      console.log(`[GET /statistics/coupon-usage] Obteniendo estadísticas para compañía: ${companyId}`);
+      
+      const statistics = await storage.getCouponUsageStatistics(companyId);
+      
+      console.log(`[GET /statistics/coupon-usage] Encontradas ${statistics.length} estadísticas de cupones`);
+      
+      res.json(statistics);
+    } catch (error: any) {
+      console.error("[GET /statistics/coupon-usage] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener estadísticas de cupones",
+        details: error.message 
+      });
+    }
+  });
 }
