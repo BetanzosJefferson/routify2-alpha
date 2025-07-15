@@ -264,9 +264,28 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
     
     // Calcular de reservaciones
     tripData.reservations.forEach((reservation: any) => {
-      totalPorVender += reservation.totalAmount;
       const advanceAmount = reservation.advanceAmount || 0;
-      ventas += advanceAmount;
+      const isCanceled = reservation.status === 'canceled';
+      const isRefunded = reservation.status === 'canceledAndRefund';
+      
+      // Total por vender siempre es el precio original
+      totalPorVender += reservation.totalAmount;
+      
+      // Calcular ventas reales según el estado
+      if (isRefunded) {
+        // Reservaciones reembolsadas no generan ingresos
+        ventas += 0;
+      } else if (isCanceled) {
+        // Reservaciones canceladas: solo el anticipo que se cobró
+        ventas += advanceAmount;
+      } else {
+        // Reservaciones normales: usar paymentStatus o calcular basado en montos
+        if (reservation.paymentStatus === 'pagado') {
+          ventas += reservation.totalAmount;
+        } else {
+          ventas += advanceAmount;
+        }
+      }
     });
     
     // Calcular de paqueterías

@@ -137,6 +137,11 @@ Preferred communication style: Simple, everyday language.
   - **DETAILED LOGGING**: Added comprehensive logging to track filtering decisions and debug reservation inclusion/exclusion
   - **BUSINESS LOGIC ALIGNMENT**: Bitácora now accurately reflects only reservations that contributed to company revenue
   - **FINANCIAL ACCURACY**: Eliminated artificial revenue inflation from cancelled bookings without payments
+  - **SALES STATISTICS CORRECTION**: Fixed revenue calculation to use actual income received instead of original booking amounts:
+    - Cancelled reservations: Only counts advance payment received as actual revenue
+    - Refunded reservations: Counts $0 revenue (no net income)
+    - Normal reservations: Uses payment status or calculates based on amounts paid
+    - Example: Cancelled reservation with $100 advance from $200 total now correctly shows $100 revenue instead of $200
 
 - **July 15, 2025** - ENHANCED: Bitácora section filtering logic improved for accurate financial tracking:
   - **INTELLIGENT RESERVATION FILTERING**: Added logic to exclude reservations that don't represent actual income
