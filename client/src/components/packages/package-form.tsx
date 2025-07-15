@@ -72,6 +72,7 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [actualTripId, setActualTripId] = useState<number | string | { id: string } | null>(tripId || null);
   const [tripInfo, setTripInfo] = useState<{ 
     availableSeats: number;
     origin?: string;
@@ -133,12 +134,12 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
   // Cargar datos del viaje seleccionado
   useEffect(() => {
     async function fetchTripInfo() {
-      if (!tripId) return;
+      if (!actualTripId) return;
       
       try {
-        // Si tripId es un objeto, extraer la información directamente
-        if (typeof tripId === 'object' && tripId !== null) {
-          const selectedTrip = tripId as any;
+        // Si actualTripId es un objeto, extraer la información directamente
+        if (typeof actualTripId === 'object' && actualTripId !== null) {
+          const selectedTrip = actualTripId as any;
           
           // Los datos del segmento específico están en tripData[0]
           const segmentData = selectedTrip.tripData?.[0] || {};
@@ -166,7 +167,7 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         }
 
         // Si es un ID string/number, hacer fetch
-        const tripIdString = String(tripId);
+        const tripIdString = String(actualTripId);
         const response = await fetch(`/api/trips/${tripIdString}`);
         if (!response.ok) {
           throw new Error('Error al cargar la información del viaje');
@@ -190,7 +191,7 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
     }
     
     fetchTripInfo();
-  }, [tripId]);
+  }, [actualTripId]);
 
   // Cargar datos del paquete existente si se está editando
   useEffect(() => {
@@ -228,8 +229,9 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         });
         
         // Si es un paquete existente, también actualizamos el ID del viaje
-        if (!tripId && packageData.tripId) {
+        if (!actualTripId && packageData.tripId) {
           const packageTripId = packageData.tripId;
+          setActualTripId(packageTripId); // Actualizar el estado con el tripId del paquete
           // Cargar información del viaje asociado al paquete
           try {
             const tripResponse = await fetch(`/api/trips/${packageTripId}`);
@@ -262,7 +264,7 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
     }
     
     fetchPackageData();
-  }, [packageId, form, toast, tripId]);
+  }, [packageId, form, toast, actualTripId]);
   
   // Obtener valores para condicionar campos
   const isPaid = form.watch("isPaid");
@@ -285,14 +287,14 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
   const saveMutation = useMutation({
     mutationFn: async (data: PackageFormValues) => {
       // Construir el objeto tripDetails que espera el backend
-      if (!tripId) {
+      if (!actualTripId) {
         throw new Error("No se ha seleccionado un viaje para la paquetería");
       }
 
-      // Convertir tripId a string si es un objeto
-      const tripIdString = typeof tripId === 'object' && tripId !== null && 'id' in tripId 
-        ? String((tripId as any).id) 
-        : String(tripId);
+      // Convertir actualTripId a string si es un objeto
+      const tripIdString = typeof actualTripId === 'object' && actualTripId !== null && 'id' in actualTripId 
+        ? String((actualTripId as any).id) 
+        : String(actualTripId);
 
       // Extraer información del tripId (formato: "baseId_segmentIndex" como "28_1")
       const tripIdParts = tripIdString.split('_');
