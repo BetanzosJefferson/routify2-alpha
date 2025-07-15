@@ -2426,7 +2426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const reservations = await db
           .select({ count: sql`count(*)` })
           .from(schema.reservations)
-          .where(sql`JSON_EXTRACT(${schema.reservations.tripDetails}, '$.recordId') = ${trip.id}`);
+          .where(sql`(${schema.reservations.tripDetails}->>'recordId')::integer = ${trip.id}`);
         
         totalReservations += parseInt(reservations[0].count.toString());
       }

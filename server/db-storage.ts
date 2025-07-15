@@ -374,17 +374,17 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(schema.trips.companyId, companyId));
     }
     
-    // Filtro por rango de fechas usando JSON_EXTRACT para obtener la fecha del primer segmento
+    // Filtro por rango de fechas usando sintaxis PostgreSQL JSONB
     conditions.push(
-      sql`JSON_EXTRACT(${schema.trips.tripData}, '$[0].departureDate') >= ${startDate}`,
-      sql`JSON_EXTRACT(${schema.trips.tripData}, '$[0].departureDate') <= ${endDate}`
+      sql`(${schema.trips.tripData}->0->>'departureDate')::date >= ${startDate}::date`,
+      sql`(${schema.trips.tripData}->0->>'departureDate')::date <= ${endDate}::date`
     );
     
     const trips = await db
       .select()
       .from(schema.trips)
       .where(and(...conditions))
-      .orderBy(sql`JSON_EXTRACT(${schema.trips.tripData}, '$[0].departureDate')`);
+      .orderBy(sql`(${schema.trips.tripData}->0->>'departureDate')::date`);
     
     console.log(`[getTripsInDateRange] Encontrados ${trips.length} viajes en el rango especificado`);
     
@@ -399,7 +399,7 @@ export class DatabaseStorage implements IStorage {
       const reservations = await db
         .select()
         .from(schema.reservations)
-        .where(sql`JSON_EXTRACT(${schema.reservations.tripDetails}, '$.recordId') = ${tripId}`);
+        .where(sql`(${schema.reservations.tripDetails}->>'recordId')::integer = ${tripId}`);
       
       console.log(`[cancelReservationsByTripId] Encontradas ${reservations.length} reservaciones para el viaje ${tripId}`);
       
