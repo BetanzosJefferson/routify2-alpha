@@ -336,8 +336,8 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             <div className="space-y-1">
               <NavItem 
                 icon={<BarChart3 className="h-5 w-5" />} 
-                active={location === "/statistics"}
-                onClick={() => setLocation("/statistics")}
+                active={activeTab === "statistics"}
+                onClick={() => handleTabClick("statistics")}
               >
                 Estadísticas
               </NavItem>
