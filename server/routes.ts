@@ -2329,7 +2329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para eliminar viajes por rango de fechas (DEBE IR ANTES de /:id)
   app.delete(apiRouter("/trips/bulk-delete"), isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { startDate, endDate } = req.body;
+      const { startDate, endDate, routeId } = req.body;
       
       // Validar datos de entrada
       if (!startDate || !endDate) {
@@ -2344,6 +2344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DELETE /trips/bulk-delete] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       console.log(`[DELETE /trips/bulk-delete] Rango de fechas: ${startDate} a ${endDate}`);
+      console.log(`[DELETE /trips/bulk-delete] Filtro de ruta: ${routeId || 'Sin filtro'}`);
       
       if (user) {
         console.log(`[DELETE /trips/bulk-delete] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
@@ -2370,11 +2371,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.companyId || user.company
       );
       
-      console.log(`[DELETE /trips/bulk-delete] Encontrados ${tripsInRange.length} viajes en el rango`);
+      console.log(`[DELETE /trips/bulk-delete] Encontrados ${tripsInRange.length} viajes en el rango (antes de filtro de ruta)`);
       
-      if (tripsInRange.length === 0) {
+      // Filtrar por ruta si se especificó
+      let filteredTrips = tripsInRange;
+      if (routeId && routeId !== "") {
+        const routeIdNumber = parseInt(routeId as string, 10);
+        filteredTrips = tripsInRange.filter(trip => trip.routeId === routeIdNumber);
+        console.log(`[DELETE /trips/bulk-delete] Después de filtro de ruta ${routeIdNumber}: ${filteredTrips.length} viajes`);
+      }
+      
+      if (filteredTrips.length === 0) {
         return res.json({ 
-          message: "No se encontraron viajes en el rango especificado",
+          message: routeId ? "No se encontraron viajes en el rango especificado para la ruta seleccionada" : "No se encontraron viajes en el rango especificado",
           deletedCount: 0 
         });
       }
@@ -2384,7 +2393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalCancelledReservations = 0;
       let errors = [];
       
-      for (const trip of tripsInRange) {
+      for (const trip of filteredTrips) {
         try {
           // Verificar permisos de compañía para cada viaje
           if (user.role !== UserRole.SUPER_ADMIN) {
@@ -2430,9 +2439,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DELETE /trips/bulk-delete] Caché invalidado después de eliminar ${deletedCount} viajes`);
       
       const result = {
-        message: `Se eliminaron ${deletedCount} viajes de ${tripsInRange.length} encontrados${totalCancelledReservations > 0 ? ` y se cancelaron ${totalCancelledReservations} reservaciones` : ''}`,
+        message: `Se eliminaron ${deletedCount} viajes de ${filteredTrips.length} encontrados${totalCancelledReservations > 0 ? ` y se cancelaron ${totalCancelledReservations} reservaciones` : ''}`,
         deletedCount,
-        totalFound: tripsInRange.length,
+        totalFound: filteredTrips.length,
         cancelledReservations: totalCancelledReservations,
         errors: errors.length > 0 ? errors : undefined
       };
@@ -2504,7 +2513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para obtener count de eliminación masiva
   app.get(apiRouter("/trips/bulk-delete/count"), isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { startDate, endDate } = req.query;
+      const { startDate, endDate, routeId } = req.query;
       
       // Validar datos de entrada
       if (!startDate || !endDate) {
@@ -2519,6 +2528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /trips/bulk-delete/count] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
       console.log(`[GET /trips/bulk-delete/count] Rango de fechas: ${startDate} a ${endDate}`);
+      console.log(`[GET /trips/bulk-delete/count] Filtro de ruta: ${routeId || 'Sin filtro'}`);
       
       // Validar permisos
       if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
@@ -2541,10 +2551,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.companyId || user.company
       );
       
-      console.log(`[GET /trips/bulk-delete/count] Encontrados ${tripsInRange.length} viajes en el rango`);
+      console.log(`[GET /trips/bulk-delete/count] Encontrados ${tripsInRange.length} viajes en el rango (antes de filtro de ruta)`);
+      
+      // Filtrar por ruta si se especificó
+      let filteredTrips = tripsInRange;
+      if (routeId && routeId !== "") {
+        const routeIdNumber = parseInt(routeId as string, 10);
+        filteredTrips = tripsInRange.filter(trip => trip.routeId === routeIdNumber);
+        console.log(`[GET /trips/bulk-delete/count] Después de filtro de ruta ${routeIdNumber}: ${filteredTrips.length} viajes`);
+      }
       
       const result = {
-        tripsCount: tripsInRange.length
+        tripsCount: filteredTrips.length
       };
       
       console.log(`[GET /trips/bulk-delete/count] Resultado:`, result);

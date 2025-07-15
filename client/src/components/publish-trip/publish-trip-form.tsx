@@ -103,6 +103,7 @@ export function PublishTripForm() {
   const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [bulkDeleteStartDate, setBulkDeleteStartDate] = useState("");
   const [bulkDeleteEndDate, setBulkDeleteEndDate] = useState("");
+  const [bulkDeleteRouteId, setBulkDeleteRouteId] = useState("");
   const [bulkDeleteCount, setBulkDeleteCount] = useState<number>(0);
   // Helper para validar y asegurar formato correcto de stopTimes
   const ensureValidStopTimes = (times: any[]): StopTime[] => {
@@ -159,6 +160,25 @@ export function PublishTripForm() {
       }
       const data = await response.json();
       console.log("Plantillas cargadas para formulario:", data);
+      return data;
+    },
+    retry: 3,
+    retryDelay: 1000,
+  });
+
+  // Fetch routes for bulk delete filter
+  const routesQuery = useQuery({
+    queryKey: ["/api/routes"],
+    placeholderData: [],
+    enabled: true,
+    queryFn: async () => {
+      console.log("Cargando rutas para filtro de eliminación masiva...");
+      const response = await fetch("/api/routes");
+      if (!response.ok) {
+        throw new Error("Error al cargar las rutas");
+      }
+      const data = await response.json();
+      console.log("Rutas cargadas para filtro:", data);
       return data;
     },
     retry: 3,
@@ -772,7 +792,7 @@ export function PublishTripForm() {
 
   // Mutation for bulk deleting trips
   const bulkDeleteMutation = useMutation({
-    mutationFn: async (data: { startDate: string; endDate: string }) => {
+    mutationFn: async (data: { startDate: string; endDate: string; routeId?: string }) => {
       const response = await fetch("/api/trips/bulk-delete", {
         method: "DELETE",
         headers: {
@@ -797,6 +817,7 @@ export function PublishTripForm() {
       // Reset form
       setBulkDeleteStartDate("");
       setBulkDeleteEndDate("");
+      setBulkDeleteRouteId("");
       setBulkDeleteModalOpen(false);
       setBulkDeleteCount(0);
 
@@ -826,7 +847,16 @@ export function PublishTripForm() {
     }
 
     try {
-      const response = await fetch(`/api/trips/bulk-delete/count?startDate=${bulkDeleteStartDate}&endDate=${bulkDeleteEndDate}`);
+      const params = new URLSearchParams({
+        startDate: bulkDeleteStartDate,
+        endDate: bulkDeleteEndDate,
+      });
+      
+      if (bulkDeleteRouteId && bulkDeleteRouteId !== "") {
+        params.append("routeId", bulkDeleteRouteId);
+      }
+
+      const response = await fetch(`/api/trips/bulk-delete/count?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error("Error al obtener conteo");
@@ -840,7 +870,7 @@ export function PublishTripForm() {
     }
   };
 
-  // Ejecutar count automáticamente cuando cambien las fechas
+  // Ejecutar count automáticamente cuando cambien las fechas o ruta
   useEffect(() => {
     if (bulkDeleteStartDate && bulkDeleteEndDate) {
       const timeoutId = setTimeout(() => {
@@ -851,7 +881,7 @@ export function PublishTripForm() {
     } else {
       setBulkDeleteCount(0);
     }
-  }, [bulkDeleteStartDate, bulkDeleteEndDate]);
+  }, [bulkDeleteStartDate, bulkDeleteEndDate, bulkDeleteRouteId]);
 
   const handleBulkDelete = () => {
     if (!bulkDeleteStartDate || !bulkDeleteEndDate) {
@@ -872,10 +902,16 @@ export function PublishTripForm() {
       return;
     }
 
-    bulkDeleteMutation.mutate({
+    const deleteData: { startDate: string; endDate: string; routeId?: string } = {
       startDate: bulkDeleteStartDate,
       endDate: bulkDeleteEndDate,
-    });
+    };
+
+    if (bulkDeleteRouteId && bulkDeleteRouteId !== "") {
+      deleteData.routeId = bulkDeleteRouteId;
+    }
+
+    bulkDeleteMutation.mutate(deleteData);
   };
 
   const onSubmit = (data: FormValues) => {
@@ -1150,16 +1186,52 @@ export function PublishTripForm() {
                     onChange={(e) => setBulkDeleteEndDate(e.target.value)}
                     placeholder="Fecha de fin"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Filtrar por ruta (opcional)
+                  </label>
+                  <Select
+                    value={bulkDeleteRouteId}
+                    onValueChange={setBulkDeleteRouteId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas las rutas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas las rutas</SelectItem>
+                      {routesQuery.data?.map((route: any) => (
+                        <SelectItem key={route.id} value={String(route.id)}>
+                          {route.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selecciona una ruta específica para eliminar solo sus viajes
+                  </p>
                   {/* Contador simple */}
                   {bulkDeleteStartDate && bulkDeleteEndDate && (
                     <div className="mt-2 text-sm text-gray-600">
                       {bulkDeleteCount > 0 ? (
                         <span className="text-red-600 font-medium">
                           {bulkDeleteCount} viajes se eliminarán
+                          {bulkDeleteRouteId && routesQuery.data ? (
+                            <span className="text-blue-600 ml-1">
+                              ({routesQuery.data.find((r: any) => r.id === parseInt(bulkDeleteRouteId))?.name || "Ruta desconocida"})
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 ml-1">(todas las rutas)</span>
+                          )}
                         </span>
                       ) : (
                         <span className="text-gray-500">
                           No hay viajes en este rango de fechas
+                          {bulkDeleteRouteId && routesQuery.data && (
+                            <span className="ml-1">
+                              para {routesQuery.data.find((r: any) => r.id === parseInt(bulkDeleteRouteId))?.name || "la ruta seleccionada"}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -1174,6 +1246,7 @@ export function PublishTripForm() {
                       setBulkDeleteCount(0);
                       setBulkDeleteStartDate("");
                       setBulkDeleteEndDate("");
+                      setBulkDeleteRouteId("");
                     }}
                   >
                     Cancelar
