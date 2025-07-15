@@ -229,26 +229,41 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         });
         
         // Si es un paquete existente, también actualizamos el ID del viaje
-        if (!actualTripId && packageData.tripId) {
-          const packageTripId = packageData.tripId;
+        const packageTripId = packageData.tripDetails?.tripId || packageData.tripId;
+        if (!actualTripId && packageTripId) {
+          console.log(`[PackageForm] Configurando actualTripId con: ${packageTripId}`);
           setActualTripId(packageTripId); // Actualizar el estado con el tripId del paquete
-          // Cargar información del viaje asociado al paquete
-          try {
-            const tripResponse = await fetch(`/api/trips/${packageTripId}`);
-            if (tripResponse.ok) {
-              const tripData = await tripResponse.json();
-              setTripInfo({
-                availableSeats: tripData.availableSeats,
-                origin: tripData.origin,
-                destination: tripData.destination,
-                departureDate: tripData.departureDate,
-                departureTime: tripData.departureTime,
-                arrivalTime: tripData.arrivalTime
-              });
-              console.log(`Viaje ID ${packageTripId} tiene ${tripData.availableSeats} asientos disponibles`);
+          
+          // Si tenemos tripDetails, usarlos directamente
+          if (packageData.tripDetails) {
+            console.log(`[PackageForm] Usando tripDetails directamente:`, packageData.tripDetails);
+            setTripInfo({
+              availableSeats: 10, // Valor por defecto para edición
+              origin: packageData.tripDetails.origin || "",
+              destination: packageData.tripDetails.destination || "",
+              departureDate: packageData.tripDetails.departureDate || "",
+              departureTime: packageData.tripDetails.departureTime || "",
+              arrivalTime: packageData.tripDetails.arrivalTime || ""
+            });
+          } else {
+            // Cargar información del viaje desde el API
+            try {
+              const tripResponse = await fetch(`/api/trips/${packageTripId}`);
+              if (tripResponse.ok) {
+                const tripData = await tripResponse.json();
+                setTripInfo({
+                  availableSeats: tripData.availableSeats,
+                  origin: tripData.origin,
+                  destination: tripData.destination,
+                  departureDate: tripData.departureDate,
+                  departureTime: tripData.departureTime,
+                  arrivalTime: tripData.arrivalTime
+                });
+                console.log(`Viaje ID ${packageTripId} tiene ${tripData.availableSeats} asientos disponibles`);
+              }
+            } catch (tripError) {
+              console.error('Error al cargar información del viaje del paquete:', tripError);
             }
-          } catch (tripError) {
-            console.error('Error al cargar información del viaje del paquete:', tripError);
           }
         }
       } catch (error) {
