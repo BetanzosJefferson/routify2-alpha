@@ -427,7 +427,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
                         <span className={`font-medium ${reservation.checkedIn ? 'text-green-600' : 'text-red-600'}`}>
-                          {reservation.checkedIn ? 'Check-in' : 'No check-in'}
+                          {reservation.checkedIn ? 'Check' : 'No-check'}
                         </span>
                       </div>
 
@@ -488,28 +488,108 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                 )}
               </TabsContent>
 
-              <TabsContent value="packages" className="p-6 space-y-4 m-0">
-                {tripData.packages.map((pkg: any) => (
-                  <div key={pkg.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-medium">Paquete #{pkg.id}</p>
-                        <p className="text-sm text-gray-600">
-                          {pkg.senderName} → {pkg.recipientName}
-                        </p>
+              <TabsContent value="packages" className="p-6 space-y-3 m-0">
+                {tripData.packages.map((pkg: any) => {
+                  // Determinar estado de pago para paqueterías
+                  const packagePaymentStatus = pkg.paymentStatus === 'paid' ? 'pagado' : 'pendiente';
+                  
+                  // Función para obtener clase de borde
+                  const getPackageBorderClass = (status: string) => {
+                    switch (status) {
+                      case 'pagado':
+                        return 'border-green-500 border-2';
+                      case 'pendiente':
+                        return 'border-red-500 border-2';
+                      default:
+                        return 'border-gray-300';
+                    }
+                  };
+                  
+                  // Función para obtener badge de estado de pago
+                  const getPackagePaymentBadge = (status: string) => {
+                    return status === 'pagado' 
+                      ? <Badge className="bg-green-100 text-green-800">Pagado</Badge>
+                      : <Badge className="bg-red-100 text-red-800">Pendiente</Badge>;
+                  };
+                  
+                  return (
+                    <div key={pkg.id} className={`rounded-lg p-3 bg-white shadow-sm ${getPackageBorderClass(packagePaymentStatus)}`}>
+                      {/* Header con información básica */}
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">Paquete #{pkg.id}</p>
+                          <p className="text-sm text-gray-600">{pkg.senderPhone || 'Sin teléfono'}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-base">
+                            {formatCurrency(pkg.price || 0)}
+                          </div>
+                          {getPackagePaymentBadge(packagePaymentStatus)}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{formatCurrency(pkg.price)}</p>
-                        <Badge className="bg-green-100 text-green-800">Pagado</Badge>
+
+                      {/* Información del viaje en una sola sección */}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium">Descripción:</span>
+                          <span>{pkg.packageDescription || 'Sin descripción'}</span>
+                          <span className="text-gray-300">|</span>
+                          <MapPin className="h-4 w-4 text-green-600" />
+                          <span className="font-medium">Ruta:</span>
+                          <span>{pkg.origin || 'N/A'} → {pkg.destination || 'N/A'}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-orange-600" />
+                          <span className="font-medium">Salida:</span>
+                          <span>
+                            {formatDate(pkg.tripDepartureDate || pkg.shippingDate || '')} - {formatTime(pkg.tripDepartureTime || pkg.departureTime || '')}
+                          </span>
+                          <span className="text-gray-300">|</span>
+                          {pkg.deliveryStatus === 'delivered' ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          )}
+                          <span className={`font-medium ${pkg.deliveryStatus === 'delivered' ? 'text-green-600' : 'text-red-600'}`}>
+                            {pkg.deliveryStatus === 'delivered' ? 'Entregado' : 'No entregado'}
+                          </span>
+                        </div>
+
+                        {/* Información de contactos */}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Users className="h-4 w-4 text-purple-600" />
+                          <span className="font-medium">Contactos:</span>
+                          <span>
+                            <span className="text-blue-600 font-medium">Remitente: {pkg.senderName || 'Sin nombre'}</span>
+                            <span className="text-gray-500 ml-1">({pkg.senderPhone || 'Sin teléfono'})</span>
+                          </span>
+                          <span className="text-gray-300 mx-1">|</span>
+                          <span>
+                            <span className="text-green-600 font-medium">Destinatario: {pkg.recipientName || 'Sin nombre'}</span>
+                            <span className="text-gray-500 ml-1">({pkg.recipientPhone || 'Sin teléfono'})</span>
+                          </span>
+                        </div>
+
+                        {/* Información de pago */}
+                        <div className="flex items-center gap-2 text-sm">
+                          <CreditCard className="h-4 w-4 text-purple-600" />
+                          <span className="font-medium">Pago:</span>
+                          <span className={`font-medium ${packagePaymentStatus === 'pagado' ? 'text-green-600' : 'text-red-600'}`}>
+                            {packagePaymentStatus === 'pagado' ? 'Pagado completo' : 'Pendiente de pago'}
+                          </span>
+                          <span className="text-gray-500 ml-1">({pkg.paymentMethod || 'efectivo'})</span>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">{pkg.packageDescription}</p>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 {tripData.packages.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    No hay paqueterías para este viaje
+                    <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No hay paqueterías para este viaje</p>
                   </div>
                 )}
               </TabsContent>
