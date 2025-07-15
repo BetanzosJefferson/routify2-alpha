@@ -391,6 +391,60 @@ export class DatabaseStorage implements IStorage {
     return trips;
   }
 
+  async cancelReservationsByTripId(tripId: number): Promise<{ cancelledCount: number; errors: string[] }> {
+    console.log(`[cancelReservationsByTripId] Cancelando reservaciones para viaje ${tripId}`);
+    
+    try {
+      // Obtener todas las reservaciones asociadas al viaje
+      const reservations = await db
+        .select()
+        .from(schema.reservations)
+        .where(sql`JSON_EXTRACT(${schema.reservations.tripDetails}, '$.recordId') = ${tripId}`);
+      
+      console.log(`[cancelReservationsByTripId] Encontradas ${reservations.length} reservaciones para el viaje ${tripId}`);
+      
+      if (reservations.length === 0) {
+        return { cancelledCount: 0, errors: [] };
+      }
+      
+      let cancelledCount = 0;
+      const errors: string[] = [];
+      
+      // Cancelar cada reservación individualmente
+      for (const reservation of reservations) {
+        try {
+          // Solo cancelar si no está ya cancelada
+          if (reservation.status !== 'cancelled') {
+            await db
+              .update(schema.reservations)
+              .set({ 
+                status: 'cancelled',
+                cancellationReason: 'Viaje eliminado por administrador',
+                updatedAt: new Date()
+              })
+              .where(eq(schema.reservations.id, reservation.id));
+            
+            cancelledCount++;
+            console.log(`[cancelReservationsByTripId] Cancelada reservación ${reservation.id}`);
+          }
+        } catch (error) {
+          console.error(`[cancelReservationsByTripId] Error cancelando reservación ${reservation.id}:`, error);
+          errors.push(`Error cancelando reservación ${reservation.id}: ${error.message}`);
+        }
+      }
+      
+      console.log(`[cancelReservationsByTripId] Proceso completado: ${cancelledCount} reservaciones canceladas, ${errors.length} errores`);
+      
+      return { cancelledCount, errors };
+    } catch (error) {
+      console.error(`[cancelReservationsByTripId] Error general:`, error);
+      return { 
+        cancelledCount: 0, 
+        errors: [`Error general cancelando reservaciones: ${error.message}`] 
+      };
+    }
+  }
+
   // Versión optimizada de searchTrips que usa JOINs para eliminar consultas N+1
   async searchTripsOptimized(params: {
     origin?: string;

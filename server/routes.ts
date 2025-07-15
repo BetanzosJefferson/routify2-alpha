@@ -2378,6 +2378,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para obtener preview de eliminación masiva
+  app.get(apiRouter("/trips/bulk-delete/preview"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      // Validar datos de entrada
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          error: "Se requieren fechas de inicio y fin",
+          details: "startDate y endDate son requeridos como query parameters" 
+        });
+      }
+
+      // Obtener el usuario autenticado
+      const { user } = req as any;
+      
+      console.log(`[GET /trips/bulk-delete/preview] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      console.log(`[GET /trips/bulk-delete/preview] Rango de fechas: ${startDate} a ${endDate}`);
+      
+      // Validar permisos
+      if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "No tiene permisos para ver el preview de eliminación masiva" 
+        });
+      }
+      
+      // Normalizar fechas
+      const normalizedStartDate = normalizeToStartOfDay(new Date(startDate as string));
+      const normalizedEndDate = normalizeToStartOfDay(new Date(endDate as string));
+      
+      console.log(`[GET /trips/bulk-delete/preview] Fechas normalizadas: ${normalizedStartDate} a ${normalizedEndDate}`);
+      
+      // Obtener viajes en el rango de fechas
+      const tripsInRange = await storage.getTripsInDateRange(
+        formatDateToLocal(normalizedStartDate),
+        formatDateToLocal(normalizedEndDate),
+        user.companyId || user.company
+      );
+      
+      console.log(`[GET /trips/bulk-delete/preview] Encontrados ${tripsInRange.length} viajes en el rango`);
+      
+      // Contar reservaciones asociadas
+      let totalReservations = 0;
+      for (const trip of tripsInRange) {
+        const reservations = await db
+          .select({ count: sql`count(*)` })
+          .from(schema.reservations)
+          .where(sql`JSON_EXTRACT(${schema.reservations.tripDetails}, '$.recordId') = ${trip.id}`);
+        
+        totalReservations += parseInt(reservations[0].count.toString());
+      }
+      
+      const result = {
+        tripsCount: tripsInRange.length,
+        reservationsCount: totalReservations,
+        trips: tripsInRange.map(trip => ({
+          id: trip.id,
+          departureDate: trip.tripData?.[0]?.departureDate || 'N/A',
+          // Extract origin and destination from tripData
+          origin: trip.tripData?.[0]?.origin || 'N/A',
+          destination: trip.tripData?.[trip.tripData.length - 1]?.destination || 'N/A'
+        }))
+      };
+      
+      console.log(`[GET /trips/bulk-delete/preview] Resultado:`, result);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error(`[GET /trips/bulk-delete/preview] Error:`, error.message);
+      res.status(500).json({ 
+        error: "Error interno del servidor al obtener preview",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para eliminar viajes por rango de fechas
   app.delete(apiRouter("/trips/bulk-delete"), isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -2431,8 +2508,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Eliminar viajes uno por uno
+      // Eliminar viajes uno por uno, cancelando reservaciones primero
       let deletedCount = 0;
+      let totalCancelledReservations = 0;
       let errors = [];
       
       for (const trip of tripsInRange) {
@@ -2452,12 +2530,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
+          // Primero cancelar reservaciones asociadas al viaje
+          console.log(`[DELETE /trips/bulk-delete] Cancelando reservaciones para viaje ${trip.id}`);
+          const cancellationResult = await storage.cancelReservationsByTripId(trip.id);
+          
+          if (cancellationResult.errors.length > 0) {
+            errors.push(...cancellationResult.errors);
+          }
+          
+          totalCancelledReservations += cancellationResult.cancelledCount;
+          console.log(`[DELETE /trips/bulk-delete] Canceladas ${cancellationResult.cancelledCount} reservaciones para viaje ${trip.id}`);
+          
+          // Luego intentar eliminar el viaje
           const success = await storage.deleteTrip(trip.id);
           if (success) {
             deletedCount++;
             console.log(`[DELETE /trips/bulk-delete] Eliminado viaje ${trip.id}`);
           } else {
-            errors.push(`Viaje ${trip.id}: Error al eliminar`);
+            errors.push(`Viaje ${trip.id}: Error al eliminar después de cancelar reservaciones`);
           }
         } catch (error) {
           errors.push(`Viaje ${trip.id}: ${error.message}`);
@@ -2469,9 +2559,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[DELETE /trips/bulk-delete] Caché invalidado después de eliminar ${deletedCount} viajes`);
       
       const result = {
-        message: `Se eliminaron ${deletedCount} viajes de ${tripsInRange.length} encontrados`,
+        message: `Se eliminaron ${deletedCount} viajes de ${tripsInRange.length} encontrados${totalCancelledReservations > 0 ? ` y se cancelaron ${totalCancelledReservations} reservaciones` : ''}`,
         deletedCount,
         totalFound: tripsInRange.length,
+        cancelledReservations: totalCancelledReservations,
         errors: errors.length > 0 ? errors : undefined
       };
       
