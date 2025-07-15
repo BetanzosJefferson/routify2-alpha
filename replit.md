@@ -142,6 +142,11 @@ Preferred communication style: Simple, everyday language.
     - Refunded reservations: Counts $0 revenue (no net income)
     - Normal reservations: Uses payment status or calculates based on amounts paid
     - Example: Cancelled reservation with $100 advance from $200 total now correctly shows $100 revenue instead of $200
+  - **TOTAL SALES POTENTIAL FIXED**: Corrected "Total por vender" calculation to reflect realistic income potential:
+    - Cancelled reservations: Only counts advance payment as sales potential (not full original price)
+    - Refunded reservations: $0 both in actual sales and potential sales
+    - Normal reservations: Full price as potential if pending, actual amount if paid
+    - Example: Cancelled reservation + $500 packages now shows "$600 / $600" instead of "$600 / $700"
 
 - **July 15, 2025** - ENHANCED: Bitácora section filtering logic improved for accurate financial tracking:
   - **INTELLIGENT RESERVATION FILTERING**: Added logic to exclude reservations that don't represent actual income
