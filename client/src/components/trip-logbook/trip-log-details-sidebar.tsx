@@ -211,22 +211,31 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    if (!dateString) return '';
+    
+    // Crear fecha usando componentes locales para evitar problemas de timezone
+    const date = new Date(dateString + 'T00:00:00');
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
   };
 
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
     
     // Extraer solo la hora (HH:MM) sin segundos
-    const time = timeString.split(':').slice(0, 2).join(':');
+    const timeParts = timeString.split(':');
+    if (timeParts.length < 2) return timeString;
+    
+    const hours = parseInt(timeParts[0]);
+    const minutes = parseInt(timeParts[1]);
+    
+    if (isNaN(hours) || isNaN(minutes)) return timeString;
     
     // Convertir a formato 12 horas
-    const [hours, minutes] = time.split(':').map(Number);
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
     
@@ -348,7 +357,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
             </TabsList>
 
             <div className="flex-1 overflow-y-auto">
-              <TabsContent value="reservations" className="p-6 space-y-4 m-0">
+              <TabsContent value="reservations" className="p-6 space-y-3 m-0">
                 {tripData.reservations.map((reservation: any) => {
                   // Calcular el restante
                   const advanceAmount = reservation.advanceAmount || 0;
@@ -364,110 +373,91 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                   }
                   
                   return (
-                  <div key={reservation.id} className="border rounded-lg p-4 bg-white">
+                  <div key={reservation.id} className="border rounded-lg p-3 bg-white shadow-sm">
                     {/* Header con información básica */}
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-medium text-lg">Reservación #{reservation.id}</p>
+                        <p className="font-medium">Reservación #{reservation.id}</p>
                         <p className="text-sm text-gray-600">{reservation.phone}</p>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-lg">
-                          Total: {formatCurrency(reservation.totalAmount)}
+                        <div className="font-bold text-base">
+                          {formatCurrency(reservation.totalAmount)}
                         </div>
                         {getPaymentStatusBadge(paymentStatus)}
                       </div>
                     </div>
 
-                    {/* Información del viaje */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 p-3 bg-gray-50 rounded-lg">
+                    {/* Información del viaje en una sola sección */}
+                    <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-blue-600" />
-                        <div>
-                          <span className="text-sm font-medium">Asientos:</span>
-                          <span className="ml-1 text-sm">{seatCount}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Asientos:</span>
+                        <span>{seatCount}</span>
+                        <span className="text-gray-300">|</span>
                         <MapPin className="h-4 w-4 text-green-600" />
-                        <div>
-                          <span className="text-sm font-medium">Ruta:</span>
-                          <span className="ml-1 text-sm">{reservation.trip?.origin || 'N/A'} → {reservation.trip?.destination || 'N/A'}</span>
-                        </div>
+                        <span className="font-medium">Ruta:</span>
+                        <span>{reservation.trip?.origin || 'N/A'} → {reservation.trip?.destination || 'N/A'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-orange-600" />
-                        <div>
-                          <span className="text-sm font-medium">Salida:</span>
-                          <span className="ml-1 text-sm">
-                            {formatDate(reservation.trip?.departureDate || '')} - {formatTime(reservation.trip?.departureTime || '')}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Salida:</span>
+                        <span>
+                          {formatDate(reservation.trip?.departureDate || '')} - {formatTime(reservation.trip?.departureTime || '')}
+                        </span>
+                        <span className="text-gray-300">|</span>
                         {reservation.checkedIn ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
-                        <div>
-                          <span className="text-sm font-medium">Check-in:</span>
-                          <span className={`ml-1 text-sm ${reservation.checkedIn ? 'text-green-600' : 'text-red-600'}`}>
-                            {reservation.checkedIn ? 'Confirmado' : 'Pendiente'}
-                          </span>
-                        </div>
+                        <span className={`font-medium ${reservation.checkedIn ? 'text-green-600' : 'text-red-600'}`}>
+                          {reservation.checkedIn ? 'Confirmado' : 'Pendiente'}
+                        </span>
                       </div>
-                    </div>
 
-                    {/* Información de pago */}
-                    <div className="p-3 border-t bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
+                      {/* Información de pago */}
+                      <div className="flex items-center gap-2 text-sm">
                         <CreditCard className="h-4 w-4 text-purple-600" />
-                        <span className="text-sm font-medium">Información de Pago:</span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <span className="font-medium">Pago:</span>
+                        
                         {/* Anticipo (si existe) */}
                         {advanceAmount > 0 && (
-                          <div className="text-sm">
+                          <span>
                             <span className="text-green-600 font-medium">Anticipo: {formatCurrency(advanceAmount)}</span>
-                            <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
-                          </div>
+                            <span className="text-gray-500 ml-1">({reservation.advancePaymentMethod})</span>
+                          </span>
                         )}
                         
                         {/* Restante (si existe) */}
                         {remainingAmount > 0 && (
-                          <div className="text-sm">
+                          <span>
+                            <span className="text-gray-300 mx-1">|</span>
                             <span className="text-blue-600 font-medium">Restante: {formatCurrency(remainingAmount)}</span>
-                            <span className="text-gray-500 ml-2">({reservation.paymentMethod})</span>
-                          </div>
+                            <span className="text-gray-500 ml-1">({reservation.paymentMethod})</span>
+                          </span>
                         )}
                         
                         {/* Si está totalmente pagado */}
                         {advanceAmount > 0 && remainingAmount === 0 && (
-                          <div className="text-sm">
-                            <span className="text-green-600 font-medium">Pagado completo</span>
-                            <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
-                          </div>
+                          <span className="text-green-600 font-medium">Pagado completo</span>
                         )}
                       </div>
                     </div>
                     
                     {/* Lista de pasajeros */}
                     {reservation.passengers && reservation.passengers.length > 0 && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <div className="mt-2 pt-2 border-t">
+                        <p className="text-sm font-medium mb-1 flex items-center gap-2">
                           <Users className="h-4 w-4 text-blue-600" />
                           Pasajeros ({reservation.passengers.length}):
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div className="flex flex-wrap gap-1">
                           {reservation.passengers.map((passenger: any, idx: number) => (
-                            <div key={idx} className="text-sm text-gray-700 bg-white p-2 rounded border">
+                            <span key={idx} className="text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded">
                               {passenger.firstName} {passenger.lastName}
-                            </div>
+                            </span>
                           ))}
                         </div>
                       </div>
