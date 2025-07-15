@@ -4068,17 +4068,18 @@ export class DatabaseStorage implements IStorage {
 
       const result = await db
         .select({
-          origin: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.origin'))`,
-          destination: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.destination'))`,
+          origin: sql<string>`${schema.trips.tripData}->0->>'origin'`,
+          destination: sql<string>`${schema.trips.tripData}->-1->>'destination'`,
           totalReservations: sql<number>`COUNT(*)`,
           totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
           averageRevenuePerReservation: sql<number>`COALESCE(AVG(${schema.reservations.totalAmount}), 0)`
         })
         .from(schema.reservations)
+        .innerJoin(schema.trips, sql`CAST(${schema.reservations.tripDetails}->>'recordId' AS INTEGER) = ${schema.trips.id}`)
         .where(and(...baseConditions))
         .groupBy(
-          sql`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.origin'))`,
-          sql`JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.destination'))`
+          sql`${schema.trips.tripData}->0->>'origin'`,
+          sql`${schema.trips.tripData}->-1->>'destination'`
         )
         .having(sql`COUNT(*) > 0`)
         .orderBy(sql`COUNT(*) DESC`, sql`COALESCE(SUM(${schema.reservations.totalAmount}), 0) DESC`);
@@ -4131,7 +4132,7 @@ export class DatabaseStorage implements IStorage {
           userId: schema.reservations.createdBy,
           userName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
           totalReservationsCreated: sql<number>`COUNT(*)`,
-          totalPassengersAdded: sql<number>`COALESCE(SUM(JSON_UNQUOTE(JSON_EXTRACT(${schema.reservations.tripDetails}, '$.seats'))), 0)`,
+          totalPassengersAdded: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
           totalRevenueGenerated: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
           averageRevenuePerReservation: sql<number>`COALESCE(AVG(${schema.reservations.totalAmount}), 0)`
         })
