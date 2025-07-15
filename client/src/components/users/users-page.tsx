@@ -662,10 +662,10 @@ export function UsersPage() {
                           <FormControl>
                             <Input
                               type="number"
-                              placeholder="Ej: 10"
+                              placeholder="Ej: 10.50"
                               min={0}
                               max={100}
-                              step={0.5}
+                              step={0.01}
                               {...field}
                               value={field.value ?? ''}
                               onChange={(e) => {
@@ -675,7 +675,7 @@ export function UsersPage() {
                             />
                           </FormControl>
                           <FormDescription className="text-xs">
-                            Porcentaje de comisión por cada reservación creada
+                            Porcentaje de comisión por cada reservación creada (ej: 4.44, 6.67, 10.50)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
