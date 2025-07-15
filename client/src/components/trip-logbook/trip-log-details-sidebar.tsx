@@ -405,17 +405,17 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                     {/* Información del viaje en una sola sección */}
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-blue-600" />
+                        <Users className="h-4 w-4 text-gray-600" />
                         <span className="font-medium">Asientos:</span>
                         <span>{seatCount}</span>
                         <span className="text-gray-300">|</span>
-                        <MapPin className="h-4 w-4 text-green-600" />
+                        <MapPin className="h-4 w-4 text-gray-600" />
                         <span className="font-medium">Ruta:</span>
                         <span>{reservation.trip?.origin || 'N/A'} → {reservation.trip?.destination || 'N/A'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-orange-600" />
+                        <Clock className="h-4 w-4 text-gray-600" />
                         <span className="font-medium">Salida:</span>
                         <span>
                           {formatDate(reservation.trip?.departureDate || '')} - {formatTime(reservation.trip?.departureTime || '')}
@@ -433,13 +433,13 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
                       {/* Información de pago */}
                       <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="h-4 w-4 text-purple-600" />
+                        <CreditCard className="h-4 w-4 text-gray-600" />
                         <span className="font-medium">Pago:</span>
                         
                         {/* Anticipo (si existe) */}
                         {advanceAmount > 0 && (
                           <span>
-                            <span className="text-green-600 font-medium">Anticipo: {formatCurrency(advanceAmount)}</span>
+                            <span className="font-medium">Anticipo: {formatCurrency(advanceAmount)}</span>
                             <span className="text-gray-500 ml-1">({reservation.advancePaymentMethod})</span>
                           </span>
                         )}
@@ -448,7 +448,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         {remainingAmount > 0 && (
                           <span>
                             <span className="text-gray-300 mx-1">|</span>
-                            <span className="text-blue-600 font-medium">Restante: {formatCurrency(remainingAmount)}</span>
+                            <span className="font-medium">Restante: {formatCurrency(remainingAmount)}</span>
                             <span className="text-gray-500 ml-1">({reservation.paymentMethod})</span>
                           </span>
                         )}
@@ -464,7 +464,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                     {reservation.passengers && reservation.passengers.length > 0 && (
                       <div className="mt-2 pt-2 border-t">
                         <p className="text-sm font-medium mb-1 flex items-center gap-2">
-                          <Users className="h-4 w-4 text-blue-600" />
+                          <Users className="h-4 w-4 text-gray-600" />
                           Pasajeros ({reservation.passengers.length}):
                         </p>
                         <div className="flex flex-wrap gap-1">
