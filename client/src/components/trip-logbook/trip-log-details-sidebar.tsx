@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2 } from "lucide-react";
+import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -210,6 +210,29 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
     }).format(amount);
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    
+    // Extraer solo la hora (HH:MM) sin segundos
+    const time = timeString.split(':').slice(0, 2).join(':');
+    
+    // Convertir a formato 12 horas
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'pagado':
@@ -330,48 +353,123 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                   // Calcular el restante
                   const advanceAmount = reservation.advanceAmount || 0;
                   const remainingAmount = reservation.totalAmount - advanceAmount;
+                  const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
+                  
+                  // Determinar estado de pago
+                  let paymentStatus = 'pendiente';
+                  if (advanceAmount > 0 && remainingAmount > 0) {
+                    paymentStatus = 'anticipo';
+                  } else if (advanceAmount > 0 && remainingAmount === 0) {
+                    paymentStatus = 'pagado';
+                  }
                   
                   return (
-                  <div key={reservation.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
+                  <div key={reservation.id} className="border rounded-lg p-4 bg-white">
+                    {/* Header con información básica */}
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <p className="font-medium">Reservación #{reservation.id}</p>
+                        <p className="font-medium text-lg">Reservación #{reservation.id}</p>
                         <p className="text-sm text-gray-600">{reservation.phone}</p>
                       </div>
                       <div className="text-right">
-                        <div className="space-y-1">
-                          {/* Anticipo (si existe) */}
-                          {advanceAmount > 0 && (
-                            <div className="text-sm">
-                              <span className="text-green-600">Anticipo: {formatCurrency(advanceAmount)}</span>
-                              <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
-                            </div>
-                          )}
-                          
-                          {/* Restante (si existe) */}
-                          {remainingAmount > 0 && (
-                            <div className="text-sm">
-                              <span className="text-blue-600">Restante: {formatCurrency(remainingAmount)}</span>
-                              <span className="text-gray-500 ml-2">({reservation.paymentMethod})</span>
-                            </div>
-                          )}
-                          
-                          {/* Total */}
-                          <div className="font-bold text-lg">
-                            Total: {formatCurrency(reservation.totalAmount)}
-                          </div>
+                        <div className="font-bold text-lg">
+                          Total: {formatCurrency(reservation.totalAmount)}
+                        </div>
+                        {getPaymentStatusBadge(paymentStatus)}
+                      </div>
+                    </div>
+
+                    {/* Información del viaje */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-blue-600" />
+                        <div>
+                          <span className="text-sm font-medium">Asientos:</span>
+                          <span className="ml-1 text-sm">{seatCount}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-green-600" />
+                        <div>
+                          <span className="text-sm font-medium">Ruta:</span>
+                          <span className="ml-1 text-sm">{reservation.trip?.origin || 'N/A'} → {reservation.trip?.destination || 'N/A'}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-orange-600" />
+                        <div>
+                          <span className="text-sm font-medium">Salida:</span>
+                          <span className="ml-1 text-sm">
+                            {formatDate(reservation.trip?.departureDate || '')} - {formatTime(reservation.trip?.departureTime || '')}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {reservation.checkedIn ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-red-600" />
+                        )}
+                        <div>
+                          <span className="text-sm font-medium">Check-in:</span>
+                          <span className={`ml-1 text-sm ${reservation.checkedIn ? 'text-green-600' : 'text-red-600'}`}>
+                            {reservation.checkedIn ? 'Confirmado' : 'Pendiente'}
+                          </span>
                         </div>
                       </div>
                     </div>
+
+                    {/* Información de pago */}
+                    <div className="p-3 border-t bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CreditCard className="h-4 w-4 text-purple-600" />
+                        <span className="text-sm font-medium">Información de Pago:</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {/* Anticipo (si existe) */}
+                        {advanceAmount > 0 && (
+                          <div className="text-sm">
+                            <span className="text-green-600 font-medium">Anticipo: {formatCurrency(advanceAmount)}</span>
+                            <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
+                          </div>
+                        )}
+                        
+                        {/* Restante (si existe) */}
+                        {remainingAmount > 0 && (
+                          <div className="text-sm">
+                            <span className="text-blue-600 font-medium">Restante: {formatCurrency(remainingAmount)}</span>
+                            <span className="text-gray-500 ml-2">({reservation.paymentMethod})</span>
+                          </div>
+                        )}
+                        
+                        {/* Si está totalmente pagado */}
+                        {advanceAmount > 0 && remainingAmount === 0 && (
+                          <div className="text-sm">
+                            <span className="text-green-600 font-medium">Pagado completo</span>
+                            <span className="text-gray-500 ml-2">({reservation.advancePaymentMethod})</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     
+                    {/* Lista de pasajeros */}
                     {reservation.passengers && reservation.passengers.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-sm font-medium">Pasajeros:</p>
-                        <ul className="text-sm text-gray-600">
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <Users className="h-4 w-4 text-blue-600" />
+                          Pasajeros ({reservation.passengers.length}):
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {reservation.passengers.map((passenger: any, idx: number) => (
-                            <li key={idx}>{passenger.firstName} {passenger.lastName}</li>
+                            <div key={idx} className="text-sm text-gray-700 bg-white p-2 rounded border">
+                              {passenger.firstName} {passenger.lastName}
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -380,7 +478,8 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                 
                 {tripData.reservations.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    No hay reservaciones para este viaje
+                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p>No hay reservaciones para este viaje</p>
                   </div>
                 )}
               </TabsContent>

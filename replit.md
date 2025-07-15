@@ -119,6 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 15, 2025** - ENHANCED: Commission percentage input with improved precision and Bitácora passenger details display:
+  - **COMMISSION PRECISION**: Updated user commission percentage field to support decimal values (0.01 step) instead of 0.5 increments
+  - **IMPROVED EXAMPLES**: Changed placeholder from "10" to "10.50" and added examples (4.44, 6.67, 10.50) in field description
+  - **ENHANCED BITÁCORA**: Completely redesigned passenger information display in trip log details sidebar
+  - **COMPREHENSIVE PASSENGER INFO**: Now shows seat count, origin/destination route, departure date/time, check-in status, and payment status
+  - **VISUAL IMPROVEMENTS**: Added icons for different data types (Users, MapPin, Clock, CheckCircle/XCircle, CreditCard)
+  - **STRUCTURED LAYOUT**: Organized information in sections: basic info, trip details, payment information, and passenger list
+  - **STATUS INDICATORS**: Check-in status shows as "Confirmado" (green) or "Pendiente" (red) with appropriate icons
+  - **PAYMENT BREAKDOWN**: Detailed payment information showing advance amounts, remaining balances, and payment methods
+  - **RESPONSIVE DESIGN**: Grid layout adapts to different screen sizes with proper spacing and visual hierarchy
+  - **IMPROVED UX**: Clear visual separation between different types of information with color-coded sections
+
 - **July 15, 2025** - COMPLETED: Statistics section with coupon usage analysis fully implemented:
   - **BACKEND INFRASTRUCTURE**: Created `getCouponUsageStatistics()` method in storage interface and db-storage implementation
   - **STATISTICS ENDPOINT**: Added `/api/statistics/coupon-usage` endpoint with role-based access control (owner/admin only)
