@@ -442,7 +442,16 @@ function ReservationsListContent() {
           
           {/* Filtros */}
           <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
-           
+            {/* Primera fila: Búsqueda por texto */}
+            <div className="flex items-center gap-2 w-full">
+              <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <Input
+                placeholder="Buscar por nombre, teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+            </div>
             
             {/* Segunda fila: Filtros de ruta y hora */}
             <div className="flex flex-col md:flex-row gap-3">
