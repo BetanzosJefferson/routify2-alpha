@@ -364,6 +364,33 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
+  async getTripsInDateRange(startDate: string, endDate: string, companyId?: string): Promise<Trip[]> {
+    console.log(`[getTripsInDateRange] Buscando viajes entre ${startDate} y ${endDate} para compañía ${companyId || 'todas'}`);
+    
+    const conditions = [];
+    
+    // Filtro por compañía si se proporciona
+    if (companyId) {
+      conditions.push(eq(schema.trips.companyId, companyId));
+    }
+    
+    // Filtro por rango de fechas usando JSON_EXTRACT para obtener la fecha del primer segmento
+    conditions.push(
+      gte(schema.trips.tripData.op('->')(0).op('->>')('departureDate'), startDate),
+      lte(schema.trips.tripData.op('->')(0).op('->>')('departureDate'), endDate)
+    );
+    
+    const trips = await db
+      .select()
+      .from(schema.trips)
+      .where(and(...conditions))
+      .orderBy(schema.trips.tripData.op('->')(0).op('->>')('departureDate'));
+    
+    console.log(`[getTripsInDateRange] Encontrados ${trips.length} viajes en el rango especificado`);
+    
+    return trips;
+  }
+
   // Versión optimizada de searchTrips que usa JOINs para eliminar consultas N+1
   async searchTripsOptimized(params: {
     origin?: string;

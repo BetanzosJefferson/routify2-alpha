@@ -2377,6 +2377,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete trip" });
     }
   });
+
+  // Endpoint para eliminar viajes por rango de fechas
+  app.delete(apiRouter("/trips/bulk-delete"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { startDate, endDate } = req.body;
+      
+      // Validar datos de entrada
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          error: "Se requieren fechas de inicio y fin",
+          details: "startDate y endDate son requeridos" 
+        });
+      }
+
+      // Obtener el usuario autenticado
+      const { user } = req as any;
+      
+      console.log(`[DELETE /trips/bulk-delete] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      console.log(`[DELETE /trips/bulk-delete] Rango de fechas: ${startDate} a ${endDate}`);
+      
+      if (user) {
+        console.log(`[DELETE /trips/bulk-delete] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+      }
+      
+      // Validar que el usuario tenga permisos para eliminar viajes masivamente
+      if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "No tiene permisos para eliminar viajes masivamente" 
+        });
+      }
+      
+      // Normalizar fechas
+      const normalizedStartDate = normalizeToStartOfDay(new Date(startDate));
+      const normalizedEndDate = normalizeToStartOfDay(new Date(endDate));
+      
+      console.log(`[DELETE /trips/bulk-delete] Fechas normalizadas: ${normalizedStartDate} a ${normalizedEndDate}`);
+      
+      // Obtener viajes en el rango de fechas
+      const tripsInRange = await storage.getTripsInDateRange(
+        formatDateToLocal(normalizedStartDate),
+        formatDateToLocal(normalizedEndDate),
+        user.companyId || user.company
+      );
+      
+      console.log(`[DELETE /trips/bulk-delete] Encontrados ${tripsInRange.length} viajes en el rango`);
+      
+      if (tripsInRange.length === 0) {
+        return res.json({ 
+          message: "No se encontraron viajes en el rango especificado",
+          deletedCount: 0 
+        });
+      }
+      
+      // Eliminar viajes uno por uno
+      let deletedCount = 0;
+      let errors = [];
+      
+      for (const trip of tripsInRange) {
+        try {
+          // Verificar permisos de compañía para cada viaje
+          if (user.role !== UserRole.SUPER_ADMIN) {
+            const userCompanyId = user.companyId;
+            
+            if (!userCompanyId) {
+              errors.push(`Viaje ${trip.id}: Usuario sin compañía asignada`);
+              continue;
+            }
+            
+            if (trip.companyId && trip.companyId !== userCompanyId) {
+              errors.push(`Viaje ${trip.id}: No tiene permiso para eliminar viajes de otra compañía`);
+              continue;
+            }
+          }
+          
+          const success = await storage.deleteTrip(trip.id);
+          if (success) {
+            deletedCount++;
+            console.log(`[DELETE /trips/bulk-delete] Eliminado viaje ${trip.id}`);
+          } else {
+            errors.push(`Viaje ${trip.id}: Error al eliminar`);
+          }
+        } catch (error) {
+          errors.push(`Viaje ${trip.id}: ${error.message}`);
+        }
+      }
+      
+      // Invalidar caché después de eliminar viajes
+      serverTripCache.invalidateAll();
+      console.log(`[DELETE /trips/bulk-delete] Caché invalidado después de eliminar ${deletedCount} viajes`);
+      
+      const result = {
+        message: `Se eliminaron ${deletedCount} viajes de ${tripsInRange.length} encontrados`,
+        deletedCount,
+        totalFound: tripsInRange.length,
+        errors: errors.length > 0 ? errors : undefined
+      };
+      
+      console.log(`[DELETE /trips/bulk-delete] Resultado:`, result);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error(`[DELETE /trips/bulk-delete] Error:`, error.message);
+      res.status(500).json({ 
+        error: "Error interno del servidor al eliminar viajes",
+        details: error.message 
+      });
+    }
+  });
   
   // Endpoint específico para asignar vehículo o conductor a un viaje (PATCH)
   app.patch(apiRouter("/trips/:id"), isAuthenticated, async (req: Request, res: Response) => {

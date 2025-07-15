@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { HelpCircleIcon } from "lucide-react";
+import { HelpCircleIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -34,6 +34,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { TimeInput } from "@/components/ui/time-input";
 import {
   publishTripValidationSchema,
@@ -90,6 +98,11 @@ export function PublishTripForm() {
 
   // Estado para controlar si mostrar campos de vehículo/conductor solo en modo edición
   const [showAssignmentFields, setShowAssignmentFields] = useState(false);
+  
+  // Estado para el modal de eliminación masiva
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
+  const [bulkDeleteStartDate, setBulkDeleteStartDate] = useState("");
+  const [bulkDeleteEndDate, setBulkDeleteEndDate] = useState("");
   // Helper para validar y asegurar formato correcto de stopTimes
   const ensureValidStopTimes = (times: any[]): StopTime[] => {
     return times
@@ -756,6 +769,73 @@ export function PublishTripForm() {
     },
   });
 
+  // Mutation for bulk deleting trips
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (data: { startDate: string; endDate: string }) => {
+      const response = await fetch("/api/trips/bulk-delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al eliminar viajes");
+      }
+
+      return await response.json();
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Eliminación masiva completada",
+        description: result.message,
+      });
+
+      // Reset form
+      setBulkDeleteStartDate("");
+      setBulkDeleteEndDate("");
+      setBulkDeleteModalOpen(false);
+
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin-trips"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar viajes",
+        description: error.message || "Ocurrió un error al eliminar los viajes.",
+      });
+    },
+  });
+
+  const handleBulkDelete = () => {
+    if (!bulkDeleteStartDate || !bulkDeleteEndDate) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Por favor selecciona ambas fechas para el rango de eliminación.",
+      });
+      return;
+    }
+
+    if (bulkDeleteStartDate > bulkDeleteEndDate) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "La fecha de inicio no puede ser posterior a la fecha de fin.",
+      });
+      return;
+    }
+
+    bulkDeleteMutation.mutate({
+      startDate: bulkDeleteStartDate,
+      endDate: bulkDeleteEndDate,
+    });
+  };
+
   const onSubmit = (data: FormValues) => {
     console.log("=== EJECUTANDO onSubmit ===");
     console.log("Datos de formulario enviados:", data);
@@ -983,13 +1063,71 @@ export function PublishTripForm() {
             Vea y administre los viajes disponibles para reservación.
           </p>
         </div>
-        <Button onClick={toggleForm} className="self-start">
-          {showForm
-            ? "Cancelar"
-            : editingTripId
-              ? "Editar Viaje"
-              : "Publicar Nuevo Viaje"}
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={toggleForm} className="self-start">
+            {showForm
+              ? "Cancelar"
+              : editingTripId
+                ? "Editar Viaje"
+                : "Publicar Nuevo Viaje"}
+          </Button>
+          <Dialog open={bulkDeleteModalOpen} onOpenChange={setBulkDeleteModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar por rango
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Eliminación masiva de viajes</DialogTitle>
+                <DialogDescription>
+                  Selecciona un rango de fechas para eliminar todos los viajes en ese período.
+                  Esta acción no se puede deshacer.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Fecha de inicio
+                  </label>
+                  <Input
+                    type="date"
+                    value={bulkDeleteStartDate}
+                    onChange={(e) => setBulkDeleteStartDate(e.target.value)}
+                    placeholder="Fecha de inicio"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Fecha de fin
+                  </label>
+                  <Input
+                    type="date"
+                    value={bulkDeleteEndDate}
+                    onChange={(e) => setBulkDeleteEndDate(e.target.value)}
+                    placeholder="Fecha de fin"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setBulkDeleteModalOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleteMutation.isPending}
+                  >
+                    {bulkDeleteMutation.isPending ? "Eliminando..." : "Eliminar viajes"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       {/* Form section */}
       {showForm && (

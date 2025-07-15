@@ -68,6 +68,7 @@ export interface IStorage {
   createTrip(trip: InsertTrip): Promise<Trip>;
   updateTrip(id: number, trip: Partial<Trip>): Promise<Trip | undefined>;
   deleteTrip(id: number): Promise<boolean>;
+  getTripsInDateRange(startDate: string, endDate: string, companyId?: string): Promise<Trip[]>;
   searchTrips(params: {
     origin?: string;
     destination?: string;
