@@ -372,8 +372,22 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                     paymentStatus = 'pagado';
                   }
                   
+                  // Determinar clase de borde según estado de pago
+                  const getBorderClass = (status: string) => {
+                    switch (status) {
+                      case 'pagado':
+                        return 'border-green-500 border-2';
+                      case 'anticipo':
+                        return 'border-yellow-500 border-2';
+                      case 'pendiente':
+                        return 'border-red-500 border-2';
+                      default:
+                        return 'border-gray-300';
+                    }
+                  };
+                  
                   return (
-                  <div key={reservation.id} className="border rounded-lg p-3 bg-white shadow-sm">
+                  <div key={reservation.id} className={`rounded-lg p-3 bg-white shadow-sm ${getBorderClass(paymentStatus)}`}>
                     {/* Header con información básica */}
                     <div className="flex justify-between items-start mb-2">
                       <div>
