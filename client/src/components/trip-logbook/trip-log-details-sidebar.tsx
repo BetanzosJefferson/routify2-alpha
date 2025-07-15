@@ -364,9 +364,11 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                   const remainingAmount = reservation.totalAmount - advanceAmount;
                   const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
                   
-                  // Determinar estado de pago
+                  // Determinar estado de pago usando el campo paymentStatus de la base de datos
                   let paymentStatus = 'pendiente';
-                  if (advanceAmount > 0 && remainingAmount > 0) {
+                  if (reservation.paymentStatus === 'pagado') {
+                    paymentStatus = 'pagado';
+                  } else if (advanceAmount > 0 && remainingAmount > 0) {
                     paymentStatus = 'anticipo';
                   } else if (advanceAmount > 0 && remainingAmount === 0) {
                     paymentStatus = 'pagado';
@@ -421,13 +423,13 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           {formatDate(reservation.trip?.departureDate || '')} - {formatTime(reservation.trip?.departureTime || '')}
                         </span>
                         <span className="text-gray-300">|</span>
-                        {reservation.checkedIn ? (
+                        {reservation.checkedBy ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
-                        <span className={`font-medium ${reservation.checkedIn ? 'text-green-600' : 'text-red-600'}`}>
-                          {reservation.checkedIn ? 'Check' : 'No-check'}
+                        <span className={`font-medium ${reservation.checkedBy ? 'text-green-600' : 'text-red-600'}`}>
+                          {reservation.checkedBy ? 'Check' : 'No-check'}
                         </span>
                       </div>
 
