@@ -2326,117 +2326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete(apiRouter("/trips/:id"), isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      
-      // Obtener el usuario autenticado
-      const { user } = req as any;
-      
-      console.log(`[DELETE /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
-      if (user) {
-        console.log(`[DELETE /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
-      }
-      
-      // Primero verificar que el viaje existe
-      const currentTrip = await storage.getTrip(id);
-      if (!currentTrip) {
-        return res.status(404).json({ error: "Trip not found" });
-      }
-      
-      // SEGURIDAD: Si no es superAdmin, verificar que el viaje pertenece a su compañía
-      if (user.role !== UserRole.SUPER_ADMIN) {
-        // Usar companyId (column company_id en la tabla users)
-        const userCompanyId = user.companyId;
-        
-        if (!userCompanyId) {
-          console.log(`[DELETE /trips/${id}] ACCESO DENEGADO: Usuario sin companyId asignado`);
-          return res.status(403).json({ 
-            error: "Acceso denegado", 
-            details: "Usuario sin compañía asignada" 
-          });
-        }
-        
-        if (currentTrip.companyId && currentTrip.companyId !== userCompanyId) {
-          console.log(`[DELETE /trips/${id}] ACCESO DENEGADO: El viaje pertenece a compañía ${currentTrip.companyId} pero el usuario es de ${userCompanyId}`);
-          return res.status(403).json({ 
-            error: "Acceso denegado", 
-            details: "No tiene permiso para eliminar viajes de otra compañía" 
-          });
-        }
-      }
-      
-      const success = await storage.deleteTrip(id);
-      
-      if (!success) {
-        return res.status(500).json({ error: "Failed to delete trip" });
-      }
-      
-      res.status(204).end();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete trip" });
-    }
-  });
-
-  // Endpoint para obtener count de eliminación masiva
-  app.get(apiRouter("/trips/bulk-delete/count"), isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const { startDate, endDate } = req.query;
-      
-      // Validar datos de entrada
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          error: "Se requieren fechas de inicio y fin",
-          details: "startDate y endDate son requeridos como query parameters" 
-        });
-      }
-
-      // Obtener el usuario autenticado
-      const { user } = req as any;
-      
-      console.log(`[GET /trips/bulk-delete/count] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
-      console.log(`[GET /trips/bulk-delete/count] Rango de fechas: ${startDate} a ${endDate}`);
-      
-      // Validar permisos
-      if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
-        return res.status(403).json({ 
-          error: "Acceso denegado", 
-          details: "No tiene permisos para ver el conteo de eliminación masiva" 
-        });
-      }
-      
-      // Normalizar fechas
-      const normalizedStartDate = normalizeToStartOfDay(new Date(startDate as string));
-      const normalizedEndDate = normalizeToStartOfDay(new Date(endDate as string));
-      
-      console.log(`[GET /trips/bulk-delete/count] Fechas normalizadas: ${normalizedStartDate} a ${normalizedEndDate}`);
-      
-      // Obtener viajes en el rango de fechas
-      const tripsInRange = await storage.getTripsInDateRange(
-        formatDateToLocal(normalizedStartDate),
-        formatDateToLocal(normalizedEndDate),
-        user.companyId || user.company
-      );
-      
-      console.log(`[GET /trips/bulk-delete/count] Encontrados ${tripsInRange.length} viajes en el rango`);
-      
-      const result = {
-        tripsCount: tripsInRange.length
-      };
-      
-      console.log(`[GET /trips/bulk-delete/count] Resultado:`, result);
-      
-      res.json(result);
-    } catch (error: any) {
-      console.error(`[GET /trips/bulk-delete/count] Error:`, error.message);
-      res.status(500).json({ 
-        error: "Error interno del servidor al obtener conteo",
-        details: error.message 
-      });
-    }
-  });
-
-  // Endpoint para eliminar viajes por rango de fechas
+  // Endpoint para eliminar viajes por rango de fechas (DEBE IR ANTES de /:id)
   app.delete(apiRouter("/trips/bulk-delete"), isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { startDate, endDate } = req.body;
@@ -2558,6 +2448,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  app.delete(apiRouter("/trips/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      
+      // Obtener el usuario autenticado
+      const { user } = req as any;
+      
+      console.log(`[DELETE /trips/${id}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      if (user) {
+        console.log(`[DELETE /trips/${id}] Rol: ${user.role}, CompanyId: ${user.companyId || user.company || 'No definido'}`);
+      }
+      
+      // Primero verificar que el viaje existe
+      const currentTrip = await storage.getTrip(id);
+      if (!currentTrip) {
+        return res.status(404).json({ error: "Trip not found" });
+      }
+      
+      // SEGURIDAD: Si no es superAdmin, verificar que el viaje pertenece a su compañía
+      if (user.role !== UserRole.SUPER_ADMIN) {
+        // Usar companyId (column company_id en la tabla users)
+        const userCompanyId = user.companyId;
+        
+        if (!userCompanyId) {
+          console.log(`[DELETE /trips/${id}] ACCESO DENEGADO: Usuario sin companyId asignado`);
+          return res.status(403).json({ 
+            error: "Acceso denegado", 
+            details: "Usuario sin compañía asignada" 
+          });
+        }
+        
+        if (currentTrip.companyId && currentTrip.companyId !== userCompanyId) {
+          console.log(`[DELETE /trips/${id}] ACCESO DENEGADO: El viaje pertenece a compañía ${currentTrip.companyId} pero el usuario es de ${userCompanyId}`);
+          return res.status(403).json({ 
+            error: "Acceso denegado", 
+            details: "No tiene permiso para eliminar viajes de otra compañía" 
+          });
+        }
+      }
+      
+      const success = await storage.deleteTrip(id);
+      
+      if (!success) {
+        return res.status(500).json({ error: "Failed to delete trip" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete trip" });
+    }
+  });
+
+  // Endpoint para obtener count de eliminación masiva
+  app.get(apiRouter("/trips/bulk-delete/count"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      // Validar datos de entrada
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          error: "Se requieren fechas de inicio y fin",
+          details: "startDate y endDate son requeridos como query parameters" 
+        });
+      }
+
+      // Obtener el usuario autenticado
+      const { user } = req as any;
+      
+      console.log(`[GET /trips/bulk-delete/count] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      console.log(`[GET /trips/bulk-delete/count] Rango de fechas: ${startDate} a ${endDate}`);
+      
+      // Validar permisos
+      if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "No tiene permisos para ver el conteo de eliminación masiva" 
+        });
+      }
+      
+      // Normalizar fechas
+      const normalizedStartDate = normalizeToStartOfDay(new Date(startDate as string));
+      const normalizedEndDate = normalizeToStartOfDay(new Date(endDate as string));
+      
+      console.log(`[GET /trips/bulk-delete/count] Fechas normalizadas: ${normalizedStartDate} a ${normalizedEndDate}`);
+      
+      // Obtener viajes en el rango de fechas
+      const tripsInRange = await storage.getTripsInDateRange(
+        formatDateToLocal(normalizedStartDate),
+        formatDateToLocal(normalizedEndDate),
+        user.companyId || user.company
+      );
+      
+      console.log(`[GET /trips/bulk-delete/count] Encontrados ${tripsInRange.length} viajes en el rango`);
+      
+      const result = {
+        tripsCount: tripsInRange.length
+      };
+      
+      console.log(`[GET /trips/bulk-delete/count] Resultado:`, result);
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error(`[GET /trips/bulk-delete/count] Error:`, error.message);
+      res.status(500).json({ 
+        error: "Error interno del servidor al obtener conteo",
+        details: error.message 
+      });
+    }
+  });
+
+
   
   // Endpoint específico para asignar vehículo o conductor a un viaje (PATCH)
   app.patch(apiRouter("/trips/:id"), isAuthenticated, async (req: Request, res: Response) => {
