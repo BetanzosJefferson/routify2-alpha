@@ -128,7 +128,26 @@ export function TripLogbook() {
       }
 
       groups[tripKey].reservations.push(reservation);
-      groups[tripKey].totalSales += reservation.totalAmount || 0;
+      
+      // Calcular ventas reales según el estado de la reservación
+      const advanceAmount = reservation.advanceAmount || 0;
+      const isCanceled = reservation.status === 'canceled';
+      const isRefunded = reservation.status === 'canceledAndRefund';
+      
+      if (isRefunded) {
+        // Reservaciones reembolsadas no generan ingresos
+        groups[tripKey].totalSales += 0;
+      } else if (isCanceled) {
+        // Reservaciones canceladas: solo el anticipo que se cobró
+        groups[tripKey].totalSales += advanceAmount;
+      } else {
+        // Reservaciones normales: usar paymentStatus o calcular basado en montos
+        if (reservation.paymentStatus === 'pagado') {
+          groups[tripKey].totalSales += reservation.totalAmount;
+        } else {
+          groups[tripKey].totalSales += advanceAmount;
+        }
+      }
     });
 
     // Agregar paqueterías a los grupos existentes basándose en recordId del viaje padre
@@ -207,9 +226,29 @@ export function TripLogbook() {
 
       // Calcular para reservaciones
       trip.reservations.forEach((reservation: any) => {
-        totalPorVender += reservation.totalAmount;
         const advanceAmount = reservation.advanceAmount || 0;
-        ventasReales += advanceAmount;
+        const isCanceled = reservation.status === 'canceled';
+        const isRefunded = reservation.status === 'canceledAndRefund';
+        
+        // Calcular ventas reales según el estado
+        if (isRefunded) {
+          // Reservaciones reembolsadas no generan ingresos
+          ventasReales += 0;
+          totalPorVender += 0; // No cuenta como potencial venta
+        } else if (isCanceled) {
+          // Reservaciones canceladas: solo el anticipo que se cobró
+          ventasReales += advanceAmount;
+          totalPorVender += advanceAmount; // Solo cuenta el anticipo como venta potencial
+        } else {
+          // Reservaciones normales: usar paymentStatus o calcular basado en montos
+          if (reservation.paymentStatus === 'pagado') {
+            ventasReales += reservation.totalAmount;
+            totalPorVender += reservation.totalAmount;
+          } else {
+            ventasReales += advanceAmount;
+            totalPorVender += reservation.totalAmount; // Precio completo como potencial
+          }
+        }
       });
 
       // Calcular para paqueterías
