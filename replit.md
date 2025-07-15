@@ -119,13 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 15, 2025** - CRITICAL FIX: Bitácora reservation filtering completely corrected for accurate financial tracking:
+- **July 15, 2025** - CRITICAL FIX: Bitácora reservation filtering and specialized display for cancelled reservations completely implemented:
   - **ROOT CAUSE IDENTIFIED**: System was incorrectly including cancelled reservations without advance payment (no company income)
   - **FIELD MAPPING CORRECTIONS**: Fixed bitácora to use correct database fields (`checkedBy` instead of `checkedIn`, `paymentStatus` field priority)
   - **DUAL CANCELLATION HANDLING**: Enhanced filtering to handle both 'canceled' and 'canceledAndRefund' statuses correctly
   - **INTELLIGENT EXCLUSION LOGIC**: Implemented comprehensive filtering that excludes reservations with no income potential
   - **EXCLUDED SCENARIOS**: Cancelled reservations with no advance payment, cancelled and refunded reservations (no net income)
   - **INCLUDED SCENARIOS**: Cancelled reservations with advance payment (partial income), confirmed reservations (all income)
+  - **SPECIALIZED UI DISPLAY**: Created special presentation for cancelled reservations with income:
+    - Visual indicator: "Cancelada sin reembolso" with red X icon
+    - Price display: Total price struck-through with advance amount in blue for partial payments
+    - Full payment display: Normal price (no strikethrough) for fully paid cancelled reservations
+    - Hidden remaining balance: No "Restante" field shown for cancelled reservations
+    - Payment info: Only shows advance payment information, eliminates confusion about future payments
   - **PAYMENT STATUS PRIORITY**: Uses database `paymentStatus` field instead of calculating based on amounts
   - **CHECK-IN FIELD CORRECTION**: Fixed from `reservation.checkedIn` to `reservation.checkedBy` to match database schema
   - **DETAILED LOGGING**: Added comprehensive logging to track filtering decisions and debug reservation inclusion/exclusion

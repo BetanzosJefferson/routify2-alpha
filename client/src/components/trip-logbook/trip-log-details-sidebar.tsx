@@ -388,6 +388,10 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                     }
                   };
                   
+                  // Determinar si es una reservación cancelada pero con ingreso
+                  const isCanceledWithIncome = reservation.status === 'canceled' && advanceAmount > 0;
+                  const wasFullyPaid = advanceAmount >= reservation.totalAmount;
+                  
                   return (
                   <div key={reservation.id} className={`rounded-lg p-3 bg-white shadow-sm ${getBorderClass(paymentStatus)}`}>
                     {/* Header con información básica */}
@@ -395,10 +399,37 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                       <div>
                         <p className="font-medium">Reservación #{reservation.id}</p>
                         <p className="text-sm text-gray-600">{reservation.phone}</p>
+                        {/* Indicador de cancelación sin reembolso */}
+                        {isCanceledWithIncome && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <XCircle className="h-4 w-4 text-red-500" />
+                            <span className="text-sm text-red-600 font-medium">
+                              Cancelada sin reembolso
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-base">
-                          {formatCurrency(reservation.totalAmount)}
+                          {isCanceledWithIncome ? (
+                            wasFullyPaid ? (
+                              // Si ya estaba pagada, mostrar precio normal
+                              formatCurrency(reservation.totalAmount)
+                            ) : (
+                              // Si tenía anticipo, mostrar precio total tachado y anticipo
+                              <div className="flex flex-col items-end">
+                                <span className="line-through text-gray-500 text-sm">
+                                  {formatCurrency(reservation.totalAmount)}
+                                </span>
+                                <span className="text-blue-600">
+                                  {formatCurrency(advanceAmount)}
+                                </span>
+                              </div>
+                            )
+                          ) : (
+                            // Reservación normal
+                            formatCurrency(reservation.totalAmount)
+                          )}
                         </div>
                         {getPaymentStatusBadge(paymentStatus)}
                       </div>
@@ -438,26 +469,40 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         <CreditCard className="h-4 w-4 text-gray-600" />
                         <span className="font-medium">Pago:</span>
                         
-                        {/* Anticipo (si existe) */}
-                        {advanceAmount > 0 && (
+                        {isCanceledWithIncome ? (
+                          // Para reservaciones canceladas con ingreso
                           <span>
                             <span className="font-medium">Anticipo: {formatCurrency(advanceAmount)}</span>
                             <span className="text-gray-500 ml-1">({reservation.advancePaymentMethod})</span>
+                            {wasFullyPaid && (
+                              <span className="text-green-600 font-medium ml-2">- Pagado completo</span>
+                            )}
                           </span>
-                        )}
-                        
-                        {/* Restante (si existe) */}
-                        {remainingAmount > 0 && (
-                          <span>
-                            <span className="text-gray-300 mx-1">|</span>
-                            <span className="font-medium">Restante: {formatCurrency(remainingAmount)}</span>
-                            <span className="text-gray-500 ml-1">({reservation.paymentMethod})</span>
-                          </span>
-                        )}
-                        
-                        {/* Si está totalmente pagado */}
-                        {advanceAmount > 0 && remainingAmount === 0 && (
-                          <span className="text-green-600 font-medium">Pagado completo</span>
+                        ) : (
+                          // Para reservaciones normales
+                          <>
+                            {/* Anticipo (si existe) */}
+                            {advanceAmount > 0 && (
+                              <span>
+                                <span className="font-medium">Anticipo: {formatCurrency(advanceAmount)}</span>
+                                <span className="text-gray-500 ml-1">({reservation.advancePaymentMethod})</span>
+                              </span>
+                            )}
+                            
+                            {/* Restante (si existe) */}
+                            {remainingAmount > 0 && (
+                              <span>
+                                <span className="text-gray-300 mx-1">|</span>
+                                <span className="font-medium">Restante: {formatCurrency(remainingAmount)}</span>
+                                <span className="text-gray-500 ml-1">({reservation.paymentMethod})</span>
+                              </span>
+                            )}
+                            
+                            {/* Si está totalmente pagado */}
+                            {advanceAmount > 0 && remainingAmount === 0 && (
+                              <span className="text-green-600 font-medium">Pagado completo</span>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
