@@ -490,6 +490,10 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
 
               <TabsContent value="packages" className="p-6 space-y-3 m-0">
                 {tripData.packages.map((pkg: any) => {
+                  // Debug: Log package data
+                  console.log('Package data:', pkg);
+                  console.log('Package tripDetails:', pkg.tripDetails);
+                  
                   // Determinar estado de pago para paqueterías
                   const packagePaymentStatus = pkg.paymentStatus === 'paid' ? 'pagado' : 'pendiente';
                   
@@ -537,14 +541,14 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           <span className="text-gray-300">|</span>
                           <MapPin className="h-4 w-4 text-green-600" />
                           <span className="font-medium">Ruta:</span>
-                          <span>{pkg.origin || 'N/A'} → {pkg.destination || 'N/A'}</span>
+                          <span>{pkg.tripDetails?.origin || pkg.tripDetails?.segmentOrigin || 'N/A'} → {pkg.tripDetails?.destination || pkg.tripDetails?.segmentDestination || 'N/A'}</span>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-orange-600" />
                           <span className="font-medium">Salida:</span>
                           <span>
-                            {formatDate(pkg.tripDepartureDate || pkg.shippingDate || '')} - {formatTime(pkg.tripDepartureTime || pkg.departureTime || '')}
+                            {formatDate(pkg.tripDetails?.departureDate || pkg.tripDepartureDate || pkg.shippingDate || '')} - {formatTime(pkg.tripDetails?.departureTime || pkg.tripDepartureTime || pkg.departureTime || '')}
                           </span>
                           <span className="text-gray-300">|</span>
                           {pkg.deliveryStatus === 'delivered' ? (
