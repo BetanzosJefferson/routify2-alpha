@@ -123,8 +123,8 @@ Preferred communication style: Simple, everyday language.
   - **ROOT CAUSE ADDRESSED**: System was deleting transaction records during refund process, losing important financial history
   - **NEW BEHAVIOR**: Instead of deleting original transactions, system now creates negative amount duplicates
   - **REFUND TRANSACTION CREATION**: New `createRefundTransaction` method creates exact copy with negative amount
-  - **SAME USER ASSIGNMENT**: Refund transactions maintain original user_id for accurate financial tracking
-  - **ENHANCED AUDIT TRAIL**: Added metadata fields: transaccion_original_id, reembolsado_por, fecha_reembolso
+  - **REFUND USER ASSIGNMENT**: Refund transactions assigned to user who performs the refund for accurate cash box tracking
+  - **ENHANCED AUDIT TRAIL**: Added metadata fields: transaccion_original_id, usuario_original_id, reembolsado_por, fecha_reembolso
   - **EXAMPLE BEHAVIOR**: Original $200 transaction now creates -$200 refund transaction instead of deletion
   - **FINANCIAL INTEGRITY**: Preserves complete transaction history while maintaining accurate cash flow tracking
   - **INTERFACE ENHANCEMENT**: Updated storage interface to include createRefundTransaction method

@@ -2403,6 +2403,7 @@ export class DatabaseStorage implements IStorage {
           monto: -originalAmount, // Monto negativo para representar reembolso
           tipo: 'reembolso',
           transaccion_original_id: originalTransactionId,
+          usuario_original_id: original.user_id, // Guardar referencia al usuario original
           reembolsado_por: refundedBy,
           fecha_reembolso: new Date().toISOString()
         }
@@ -2412,14 +2413,14 @@ export class DatabaseStorage implements IStorage {
       console.log(`  - Monto original: ${originalAmount}`);
       console.log(`  - Monto reembolso: ${-originalAmount}`);
       console.log(`  - Usuario original: ${original.user_id}`);
-      console.log(`  - Reembolsado por: ${refundedBy}`);
+      console.log(`  - Asignado a usuario: ${refundedBy} (quien realiza el reembolso)`);
       
       // 5. Insertar la nueva transacción de reembolso
       const refundTransaction = await this.db
         .insert(schema.transacciones)
         .values({
           details: refundDetails,
-          user_id: original.user_id, // MISMO usuario que la transacción original
+          user_id: refundedBy, // Usuario que realiza el reembolso
           cutoff_id: null, // Sin corte para que pueda ser procesada
           companyId: original.companyId,
           createdAt: new Date(),

@@ -46,10 +46,9 @@ async function testRefundTransactionCreation() {
       
       // 3. Verificar que la transacción de reembolso se creó correctamente
       const allTransactions = await storage.getTransacciones({});
-      const refundTransaction = allTransactions.find(t => {
-        const details = t.details;
-        return details?.details?.transaccion_original_id === testTransaction.id;
-      });
+      const refundTransaction = allTransactions
+        .filter(t => t.details?.details?.transaccion_original_id === testTransaction.id)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]; // Obtener la más reciente
       
       if (refundTransaction) {
         console.log(`✅ Transacción de reembolso verificada: ID ${refundTransaction.id}`);
@@ -69,11 +68,18 @@ async function testRefundTransactionCreation() {
           console.log(`❌ Monto negativo incorrecto: esperado ${-originalAmount}, obtenido ${refundAmount}`);
         }
         
-        // Verificar que el usuario es el mismo
-        if (refundTransaction.user_id === testTransaction.user_id) {
-          console.log('✅ Usuario mantenido correctamente');
+        // Verificar que el usuario es el que realiza el reembolso
+        if (refundTransaction.user_id === refundedBy) {
+          console.log('✅ Usuario asignado correctamente al que realiza el reembolso');
         } else {
-          console.log(`❌ Usuario incorrecto: esperado ${testTransaction.user_id}, obtenido ${refundTransaction.user_id}`);
+          console.log(`❌ Usuario incorrecto: esperado ${refundedBy}, obtenido ${refundTransaction.user_id}`);
+        }
+        
+        // Verificar que se mantiene referencia al usuario original
+        if ((refundTransaction.details?.details?.usuario_original_id || refundTransaction.details?.details?.reembolsado_por) === testTransaction.user_id) {
+          console.log('✅ Referencia al usuario original conservada');
+        } else {
+          console.log(`❌ Referencia al usuario original perdida`);
         }
         
       } else {
