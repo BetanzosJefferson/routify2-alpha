@@ -1003,6 +1003,9 @@ export class DatabaseStorage implements IStorage {
           // Create a unique identifier for this segment using recordId_segmentIndex format
           const uniqueTripId = `${trip.id}_${segmentIndex}`;
           
+          // Find the main trip segment to get parent information
+          const mainTripSegment = tripDataArray.find(seg => seg.isMainTrip === true);
+          
           // Create a trip object that combines the base trip with segment data
           const expandedTrip = {
             ...trip,
@@ -1018,8 +1021,13 @@ export class DatabaseStorage implements IStorage {
             availableSeats: segment.availableSeats,
             tripId: segment.tripId,
             isMainTrip: segment.isMainTrip,
+            isSubTrip: !segment.isMainTrip,
             // Store original record ID for reservations
             recordId: trip.id,
+            // Add parent trip information for sub-trips
+            parentDepartureDate: mainTripSegment?.departureDate,
+            parentDepartureTime: mainTripSegment?.departureTime,
+            parentOrigin: mainTripSegment?.origin,
             // Add route and company info
             route,
             numStops: route.stops.length,

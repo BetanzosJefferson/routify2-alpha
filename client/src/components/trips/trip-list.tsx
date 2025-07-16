@@ -621,6 +621,31 @@ export function TripList() {
                     )}
                     <div className="text-sm font-medium">
                       <span>Directo · {(trip as any).availableSeats || 0} asientos disponibles</span>
+                      {/* Leyenda para sub-viajes que pertenecen a viajes padre de días anteriores */}
+                      {(() => {
+                        const tripData = (trip as any);
+                        const isSubTrip = tripData.isSubTrip || false;
+                        const parentDepartureDate = tripData.parentDepartureDate;
+                        const parentDepartureTime = tripData.parentDepartureTime;
+                        const parentOrigin = tripData.parentOrigin;
+                        const currentDate = date; // Fecha actual de búsqueda
+                        
+                        // Verificar si es un sub-viaje y si la fecha del viaje padre es diferente a la fecha actual
+                        if (isSubTrip && parentDepartureDate && parentDepartureDate !== currentDate) {
+                          return (
+                            <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded-md flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12,6 12,12 16,14"></polyline>
+                              </svg>
+                              <span className="flex-1">
+                                Este viaje pertenece a la salida <strong>{parentDepartureTime}</strong> con fecha <strong>{parentDepartureDate}</strong> saliendo desde <strong>{parentOrigin}</strong>
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                 </div>
