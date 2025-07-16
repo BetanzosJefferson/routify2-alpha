@@ -1811,6 +1811,71 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Método para obtener información adicional de reservaciones (cortes, usuarios, etc.)
+  async getReservationAdditionalInfo(reservationId: number): Promise<any> {
+    console.log(`[DB] Obteniendo información adicional para reservación ${reservationId}`);
+    
+    try {
+      // Obtener información de la reservación con usuarios relacionados
+      const reservationInfo = await db
+        .select({
+          id: schema.reservations.id,
+          createdBy: schema.reservations.createdBy,
+          checkedBy: schema.reservations.checkedBy,
+          paidBy: schema.reservations.paidBy,
+          createdByName: sql<string>`CONCAT(u_creator.first_name, ' ', u_creator.last_name)`,
+          checkedByName: sql<string>`CONCAT(u_checker.first_name, ' ', u_checker.last_name)`,
+          paidByName: sql<string>`CONCAT(u_payer.first_name, ' ', u_payer.last_name)`,
+        })
+        .from(schema.reservations)
+        .leftJoin(schema.users.as('u_creator'), eq(schema.reservations.createdBy, sql`u_creator.id`))
+        .leftJoin(schema.users.as('u_checker'), eq(schema.reservations.checkedBy, sql`u_checker.id`))
+        .leftJoin(schema.users.as('u_payer'), eq(schema.reservations.paidBy, sql`u_payer.id`))
+        .where(eq(schema.reservations.id, reservationId));
+
+      if (reservationInfo.length === 0) {
+        console.log(`[DB] Reservación ${reservationId} no encontrada`);
+        return null;
+      }
+
+      const reservation = reservationInfo[0];
+
+      // Obtener información de transacciones/cortes
+      const transactionInfo = await db
+        .select({
+          cutoffId: schema.transactions.cutoffId,
+          userId: schema.transactions.userId,
+          cashBoxUserName: sql<string>`CONCAT(u_cashbox.first_name, ' ', u_cashbox.last_name)`,
+        })
+        .from(schema.transactions)
+        .leftJoin(schema.users.as('u_cashbox'), eq(schema.transactions.userId, sql`u_cashbox.id`))
+        .where(
+          and(
+            sql`${schema.transactions.details}->>'type' = 'reservation'`,
+            sql`${schema.transactions.details}->'details'->>'id' = ${reservationId.toString()}`
+          )
+        );
+
+      let cutoffInfo = null;
+      if (transactionInfo.length > 0) {
+        const transaction = transactionInfo[0];
+        cutoffInfo = {
+          cutoffId: transaction.cutoffId,
+          cutoffDisplay: transaction.cutoffId ? transaction.cutoffId.toString() : 'PENDIENTE DE CORTE',
+          cashBoxUser: transaction.cashBoxUserName
+        };
+      }
+
+      return {
+        ...reservation,
+        cutoffInfo
+      };
+    } catch (error) {
+      console.error(`[DB] Error obteniendo información adicional para reservación ${reservationId}:`, error);
+      throw error;
+    }
+  }
   
   async getReservation(id: number): Promise<Reservation | undefined> {
     const [reservation] = await db.select().from(schema.reservations).where(eq(schema.reservations.id, id));

@@ -117,6 +117,7 @@ export interface IStorage {
   getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
   getReservation(id: number): Promise<Reservation | undefined>;
   getReservationWithDetails(id: number, companyId?: string): Promise<ReservationWithDetails | undefined>;
+  getReservationAdditionalInfo(reservationId: number): Promise<any>;
   createReservation(reservation: InsertReservation): Promise<Reservation>;
   updateReservation(id: number, reservation: Partial<Reservation>): Promise<Reservation | undefined>;
   deleteReservation(id: number): Promise<boolean>;

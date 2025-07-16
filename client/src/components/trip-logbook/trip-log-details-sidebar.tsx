@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
+import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle, User, Building } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,13 +58,47 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
+  // Estado para información adicional de reservaciones
+  const [reservationAdditionalInfo, setReservationAdditionalInfo] = useState<{[key: number]: any}>({});
+  const [loadingAdditionalInfo, setLoadingAdditionalInfo] = useState<{[key: number]: boolean}>({});
+
   const { toast } = useToast();
 
   // Cargar presupuesto y gastos al abrir el sidebar
   useEffect(() => {
     loadBudget();
     loadExpenses();
+    loadReservationAdditionalInfo();
   }, [tripData.recordId]);
+
+  // Función para cargar información adicional de todas las reservaciones
+  const loadReservationAdditionalInfo = async () => {
+    try {
+      for (const reservation of tripData.reservations) {
+        if (!reservationAdditionalInfo[reservation.id]) {
+          setLoadingAdditionalInfo(prev => ({ ...prev, [reservation.id]: true }));
+          
+          const response = await fetch(`/api/reservations/${reservation.id}/additional-info`, {
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const additionalInfo = await response.json();
+            setReservationAdditionalInfo(prev => ({ 
+              ...prev, 
+              [reservation.id]: additionalInfo 
+            }));
+          } else {
+            console.error(`Error loading additional info for reservation ${reservation.id}:`, response.statusText);
+          }
+          
+          setLoadingAdditionalInfo(prev => ({ ...prev, [reservation.id]: false }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading reservation additional info:', error);
+    }
+  };
 
   const loadBudget = async () => {
     setIsLoadingBudget(true);
@@ -549,6 +583,69 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                             </span>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Información adicional de auditoria */}
+                    {reservationAdditionalInfo[reservation.id] && (
+                      <div className="mt-2 pt-2 border-t space-y-2">
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-gray-600" />
+                          Auditoria de Reservación:
+                        </p>
+                        
+                        <div className="grid grid-cols-1 gap-2 text-xs">
+                          {/* Usuario que creó la reserva */}
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3 text-blue-600" />
+                            <span className="font-medium">Creado por:</span>
+                            <span>{reservationAdditionalInfo[reservation.id].createdByName || 'No especificado'}</span>
+                          </div>
+                          
+                          {/* Usuario que checkeó la reserva */}
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-600" />
+                            <span className="font-medium">Checkeado por:</span>
+                            <span>{reservationAdditionalInfo[reservation.id].checkedByName || 'No checkeado'}</span>
+                          </div>
+                          
+                          {/* Usuario que marcó como pagada */}
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-3 w-3 text-yellow-600" />
+                            <span className="font-medium">Pagado por:</span>
+                            <span>{reservationAdditionalInfo[reservation.id].paidByName || 'No pagado'}</span>
+                          </div>
+                          
+                          {/* Información de corte */}
+                          <div className="flex items-center gap-2">
+                            <Calculator className="h-3 w-3 text-purple-600" />
+                            <span className="font-medium">Corte:</span>
+                            <span className={
+                              reservationAdditionalInfo[reservation.id].cutoffInfo?.cutoffDisplay === 'PENDIENTE DE CORTE' 
+                                ? 'text-orange-600 font-medium' 
+                                : 'text-green-600'
+                            }>
+                              {reservationAdditionalInfo[reservation.id].cutoffInfo?.cutoffDisplay || 'Sin información'}
+                            </span>
+                          </div>
+                          
+                          {/* Caja asociada */}
+                          {reservationAdditionalInfo[reservation.id].cutoffInfo?.cashBoxUser && (
+                            <div className="flex items-center gap-2">
+                              <Building className="h-3 w-3 text-gray-600" />
+                              <span className="font-medium">Caja:</span>
+                              <span>{reservationAdditionalInfo[reservation.id].cutoffInfo.cashBoxUser}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Indicador de carga para información adicional */}
+                    {loadingAdditionalInfo[reservation.id] && (
+                      <div className="mt-2 pt-2 border-t flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                        <span className="text-sm text-gray-500">Cargando información adicional...</span>
                       </div>
                     )}
                   </div>
