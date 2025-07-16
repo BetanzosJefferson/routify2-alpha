@@ -87,19 +87,30 @@ export default function TransactionHistoryPage() {
     if (!allTransactionHistory) return [];
     
     const cutoffs = new Set<number>();
-    allTransactionHistory.forEach(transaction => {
+    
+    // Si hay un usuario seleccionado, filtrar solo sus cortes
+    const transactionsToProcess = selectedUserId !== 'all' 
+      ? allTransactionHistory.filter(t => t.createdBy.id.toString() === selectedUserId)
+      : allTransactionHistory;
+    
+    transactionsToProcess.forEach(transaction => {
       if (transaction.cutoffId) {
         cutoffs.add(transaction.cutoffId);
       }
     });
     
     return Array.from(cutoffs).sort((a, b) => b - a);
-  }, [allTransactionHistory]);
+  }, [allTransactionHistory, selectedUserId]);
 
   // Detectar cambios en filtros
   useEffect(() => {
     setIsFiltersChanged(startDate !== '' || endDate !== '' || selectedUserId !== 'all' || selectedCutoffId !== 'all');
   }, [startDate, endDate, selectedUserId, selectedCutoffId]);
+
+  // Resetear filtro de corte cuando cambia el usuario
+  useEffect(() => {
+    setSelectedCutoffId('all');
+  }, [selectedUserId]);
 
   const handleClearFilters = () => {
     setStartDate('2025-07-09');
