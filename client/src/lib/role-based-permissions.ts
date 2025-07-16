@@ -41,8 +41,33 @@ export const ALL_SECTIONS: Section[] = [
 // Mapa de permisos por rol
 export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.SUPER_ADMIN]: ALL_SECTIONS.map(section => section.id), // Acceso total
+  "superAdmin": ALL_SECTIONS.map(section => section.id), // Acceso total - alias
   [UserRole.DEVELOPER]: ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo
+  "desarrollador": ALL_SECTIONS.map(section => section.id), // Acceso total - alias
   [UserRole.OWNER]: [
+    "routes",
+    "trips",
+    "publish-trip",
+    "reservations",
+    "reservations-list",
+    "trip-summary",
+    "users",
+    "vehicles",
+    "commissions",
+    "reservation-requests",
+    "notifications",
+    "coupons",
+    "packages",
+    "cash-register",
+    "cash-box",
+    "cutoff-history",
+    "cutoff-confirmation",
+    "passenger-transfer",
+    "user-cash-boxes",
+    "statistics",
+    "transaction-history"
+  ],
+  "dueño": [ // Alias en español para OWNER
     "routes",
     "trips",
     "publish-trip",
@@ -88,6 +113,29 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "statistics",
     "transaction-history"
   ],
+  "admin": [ // Alias en español para ADMIN
+    "routes",
+    "trips",
+    "publish-trip",
+    "reservations",
+    "reservations-list",
+    "trip-summary",
+    "users",
+    "vehicles",
+    "commissions",
+    "reservation-requests", 
+    "notifications",
+    "coupons",
+    "packages",
+    "cash-register",
+    "cash-box",
+    "cutoff-history",
+    "cutoff-confirmation",
+    "passenger-transfer",
+    "user-cash-boxes",
+    "statistics",
+    "transaction-history"
+  ],
   [UserRole.CALL_CENTER]: [
     "trips",
     "reservations",
@@ -107,8 +155,25 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
+  "checador": [ // Alias en español para CHECKER
+    "trips",
+    "reservations-list",
+    "notifications",
+    "packages",
+    "cash-register",
+    "cash-box",
+    "cutoff-history"
+  ],
   // Permisos para rol DRIVER (conductor) - ya incluye el alias español 'chofer'
   [UserRole.DRIVER]: [
+    "dashboard",
+    "notifications",
+    "reservations-list", // Vista específica de reservaciones para sus viajes asignados (incluye paqueterías)
+    "cash-register",
+    "cash-box",
+    "cutoff-history"
+  ],
+  "chofer": [ // Alias en español para DRIVER
     "dashboard",
     "notifications",
     "reservations-list", // Vista específica de reservaciones para sus viajes asignados (incluye paqueterías)
@@ -126,8 +191,27 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
+  "taquilla": [ // Alias en español para TICKET_OFFICE
+    "trips",
+    "reservations",
+    "reservations-list",
+    "notifications",
+    "packages",
+    "cash-register",
+    "cash-box",
+    "cutoff-history"
+  ],
   // Permisos para el nuevo rol COMISIONISTA
   [UserRole.COMMISSIONER]: [
+    "trips",
+    "my-commissions",
+    "reservation-requests",
+    "notifications",
+    "cash-register",
+    "cash-box",
+    "cutoff-history"
+  ],
+  "comisionista": [ // Alias en español para COMMISSIONER
     "trips",
     "my-commissions",
     "reservation-requests",
