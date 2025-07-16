@@ -1817,29 +1817,57 @@ export class DatabaseStorage implements IStorage {
     console.log(`[DB] Obteniendo información adicional para reservación ${reservationId}`);
     
     try {
-      // Usar consulta SQL directa para obtener información de usuarios
-      const reservationInfo = await db.execute(sql`
-        SELECT 
-          r.id,
-          r.created_by,
-          r.checked_by,
-          r.paid_by,
-          CONCAT(u_creator.first_name, ' ', u_creator.last_name) as created_by_name,
-          CONCAT(u_checker.first_name, ' ', u_checker.last_name) as checked_by_name,
-          CONCAT(u_payer.first_name, ' ', u_payer.last_name) as paid_by_name
-        FROM reservations r
-        LEFT JOIN users u_creator ON r.created_by = u_creator.id
-        LEFT JOIN users u_checker ON r.checked_by = u_checker.id
-        LEFT JOIN users u_payer ON r.paid_by = u_payer.id
-        WHERE r.id = ${reservationId}
-      `);
-
-      if (reservationInfo.length === 0) {
+      // Primero obtener la reservación base
+      const reservation = await db.select().from(schema.reservations).where(eq(schema.reservations.id, reservationId));
+      
+      if (reservation.length === 0) {
         console.log(`[DB] Reservación ${reservationId} no encontrada`);
         return null;
       }
 
-      const reservation = reservationInfo[0];
+      const reservationData = reservation[0];
+      console.log(`[DB] Reservación encontrada:`, reservationData);
+      console.log(`[DB] Campos de usuario:`, {
+        createdBy: reservationData.createdBy,
+        checkedBy: reservationData.checkedBy,
+        paidBy: reservationData.paidBy
+      });
+
+      // Obtener información de usuarios por separado
+      let createdByName = 'No disponible';
+      let checkedByName = 'No disponible';
+      let paidByName = 'No disponible';
+
+      // Obtener usuario creador (usando el valor del objeto actual)
+      const createdByValue = reservationData.createdBy || reservationData.created_by;
+      if (createdByValue) {
+        console.log(`[DB] Buscando usuario creador con ID: ${createdByValue}`);
+        const creatorUser = await db.select().from(schema.users).where(eq(schema.users.id, createdByValue));
+        if (creatorUser.length > 0) {
+          createdByName = `${creatorUser[0].firstName} ${creatorUser[0].lastName}`;
+          console.log(`[DB] Usuario creador encontrado: ${createdByName}`);
+        }
+      }
+
+      // Obtener usuario que checkeó
+      const checkedByValue = reservationData.checkedBy || reservationData.checked_by;
+      if (checkedByValue) {
+        const checkerUser = await db.select().from(schema.users).where(eq(schema.users.id, checkedByValue));
+        if (checkerUser.length > 0) {
+          checkedByName = `${checkerUser[0].firstName} ${checkerUser[0].lastName}`;
+        }
+      }
+
+      // Obtener usuario que pagó
+      const paidByValue = reservationData.paidBy || reservationData.paid_by;
+      if (paidByValue) {
+        const payerUser = await db.select().from(schema.users).where(eq(schema.users.id, paidByValue));
+        if (payerUser.length > 0) {
+          paidByName = `${payerUser[0].firstName} ${payerUser[0].lastName}`;
+        }
+      }
+
+      console.log(`[DB] Nombres obtenidos: creado=${createdByName}, checkeado=${checkedByName}, pagado=${paidByName}`);
 
       // Obtener información de transacciones/cortes
       const transactionInfo = await db.execute(sql`
@@ -1853,24 +1881,29 @@ export class DatabaseStorage implements IStorage {
         AND t.details->'details'->>'id' = ${reservationId.toString()}
       `);
 
-      let cutoffInfo = null;
-      if (transactionInfo.length > 0) {
+      let cutoffInfo = {
+        cutoffDisplay: 'PENDIENTE DE CORTE',
+        cashBoxUser: 'No disponible'
+      };
+
+      if (transactionInfo && transactionInfo.length > 0) {
         const transaction = transactionInfo[0];
         cutoffInfo = {
-          cutoffId: transaction.cutoff_id,
           cutoffDisplay: transaction.cutoff_id ? `Corte #${transaction.cutoff_id}` : 'PENDIENTE DE CORTE',
-          cashBoxUser: transaction.cash_box_user_name
+          cashBoxUser: transaction.cash_box_user_name || 'No disponible'
         };
       }
 
+      console.log(`[DB] Información de corte obtenida:`, cutoffInfo);
+
       return {
-        id: reservation.id,
-        createdBy: reservation.created_by,
-        checkedBy: reservation.checked_by,
-        paidBy: reservation.paid_by,
-        createdByName: reservation.created_by_name,
-        checkedByName: reservation.checked_by_name,
-        paidByName: reservation.paid_by_name,
+        id: reservationData.id,
+        createdBy: createdByValue,
+        checkedBy: checkedByValue,
+        paidBy: paidByValue,
+        createdByName,
+        checkedByName,
+        paidByName,
         cutoffInfo
       };
     } catch (error) {
