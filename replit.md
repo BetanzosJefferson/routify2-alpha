@@ -119,6 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 16, 2025** - COMPLETED: Sistema de "Confirmar cortes" implementado completamente:
+  - **NAVEGACIÓN INTEGRADA**: Agregado al sidebar y topbar con ícono CheckCircle
+  - **PERMISOS CONFIGURADOS**: Acceso restringido solo a roles OWNER y ADMIN
+  - **RUTA FUNCIONAL**: Configurada en App.tsx como `/cutoff-confirmation`
+  - **COMPONENTE COMPLETO**: Búsqueda por ID de corte, visualización de detalles y confirmación
+  - **INTERFACE USUARIO**: Campo de búsqueda, información del corte, lista de transacciones y modal de confirmación
+  - **BACKEND INTEGRATION**: Utiliza endpoints existentes `/api/cutoffs/:id` y `/api/cutoffs/:id/confirm`
+  - **VALIDACIÓN ROLES**: Sistema de permisos verificado para acceso seguro
+  - **DEBUGGING AGREGADO**: Logs de depuración para verificar permisos y acceso de usuarios
+  - **PÁGINA WRAPPER**: Creada página de envoltura con validación de permisos
+  - **CORRECCIÓN IMPORTS**: Solucionado error de importación de `useRequireAuth`
+
 - **July 16, 2025** - COMPLETED: Sistema de historial de transacciones implementado con correcciones críticas:
   - **ENDPOINT BACKEND**: Creado endpoint `/api/transaction-history` con filtros avanzados por fecha, usuario y corte
   - **MÉTODO STORAGE**: Implementado `getTransactionHistory()` en db-storage.ts con filtros SQL y extracción correcta de montos
