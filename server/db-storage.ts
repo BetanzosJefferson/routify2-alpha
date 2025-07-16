@@ -20,6 +20,7 @@ import {
 import { IStorage } from "./storage";
 import { db } from "./db";
 import { eq, and, gte, lte, lt, like, or, sql, isNotNull, isNull, inArray, ne, desc } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 export class DatabaseStorage implements IStorage {
   private db = db;
@@ -2244,6 +2245,9 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`DB Storage: Obteniendo corte de caja con ID ${id}`);
       
+      const creator = alias(schema.users, 'creator');
+      const confirmer = alias(schema.users, 'confirmer');
+      
       const [cutoff] = await this.db
         .select({
           id: schema.boxCutoff.id,
@@ -2259,11 +2263,14 @@ export class DatabaseStorage implements IStorage {
           check: schema.boxCutoff.check,
           check_by: schema.boxCutoff.check_by,
           check_at: schema.boxCutoff.check_at,
+          // Información del usuario que creó el corte
+          createdByName: sql<string>`CONCAT(${creator.firstName}, ' ', ${creator.lastName})`.as('createdByName'),
           // Información del usuario que confirmó el corte
-          confirmedByName: sql<string>`CASE WHEN ${schema.boxCutoff.check_by} IS NOT NULL THEN CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName}) ELSE NULL END`.as('confirmedByName')
+          confirmedByName: sql<string>`CASE WHEN ${schema.boxCutoff.check_by} IS NOT NULL THEN CONCAT(${confirmer.firstName}, ' ', ${confirmer.lastName}) ELSE NULL END`.as('confirmedByName')
         })
         .from(schema.boxCutoff)
-        .leftJoin(schema.users, eq(schema.boxCutoff.check_by, schema.users.id))
+        .leftJoin(creator, eq(schema.boxCutoff.user_id, creator.id))
+        .leftJoin(confirmer, eq(schema.boxCutoff.check_by, confirmer.id))
         .where(eq(schema.boxCutoff.id, id))
         .limit(1);
       

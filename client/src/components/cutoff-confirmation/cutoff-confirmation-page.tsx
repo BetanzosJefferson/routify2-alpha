@@ -301,7 +301,7 @@ export default function CutoffConfirmationPage() {
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Receipt className="w-5 h-5" />
-                  Corte #{cutoff.id}
+                  Corte #{cutoff.id} - {cutoff.createdByName || `Usuario ID: ${cutoff.user_id}`}
                 </span>
                 <div className="flex items-center gap-2">
                   {cutoff.check ? (
@@ -395,9 +395,14 @@ export default function CutoffConfirmationPage() {
               <div className="space-y-3">
                 {transactions.map((transaction) => (
                   <div key={transaction.id} className="border rounded-lg p-4 bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium flex items-center gap-2">
+                          {transaction.details.type === 'reservation' ? (
+                            <User className="w-4 h-4" />
+                          ) : (
+                            <Package className="w-4 h-4" />
+                          )}
                           {transaction.details.type === 'reservation' ? 'Reservación' : 'Paquete'} #{transaction.details.details.id}
                         </div>
                         <div className="text-sm text-gray-600">
@@ -413,12 +418,110 @@ export default function CutoffConfirmationPage() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {transaction.details.details.notas}
+
+                    {/* Información específica de reservación */}
+                    {transaction.details.type === 'reservation' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        {transaction.details.details.pasajeros && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Users className="w-4 h-4" />
+                              Pasajeros
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {transaction.details.details.pasajeros}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {transaction.details.details.contacto && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Phone className="w-4 h-4" />
+                              Contacto
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {transaction.details.details.contacto}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Información específica de paquete */}
+                    {transaction.details.type === 'package' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        {transaction.details.details.remitente && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <User className="w-4 h-4" />
+                              Remitente
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {transaction.details.details.remitente}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {transaction.details.details.destinatario && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <User className="w-4 h-4" />
+                              Destinatario
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {transaction.details.details.destinatario}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {transaction.details.details.descripcion && (
+                          <div className="space-y-1 md:col-span-2">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Package className="w-4 h-4" />
+                              Descripción
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {transaction.details.details.descripcion}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Información de ruta y hora */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                      {transaction.details.details.origen && transaction.details.details.destino && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <MapPin className="w-4 h-4" />
+                            Ruta
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {transaction.details.details.origen} → {transaction.details.details.destino}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {transaction.details.details.horaSalida && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Clock className="w-4 h-4" />
+                            Hora de Salida
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {transaction.details.details.horaSalida}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {transaction.details.details.origen && transaction.details.details.destino && (
-                      <div className="text-sm text-gray-500 mt-1">
-                        {transaction.details.details.origen} → {transaction.details.details.destino}
+
+                    {/* Notas adicionales */}
+                    {transaction.details.details.notas && (
+                      <div className="border-t pt-2">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">Notas:</span> {transaction.details.details.notas}
+                        </div>
                       </div>
                     )}
                   </div>
