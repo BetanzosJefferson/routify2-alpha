@@ -2386,7 +2386,13 @@ export class DatabaseStorage implements IStorage {
       const users = await db
         .select()
         .from(schema.users)
-        .where(eq(schema.users.companyId, companyId));
+        .where(
+          or(
+            eq(schema.users.companyId, companyId),
+            eq(schema.users.company, companyId),
+            eq(schema.users.company, companyId.toUpperCase())
+          )
+        );
       
       console.log(`DB Storage: Usuarios encontrados para compañía ${companyId}: ${users.length}`);
       return users;
