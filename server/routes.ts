@@ -3164,30 +3164,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para obtener información adicional de una reservación (cortes, usuarios, etc.)
-  app.get(apiRouter("/reservations/:id/additional-info"), isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      const { user } = req as any;
-
-      console.log(`[GET /reservations/${id}/additional-info] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
-      
-      // Obtener información adicional de la reservación
-      const additionalInfo = await storage.getReservationAdditionalInfo(id);
-      
-      if (!additionalInfo) {
-        console.log(`[GET /reservations/${id}/additional-info] Reservación no encontrada`);
-        return res.status(404).json({ error: "Reservación no encontrada" });
-      }
-
-      console.log(`[GET /reservations/${id}/additional-info] Información adicional obtenida exitosamente`, additionalInfo);
-      res.json(additionalInfo);
-    } catch (error) {
-      console.error(`[GET /reservations/:id/additional-info] Error: ${error}`);
-      res.status(500).json({ error: "Error interno del servidor", details: error.message });
-    }
-  });
-
   app.post(apiRouter("/reservations"), async (req: Request, res: Response) => {
     try {
       console.log("[POST /reservations] Datos recibidos en req.body:", JSON.stringify(req.body, null, 2));
