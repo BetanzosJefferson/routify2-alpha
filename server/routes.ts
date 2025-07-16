@@ -8518,4 +8518,137 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // Endpoint para obtener información de un corte específico
+  app.get(apiRouter("/cutoffs/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /cutoffs/:id] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver cortes (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver cortes" 
+        });
+      }
+      
+      const cutoffId = parseInt(req.params.id);
+      
+      console.log(`[GET /cutoffs/:id] Obteniendo corte con ID: ${cutoffId}`);
+      
+      const cutoff = await storage.getBoxCutoff(cutoffId);
+      
+      if (!cutoff) {
+        return res.status(404).json({ error: "Corte no encontrado" });
+      }
+      
+      console.log(`[GET /cutoffs/:id] Corte encontrado: ${cutoff.id}`);
+      
+      res.json(cutoff);
+    } catch (error: any) {
+      console.error("[GET /cutoffs/:id] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener corte",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para obtener transacciones de un corte específico
+  app.get(apiRouter("/cutoffs/:id/transactions"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /cutoffs/:id/transactions] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver transacciones de cortes (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver transacciones de cortes" 
+        });
+      }
+      
+      const cutoffId = parseInt(req.params.id);
+      
+      console.log(`[GET /cutoffs/:id/transactions] Obteniendo transacciones para corte: ${cutoffId}`);
+      
+      const transactions = await storage.getBoxCutoffTransactions(cutoffId);
+      
+      console.log(`[GET /cutoffs/:id/transactions] Encontradas ${transactions.length} transacciones`);
+      
+      res.json(transactions);
+    } catch (error: any) {
+      console.error("[GET /cutoffs/:id/transactions] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener transacciones del corte",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para confirmar un corte
+  app.post(apiRouter("/cutoffs/:id/confirm"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[POST /cutoffs/:id/confirm] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para confirmar cortes (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden confirmar cortes" 
+        });
+      }
+      
+      const cutoffId = parseInt(req.params.id);
+      
+      console.log(`[POST /cutoffs/:id/confirm] Confirmando corte: ${cutoffId} por usuario: ${user.id}`);
+      
+      // Verificar que el corte existe
+      const cutoff = await storage.getBoxCutoff(cutoffId);
+      if (!cutoff) {
+        return res.status(404).json({ error: "Corte no encontrado" });
+      }
+      
+      // Verificar que el corte no esté ya confirmado
+      if (cutoff.check) {
+        return res.status(400).json({ error: "Este corte ya está confirmado" });
+      }
+      
+      const confirmedCutoff = await storage.confirmBoxCutoff(cutoffId, user.id);
+      
+      if (!confirmedCutoff) {
+        return res.status(500).json({ error: "Error al confirmar el corte" });
+      }
+      
+      console.log(`[POST /cutoffs/:id/confirm] Corte ${cutoffId} confirmado exitosamente`);
+      
+      res.json({ 
+        message: "Corte confirmado exitosamente",
+        cutoff: confirmedCutoff 
+      });
+    } catch (error: any) {
+      console.error("[POST /cutoffs/:id/confirm] Error:", error);
+      res.status(500).json({ 
+        error: "Error al confirmar corte",
+        details: error.message 
+      });
+    }
+  });
 }

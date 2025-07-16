@@ -257,6 +257,9 @@ export interface IStorage {
   
   // Box cutoff methods
   createBoxCutoff(cutoffData: schema.InsertBoxCutoff): Promise<schema.BoxCutoff>;
+  getBoxCutoff(id: number): Promise<schema.BoxCutoff | undefined>;
+  getBoxCutoffTransactions(cutoffId: number): Promise<any[]>;
+  confirmBoxCutoff(cutoffId: number, userId: number): Promise<schema.BoxCutoff | undefined>;
   
   // Statistics methods
   getCouponUsageStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{

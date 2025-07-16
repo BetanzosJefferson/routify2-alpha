@@ -822,6 +822,10 @@ export const boxCutoff = pgTable("box_cutoff", {
   updatedAt: timestamp("updated_at").defaultNow(),
   // Campo para aislamiento de datos por compañía
   companyId: text("company_id"),
+  // Campos para confirmación de cortes
+  check: boolean("check").default(false).notNull(),
+  check_by: integer("check_by").references(() => users.id),
+  check_at: timestamp("check_at"),
 });
 
 export const insertBoxCutoffSchema = createInsertSchema(boxCutoff);

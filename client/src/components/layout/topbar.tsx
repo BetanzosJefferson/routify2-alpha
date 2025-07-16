@@ -251,6 +251,19 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </NavLink>
                   )}
                   
+                  {/* Confirmar cortes */}
+                  {canAccess("cutoff-confirmation") && (
+                    <NavLink 
+                      active={window.location.pathname === "/cutoff-confirmation"}
+                      onClick={() => {
+                        setLocation("/cutoff-confirmation");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Confirmar cortes
+                    </NavLink>
+                  )}
+                  
                   {/* Caja de usuarios */}
                   {canAccess("user-cash-boxes") && (
                     <NavLink 

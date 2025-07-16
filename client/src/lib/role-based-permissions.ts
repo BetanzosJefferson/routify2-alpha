@@ -28,6 +28,7 @@ export const ALL_SECTIONS: Section[] = [
   { id: "cash-register", name: "Caja", description: "Registro de pagos realizados" },
   { id: "cash-box", name: "Caja", description: "Gestión de transacciones en caja" },
   { id: "cutoff-history", name: "Historial de Cortes", description: "Historial de cortes de caja realizados" },
+  { id: "cutoff-confirmation", name: "Confirmar Cortes", description: "Confirmar y validar cortes de caja realizados" },
   /* Temporalmente deshabilitado
   { id: "passenger-transfer", name: "Transferencia de pasajeros", description: "Gestión de transferencias de pasajeros entre viajes" },
   */
@@ -58,6 +59,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-register",
     "cash-box",
     "cutoff-history",
+    "cutoff-confirmation",
     "passenger-transfer",
     "user-cash-boxes",
     "statistics",
@@ -80,6 +82,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-register",
     "cash-box",
     "cutoff-history",
+    "cutoff-confirmation",
     "passenger-transfer",
     "user-cash-boxes",
     "statistics",

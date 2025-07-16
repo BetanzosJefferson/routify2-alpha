@@ -23,7 +23,8 @@ import {
   ArrowRightLeft,
   ReceiptIcon,
   Wallet,
-  BarChart3
+  BarChart3,
+  CheckCircle
 } from "lucide-react";
 
 interface SidebarProps {
@@ -275,6 +276,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 onClick={() => setLocation("/cutoff-history")}
               >
                 Historial de cortes
+              </NavItem>
+            </div>
+          )}
+          
+          {/* Confirmar cortes */}
+          {canAccess("cutoff-confirmation") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<CheckCircle className="h-5 w-5" />} 
+                active={location === "/cutoff-confirmation"}
+                onClick={() => setLocation("/cutoff-confirmation")}
+              >
+                Confirmar cortes
               </NavItem>
             </div>
           )}

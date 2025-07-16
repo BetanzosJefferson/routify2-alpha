@@ -2240,6 +2240,71 @@ export class DatabaseStorage implements IStorage {
     return cutoff;
   }
 
+  async getBoxCutoff(id: number): Promise<schema.BoxCutoff | undefined> {
+    try {
+      console.log(`DB Storage: Obteniendo corte de caja con ID ${id}`);
+      
+      const [cutoff] = await this.db
+        .select()
+        .from(schema.boxCutoff)
+        .where(eq(schema.boxCutoff.id, id))
+        .limit(1);
+      
+      return cutoff;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener corte de caja ${id}:`, error);
+      return undefined;
+    }
+  }
+
+  async getBoxCutoffTransactions(cutoffId: number): Promise<any[]> {
+    try {
+      console.log(`DB Storage: Obteniendo transacciones para corte ${cutoffId}`);
+      
+      const transactions = await this.db
+        .select({
+          id: schema.transacciones.id,
+          details: schema.transacciones.details,
+          cutoff_id: schema.transacciones.cutoff_id,
+          createdAt: schema.transacciones.createdAt,
+          user_id: schema.transacciones.user_id,
+          companyId: schema.transacciones.companyId
+        })
+        .from(schema.transacciones)
+        .where(eq(schema.transacciones.cutoff_id, cutoffId))
+        .orderBy(schema.transacciones.createdAt);
+      
+      console.log(`DB Storage: Encontradas ${transactions.length} transacciones para corte ${cutoffId}`);
+      return transactions;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener transacciones para corte ${cutoffId}:`, error);
+      return [];
+    }
+  }
+
+  async confirmBoxCutoff(cutoffId: number, userId: number): Promise<schema.BoxCutoff | undefined> {
+    try {
+      console.log(`DB Storage: Confirmando corte ${cutoffId} por usuario ${userId}`);
+      
+      const [updated] = await this.db
+        .update(schema.boxCutoff)
+        .set({
+          check: true,
+          check_by: userId,
+          check_at: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(schema.boxCutoff.id, cutoffId))
+        .returning();
+      
+      console.log(`DB Storage: Corte ${cutoffId} confirmado exitosamente`);
+      return updated;
+    } catch (error) {
+      console.error(`DB Storage: Error al confirmar corte ${cutoffId}:`, error);
+      return undefined;
+    }
+  }
+
   async updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined> {
     try {
       const whereClause = userId 
