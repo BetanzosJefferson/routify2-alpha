@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 16, 2025** - CRITICAL FIX: Session table added to schema to prevent production migration resets:
+  - **ROOT CAUSE RESOLVED**: Session table was missing from Drizzle schema causing production migration resets
+  - **SCHEMA ADDITION**: Added sessions table definition to shared/schema.ts with proper PostgreSQL structure
+  - **DATABASE CREATION**: Created table with sid (VARCHAR 255), sess (JSON), and expire (TIMESTAMP) fields
+  - **MIGRATION PREVENTION**: Schema now matches production database structure to prevent future resets
+  - **EXPRESS COMPATIBILITY**: Table structure matches connect-pg-simple session store requirements
+  - **PRODUCTION STABILITY**: Production deployments will no longer reset session data during migrations
+
 - **July 16, 2025** - CRITICAL FIX: Trip parent date legend display logic corrected for accurate date comparison:
   - **ROOT CAUSE IDENTIFIED**: Legend was showing when `parentDepartureDate !== currentDate` (search date) instead of comparing with individual segment date
   - **LOGIC CORRECTION**: Changed comparison from `currentDate` (search date) to `segmentDate` (individual segment departure date)

@@ -756,6 +756,17 @@ export const invitationRelations = relations(invitations, ({ one }) => ({
   })
 }));
 
+// SESSIONS TABLE FOR EXPRESS SESSION STORE
+export const sessions = pgTable("session", {
+  sid: varchar("sid", { length: 255 }).primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+
+export const insertSessionSchema = createInsertSchema(sessions);
+export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type Session = typeof sessions.$inferSelect;
+
 // COMPANY RELATIONS
 export const companyRelations = relations(companies, ({ many, one }) => ({
   users: many(users),
