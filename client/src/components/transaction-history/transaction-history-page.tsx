@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Filter, Calendar, User, Receipt, Package } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/utils';
+import DefaultLayout from '@/components/layout/default-layout';
 
 interface TransactionHistoryItem {
   id: number;
@@ -131,13 +132,14 @@ export default function TransactionHistoryPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Historial de Transacciones</h1>
-        <Badge variant="outline" className="text-sm">
-          {transactionHistory?.length || 0} transacciones
-        </Badge>
-      </div>
+    <DefaultLayout>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Historial de Transacciones</h1>
+          <Badge variant="outline" className="text-sm">
+            {transactionHistory?.length || 0} transacciones
+          </Badge>
+        </div>
 
       {/* Filtros */}
       <Card>
@@ -274,11 +276,10 @@ export default function TransactionHistoryPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {getTransactionTypeIcon(transaction.type)}
-                      <span className="font-medium">{getTransactionTypeLabel(transaction.type)}</span>
+                      <span className="font-medium">Transacción ID</span>
                       <span className="text-sm text-muted-foreground">#{transaction.id}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {getCutoffStatusBadge(transaction.cutoffStatus)}
                       <span className="font-bold text-green-600">{formatCurrency(transaction.amount)}</span>
                     </div>
                   </div>
@@ -306,6 +307,7 @@ export default function TransactionHistoryPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </DefaultLayout>
   );
 }

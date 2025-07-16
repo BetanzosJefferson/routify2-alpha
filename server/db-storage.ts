@@ -4264,10 +4264,12 @@ export class DatabaseStorage implements IStorage {
         if (details && typeof details === 'object') {
           if (details.type === 'package') {
             type = 'package';
-            amount = details.details?.monto || details.details?.price || 0;
+            // Para paquetes, buscar el monto en diferentes ubicaciones posibles
+            amount = details.monto || details.details?.monto || details.details?.price || details.price || 0;
           } else if (details.type === 'reservation') {
             type = 'reservation';
-            amount = details.details?.advance || details.details?.advanceAmount || 0;
+            // Para reservaciones, buscar el monto en diferentes ubicaciones posibles
+            amount = details.monto || details.details?.monto || details.details?.advance || details.details?.advanceAmount || details.advance || details.advanceAmount || 0;
           }
         }
 

@@ -119,6 +119,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 16, 2025** - COMPLETED: Sistema de historial de transacciones implementado con correcciones críticas:
+  - **ENDPOINT BACKEND**: Creado endpoint `/api/transaction-history` con filtros avanzados por fecha, usuario y corte
+  - **MÉTODO STORAGE**: Implementado `getTransactionHistory()` en db-storage.ts con filtros SQL y extracción correcta de montos
+  - **CORRECCIÓN MONTOS**: Mejorada extracción de montos de transacciones para mostrar valores reales ($500 MXN) en lugar de $0.00
+  - **INTERFAZ FRONTEND**: Componente completo con filtros avanzados, resumen de estadísticas y paginación
+  - **LAYOUT PREDETERMINADO**: Agregado DefaultLayout (sidebar y navbar) al componente de historial de transacciones
+  - **CORRECCIÓN TERMINOLOGÍA**: Cambiado "Reservación ID" por "Transacción ID" para reflejar correctamente el tipo de registro
+  - **ELIMINACIÓN BADGES**: Removidos badges de "Completado/Pendiente" que no aplicaban al contexto de transacciones
+  - **NAVEGACIÓN INTEGRADA**: Historial de transacciones accesible desde sidebar y topbar con control de acceso por roles
+  - **PERMISOS RESTRINGIDOS**: Acceso limitado solo a roles OWNER y ADMIN para proteger información financiera sensible
+  - **FILTROS FUNCIONALES**: Sistema de filtros por rango de fechas, usuario específico y estado de corte con valores corregidos
+  - **EXTRACCIÓN MEJORADA**: Lógica robusta para extraer montos de estructuras de datos variables en transacciones
+  - **EXPERIENCIA USUARIO**: Interfaz limpia y profesional con resumen de estadísticas y navegación intuitiva
+
 - **July 15, 2025** - CRITICAL FIX: Bitácora reservation filtering and specialized display for cancelled reservations completely implemented:
   - **ROOT CAUSE IDENTIFIED**: System was incorrectly including cancelled reservations without advance payment (no company income)
   - **FIELD MAPPING CORRECTIONS**: Fixed bitácora to use correct database fields (`checkedBy` instead of `checkedIn`, `paymentStatus` field priority)
