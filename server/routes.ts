@@ -8431,7 +8431,7 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /transaction-users] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Verificar que el usuario tenga permisos para ver usuarios con transacciones (solo dueño y admin)
-      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+      if (user.role !== "dueño" && user.role !== "admin") {
         return res.status(403).json({ 
           error: "Acceso denegado", 
           details: "Solo los dueños y administradores pueden ver usuarios con transacciones" 
@@ -8474,7 +8474,7 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /transaction-history] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Verificar que el usuario tenga permisos para ver historial de transacciones (solo dueño y admin)
-      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+      if (user.role !== "dueño" && user.role !== "admin") {
         return res.status(403).json({ 
           error: "Acceso denegado", 
           details: "Solo los dueños y administradores pueden ver el historial de transacciones" 

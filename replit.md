@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 16, 2025** - CRITICAL FIX: Transaction history permissions corrected to use Spanish role values:
+  - **ROOT CAUSE RESOLVED**: Transaction history endpoints were using English role constants instead of Spanish database values
+  - **ENDPOINTS FIXED**: Both `/api/transaction-history` and `/api/transaction-users` endpoints now use correct role validation
+  - **ROLE VALIDATION**: Changed from `UserRole.OWNER` and `UserRole.ADMIN` to `"dueño"` and `"admin"` for consistency
+  - **SYSTEM CONSISTENCY**: All role-based permissions now uniformly use Spanish role values from database
+  - **ACCESS RESTORED**: Users with "dueño" and "admin" roles can now access transaction history section
+  - **PERMISSION PATTERN**: Applied same fix pattern used in cutoff confirmation system
+  - **TECHNICAL SOLUTION**: Updated role comparison logic to match actual database role values
+  - **COMPREHENSIVE FIX**: Both transaction history and transaction users endpoints corrected simultaneously
+
 - **July 16, 2025** - COMPLETED: Sistema de "Confirmar cortes" implementado completamente:
   - **NAVEGACIÓN INTEGRADA**: Agregado al sidebar y topbar con ícono CheckCircle
   - **PERMISOS CONFIGURADOS**: Acceso restringido solo a roles OWNER y ADMIN
