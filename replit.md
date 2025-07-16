@@ -131,9 +131,11 @@ Preferred communication style: Simple, everyday language.
     - `/api/transaction-users` - Transaction users now use Spanish roles
   - **ROLE VALIDATION**: Changed from `UserRole.OWNER`/`UserRole.ADMIN` to `"dueño"`/`"admin"` system-wide
   - **COMMISSIONER ROLE**: Updated `UserRole.COMMISSIONER` to `"comisionista"` for consistency
+  - **FRONTEND PERMISSIONS**: Updated role-based-permissions.ts to use Spanish roles directly
+  - **MISSING PERMISSIONS**: Added "my-commissions" to "dueño" and "admin" role permissions
   - **SYSTEM CONSISTENCY**: All role-based permissions now uniformly use Spanish role values from database
   - **ACCESS RESTORED**: Users with correct Spanish roles can now access all restricted sections
-  - **COMPREHENSIVE FIX**: Applied consistent role validation pattern across entire backend system
+  - **COMPREHENSIVE FIX**: Applied consistent role validation pattern across entire backend and frontend system
   - **TECHNICAL SOLUTION**: Updated role comparison logic to match actual database role values throughout
 
 - **July 16, 2025** - COMPLETED: Sistema de "Confirmar cortes" implementado completamente:
