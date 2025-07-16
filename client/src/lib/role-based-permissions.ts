@@ -38,7 +38,7 @@ export const ALL_SECTIONS: Section[] = [
   { id: "transaction-history", name: "Historial de Transacciones", description: "Historial completo de transacciones de la empresa" }
 ];
 
-// Mapa de permisos por rol
+// Mapa de permisos por rol (usando valores en español del schema)
 export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   [UserRole.SUPER_ADMIN]: ALL_SECTIONS.map(section => section.id), // Acceso total
   [UserRole.DEVELOPER]: ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo
@@ -139,17 +139,25 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
 };
 
 // Función para verificar si un usuario tiene acceso a una sección
-export function hasAccessToSection(userRole: string, sectionId: string): boolean {
-  if (!userRole || !sectionId) return false;
+export function hasAccessToSection(user: any, sectionId: string): boolean {
+  if (!user || !user.role || !sectionId) return false;
   
+  const userRole = user.role;
   const allowedSections = ROLE_SECTION_PERMISSIONS[userRole] || [];
+  
+  console.log("hasAccessToSection - userRole:", userRole);
+  console.log("hasAccessToSection - sectionId:", sectionId);
+  console.log("hasAccessToSection - allowedSections:", allowedSections);
+  console.log("hasAccessToSection - includes result:", allowedSections.includes(sectionId));
+  
   return allowedSections.includes(sectionId);
 }
 
 // Función para obtener todas las secciones permitidas para un rol
-export function getAllowedSections(userRole: string): Section[] {
-  if (!userRole) return [];
+export function getAllowedSections(user: any): Section[] {
+  if (!user || !user.role) return [];
   
+  const userRole = user.role;
   const allowedSectionIds = ROLE_SECTION_PERMISSIONS[userRole] || [];
   return ALL_SECTIONS.filter(section => allowedSectionIds.includes(section.id));
 }
