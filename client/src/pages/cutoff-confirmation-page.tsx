@@ -15,7 +15,7 @@ export default function CutoffConfirmationPageRoute() {
   }
 
   // Verificar permisos de acceso
-  if (!hasAccessToSection(user, "cutoff-confirmation")) {
+  if (!hasAccessToSection(user.role, "cutoff-confirmation")) {
     return <div>No tienes permisos para acceder a esta sección</div>;
   }
 
