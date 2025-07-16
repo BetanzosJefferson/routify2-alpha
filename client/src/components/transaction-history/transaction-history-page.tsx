@@ -69,19 +69,32 @@ export default function TransactionHistoryPage() {
     }
   });
 
-  // Obtener cortes únicos para filtro
+  // Obtener cortes únicos para filtro - usar query separada para evitar filtro circular
+  const { data: allTransactionHistory } = useQuery({
+    queryKey: ['/api/transaction-history', 'all-cutoffs'],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append('startDate', '2025-07-01');
+      params.append('endDate', '2025-12-31');
+      
+      const response = await fetch(`/api/transaction-history?${params}`);
+      if (!response.ok) throw new Error('Error al obtener historial de transacciones');
+      return response.json();
+    }
+  });
+
   const uniqueCutoffs = React.useMemo(() => {
-    if (!transactionHistory) return [];
+    if (!allTransactionHistory) return [];
     
     const cutoffs = new Set<number>();
-    transactionHistory.forEach(transaction => {
+    allTransactionHistory.forEach(transaction => {
       if (transaction.cutoffId) {
         cutoffs.add(transaction.cutoffId);
       }
     });
     
     return Array.from(cutoffs).sort((a, b) => b - a);
-  }, [transactionHistory]);
+  }, [allTransactionHistory]);
 
   // Detectar cambios en filtros
   useEffect(() => {
@@ -89,10 +102,12 @@ export default function TransactionHistoryPage() {
   }, [startDate, endDate, selectedUserId, selectedCutoffId]);
 
   const handleClearFilters = () => {
-    setStartDate('');
-    setEndDate('');
+    setStartDate('2025-07-09');
+    setEndDate('2025-07-30');
     setSelectedUserId('all');
     setSelectedCutoffId('all');
+    // Refetch to reset the data
+    refetch();
   };
 
   const handleApplyFilters = () => {
@@ -129,6 +144,28 @@ export default function TransactionHistoryPage() {
   const calculateTotalAmount = () => {
     if (!transactionHistory) return 0;
     return transactionHistory.reduce((sum, transaction) => sum + transaction.amount, 0);
+  };
+
+  const getPaymentMethodStats = () => {
+    if (!transactionHistory) return { efectivo: 0, transferencia: 0, tarjeta: 0, total: 0 };
+    
+    const stats = transactionHistory.reduce((acc, transaction) => {
+      const method = transaction.paymentMethod || 'efectivo';
+      const amount = transaction.amount || 0;
+      
+      if (method === 'efectivo') {
+        acc.efectivo += amount;
+      } else if (method === 'transferencia') {
+        acc.transferencia += amount;
+      } else if (method === 'tarjeta') {
+        acc.tarjeta += amount;
+      }
+      
+      acc.total += amount;
+      return acc;
+    }, { efectivo: 0, transferencia: 0, tarjeta: 0, total: 0 });
+    
+    return stats;
   };
 
   return (
@@ -235,20 +272,22 @@ export default function TransactionHistoryPage() {
       {/* Resumen */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
             <div>
               <p className="text-sm text-muted-foreground">Total de transacciones</p>
               <p className="text-2xl font-bold">{transactionHistory?.length || 0}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Monto total</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(calculateTotalAmount())}</p>
+              <p className="text-sm text-muted-foreground">Total efectivo</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(getPaymentMethodStats().efectivo)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Promedio por transacción</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatCurrency(transactionHistory?.length ? calculateTotalAmount() / transactionHistory.length : 0)}
-              </p>
+              <p className="text-sm text-muted-foreground">Total transferencias</p>
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(getPaymentMethodStats().transferencia)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total</p>
+              <p className="text-2xl font-bold text-purple-600">{formatCurrency(getPaymentMethodStats().total)}</p>
             </div>
           </div>
         </CardContent>
