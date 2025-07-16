@@ -40,9 +40,11 @@ export const ALL_SECTIONS: Section[] = [
 
 // Mapa de permisos por rol (usando valores en español del schema)
 export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
-  [UserRole.SUPER_ADMIN]: ALL_SECTIONS.map(section => section.id), // Acceso total
-  [UserRole.DEVELOPER]: ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo
-  [UserRole.OWNER]: [
+  "super_admin": ALL_SECTIONS.map(section => section.id), // Acceso total
+  "superAdmin": ALL_SECTIONS.map(section => section.id), // Acceso total (compatibilidad)
+  "developer": ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo
+  "desarrollador": ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo (compatibilidad)
+  "dueño": [
     "routes",
     "trips",
     "publish-trip",
@@ -65,7 +67,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "statistics",
     "transaction-history"
   ],
-  [UserRole.ADMIN]: [
+  "admin": [
     "routes",
     "trips",
     "publish-trip",
@@ -88,7 +90,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "statistics",
     "transaction-history"
   ],
-  [UserRole.CALL_CENTER]: [
+  "call_center": [
     "trips",
     "reservations",
     "reservations-list",
@@ -98,7 +100,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  [UserRole.CHECKER]: [
+  "checador": [
     "trips",
     "reservations-list",
     "notifications",
@@ -107,8 +109,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  // Permisos para rol DRIVER (conductor) - ya incluye el alias español 'chofer'
-  [UserRole.DRIVER]: [
+  "chofer": [
     "dashboard",
     "notifications",
     "reservations-list", // Vista específica de reservaciones para sus viajes asignados (incluye paqueterías)
@@ -116,7 +117,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  [UserRole.TICKET_OFFICE]: [
+  "taquilla": [
     "trips",
     "reservations",
     "reservations-list",
@@ -126,8 +127,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  // Permisos para el nuevo rol COMISIONISTA
-  [UserRole.COMMISSIONER]: [
+  "comisionista": [
     "trips",
     "my-commissions",
     "reservation-requests",
@@ -149,6 +149,15 @@ export function hasAccessToSection(user: any, sectionId: string): boolean {
   console.log("hasAccessToSection - sectionId:", sectionId);
   console.log("hasAccessToSection - allowedSections:", allowedSections);
   console.log("hasAccessToSection - includes result:", allowedSections.includes(sectionId));
+  
+  // Debug específico para problemas con cupones y comisiones
+  if (sectionId === "coupons" || sectionId === "my-commissions") {
+    console.log("DEBUG - Checking access for:", sectionId);
+    console.log("DEBUG - User role:", userRole);
+    console.log("DEBUG - Available roles in permissions:", Object.keys(ROLE_SECTION_PERMISSIONS));
+    console.log("DEBUG - Role exists in permissions:", ROLE_SECTION_PERMISSIONS[userRole] !== undefined);
+    console.log("DEBUG - Section in allowed sections:", allowedSections.includes(sectionId));
+  }
   
   return allowedSections.includes(sectionId);
 }
