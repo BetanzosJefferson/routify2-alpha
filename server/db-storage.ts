@@ -1817,22 +1817,22 @@ export class DatabaseStorage implements IStorage {
     console.log(`[DB] Obteniendo información adicional para reservación ${reservationId}`);
     
     try {
-      // Obtener información de la reservación con usuarios relacionados
-      const reservationInfo = await db
-        .select({
-          id: schema.reservations.id,
-          createdBy: schema.reservations.createdBy,
-          checkedBy: schema.reservations.checkedBy,
-          paidBy: schema.reservations.paidBy,
-          createdByName: sql<string>`CONCAT(u_creator.first_name, ' ', u_creator.last_name)`,
-          checkedByName: sql<string>`CONCAT(u_checker.first_name, ' ', u_checker.last_name)`,
-          paidByName: sql<string>`CONCAT(u_payer.first_name, ' ', u_payer.last_name)`,
-        })
-        .from(schema.reservations)
-        .leftJoin(schema.users.as('u_creator'), eq(schema.reservations.createdBy, sql`u_creator.id`))
-        .leftJoin(schema.users.as('u_checker'), eq(schema.reservations.checkedBy, sql`u_checker.id`))
-        .leftJoin(schema.users.as('u_payer'), eq(schema.reservations.paidBy, sql`u_payer.id`))
-        .where(eq(schema.reservations.id, reservationId));
+      // Usar consulta SQL directa para obtener información de usuarios
+      const reservationInfo = await db.execute(sql`
+        SELECT 
+          r.id,
+          r.created_by,
+          r.checked_by,
+          r.paid_by,
+          CONCAT(u_creator.first_name, ' ', u_creator.last_name) as created_by_name,
+          CONCAT(u_checker.first_name, ' ', u_checker.last_name) as checked_by_name,
+          CONCAT(u_payer.first_name, ' ', u_payer.last_name) as paid_by_name
+        FROM reservations r
+        LEFT JOIN users u_creator ON r.created_by = u_creator.id
+        LEFT JOIN users u_checker ON r.checked_by = u_checker.id
+        LEFT JOIN users u_payer ON r.paid_by = u_payer.id
+        WHERE r.id = ${reservationId}
+      `);
 
       if (reservationInfo.length === 0) {
         console.log(`[DB] Reservación ${reservationId} no encontrada`);
@@ -1842,33 +1842,35 @@ export class DatabaseStorage implements IStorage {
       const reservation = reservationInfo[0];
 
       // Obtener información de transacciones/cortes
-      const transactionInfo = await db
-        .select({
-          cutoffId: schema.transactions.cutoffId,
-          userId: schema.transactions.userId,
-          cashBoxUserName: sql<string>`CONCAT(u_cashbox.first_name, ' ', u_cashbox.last_name)`,
-        })
-        .from(schema.transactions)
-        .leftJoin(schema.users.as('u_cashbox'), eq(schema.transactions.userId, sql`u_cashbox.id`))
-        .where(
-          and(
-            sql`${schema.transactions.details}->>'type' = 'reservation'`,
-            sql`${schema.transactions.details}->'details'->>'id' = ${reservationId.toString()}`
-          )
-        );
+      const transactionInfo = await db.execute(sql`
+        SELECT 
+          t.cutoff_id,
+          t.user_id,
+          CONCAT(u_cashbox.first_name, ' ', u_cashbox.last_name) as cash_box_user_name
+        FROM transactions t
+        LEFT JOIN users u_cashbox ON t.user_id = u_cashbox.id
+        WHERE t.details->>'type' = 'reservation'
+        AND t.details->'details'->>'id' = ${reservationId.toString()}
+      `);
 
       let cutoffInfo = null;
       if (transactionInfo.length > 0) {
         const transaction = transactionInfo[0];
         cutoffInfo = {
-          cutoffId: transaction.cutoffId,
-          cutoffDisplay: transaction.cutoffId ? transaction.cutoffId.toString() : 'PENDIENTE DE CORTE',
-          cashBoxUser: transaction.cashBoxUserName
+          cutoffId: transaction.cutoff_id,
+          cutoffDisplay: transaction.cutoff_id ? `Corte #${transaction.cutoff_id}` : 'PENDIENTE DE CORTE',
+          cashBoxUser: transaction.cash_box_user_name
         };
       }
 
       return {
-        ...reservation,
+        id: reservation.id,
+        createdBy: reservation.created_by,
+        checkedBy: reservation.checked_by,
+        paidBy: reservation.paid_by,
+        createdByName: reservation.created_by_name,
+        checkedByName: reservation.checked_by_name,
+        paidByName: reservation.paid_by_name,
         cutoffInfo
       };
     } catch (error) {

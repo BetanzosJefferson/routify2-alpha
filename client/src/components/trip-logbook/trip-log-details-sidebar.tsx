@@ -78,18 +78,51 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
         if (!reservationAdditionalInfo[reservation.id]) {
           setLoadingAdditionalInfo(prev => ({ ...prev, [reservation.id]: true }));
           
-          const response = await fetch(`/api/reservations/${reservation.id}/additional-info`, {
-            credentials: 'include'
-          });
-          
-          if (response.ok) {
-            const additionalInfo = await response.json();
+          try {
+            const response = await fetch(`/api/reservations/${reservation.id}/additional-info`, {
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (response.ok) {
+              const additionalInfo = await response.json();
+              setReservationAdditionalInfo(prev => ({ 
+                ...prev, 
+                [reservation.id]: additionalInfo 
+              }));
+            } else {
+              console.error(`Error loading additional info for reservation ${reservation.id}:`, response.status, response.statusText);
+              // Información por defecto en caso de error
+              setReservationAdditionalInfo(prev => ({ 
+                ...prev, 
+                [reservation.id]: {
+                  createdByName: 'No disponible',
+                  checkedByName: 'No disponible',
+                  paidByName: 'No disponible',
+                  cutoffInfo: {
+                    cutoffDisplay: 'No disponible',
+                    cashBoxUser: 'No disponible'
+                  }
+                }
+              }));
+            }
+          } catch (fetchError) {
+            console.error(`Fetch error for reservation ${reservation.id}:`, fetchError);
+            // Información por defecto en caso de error de red
             setReservationAdditionalInfo(prev => ({ 
               ...prev, 
-              [reservation.id]: additionalInfo 
+              [reservation.id]: {
+                createdByName: 'Error de conexión',
+                checkedByName: 'Error de conexión',
+                paidByName: 'Error de conexión',
+                cutoffInfo: {
+                  cutoffDisplay: 'Error de conexión',
+                  cashBoxUser: 'Error de conexión'
+                }
+              }
             }));
-          } else {
-            console.error(`Error loading additional info for reservation ${reservation.id}:`, response.statusText);
           }
           
           setLoadingAdditionalInfo(prev => ({ ...prev, [reservation.id]: false }));

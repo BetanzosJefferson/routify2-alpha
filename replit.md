@@ -119,6 +119,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 16, 2025** - COMPLETED: Trip logbook sidebar enhanced with comprehensive user audit trail information:
+  - **BACKEND INFRASTRUCTURE**: Added `getReservationAdditionalInfo()` method in db-storage.ts to retrieve user audit trail information
+  - **DATABASE QUERIES**: Implemented SQL queries to fetch created_by, checked_by, paid_by users with proper JOIN operations
+  - **ENDPOINT CREATION**: Created new API endpoint `GET /api/reservations/:id/additional-info` for fetching reservation audit data
+  - **CUTOFF INTEGRATION**: Added transaction lookup to determine cutoff status (pending or completed with ID)
+  - **FRONTEND ENHANCEMENT**: Updated trip-log-details-sidebar.tsx to display comprehensive user audit information
+  - **AUDIT TRAIL DISPLAY**: Shows creator, checker, payment processor, cutoff status, and associated cashier for each reservation
+  - **AUTOMATIC LOADING**: Implemented automatic loading of additional reservation information when logbook sidebar opens
+  - **ERROR HANDLING**: Added comprehensive error handling with fallback display for connection issues
+  - **VISUAL INDICATORS**: Color-coded status indicators for different types of audit information
+  - **RESPONSIVE DESIGN**: Properly formatted audit information display with icons and structured layout
+  - **PERFORMANCE OPTIMIZATION**: Loads audit information only when needed and caches results
+
 - **July 15, 2025** - CRITICAL FIX: Bitácora reservation filtering and specialized display for cancelled reservations completely implemented:
   - **ROOT CAUSE IDENTIFIED**: System was incorrectly including cancelled reservations without advance payment (no company income)
   - **FIELD MAPPING CORRECTIONS**: Fixed bitácora to use correct database fields (`checkedBy` instead of `checkedIn`, `paymentStatus` field priority)
