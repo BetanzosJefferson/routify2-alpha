@@ -44,6 +44,10 @@ interface BoxCutoff {
   check: boolean;
   check_by: number | null;
   check_at: string | null;
+  user_name: string;
+  user_firstName: string;
+  user_lastName: string;
+  confirmed_by_name: string | null;
 }
 
 interface Transaction {
@@ -229,7 +233,7 @@ export default function CutoffConfirmationPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-gray-500" />
@@ -240,33 +244,74 @@ export default function CutoffConfirmationPage() {
                     <div>Fin: {format(new Date(cutoff.fecha_fin), 'PPp', { locale: es })}</div>
                   </div>
                 </div>
-
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium">Usuario</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <div className="font-medium">{cutoff.user_name}</div>
+                    <div className="text-xs text-gray-500">ID: {cutoff.user_id}</div>
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium">Totales</span>
+                    <span className="text-sm font-medium">Efectivo</span>
                   </div>
-                  <div className="text-sm space-y-1">
-                    <div>Ingresos: <span className="font-semibold text-green-600">{formatCurrency(cutoff.total_ingresos)}</span></div>
-                    <div>Efectivo: <span className="font-semibold text-green-600">{formatCurrency(cutoff.total_efectivo)}</span></div>
-                    <div>Transferencias: <span className="font-semibold text-blue-600">{formatCurrency(cutoff.total_transferencias)}</span></div>
+                  <div className="text-sm text-gray-600">
+                    <div className="font-medium text-green-600">${cutoff.total_efectivo.toFixed(2)}</div>
                   </div>
                 </div>
-
-                {cutoff.check && cutoff.check_at && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm font-medium">Confirmación</span>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <div>Confirmado: {format(new Date(cutoff.check_at), 'PPp', { locale: es })}</div>
-                      <div>Por usuario ID: {cutoff.check_by}</div>
-                    </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium">Transferencias</span>
                   </div>
-                )}
+                  <div className="text-sm text-gray-600">
+                    <div className="font-medium text-blue-600">${cutoff.total_transferencias.toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Resumen de totales */}
+              <div className="bg-gray-50 rounded-lg p-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">${cutoff.total_efectivo.toFixed(2)}</div>
+                    <div className="text-sm text-gray-600">Total Efectivo</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">${cutoff.total_transferencias.toFixed(2)}</div>
+                    <div className="text-sm text-gray-600">Total Transferencias</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">${cutoff.total_ingresos.toFixed(2)}</div>
+                    <div className="text-sm text-gray-600">Total Ingresos</div>
+                  </div>
+                </div>
               </div>
 
+              {/* Información de confirmación */}
+              {cutoff.check && cutoff.check_at && (
+                <div className="space-y-2 mt-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm font-medium">Confirmación</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <div>Confirmado: {format(new Date(cutoff.check_at), 'PPp', { locale: es })}</div>
+                    {cutoff.confirmed_by_name && (
+                      <div>Por: {cutoff.confirmed_by_name}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Botón de confirmación */}
               {!cutoff.check && (
                 <div className="pt-4 border-t">
                   <Button 
