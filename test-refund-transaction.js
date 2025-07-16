@@ -47,21 +47,21 @@ async function testRefundTransactionCreation() {
       // 3. Verificar que la transacción de reembolso se creó correctamente
       const allTransactions = await storage.getTransacciones({});
       const refundTransaction = allTransactions.find(t => {
-        const details = t.details as any;
+        const details = t.details;
         return details?.details?.transaccion_original_id === testTransaction.id;
       });
       
       if (refundTransaction) {
         console.log(`✅ Transacción de reembolso verificada: ID ${refundTransaction.id}`);
         console.log(`   Usuario (mismo que original): ${refundTransaction.user_id}`);
-        console.log(`   Monto original: ${(testTransaction.details as any)?.details?.monto}`);
-        console.log(`   Monto reembolso: ${(refundTransaction.details as any)?.details?.monto}`);
-        console.log(`   Reembolsado por: ${(refundTransaction.details as any)?.details?.reembolsado_por}`);
-        console.log(`   Fecha reembolso: ${(refundTransaction.details as any)?.details?.fecha_reembolso}`);
+        console.log(`   Monto original: ${testTransaction.details?.details?.monto}`);
+        console.log(`   Monto reembolso: ${refundTransaction.details?.details?.monto}`);
+        console.log(`   Reembolsado por: ${refundTransaction.details?.details?.reembolsado_por}`);
+        console.log(`   Fecha reembolso: ${refundTransaction.details?.details?.fecha_reembolso}`);
         
         // Verificar que el monto es negativo
-        const originalAmount = (testTransaction.details as any)?.details?.monto || 0;
-        const refundAmount = (refundTransaction.details as any)?.details?.monto || 0;
+        const originalAmount = testTransaction.details?.details?.monto || 0;
+        const refundAmount = refundTransaction.details?.details?.monto || 0;
         
         if (refundAmount === -originalAmount) {
           console.log('✅ Monto negativo correcto');
