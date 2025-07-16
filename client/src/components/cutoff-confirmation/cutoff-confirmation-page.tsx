@@ -445,7 +445,18 @@ export default function CutoffConfirmationPage() {
                               Contacto
                             </div>
                             <div className="text-sm text-gray-600">
-                              {transaction.details.details.contacto}
+                              {typeof transaction.details.details.contacto === 'object' ? (
+                                <div className="space-y-1">
+                                  {transaction.details.details.contacto.telefono && (
+                                    <div>Tel: {transaction.details.details.contacto.telefono}</div>
+                                  )}
+                                  {transaction.details.details.contacto.email && (
+                                    <div>Email: {transaction.details.details.contacto.email}</div>
+                                  )}
+                                </div>
+                              ) : (
+                                transaction.details.details.contacto
+                              )}
                             </div>
                           </div>
                         )}
