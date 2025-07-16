@@ -119,6 +119,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 16, 2025** - CRITICAL FIX: Trip parent date legend display logic corrected for accurate date comparison:
+  - **ROOT CAUSE IDENTIFIED**: Legend was showing when `parentDepartureDate !== currentDate` (search date) instead of comparing with individual segment date
+  - **LOGIC CORRECTION**: Changed comparison from `currentDate` (search date) to `segmentDate` (individual segment departure date)
+  - **ACCURATE FILTERING**: Legend now only appears when parent trip date is genuinely different from segment date
+  - **EXAMPLE BEHAVIOR**: Parent trip starting July 16 with segment departing July 17 shows legend, but parent trip July 16 with segment July 16 doesn't show legend
+  - **USER EXPERIENCE**: Eliminated incorrect legend display for trips that start on the same day as their parent trip
+  - **TECHNICAL SOLUTION**: Modified comparison logic in trip-list.tsx: `parentDepartureDate !== segmentDate` instead of `parentDepartureDate !== currentDate`
+  - **MIDNIGHT CROSSING SUPPORT**: Maintains proper legend display for overnight journeys with date transitions
+  - **PRODUCTION READY**: Trip search interface now shows legends only when there's actual date difference between parent and segment
+
+- **July 16, 2025** - ENHANCED: Box cutoff confirmation system improved with user name display:
+  - **USER EXPERIENCE IMPROVEMENT**: Confirmation information now shows user name instead of just user ID
+  - **BACKEND ENHANCEMENT**: Modified `getBoxCutoff` method to include LEFT JOIN with users table
+  - **FIELD ADDITION**: Added `confirmedByName` field containing full name (firstName + lastName) of confirming user
+  - **FRONTEND UPDATE**: Updated component interface and display to show "Por: [User Name]" instead of "Por usuario ID: 3"
+  - **FALLBACK LOGIC**: Maintains user ID display if name cannot be retrieved from database
+  - **PROFESSIONAL DISPLAY**: Cutoff confirmation now shows complete user information for better audit trails
+
 - **July 16, 2025** - COMPLETED: Sistema de historial de transacciones implementado con correcciones críticas:
   - **ENDPOINT BACKEND**: Creado endpoint `/api/transaction-history` con filtros avanzados por fecha, usuario y corte
   - **MÉTODO STORAGE**: Implementado `getTransactionHistory()` en db-storage.ts con filtros SQL y extracción correcta de montos
