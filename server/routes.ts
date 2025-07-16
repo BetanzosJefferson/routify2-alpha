@@ -3855,40 +3855,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Crear transacciones de reembolso (negativas) para TODAS las transacciones reembolsables
+      // Eliminar TODAS las transacciones reembolsables
       let totalRefundAmount = 0;
-      let refundedCount = 0;
+      let deletedCount = 0;
 
       for (const transaction of refundableTransactions) {
         try {
-          const refundCreated = await storage.createRefundTransaction(transaction.id, user.id);
+          const transactionDeleted = await storage.deleteTransaccion(transaction.id);
           
-          if (refundCreated) {
-            refundedCount++;
+          if (transactionDeleted) {
+            deletedCount++;
             // Calcular monto total del reembolso
             const transactionAmount = (transaction.details as any)?.details?.monto || 0;
             totalRefundAmount += transactionAmount;
-            console.log(`[POST /reservations/${id}/cancel-refund] Transacción de reembolso creada para transacción ${transaction.id} (${transactionAmount})`);
+            console.log(`[POST /reservations/${id}/cancel-refund] Transacción ${transaction.id} eliminada exitosamente (${transactionAmount})`);
           } else {
-            console.error(`[POST /reservations/${id}/cancel-refund] Error al crear transacción de reembolso para transacción ${transaction.id}`);
+            console.error(`[POST /reservations/${id}/cancel-refund] Error al eliminar transacción ${transaction.id}`);
           }
         } catch (error) {
           console.error(`[POST /reservations/${id}/cancel-refund] Error al procesar transacción ${transaction.id}:`, error);
         }
       }
 
-      if (refundedCount === 0) {
-        return res.status(500).json({ error: "Error al procesar el reembolso - no se pudo crear ninguna transacción de reembolso" });
+      if (deletedCount === 0) {
+        return res.status(500).json({ error: "Error al procesar el reembolso - no se pudo eliminar ninguna transacción" });
       }
 
-      console.log(`[POST /reservations/${id}/cancel-refund] ${refundedCount}/${refundableTransactions.length} transacciones de reembolso creadas exitosamente. Reembolso total: ${totalRefundAmount}`);
+      console.log(`[POST /reservations/${id}/cancel-refund] ${deletedCount}/${refundableTransactions.length} transacciones eliminadas exitosamente. Reembolso total: ${totalRefundAmount}`);
 
       res.json({ 
         success: true, 
-        message: "Reservación cancelada con reembolso exitosamente. Se crearon transacciones de reembolso negativas para mantener el historial.",
+        message: "Reservación cancelada con reembolso exitosamente",
         reservation: updatedReservation,
         refundAmount: totalRefundAmount,
-        refundedTransactions: refundedCount
+        deletedTransactions: deletedCount
       });
 
     } catch (error) {
@@ -5855,7 +5855,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/reservations/:id/cancel-refund - Cancelar con reembolso
+  app.post(apiRouter('/reservations/:id/cancel-refund'), isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'ID de reservación inválido' 
+        });
+      }
 
+      // Verificar permisos - solo superAdmin, admin y dueño pueden cancelar con reembolso
+      const allowedRoles = ['superAdmin', 'admin', 'dueño'];
+      if (!allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'No tienes permisos para cancelar con reembolso' 
+        });
+      }
+
+      // Obtener la reservación
+      const reservation = await storage.getReservation(id);
+      if (!reservation) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Reservación no encontrada' 
+        });
+      }
+
+      // Verificar que la reservación no esté ya cancelada
+      if (reservation.status === 'canceled') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Esta reservación ya está cancelada' 
+        });
+      }
+
+      // Verificar permisos de compañía (excepto para superAdmin)
+      if (req.user.role !== 'superAdmin') {
+        const userCompanyId = req.user.company_id;
+        const reservationCompanyId = reservation.companyId;
+        
+        if (userCompanyId !== reservationCompanyId) {
+          return res.status(403).json({ 
+            success: false, 
+            message: 'Solo puedes cancelar reservaciones de tu compañía' 
+          });
+        }
+      }
+
+      // Cancelar la reservación con reembolso
+      const updatedReservation = await storage.cancelReservationWithRefund(id, req.user.id);
+      
+      console.log(`[CANCEL WITH REFUND] Reservación ${id} cancelada con reembolso por usuario ${req.user.id}`);
+      
+      res.json({ 
+        success: true, 
+        reservation: updatedReservation,
+        message: 'Reservación cancelada con reembolso correctamente'
+      });
+    } catch (error) {
+      console.error('Error al cancelar con reembolso:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error al cancelar la reservación con reembolso' 
+      });
+    }
+  });
 
   // ======== API de Cupones ========
 
