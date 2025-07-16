@@ -452,3 +452,24 @@ export function createLocalDateFromString(dateString: string): Date {
   // Crear fecha a mediodía para evitar problemas con cambios de día por zona horaria
   return new Date(year, month - 1, day, 12, 0, 0);
 }
+
+/**
+ * Formatea una fecha para mostrar en la interfaz de usuario
+ * @param date - Fecha en formato Date o string
+ * @returns Fecha formateada como "DD/MM/YYYY HH:MM"
+ */
+export function formatDateForDisplay(date: Date | string): string {
+  if (!date) return '';
+  
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  if (isNaN(dateObj.getTime())) return '';
+  
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const year = dateObj.getFullYear();
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}

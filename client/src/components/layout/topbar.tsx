@@ -316,6 +316,19 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                     </NavLink>
                   )}
                   
+                  {/* Historial de transacciones */}
+                  {canAccess("transaction-history") && (
+                    <NavLink 
+                      active={window.location.pathname === "/transaction-history"}
+                      onClick={() => {
+                        setLocation("/transaction-history");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      Historial de transacciones
+                    </NavLink>
+                  )}
+                  
                   {/* Usuarios */}
                   {canAccess("users") && (
                     <NavLink 

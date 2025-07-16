@@ -344,8 +344,21 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
           )}
 
+          {/* Historial de transacciones */}
+          {canAccess("transaction-history") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<ReceiptIcon className="h-5 w-5" />} 
+                active={location === "/transaction-history"}
+                onClick={() => setLocation("/transaction-history")}
+              >
+                Historial de transacciones
+              </NavItem>
+            </div>
+          )}
+
           {/* Línea separadora */}
-          {(canAccess("trip-summary") || canAccess("cash-box") || canAccess("cutoff-history") || canAccess("user-cash-boxes") || canAccess("commissions") || canAccess("coupons") || canAccess("statistics")) && (canAccess("users") || canAccess("vehicles")) && (
+          {(canAccess("trip-summary") || canAccess("cash-box") || canAccess("cutoff-history") || canAccess("user-cash-boxes") || canAccess("commissions") || canAccess("coupons") || canAccess("statistics") || canAccess("transaction-history")) && (canAccess("users") || canAccess("vehicles")) && (
             <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
           )}
           

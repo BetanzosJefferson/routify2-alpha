@@ -33,7 +33,8 @@ export const ALL_SECTIONS: Section[] = [
   */
   { id: "settings", name: "Configuración", description: "Ajustes generales del sistema" },
   { id: "user-cash-boxes", name: "Cajas de usuarios", description: "Gestión de cajas individuales de usuarios" },
-  { id: "statistics", name: "Estadísticas", description: "Análisis y métricas de la empresa" }
+  { id: "statistics", name: "Estadísticas", description: "Análisis y métricas de la empresa" },
+  { id: "transaction-history", name: "Historial de Transacciones", description: "Historial completo de transacciones de la empresa" }
 ];
 
 // Mapa de permisos por rol
@@ -59,7 +60,8 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cutoff-history",
     "passenger-transfer",
     "user-cash-boxes",
-    "statistics"
+    "statistics",
+    "transaction-history"
   ],
   [UserRole.ADMIN]: [
     "routes",
@@ -80,7 +82,8 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cutoff-history",
     "passenger-transfer",
     "user-cash-boxes",
-    "statistics"
+    "statistics",
+    "transaction-history"
   ],
   [UserRole.CALL_CENTER]: [
     "trips",

@@ -8418,4 +8418,61 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // Endpoint para el historial de transacciones
+  app.get(apiRouter("/transaction-history"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /transaction-history] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver historial de transacciones (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver el historial de transacciones" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      // Obtener parámetros de filtros
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const cutoffId = req.query.cutoffId ? parseInt(req.query.cutoffId as string) : undefined;
+      
+      console.log(`[GET /transaction-history] Obteniendo historial para compañía: ${companyId}, filtros:`, {
+        startDate, endDate, userId, cutoffId
+      });
+      
+      const transactionHistory = await storage.getTransactionHistory({
+        companyId,
+        startDate,
+        endDate,
+        userId,
+        cutoffId
+      });
+      
+      console.log(`[GET /transaction-history] Encontradas ${transactionHistory.length} transacciones`);
+      
+      res.json(transactionHistory);
+    } catch (error: any) {
+      console.error("[GET /transaction-history] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener historial de transacciones",
+        details: error.message 
+      });
+    }
+  });
 }

@@ -4186,4 +4186,108 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // Método para obtener historial de transacciones con filtros
+  async getTransactionHistory(params: {
+    companyId: string;
+    startDate?: string;
+    endDate?: string;
+    userId?: number;
+    cutoffId?: number;
+  }): Promise<{
+    id: number;
+    details: any;
+    createdAt: string;
+    cutoffId: number | null;
+    cutoffStatus: 'pending' | 'completed';
+    createdBy: {
+      id: number;
+      name: string;
+    };
+    type: 'reservation' | 'package';
+    amount: number;
+  }[]> {
+    console.log(`DB Storage: Obteniendo historial de transacciones para compañía ${params.companyId}`, params);
+    
+    try {
+      // Construir condiciones de filtrado
+      const baseConditions = [
+        eq(schema.transacciones.companyId, params.companyId)
+      ];
+
+      // Filtros de fecha
+      if (params.startDate) {
+        baseConditions.push(sql`DATE(${schema.transacciones.createdAt}) >= ${params.startDate}`);
+      }
+      if (params.endDate) {
+        baseConditions.push(sql`DATE(${schema.transacciones.createdAt}) <= ${params.endDate}`);
+      }
+
+      // Filtro por usuario
+      if (params.userId) {
+        baseConditions.push(eq(schema.transacciones.user_id, params.userId));
+      }
+
+      // Filtro por cutoff_id
+      if (params.cutoffId !== undefined) {
+        if (params.cutoffId === 0) {
+          // Filtrar por transacciones sin cutoff (pending)
+          baseConditions.push(isNull(schema.transacciones.cutoff_id));
+        } else {
+          // Filtrar por cutoff_id específico
+          baseConditions.push(eq(schema.transacciones.cutoff_id, params.cutoffId));
+        }
+      }
+
+      const result = await db
+        .select({
+          id: schema.transacciones.id,
+          details: schema.transacciones.details,
+          createdAt: schema.transacciones.createdAt,
+          cutoffId: schema.transacciones.cutoff_id,
+          userId: schema.transacciones.user_id,
+          userName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
+        })
+        .from(schema.transacciones)
+        .innerJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
+        .where(and(...baseConditions))
+        .orderBy(desc(schema.transacciones.createdAt));
+
+      console.log(`DB Storage: Encontradas ${result.length} transacciones para compañía ${params.companyId}`);
+      
+      return result.map(row => {
+        const details = row.details as any;
+        let type: 'reservation' | 'package' = 'reservation';
+        let amount = 0;
+
+        // Determinar tipo y monto basado en la estructura de details
+        if (details && typeof details === 'object') {
+          if (details.type === 'package') {
+            type = 'package';
+            amount = details.details?.monto || details.details?.price || 0;
+          } else if (details.type === 'reservation') {
+            type = 'reservation';
+            amount = details.details?.advance || details.details?.advanceAmount || 0;
+          }
+        }
+
+        return {
+          id: row.id,
+          details: details,
+          createdAt: row.createdAt.toISOString(),
+          cutoffId: row.cutoffId,
+          cutoffStatus: row.cutoffId ? 'completed' : 'pending' as 'pending' | 'completed',
+          createdBy: {
+            id: row.userId,
+            name: row.userName
+          },
+          type,
+          amount
+        };
+      });
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener historial de transacciones:`, error);
+      throw error;
+    }
+  }
 }

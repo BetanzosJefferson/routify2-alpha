@@ -69,6 +69,27 @@ export interface IStorage {
     totalDiscountAmount: number;
     averageDiscountPerCoupon: number;
   }[]>;
+
+  // Transaction History methods
+  getTransactionHistory(params: {
+    companyId: string;
+    startDate?: string;
+    endDate?: string;
+    userId?: number;
+    cutoffId?: number;
+  }): Promise<{
+    id: number;
+    details: any;
+    createdAt: string;
+    cutoffId: number | null;
+    cutoffStatus: 'pending' | 'completed';
+    createdBy: {
+      id: number;
+      name: string;
+    };
+    type: 'reservation' | 'package';
+    amount: number;
+  }[]>;
   
   // Trip methods
   getTrips(companyId?: string): Promise<TripWithRouteInfo[]>;
