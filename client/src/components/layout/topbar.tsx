@@ -49,7 +49,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
   // Función para verificar si el usuario tiene acceso a una sección
   const canAccess = (sectionId: string): boolean => {
     if (!user) return false;
-    return hasAccessToSection(user, sectionId);
+    return hasAccessToSection(user.role, sectionId);
   };
 
   const handleNavClick = (tab: TabType) => {

@@ -38,13 +38,11 @@ export const ALL_SECTIONS: Section[] = [
   { id: "transaction-history", name: "Historial de Transacciones", description: "Historial completo de transacciones de la empresa" }
 ];
 
-// Mapa de permisos por rol (usando valores en español del schema)
+// Mapa de permisos por rol
 export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
-  "super_admin": ALL_SECTIONS.map(section => section.id), // Acceso total
-  "superAdmin": ALL_SECTIONS.map(section => section.id), // Acceso total (compatibilidad)
-  "developer": ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo
-  "desarrollador": ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo (compatibilidad)
-  "dueño": [
+  [UserRole.SUPER_ADMIN]: ALL_SECTIONS.map(section => section.id), // Acceso total
+  [UserRole.DEVELOPER]: ALL_SECTIONS.map(section => section.id), // Acceso total para desarrollo
+  [UserRole.OWNER]: [
     "routes",
     "trips",
     "publish-trip",
@@ -54,7 +52,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "users",
     "vehicles",
     "commissions",
-    "my-commissions",
     "reservation-requests",
     "notifications",
     "coupons",
@@ -68,7 +65,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "statistics",
     "transaction-history"
   ],
-  "admin": [
+  [UserRole.ADMIN]: [
     "routes",
     "trips",
     "publish-trip",
@@ -78,7 +75,6 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "users",
     "vehicles",
     "commissions",
-    "my-commissions",
     "reservation-requests", 
     "notifications",
     "coupons",
@@ -92,7 +88,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "statistics",
     "transaction-history"
   ],
-  "call_center": [
+  [UserRole.CALL_CENTER]: [
     "trips",
     "reservations",
     "reservations-list",
@@ -102,7 +98,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  "checador": [
+  [UserRole.CHECKER]: [
     "trips",
     "reservations-list",
     "notifications",
@@ -111,7 +107,8 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  "chofer": [
+  // Permisos para rol DRIVER (conductor) - ya incluye el alias español 'chofer'
+  [UserRole.DRIVER]: [
     "dashboard",
     "notifications",
     "reservations-list", // Vista específica de reservaciones para sus viajes asignados (incluye paqueterías)
@@ -119,7 +116,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  "taquilla": [
+  [UserRole.TICKET_OFFICE]: [
     "trips",
     "reservations",
     "reservations-list",
@@ -129,7 +126,8 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-box",
     "cutoff-history"
   ],
-  "comisionista": [
+  // Permisos para el nuevo rol COMISIONISTA
+  [UserRole.COMMISSIONER]: [
     "trips",
     "my-commissions",
     "reservation-requests",
@@ -141,34 +139,17 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
 };
 
 // Función para verificar si un usuario tiene acceso a una sección
-export function hasAccessToSection(user: any, sectionId: string): boolean {
-  if (!user || !user.role || !sectionId) return false;
+export function hasAccessToSection(userRole: string, sectionId: string): boolean {
+  if (!userRole || !sectionId) return false;
   
-  const userRole = user.role;
   const allowedSections = ROLE_SECTION_PERMISSIONS[userRole] || [];
-  
-  console.log("hasAccessToSection - userRole:", userRole);
-  console.log("hasAccessToSection - sectionId:", sectionId);
-  console.log("hasAccessToSection - allowedSections:", allowedSections);
-  console.log("hasAccessToSection - includes result:", allowedSections.includes(sectionId));
-  
-  // Debug específico para problemas con cupones y comisiones
-  if (sectionId === "coupons" || sectionId === "my-commissions") {
-    console.log("DEBUG - Checking access for:", sectionId);
-    console.log("DEBUG - User role:", userRole);
-    console.log("DEBUG - Available roles in permissions:", Object.keys(ROLE_SECTION_PERMISSIONS));
-    console.log("DEBUG - Role exists in permissions:", ROLE_SECTION_PERMISSIONS[userRole] !== undefined);
-    console.log("DEBUG - Section in allowed sections:", allowedSections.includes(sectionId));
-  }
-  
   return allowedSections.includes(sectionId);
 }
 
 // Función para obtener todas las secciones permitidas para un rol
-export function getAllowedSections(user: any): Section[] {
-  if (!user || !user.role) return [];
+export function getAllowedSections(userRole: string): Section[] {
+  if (!userRole) return [];
   
-  const userRole = user.role;
   const allowedSectionIds = ROLE_SECTION_PERMISSIONS[userRole] || [];
   return ALL_SECTIONS.filter(section => allowedSectionIds.includes(section.id));
 }
