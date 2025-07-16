@@ -760,7 +760,7 @@ export const invitationRelations = relations(invitations, ({ one }) => ({
 export const sessions = pgTable("session", {
   sid: varchar("sid", { length: 255 }).primaryKey(),
   sess: json("sess").notNull(),
-  expire: timestamp("expire").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
 });
 
 export const insertSessionSchema = createInsertSchema(sessions);
