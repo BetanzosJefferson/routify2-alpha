@@ -31,8 +31,8 @@ interface User {
 export default function TransactionHistoryPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [selectedCutoffId, setSelectedCutoffId] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const [selectedCutoffId, setSelectedCutoffId] = useState<string>('all');
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
   // Obtener historial de transacciones
@@ -42,8 +42,14 @@ export default function TransactionHistoryPage() {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-      if (selectedUserId) params.append('userId', selectedUserId);
-      if (selectedCutoffId) params.append('cutoffId', selectedCutoffId);
+      if (selectedUserId && selectedUserId !== 'all') params.append('userId', selectedUserId);
+      if (selectedCutoffId && selectedCutoffId !== 'all') {
+        if (selectedCutoffId === 'pending') {
+          params.append('cutoffId', '0');
+        } else {
+          params.append('cutoffId', selectedCutoffId);
+        }
+      }
       
       const response = await fetch(`/api/transaction-history?${params}`);
       if (!response.ok) throw new Error('Error al obtener historial de transacciones');
@@ -78,14 +84,14 @@ export default function TransactionHistoryPage() {
 
   // Detectar cambios en filtros
   useEffect(() => {
-    setIsFiltersChanged(startDate !== '' || endDate !== '' || selectedUserId !== '' || selectedCutoffId !== '');
+    setIsFiltersChanged(startDate !== '' || endDate !== '' || selectedUserId !== 'all' || selectedCutoffId !== 'all');
   }, [startDate, endDate, selectedUserId, selectedCutoffId]);
 
   const handleClearFilters = () => {
     setStartDate('');
     setEndDate('');
-    setSelectedUserId('');
-    setSelectedCutoffId('');
+    setSelectedUserId('all');
+    setSelectedCutoffId('all');
   };
 
   const handleApplyFilters = () => {
@@ -173,7 +179,7 @@ export default function TransactionHistoryPage() {
                   <SelectValue placeholder="Todos los usuarios" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los usuarios</SelectItem>
+                  <SelectItem value="all">Todos los usuarios</SelectItem>
                   {users?.map((user) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.firstName} {user.lastName}
@@ -191,8 +197,8 @@ export default function TransactionHistoryPage() {
                   <SelectValue placeholder="Todos los estados" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los estados</SelectItem>
-                  <SelectItem value="0">Pendientes</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="pending">Pendientes</SelectItem>
                   {uniqueCutoffs.map((cutoffId) => (
                     <SelectItem key={cutoffId} value={cutoffId.toString()}>
                       Corte #{cutoffId}
