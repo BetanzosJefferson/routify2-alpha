@@ -100,9 +100,7 @@ export default function CutoffConfirmationPage() {
   // Mutation para confirmar el corte
   const confirmCutoffMutation = useMutation({
     mutationFn: async (cutoffId: number) => {
-      return apiRequest(`/api/cutoffs/${cutoffId}/confirm`, {
-        method: 'POST'
-      });
+      return apiRequest('POST', `/api/cutoffs/${cutoffId}/confirm`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cutoffs', searchedCutoffId] });
