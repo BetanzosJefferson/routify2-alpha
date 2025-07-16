@@ -23,7 +23,11 @@ import {
   AlertTriangle,
   Receipt,
   CreditCard,
-  Loader2
+  Loader2,
+  Users,
+  Package,
+  MapPin,
+  Phone
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
