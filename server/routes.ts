@@ -8519,6 +8519,42 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // Endpoint para obtener cortes pendientes de confirmación
+  app.get(apiRouter("/cutoffs/pending"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /cutoffs/pending] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver cortes pendientes (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver cortes pendientes" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      console.log(`[GET /cutoffs/pending] Obteniendo cortes pendientes para compañía: ${companyId}`);
+      
+      const pendingCutoffs = await storage.getPendingBoxCutoffs(companyId);
+      
+      console.log(`[GET /cutoffs/pending] Encontrados ${pendingCutoffs.length} cortes pendientes`);
+      
+      res.json(pendingCutoffs);
+    } catch (error: any) {
+      console.error("[GET /cutoffs/pending] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener cortes pendientes",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para obtener información de un corte específico
   app.get(apiRouter("/cutoffs/:id"), isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -8592,42 +8628,6 @@ function setupPackageRoutes(app: Express) {
       console.error("[GET /cutoffs/:id/transactions] Error:", error);
       res.status(500).json({ 
         error: "Error al obtener transacciones del corte",
-        details: error.message 
-      });
-    }
-  });
-
-  // Endpoint para obtener cortes pendientes de confirmación
-  app.get(apiRouter("/cutoffs/pending"), isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      
-      if (!user) {
-        return res.status(401).json({ error: "No autenticado" });
-      }
-      
-      console.log(`[GET /cutoffs/pending] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-      
-      // Verificar que el usuario tenga permisos para ver cortes pendientes (solo dueño y admin)
-      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
-        return res.status(403).json({ 
-          error: "Acceso denegado", 
-          details: "Solo los dueños y administradores pueden ver cortes pendientes" 
-        });
-      }
-      
-      const companyId = user.companyId || user.company;
-      console.log(`[GET /cutoffs/pending] Obteniendo cortes pendientes para compañía: ${companyId}`);
-      
-      const pendingCutoffs = await storage.getPendingBoxCutoffs(companyId);
-      
-      console.log(`[GET /cutoffs/pending] Encontrados ${pendingCutoffs.length} cortes pendientes`);
-      
-      res.json(pendingCutoffs);
-    } catch (error: any) {
-      console.error("[GET /cutoffs/pending] Error:", error);
-      res.status(500).json({ 
-        error: "Error al obtener cortes pendientes",
         details: error.message 
       });
     }
