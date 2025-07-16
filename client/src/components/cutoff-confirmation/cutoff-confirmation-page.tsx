@@ -104,13 +104,16 @@ export default function CutoffConfirmationPage() {
   // Mutation para confirmar el corte
   const confirmCutoffMutation = useMutation({
     mutationFn: async (cutoffId: number) => {
-      return apiRequest(`/api/cutoffs/${cutoffId}/confirm`, {
-        method: 'POST'
-      });
+      console.log('Confirmando corte:', cutoffId);
+      return apiRequest('POST', `/api/cutoffs/${cutoffId}/confirm`);
     },
     onSuccess: () => {
+      console.log('Corte confirmado exitosamente');
       queryClient.invalidateQueries({ queryKey: ['/api/cutoffs', searchedCutoffId] });
       setShowConfirmModal(false);
+    },
+    onError: (error) => {
+      console.error('Error al confirmar corte:', error);
     }
   });
 
@@ -390,7 +393,7 @@ export default function CutoffConfirmationPage() {
           <DialogHeader>
             <DialogTitle>Confirmar Corte</DialogTitle>
             <DialogDescription>
-              Al dar click confirmas que tienes el efectivo y ya verificaste todas las transacciones de esta caja.
+              Al dar click confirmas que tienes el efectivo y ya verificaste todas las transacciones de esta caja ESTA ACCION NO SE PUEDE DESHACER.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
