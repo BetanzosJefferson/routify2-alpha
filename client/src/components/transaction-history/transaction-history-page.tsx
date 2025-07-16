@@ -161,7 +161,8 @@ export default function TransactionHistoryPage() {
     if (!transactionHistory) return { efectivo: 0, transferencia: 0, tarjeta: 0, total: 0 };
     
     const stats = transactionHistory.reduce((acc, transaction) => {
-      const method = transaction.paymentMethod || 'efectivo';
+      // Extraer método de pago del campo correcto
+      const method = transaction.details?.details?.metodoPago || 'efectivo';
       const amount = transaction.amount || 0;
       
       if (method === 'efectivo') {
