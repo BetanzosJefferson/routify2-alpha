@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Users, DollarSign, CreditCard, Calendar, RefreshCw, Eye, EyeOff, Filter, Scissors, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -81,6 +81,7 @@ export function UserCashBoxesPage() {
     const [showAmounts, setShowAmounts] = useState(true);
     const [selectedUserFilter, setSelectedUserFilter] = useState<string>("all"); // Estado para filtro de usuario
     const [selectedCutoffFilter, setSelectedCutoffFilter] = useState<string>("all"); // Estado para filtro de corte
+    const [selectedCutoffIdFilter, setSelectedCutoffIdFilter] = useState<string>("all"); // Estado para filtro de corte específico
 
     const { data: transactions, isLoading, error, refetch } = useQuery({
         queryKey: ["/api/transactions/user-cash-boxes"],
@@ -173,6 +174,48 @@ export function UserCashBoxesPage() {
         return userCashBoxes.sort((a, b) => b.totalAmount - a.totalAmount);
     }, [transactions]);
 
+    // Obtener todos los cortes únicos disponibles
+    const availableCutoffs = useMemo(() => {
+        const cutoffs = new Set<number>();
+        
+        if (transactions && Array.isArray(transactions)) {
+            transactions.forEach((userGroup: any) => {
+                userGroup.transactions.forEach((transaction: any) => {
+                    if (transaction.cutoff_id !== null && transaction.cutoff_id !== undefined) {
+                        cutoffs.add(transaction.cutoff_id);
+                    }
+                });
+            });
+        }
+
+        return Array.from(cutoffs).sort((a, b) => a - b);
+    }, [transactions]);
+
+    // Obtener cortes específicos del usuario seleccionado
+    const userSpecificCutoffs = useMemo(() => {
+        if (selectedUserFilter === "all") return availableCutoffs;
+        
+        const cutoffs = new Set<number>();
+        
+        const selectedUser = allUserCashBoxes.find(user => user.userId.toString() === selectedUserFilter);
+        if (selectedUser) {
+            selectedUser.transactions.forEach((transaction: any) => {
+                if (transaction.cutoff_id !== null && transaction.cutoff_id !== undefined) {
+                    cutoffs.add(transaction.cutoff_id);
+                }
+            });
+        }
+
+        return Array.from(cutoffs).sort((a, b) => a - b);
+    }, [selectedUserFilter, allUserCashBoxes, availableCutoffs]);
+
+    // Resetear filtro de corte ID cuando cambia el usuario
+    useEffect(() => {
+        if (selectedUserFilter !== "all") {
+            setSelectedCutoffIdFilter("all");
+        }
+    }, [selectedUserFilter]);
+
     // Aplicar filtros a los userCashBoxes
     const filteredUserCashBoxes: UserCashBoxData[] = useMemo(() => {
         let currentFiltered = allUserCashBoxes;
@@ -188,33 +231,29 @@ export function UserCashBoxesPage() {
             });
         }
 
-        if (selectedCutoffFilter !== "all") {
-            currentFiltered = currentFiltered.filter(userBox => {
-                if (selectedCutoffFilter === "pending") {
-                    return userBox.hasPendingCutoff;
-                } else if (selectedCutoffFilter === "completed") {
-                    // Cambio: mostrar usuarios que tengan al menos una transacción con corte, no que todas tengan corte
-                    return userBox.hasCompletedCutoff && userBox.transactionCount > 0;
-                }
-                return true; // Debería ser capturado por 'all' pero para seguridad
-            });
-        }
-
-        // Filtrar y agrupar las transacciones individuales según el estado de corte seleccionado
-        if (selectedCutoffFilter !== "all") {
-            currentFiltered = currentFiltered.map(userBox => {
-                if (selectedCutoffFilter === "pending") {
-                    // Solo mostrar transacciones pendientes (cutoff_id null)
-                    const filteredTransactions = userBox.transactions.filter((transaction: any) => 
-                        transaction.cutoff_id === null || transaction.cutoff_id === undefined
-                    );
-
-                    // Recalcular totales basados en las transacciones filtradas
+        // Lógica de filtrado completamente reescrita para "Todos los estados"
+        if (selectedCutoffFilter === "all") {
+            // NUEVA LÓGICA: Separar transacciones pendientes de completadas
+            const expandedUserBoxes: UserCashBoxData[] = [];
+            
+            currentFiltered.forEach(userBox => {
+                // Separar transacciones pendientes
+                const pendingTransactions = userBox.transactions.filter((transaction: any) => 
+                    transaction.cutoff_id === null || transaction.cutoff_id === undefined
+                );
+                
+                // Separar transacciones completadas
+                const completedTransactions = userBox.transactions.filter((transaction: any) => 
+                    transaction.cutoff_id !== null && transaction.cutoff_id !== undefined
+                );
+                
+                // Agregar entrada para transacciones pendientes si existen
+                if (pendingTransactions.length > 0) {
                     let totalCash = 0;
                     let totalTransfer = 0;
                     let totalAmount = 0;
 
-                    filteredTransactions.forEach((transaction: any) => {
+                    pendingTransactions.forEach((transaction: any) => {
                         const amount = transaction.details?.details?.monto || 0;
                         const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
                         
@@ -227,22 +266,24 @@ export function UserCashBoxesPage() {
                         }
                     });
 
-                    return {
+                    expandedUserBoxes.push({
                         ...userBox,
-                        transactions: filteredTransactions,
+                        userId: `${userBox.userId}_pending`,
+                        userName: `${userBox.userName} (Pendiente)`,
+                        transactions: pendingTransactions,
                         totalCash,
                         totalTransfer,
                         totalAmount,
-                        transactionCount: filteredTransactions.length
-                    };
-                } else if (selectedCutoffFilter === "completed") {
-                    // NUEVA LÓGICA: Agrupar por valor único de cutoff_id
-                    const transactionsWithCutoff = userBox.transactions.filter((transaction: any) => 
-                        transaction.cutoff_id !== null && transaction.cutoff_id !== undefined
-                    );
-                    
-                    // Agrupar transacciones por cutoff_id
-                    const groupedByCutoff = transactionsWithCutoff.reduce((groups: any, transaction: any) => {
+                        transactionCount: pendingTransactions.length,
+                        hasPendingCutoff: true,
+                        allTransactionsCutoff: false,
+                        hasCompletedCutoff: false
+                    });
+                }
+                
+                // Agrupar transacciones completadas por cutoff_id
+                if (completedTransactions.length > 0) {
+                    const groupedByCutoff = completedTransactions.reduce((groups: any, transaction: any) => {
                         const cutoffId = transaction.cutoff_id;
                         if (!groups[cutoffId]) {
                             groups[cutoffId] = [];
@@ -251,8 +292,8 @@ export function UserCashBoxesPage() {
                         return groups;
                     }, {});
                     
-                    // Crear múltiples entradas del usuario, una por cada cutoff_id
-                    const userBoxesForCutoffs = Object.entries(groupedByCutoff).map(([cutoffId, transactions]: [string, any]) => {
+                    // Crear entrada para cada corte
+                    Object.entries(groupedByCutoff).forEach(([cutoffId, transactions]: [string, any]) => {
                         let totalCash = 0;
                         let totalTransfer = 0;
                         let totalAmount = 0;
@@ -270,31 +311,127 @@ export function UserCashBoxesPage() {
                             }
                         });
 
-                        return {
+                        expandedUserBoxes.push({
                             ...userBox,
-                            userId: `${userBox.userId}_cutoff_${cutoffId}`, // ID único para cada corte
-                            userName: `${userBox.userName} (Corte #${cutoffId})`, // Nombre descriptivo
+                            userId: `${userBox.userId}_cutoff_${cutoffId}`,
+                            userName: `${userBox.userName} (Corte #${cutoffId})`,
                             transactions: transactions,
                             totalCash,
                             totalTransfer,
                             totalAmount,
                             transactionCount: transactions.length,
-                            cutoffId: parseInt(cutoffId) // Agregar referencia al cutoff_id
-                        };
+                            cutoffId: parseInt(cutoffId),
+                            hasPendingCutoff: false,
+                            allTransactionsCutoff: true,
+                            hasCompletedCutoff: true
+                        });
                     });
-                    
-                    // Retornar array de usuarios agrupados por corte
-                    return userBoxesForCutoffs;
                 }
-                return userBox;
             });
             
-            // Aplanar el array en caso de que haya múltiples entradas por usuario (para cortes realizados)
-            currentFiltered = currentFiltered.flat();
+            currentFiltered = expandedUserBoxes;
+        } else if (selectedCutoffFilter === "pending") {
+            // Solo transacciones pendientes
+            currentFiltered = currentFiltered.filter(userBox => userBox.hasPendingCutoff);
+            
+            currentFiltered = currentFiltered.map(userBox => {
+                const filteredTransactions = userBox.transactions.filter((transaction: any) => 
+                    transaction.cutoff_id === null || transaction.cutoff_id === undefined
+                );
+
+                let totalCash = 0;
+                let totalTransfer = 0;
+                let totalAmount = 0;
+
+                filteredTransactions.forEach((transaction: any) => {
+                    const amount = transaction.details?.details?.monto || 0;
+                    const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+                    
+                    totalAmount += amount;
+                    
+                    if (paymentMethod === "efectivo") {
+                        totalCash += amount;
+                    } else {
+                        totalTransfer += amount;
+                    }
+                });
+
+                return {
+                    ...userBox,
+                    transactions: filteredTransactions,
+                    totalCash,
+                    totalTransfer,
+                    totalAmount,
+                    transactionCount: filteredTransactions.length
+                };
+            });
+        } else if (selectedCutoffFilter === "completed") {
+            // Solo transacciones completadas
+            currentFiltered = currentFiltered.filter(userBox => userBox.hasCompletedCutoff);
+            
+            const expandedUserBoxes: UserCashBoxData[] = [];
+            
+            currentFiltered.forEach(userBox => {
+                const transactionsWithCutoff = userBox.transactions.filter((transaction: any) => 
+                    transaction.cutoff_id !== null && transaction.cutoff_id !== undefined
+                );
+                
+                const groupedByCutoff = transactionsWithCutoff.reduce((groups: any, transaction: any) => {
+                    const cutoffId = transaction.cutoff_id;
+                    if (!groups[cutoffId]) {
+                        groups[cutoffId] = [];
+                    }
+                    groups[cutoffId].push(transaction);
+                    return groups;
+                }, {});
+                
+                Object.entries(groupedByCutoff).forEach(([cutoffId, transactions]: [string, any]) => {
+                    let totalCash = 0;
+                    let totalTransfer = 0;
+                    let totalAmount = 0;
+
+                    transactions.forEach((transaction: any) => {
+                        const amount = transaction.details?.details?.monto || 0;
+                        const paymentMethod = transaction.details?.details?.metodoPago || "efectivo";
+                        
+                        totalAmount += amount;
+                        
+                        if (paymentMethod === "efectivo") {
+                            totalCash += amount;
+                        } else {
+                            totalTransfer += amount;
+                        }
+                    });
+
+                    expandedUserBoxes.push({
+                        ...userBox,
+                        userId: `${userBox.userId}_cutoff_${cutoffId}`,
+                        userName: `${userBox.userName} (Corte #${cutoffId})`,
+                        transactions: transactions,
+                        totalCash,
+                        totalTransfer,
+                        totalAmount,
+                        transactionCount: transactions.length,
+                        cutoffId: parseInt(cutoffId)
+                    });
+                });
+            });
+            
+            currentFiltered = expandedUserBoxes;
+        }
+
+        // Aplicar filtro de ID de corte específico
+        if (selectedCutoffIdFilter !== "all") {
+            currentFiltered = currentFiltered.filter(userBox => {
+                if (userBox.cutoffId) {
+                    return userBox.cutoffId.toString() === selectedCutoffIdFilter;
+                }
+                return false;
+            });
         }
 
         return currentFiltered;
-    }, [allUserCashBoxes, selectedUserFilter, selectedCutoffFilter]);
+    }, [allUserCashBoxes, selectedUserFilter, selectedCutoffFilter, selectedCutoffIdFilter]);
 
 
     const toggleUserExpansion = (userId: number | string) => {
@@ -449,6 +586,25 @@ export function UserCashBoxesPage() {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {userSpecificCutoffs.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <Filter className="h-4 w-4 text-muted-foreground" />
+                                <Select value={selectedCutoffIdFilter} onValueChange={setSelectedCutoffIdFilter}>
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="ID de corte" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos los cortes</SelectItem>
+                                        {userSpecificCutoffs.map(cutoffId => (
+                                            <SelectItem key={cutoffId} value={cutoffId.toString()}>
+                                                Corte #{cutoffId}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </div>
 
                     {/* Resumen de totales */}
