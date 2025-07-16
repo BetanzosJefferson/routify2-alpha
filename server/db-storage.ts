@@ -2240,13 +2240,30 @@ export class DatabaseStorage implements IStorage {
     return cutoff;
   }
 
-  async getBoxCutoff(id: number): Promise<schema.BoxCutoff | undefined> {
+  async getBoxCutoff(id: number): Promise<any> {
     try {
       console.log(`DB Storage: Obteniendo corte de caja con ID ${id}`);
       
       const [cutoff] = await this.db
-        .select()
+        .select({
+          id: schema.boxCutoff.id,
+          fecha_inicio: schema.boxCutoff.fecha_inicio,
+          fecha_fin: schema.boxCutoff.fecha_fin,
+          total_ingresos: schema.boxCutoff.total_ingresos,
+          total_efectivo: schema.boxCutoff.total_efectivo,
+          total_transferencias: schema.boxCutoff.total_transferencias,
+          user_id: schema.boxCutoff.user_id,
+          createdAt: schema.boxCutoff.createdAt,
+          updatedAt: schema.boxCutoff.updatedAt,
+          companyId: schema.boxCutoff.companyId,
+          check: schema.boxCutoff.check,
+          check_by: schema.boxCutoff.check_by,
+          check_at: schema.boxCutoff.check_at,
+          // Información del usuario que confirmó el corte
+          confirmedByName: sql<string>`CASE WHEN ${schema.boxCutoff.check_by} IS NOT NULL THEN CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName}) ELSE NULL END`.as('confirmedByName')
+        })
         .from(schema.boxCutoff)
+        .leftJoin(schema.users, eq(schema.boxCutoff.check_by, schema.users.id))
         .where(eq(schema.boxCutoff.id, id))
         .limit(1);
       

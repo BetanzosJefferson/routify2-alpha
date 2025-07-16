@@ -44,6 +44,7 @@ interface BoxCutoff {
   check: boolean;
   check_by: number | null;
   check_at: string | null;
+  confirmedByName: string | null;
 }
 
 interface Transaction {
@@ -259,7 +260,7 @@ export default function CutoffConfirmationPage() {
                     </div>
                     <div className="text-sm text-gray-600">
                       <div>Confirmado: {format(new Date(cutoff.check_at), 'PPp', { locale: es })}</div>
-                      <div>Por usuario ID: {cutoff.check_by}</div>
+                      <div>Por: {cutoff.confirmedByName || `Usuario ID: ${cutoff.check_by}`}</div>
                     </div>
                   </div>
                 )}
