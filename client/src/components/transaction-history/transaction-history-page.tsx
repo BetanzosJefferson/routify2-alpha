@@ -23,11 +23,7 @@ interface TransactionHistoryItem {
   amount: number;
 }
 
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-}
+
 
 export default function TransactionHistoryPage() {
   const [startDate, setStartDate] = useState('');
@@ -59,12 +55,12 @@ export default function TransactionHistoryPage() {
     enabled: true
   });
 
-  // Obtener usuarios para filtro
-  const { data: users } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+  // Obtener usuarios que tienen transacciones para filtro
+  const { data: users } = useQuery<{ id: number; name: string; }[]>({
+    queryKey: ['/api/users/with-transactions'],
     queryFn: async () => {
-      const response = await fetch('/api/users');
-      if (!response.ok) throw new Error('Error al obtener usuarios');
+      const response = await fetch('/api/users/with-transactions');
+      if (!response.ok) throw new Error('Error al obtener usuarios con transacciones');
       return response.json();
     }
   });
@@ -233,7 +229,7 @@ export default function TransactionHistoryPage() {
                   <SelectItem value="all">Todos los usuarios</SelectItem>
                   {users?.map((user) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.firstName} {user.lastName}
+                      {user.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

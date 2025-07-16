@@ -8419,6 +8419,49 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // Endpoint para obtener usuarios que tienen transacciones en la compañía
+  app.get(apiRouter("/users/with-transactions"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /users/with-transactions] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver usuarios con transacciones (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver usuarios con transacciones" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      console.log(`[GET /users/with-transactions] Obteniendo usuarios con transacciones para compañía: ${companyId}`);
+      
+      const users = await storage.getUsersWithTransactions(companyId);
+      
+      console.log(`[GET /users/with-transactions] Encontrados ${users.length} usuarios con transacciones`);
+      
+      res.json(users);
+    } catch (error: any) {
+      console.error("[GET /users/with-transactions] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener usuarios con transacciones",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para el historial de transacciones
   app.get(apiRouter("/transaction-history"), isAuthenticated, async (req: Request, res: Response) => {
     try {

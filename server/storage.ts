@@ -71,6 +71,11 @@ export interface IStorage {
   }[]>;
 
   // Transaction History methods
+  getUsersWithTransactions(companyId: string): Promise<{
+    id: number;
+    name: string;
+  }[]>;
+  
   getTransactionHistory(params: {
     companyId: string;
     startDate?: string;

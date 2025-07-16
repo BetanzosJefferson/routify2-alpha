@@ -2386,13 +2386,7 @@ export class DatabaseStorage implements IStorage {
       const users = await db
         .select()
         .from(schema.users)
-        .where(
-          or(
-            eq(schema.users.companyId, companyId),
-            eq(schema.users.company, companyId),
-            eq(schema.users.company, companyId.toUpperCase())
-          )
-        );
+        .where(eq(schema.users.companyId, companyId));
       
       console.log(`DB Storage: Usuarios encontrados para compañía ${companyId}: ${users.length}`);
       return users;
@@ -4197,6 +4191,37 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error(`DB Storage: Error al obtener estadísticas de ingreso de pasajeros:`, error);
+      throw error;
+    }
+  }
+
+  // Método para obtener usuarios únicos que tienen transacciones en la compañía
+  async getUsersWithTransactions(companyId: string): Promise<{
+    id: number;
+    name: string;
+  }[]> {
+    console.log(`DB Storage: Obteniendo usuarios con transacciones para compañía ${companyId}`);
+    
+    try {
+      const result = await db
+        .select({
+          id: schema.users.id,
+          name: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
+        })
+        .from(schema.transacciones)
+        .innerJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
+        .where(eq(schema.transacciones.companyId, companyId))
+        .groupBy(schema.users.id, schema.users.firstName, schema.users.lastName)
+        .orderBy(sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`);
+
+      console.log(`DB Storage: Encontrados ${result.length} usuarios con transacciones para compañía ${companyId}`);
+      
+      return result.map(row => ({
+        id: row.id,
+        name: row.name
+      }));
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener usuarios con transacciones:`, error);
       throw error;
     }
   }
