@@ -2322,6 +2322,52 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getPendingBoxCutoffs(companyId?: string): Promise<any[]> {
+    try {
+      console.log(`DB Storage: Obteniendo cortes pendientes de confirmación${companyId ? ` para compañía ${companyId}` : ''}`);
+      
+      // Construir query base para cortes no confirmados
+      let query = this.db
+        .select({
+          id: schema.boxCutoff.id,
+          fecha_inicio: schema.boxCutoff.fecha_inicio,
+          fecha_fin: schema.boxCutoff.fecha_fin,
+          total_ingresos: schema.boxCutoff.total_ingresos,
+          total_efectivo: schema.boxCutoff.total_efectivo,
+          total_transferencias: schema.boxCutoff.total_transferencias,
+          user_id: schema.boxCutoff.user_id,
+          createdAt: schema.boxCutoff.createdAt,
+          updatedAt: schema.boxCutoff.updatedAt,
+          companyId: schema.boxCutoff.companyId,
+          check: schema.boxCutoff.check,
+          check_by: schema.boxCutoff.check_by,
+          check_at: schema.boxCutoff.check_at,
+          // Información del usuario que creó el corte
+          createdByName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`.as('createdByName')
+        })
+        .from(schema.boxCutoff)
+        .leftJoin(schema.users, eq(schema.boxCutoff.user_id, schema.users.id))
+        .where(eq(schema.boxCutoff.check, false));
+      
+      // Aplicar filtro por compañía si se especifica
+      if (companyId) {
+        query = query.where(and(
+          eq(schema.boxCutoff.check, false),
+          eq(schema.boxCutoff.companyId, companyId)
+        ));
+      }
+      
+      // Ordenar por fecha de creación (más recientes primero)
+      const pendingCutoffs = await query.orderBy(desc(schema.boxCutoff.createdAt));
+      
+      console.log(`DB Storage: Encontrados ${pendingCutoffs.length} cortes pendientes de confirmación`);
+      return pendingCutoffs;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener cortes pendientes:`, error);
+      return [];
+    }
+  }
+
   async updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined> {
     try {
       const whereClause = userId 

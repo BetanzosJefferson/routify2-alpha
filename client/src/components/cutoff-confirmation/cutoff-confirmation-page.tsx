@@ -45,6 +45,7 @@ interface BoxCutoff {
   check_by: number | null;
   check_at: string | null;
   confirmedByName: string | null;
+  createdByName: string | null;
 }
 
 interface Transaction {
@@ -76,6 +77,16 @@ export default function CutoffConfirmationPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const queryClient = useQueryClient();
 
+  // Query para obtener cortes pendientes de confirmación
+  const { data: pendingCutoffs, isLoading: isLoadingPending, error: pendingError } = useQuery<BoxCutoff[]>({
+    queryKey: ['/api/cutoffs/pending'],
+    queryFn: async () => {
+      const response = await fetch('/api/cutoffs/pending');
+      if (!response.ok) throw new Error('Error al obtener cortes pendientes');
+      return response.json();
+    }
+  });
+
   // Query para obtener información del corte
   const { data: cutoff, isLoading: isLoadingCutoff, error: cutoffError } = useQuery<BoxCutoff>({
     queryKey: ['/api/cutoffs', searchedCutoffId],
@@ -105,6 +116,7 @@ export default function CutoffConfirmationPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cutoffs', searchedCutoffId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cutoffs/pending'] });
       setShowConfirmModal(false);
     }
   });
@@ -151,6 +163,85 @@ export default function CutoffConfirmationPage() {
             Sistema de confirmación de cortes
           </Badge>
         </div>
+
+        {/* Lista de cortes pendientes */}
+        {pendingCutoffs && pendingCutoffs.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                Cortes Pendientes de Confirmación ({pendingCutoffs.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {pendingCutoffs.map((cutoff) => (
+                  <div 
+                    key={cutoff.id} 
+                    className="border rounded-lg p-4 bg-yellow-50 hover:bg-yellow-100 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setCutoffId(cutoff.id.toString());
+                      setSearchedCutoffId(cutoff.id);
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="font-medium text-lg">Corte #{cutoff.id}</div>
+                        <div className="text-sm text-gray-600">
+                          Creado por: {cutoff.createdByName || `Usuario ID: ${cutoff.user_id}`}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Fecha: {format(new Date(cutoff.createdAt), 'PPp', { locale: es })}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600 mb-1">Total Ingresos</div>
+                        <div className="font-semibold text-green-600 text-lg">
+                          {formatCurrency(cutoff.total_ingresos)}
+                        </div>
+                        <Badge variant="outline" className="text-yellow-600 mt-1">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Pendiente
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Efectivo: </span>
+                        <span className="font-medium">{formatCurrency(cutoff.total_efectivo)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Transferencias: </span>
+                        <span className="font-medium">{formatCurrency(cutoff.total_transferencias)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Mensaje cuando no hay cortes pendientes */}
+        {pendingCutoffs && pendingCutoffs.length === 0 && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">¡Todos los cortes están confirmados!</h3>
+              <p className="text-gray-600">No hay cortes pendientes de confirmación en este momento.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error al cargar cortes pendientes */}
+        {pendingError && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Error al cargar cortes pendientes: {pendingError.message}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Buscador */}
         <Card>
