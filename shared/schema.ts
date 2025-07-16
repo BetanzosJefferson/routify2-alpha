@@ -758,7 +758,7 @@ export const invitationRelations = relations(invitations, ({ one }) => ({
 
 // SESSIONS TABLE FOR EXPRESS SESSION STORE
 export const sessions = pgTable("session", {
-  sid: varchar("sid", { length: 255 }).primaryKey(),
+  sid: varchar("sid").primaryKey(),
   sess: json("sess").notNull(),
   expire: timestamp("expire", { precision: 6 }).notNull(),
 });
