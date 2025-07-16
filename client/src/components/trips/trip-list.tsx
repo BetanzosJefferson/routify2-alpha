@@ -628,10 +628,10 @@ export function TripList() {
                         const parentDepartureDate = tripData.parentDepartureDate;
                         const parentDepartureTime = tripData.parentDepartureTime;
                         const parentOrigin = tripData.parentOrigin;
-                        const currentDate = date; // Fecha actual de búsqueda
+                        const segmentDate = tripData.departureDate; // Fecha del segmento actual
                         
-                        // Verificar si es un sub-viaje y si la fecha del viaje padre es diferente a la fecha actual
-                        if (isSubTrip && parentDepartureDate && parentDepartureDate !== currentDate) {
+                        // Verificar si es un sub-viaje y si la fecha del viaje padre es diferente a la fecha del segmento
+                        if (isSubTrip && parentDepartureDate && segmentDate && parentDepartureDate !== segmentDate) {
                           return (
                             <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded-md flex items-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
