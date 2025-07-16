@@ -331,7 +331,9 @@ export default function TransactionHistoryPage() {
                       <span className="text-sm text-muted-foreground">#{transaction.id}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-green-600">{formatCurrency(transaction.amount)}</span>
+                      <span className={`font-bold ${transaction.details?.details?.metodoPago === 'transferencia' ? 'text-blue-600' : 'text-green-600'}`}>
+                        {formatCurrency(transaction.amount)}
+                      </span>
                     </div>
                   </div>
                   
