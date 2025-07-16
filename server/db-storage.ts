@@ -2357,6 +2357,90 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  /**
+   * Crear una transacción de reembolso (negativa) basada en la transacción original
+   * En lugar de eliminar la transacción original, se crea una copia con monto negativo
+   */
+  async createRefundTransaction(originalTransactionId: number, refundedBy: number): Promise<boolean> {
+    try {
+      console.log(`[DatabaseStorage] Creando transacción de reembolso para transacción original ${originalTransactionId}`);
+      
+      // 1. Obtener la transacción original
+      const originalTransaction = await this.db
+        .select()
+        .from(schema.transacciones)
+        .where(eq(schema.transacciones.id, originalTransactionId))
+        .limit(1);
+      
+      if (originalTransaction.length === 0) {
+        console.error(`[DatabaseStorage] Transacción original ${originalTransactionId} no encontrada`);
+        return false;
+      }
+      
+      const original = originalTransaction[0];
+      console.log(`[DatabaseStorage] Transacción original encontrada: ID ${original.id}, Usuario: ${original.user_id}`);
+      
+      // 2. Verificar que la transacción no tenga corte (solo se pueden reembolsar transacciones sin corte)
+      if (original.cutoff_id !== null) {
+        console.error(`[DatabaseStorage] La transacción ${originalTransactionId} ya tiene corte ${original.cutoff_id} y no puede ser reembolsada`);
+        return false;
+      }
+      
+      // 3. Extraer el monto original de los detalles
+      const originalDetails = original.details as any;
+      const originalAmount = originalDetails?.details?.monto || 0;
+      
+      if (originalAmount <= 0) {
+        console.error(`[DatabaseStorage] Monto original inválido (${originalAmount}) para transacción ${originalTransactionId}`);
+        return false;
+      }
+      
+      // 4. Crear nueva transacción con monto negativo
+      const refundDetails = {
+        ...originalDetails,
+        details: {
+          ...originalDetails.details,
+          monto: -originalAmount, // Monto negativo para representar reembolso
+          tipo: 'reembolso',
+          transaccion_original_id: originalTransactionId,
+          reembolsado_por: refundedBy,
+          fecha_reembolso: new Date().toISOString()
+        }
+      };
+      
+      console.log(`[DatabaseStorage] Creando transacción de reembolso:`);
+      console.log(`  - Monto original: ${originalAmount}`);
+      console.log(`  - Monto reembolso: ${-originalAmount}`);
+      console.log(`  - Usuario original: ${original.user_id}`);
+      console.log(`  - Reembolsado por: ${refundedBy}`);
+      
+      // 5. Insertar la nueva transacción de reembolso
+      const refundTransaction = await this.db
+        .insert(schema.transacciones)
+        .values({
+          details: refundDetails,
+          user_id: original.user_id, // MISMO usuario que la transacción original
+          cutoff_id: null, // Sin corte para que pueda ser procesada
+          companyId: original.companyId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      if (refundTransaction.length > 0) {
+        console.log(`[DatabaseStorage] ✅ Transacción de reembolso creada exitosamente: ID ${refundTransaction[0].id}`);
+        return true;
+      } else {
+        console.error(`[DatabaseStorage] ❌ Error al crear transacción de reembolso`);
+        return false;
+      }
+      
+    } catch (error) {
+      console.error("[DatabaseStorage] Error al crear transacción de reembolso:", error);
+      return false;
+    }
+  }
+
   async getTransaccionesByPackageId(packageId: number): Promise<schema.Transaccion[]> {
     try {
       const transactions = await this.db
