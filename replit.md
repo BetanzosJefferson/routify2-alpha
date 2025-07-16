@@ -119,15 +119,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 16, 2025** - CRITICAL FIX: Transaction history permissions corrected to use Spanish role values:
-  - **ROOT CAUSE RESOLVED**: Transaction history endpoints were using English role constants instead of Spanish database values
-  - **ENDPOINTS FIXED**: Both `/api/transaction-history` and `/api/transaction-users` endpoints now use correct role validation
-  - **ROLE VALIDATION**: Changed from `UserRole.OWNER` and `UserRole.ADMIN` to `"dueño"` and `"admin"` for consistency
+- **July 16, 2025** - CRITICAL FIX: System-wide role permissions corrected to use Spanish database values:
+  - **ROOT CAUSE RESOLVED**: Multiple endpoints were using English role constants instead of Spanish database values
+  - **MASSIVE SCOPE**: Fixed role validation across cupones, comisiones, estadísticas, and transacciones sections
+  - **ENDPOINTS FIXED**: 
+    - `/api/coupons` - GET/POST endpoints now use Spanish roles
+    - `/api/commissions/reservations` - Commission system now accepts "dueño", "admin", "comisionista"
+    - `/api/statistics/coupon-usage` - Statistics endpoints now use Spanish roles
+    - `/api/statistics/passenger-intake` - Passenger statistics now use Spanish roles
+    - `/api/transaction-history` - Transaction history now use Spanish roles
+    - `/api/transaction-users` - Transaction users now use Spanish roles
+  - **ROLE VALIDATION**: Changed from `UserRole.OWNER`/`UserRole.ADMIN` to `"dueño"`/`"admin"` system-wide
+  - **COMMISSIONER ROLE**: Updated `UserRole.COMMISSIONER` to `"comisionista"` for consistency
   - **SYSTEM CONSISTENCY**: All role-based permissions now uniformly use Spanish role values from database
-  - **ACCESS RESTORED**: Users with "dueño" and "admin" roles can now access transaction history section
-  - **PERMISSION PATTERN**: Applied same fix pattern used in cutoff confirmation system
-  - **TECHNICAL SOLUTION**: Updated role comparison logic to match actual database role values
-  - **COMPREHENSIVE FIX**: Both transaction history and transaction users endpoints corrected simultaneously
+  - **ACCESS RESTORED**: Users with correct Spanish roles can now access all restricted sections
+  - **COMPREHENSIVE FIX**: Applied consistent role validation pattern across entire backend system
+  - **TECHNICAL SOLUTION**: Updated role comparison logic to match actual database role values throughout
 
 - **July 16, 2025** - COMPLETED: Sistema de "Confirmar cortes" implementado completamente:
   - **NAVEGACIÓN INTEGRADA**: Agregado al sidebar y topbar con ícono CheckCircle

@@ -4620,8 +4620,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validar permisos según el rol
-      const isAdmin = user.role === UserRole.OWNER || user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN || user.role === UserRole.DEVELOPER;
-      const isCommissioner = user.role === UserRole.COMMISSIONER;
+      const isAdmin = user.role === "dueño" || user.role === "admin" || user.role === "super_admin" || user.role === "developer";
+      const isCommissioner = user.role === "comisionista";
       
       if (!isAdmin && !isCommissioner) {
         console.log(`[GET /commissions/reservations] ACCESO DENEGADO: El rol ${user.role} no tiene permiso para acceder a esta sección`);
@@ -4642,7 +4642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let companyId: string | null = null;
       
       // Aplicar filtro de compañía para todos excepto superAdmin
-      if (user.role !== UserRole.SUPER_ADMIN && user.role !== UserRole.DEVELOPER) {
+      if (user.role !== "super_admin" && user.role !== "developer") {
         companyId = user.companyId || user.company;
         
         if (!companyId) {
@@ -5931,7 +5931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(apiRouter('/coupons'), isAuthenticated, async (req, res) => {
     try {
       // Verificar permisos: solo administradores y dueños pueden ver cupones
-      const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, UserRole.DEVELOPER];
+      const allowedRoles = ["super_admin", "dueño", "admin", "developer"];
       
       if (!allowedRoles.includes(req.user!.role)) {
         return res.status(403).json({ 
@@ -5942,7 +5942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Obtener el ID de la compañía del usuario si no es superAdmin
       let companyId = null;
-      if (req.user!.role !== UserRole.SUPER_ADMIN && req.user!.role !== UserRole.DEVELOPER) {
+      if (req.user!.role !== "super_admin" && req.user!.role !== "developer") {
         companyId = req.user!.company || (req.user as any).companyId;
       }
       
@@ -5963,7 +5963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       
       // Verificar permisos: solo administradores y dueños pueden ver cupones
-      const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, UserRole.DEVELOPER];
+      const allowedRoles = ["super_admin", "dueño", "admin", "developer"];
       
       if (!allowedRoles.includes(req.user!.role)) {
         return res.status(403).json({ 
@@ -6006,7 +6006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(apiRouter('/coupons'), isAuthenticated, async (req, res) => {
     try {
       // Verificar permisos: solo administradores y dueños pueden crear cupones
-      const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, UserRole.DEVELOPER];
+      const allowedRoles = ["super_admin", "dueño", "admin", "developer"];
       
       if (!allowedRoles.includes(req.user!.role)) {
         return res.status(403).json({ 
@@ -8290,7 +8290,7 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /statistics/coupon-usage] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Verificar que el usuario tenga permisos para ver estadísticas (solo dueño y admin)
-      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+      if (user.role !== "dueño" && user.role !== "admin") {
         return res.status(403).json({ 
           error: "Acceso denegado", 
           details: "Solo los dueños y administradores pueden ver estadísticas" 
@@ -8384,7 +8384,7 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /statistics/passenger-intake] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Verificar que el usuario tenga permisos para ver estadísticas (solo dueño y admin)
-      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+      if (user.role !== "dueño" && user.role !== "admin") {
         return res.status(403).json({ 
           error: "Acceso denegado", 
           details: "Solo los dueños y administradores pueden ver estadísticas" 
