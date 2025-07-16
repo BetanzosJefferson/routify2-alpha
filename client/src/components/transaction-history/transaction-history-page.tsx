@@ -57,9 +57,9 @@ export default function TransactionHistoryPage() {
 
   // Obtener usuarios que tienen transacciones para filtro
   const { data: users } = useQuery<{ id: number; name: string; }[]>({
-    queryKey: ['/api/users/with-transactions'],
+    queryKey: ['/api/transaction-users'],
     queryFn: async () => {
-      const response = await fetch('/api/users/with-transactions');
+      const response = await fetch('/api/transaction-users');
       if (!response.ok) throw new Error('Error al obtener usuarios con transacciones');
       return response.json();
     }

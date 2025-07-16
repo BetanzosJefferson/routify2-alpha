@@ -8420,7 +8420,7 @@ function setupPackageRoutes(app: Express) {
   });
 
   // Endpoint para obtener usuarios que tienen transacciones en la compañía
-  app.get(apiRouter("/users/with-transactions"), isAuthenticated, async (req: Request, res: Response) => {
+  app.get(apiRouter("/transaction-users"), isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       
@@ -8428,7 +8428,7 @@ function setupPackageRoutes(app: Express) {
         return res.status(401).json({ error: "No autenticado" });
       }
       
-      console.log(`[GET /users/with-transactions] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      console.log(`[GET /transaction-users] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
       
       // Verificar que el usuario tenga permisos para ver usuarios con transacciones (solo dueño y admin)
       if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
@@ -8446,15 +8446,15 @@ function setupPackageRoutes(app: Express) {
         });
       }
       
-      console.log(`[GET /users/with-transactions] Obteniendo usuarios con transacciones para compañía: ${companyId}`);
+      console.log(`[GET /transaction-users] Obteniendo usuarios con transacciones para compañía: ${companyId}`);
       
       const users = await storage.getUsersWithTransactions(companyId);
       
-      console.log(`[GET /users/with-transactions] Encontrados ${users.length} usuarios con transacciones`);
+      console.log(`[GET /transaction-users] Encontrados ${users.length} usuarios con transacciones`);
       
       res.json(users);
     } catch (error: any) {
-      console.error("[GET /users/with-transactions] Error:", error);
+      console.error("[GET /transaction-users] Error:", error);
       res.status(500).json({ 
         error: "Error al obtener usuarios con transacciones",
         details: error.message 
