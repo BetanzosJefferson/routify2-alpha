@@ -557,11 +557,7 @@ export function ReservationList() {
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-blue-600" />
               <CardTitle className="text-lg">
-                {(() => {
-                  const title = user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones';
-                  console.log('[DEBUG] Title calculation:', { userRole: user?.role, title });
-                  return title;
-                })()}
+                {user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones'}
               </CardTitle>
             </div>
           </div>
