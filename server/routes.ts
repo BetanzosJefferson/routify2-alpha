@@ -3829,23 +3829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 4. NUEVA VALIDACIÓN: Verificar que el usuario actual creó las transacciones originales
-      const transactionsFromOtherUsers = refundableTransactions.filter(t => t.assigned_to !== user.id);
-      
-      if (transactionsFromOtherUsers.length > 0) {
-        // Obtener información del usuario que creó la transacción original usando consulta directa
-        const originalCreatorId = transactionsFromOtherUsers[0].assigned_to;
-        const originalCreator = await db.select().from(schema.users).where(eq(schema.users.id, originalCreatorId)).limit(1);
-        const creatorName = originalCreator.length > 0 ? `${originalCreator[0].firstName} ${originalCreator[0].lastName}` : 'usuario desconocido';
-        
-        return res.status(400).json({ 
-          error: `Solo el usuario que creó la transacción original puede procesarla. La transacción fue creada por: ${creatorName}. Solicite a ese usuario que realice el reembolso.`,
-          requiresOriginalCreator: true,
-          originalCreatorName: creatorName
-        });
-      }
-
-      // 5. Cancelar reservación (igual que cancelación normal)
+      // Cancelar reservación (igual que cancelación normal)
       const updatedReservation = await storage.updateReservation(id, {
         status: 'canceledAndRefund',
         updatedAt: new Date()
@@ -3855,7 +3839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Error al cancelar la reservación" });
       }
 
-      // 6. Liberar asientos
+      // Liberar asientos
       const passengers = await storage.getPassengers(id);
       const passengerCount = passengers.length;
 
@@ -3871,63 +3855,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // 7. NUEVA LÓGICA: Crear transacciones negativas en lugar de eliminar las originales
+      // Eliminar TODAS las transacciones reembolsables
       let totalRefundAmount = 0;
-      let createdRefundTransactions = 0;
+      let deletedCount = 0;
 
       for (const transaction of refundableTransactions) {
         try {
-          // Extraer el monto de la transacción original
-          const originalAmount = (transaction.details as any)?.details?.monto || 0;
+          const transactionDeleted = await storage.deleteTransaccion(transaction.id);
           
-          if (originalAmount > 0) {
-            // Crear una transacción negativa (reembolso)
-            const refundTransactionData = {
-              assigned_to: user.id, // Asignar al usuario actual
-              source: transaction.source, // Mantener la misma fuente
-              type: transaction.type, // Mantener el mismo tipo
-              details: {
-                ...transaction.details,
-                details: {
-                  ...(transaction.details as any)?.details,
-                  monto: -originalAmount, // Monto negativo
-                  esReembolso: true,
-                  transaccionOriginalId: transaction.id,
-                  motivoReembolso: 'Cancelación con reembolso de reservación'
-                }
-              },
-              created_at: new Date(),
-              company_id: user.companyId
-            };
-
-            // Crear la transacción de reembolso
-            const refundTransaction = await storage.createTransaccion(refundTransactionData);
-            
-            if (refundTransaction) {
-              createdRefundTransactions++;
-              totalRefundAmount += originalAmount;
-              console.log(`[POST /reservations/${id}/cancel-refund] Transacción de reembolso creada: ${refundTransaction.id} por -${originalAmount}`);
-            } else {
-              console.error(`[POST /reservations/${id}/cancel-refund] Error al crear transacción de reembolso para transacción ${transaction.id}`);
-            }
+          if (transactionDeleted) {
+            deletedCount++;
+            // Calcular monto total del reembolso
+            const transactionAmount = (transaction.details as any)?.details?.monto || 0;
+            totalRefundAmount += transactionAmount;
+            console.log(`[POST /reservations/${id}/cancel-refund] Transacción ${transaction.id} eliminada exitosamente (${transactionAmount})`);
+          } else {
+            console.error(`[POST /reservations/${id}/cancel-refund] Error al eliminar transacción ${transaction.id}`);
           }
         } catch (error) {
           console.error(`[POST /reservations/${id}/cancel-refund] Error al procesar transacción ${transaction.id}:`, error);
         }
       }
 
-      if (createdRefundTransactions === 0) {
-        return res.status(500).json({ error: "Error al procesar el reembolso - no se pudo crear ninguna transacción de reembolso" });
+      if (deletedCount === 0) {
+        return res.status(500).json({ error: "Error al procesar el reembolso - no se pudo eliminar ninguna transacción" });
       }
 
-      console.log(`[POST /reservations/${id}/cancel-refund] ${createdRefundTransactions}/${refundableTransactions.length} transacciones de reembolso creadas exitosamente. Reembolso total: ${totalRefundAmount}`);
+      console.log(`[POST /reservations/${id}/cancel-refund] ${deletedCount}/${refundableTransactions.length} transacciones eliminadas exitosamente. Reembolso total: ${totalRefundAmount}`);
 
       res.json({ 
         success: true, 
         message: "Reservación cancelada con reembolso exitosamente",
         reservation: updatedReservation,
         refundAmount: totalRefundAmount,
-        createdRefundTransactions: createdRefundTransactions
+        deletedTransactions: deletedCount
       });
 
     } catch (error) {

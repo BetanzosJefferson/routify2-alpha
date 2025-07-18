@@ -194,20 +194,12 @@ export default function ReservationDetailsModal({
       
       if (!response.ok) {
         const errorData = await response.json();
-        
-        // Verificar si es un error específico que requiere mostrar alerta
-        if (errorData.requiresOriginalCreator) {
-          alert(`ATENCIÓN: ${errorData.error}`);
-        }
-        
-        throw new Error(errorData.error || "Error al cancelar con reembolso");
+        throw new Error(errorData.message || "Error al cancelar con reembolso");
       }
-      
-      const result = await response.json();
       
       toast({
         title: "Reservación cancelada con reembolso",
-        description: `La reservación ha sido cancelada y se han creado ${result.createdRefundTransactions} transacciones de reembolso por un total de ${result.refundAmount}.`,
+        description: "La reservación ha sido cancelada y se procesará el reembolso.",
       });
       
       // Refrescar datos

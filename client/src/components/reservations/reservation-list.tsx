@@ -388,12 +388,6 @@ export function ReservationList() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        
-        // Verificar si es un error específico que requiere mostrar alerta
-        if (errorData.requiresOriginalCreator) {
-          alert(`ATENCIÓN: ${errorData.error}`);
-        }
-        
         throw new Error(errorData.error || 'Error al cancelar la reservación con reembolso');
       }
 
@@ -402,7 +396,7 @@ export function ReservationList() {
     onSuccess: (data) => {
       toast({
         title: "Reservación cancelada con reembolso",
-        description: `La reservación ha sido cancelada y se han creado ${data.createdRefundTransactions} transacciones de reembolso por un total de ${formatPrice(data.refundAmount)}.`,
+        description: `La reservación ha sido cancelada y se ha procesado un reembolso de ${formatPrice(data.refundAmount)}.`,
       });
 
       // Invalidate queries
