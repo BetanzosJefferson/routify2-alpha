@@ -588,11 +588,22 @@ const TransactionBox: React.FC = () => {
                           </TableCell>
                           <TableCell>{details.pasajeros || 'N/A'}</TableCell>
                           <TableCell>
-                            <Badge variant={details.metodoPago === "efectivo" ? "default" : "secondary"}>
-                              {details.metodoPago || "N/A"}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                              <Badge variant={details.metodoPago === "efectivo" ? "default" : "secondary"}>
+                                {details.metodoPago || "N/A"}
+                              </Badge>
+                              {transaction.details.type === "reservation_refund" && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Reembolso
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell>{formatCurrency(details.monto || 0)}</TableCell>
+                          <TableCell>
+                            <span className={transaction.details.type === "reservation_refund" ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+                              {formatCurrency(details.monto || 0)}
+                            </span>
+                          </TableCell>
                           {user?.role === "taquilla" && (
                             <TableCell>
                               <div className="text-xs font-mono">
@@ -632,15 +643,22 @@ const TransactionBox: React.FC = () => {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-green-600 text-sm">
+                            <p className={`font-bold text-sm ${transaction.details.type === "reservation_refund" ? "text-red-600" : "text-green-600"}`}>
                               {formatCurrency(details.monto || 0)}
                             </p>
-                            <Badge 
-                              variant={details.metodoPago === "efectivo" ? "default" : "secondary"}
-                              className="text-xs mt-1"
-                            >
-                              {details.metodoPago || "N/A"}
-                            </Badge>
+                            <div className="flex flex-col gap-1 items-end">
+                              <Badge 
+                                variant={details.metodoPago === "efectivo" ? "default" : "secondary"}
+                                className="text-xs"
+                              >
+                                {details.metodoPago || "N/A"}
+                              </Badge>
+                              {transaction.details.type === "reservation_refund" && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Reembolso
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
