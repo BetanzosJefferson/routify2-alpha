@@ -414,7 +414,7 @@ export function ReservationList() {
             creators: errorData.details?.creatorNames || 'otros usuarios',
             reservationId: data.id
           });
-          throw new Error("Esperando confirmación del usuario");
+          return; // Salir sin mostrar error - esperando confirmación del usuario
         }
         
         throw new Error(errorData.error || 'Error al cancelar la reservación con reembolso');
@@ -437,7 +437,7 @@ export function ReservationList() {
       setConfirmingDelete(null);
     },
     onError: (error) => {
-      if (error.message !== "Operación cancelada por el usuario") {
+      if (error.message !== "Operación cancelada por el usuario" && error.message !== "Esperando confirmación del usuario") {
         toast({
           title: "Error al cancelar reservación con reembolso",
           description: error.message,
