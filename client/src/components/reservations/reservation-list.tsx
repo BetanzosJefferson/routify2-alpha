@@ -144,6 +144,7 @@ export function ReservationList() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedReservations, setSelectedReservations] = useState<number[]>([]);
+  const [showOnlyMyReservations, setShowOnlyMyReservations] = useState(false);
 
   // Obtener información del usuario actual
   const { user } = useAuth();
@@ -250,7 +251,13 @@ export function ReservationList() {
       matchesDateFilter = isSameLocalDay(tripDate, filterDate);
     }
 
-    return matchesSearch && matchesDate && matchesDateFilter;
+    // Aplicar filtro de "Reservaciones creadas por mi"
+    let matchesCreatedByMe = true;
+    if (showOnlyMyReservations && user) {
+      matchesCreatedByMe = reservation.createdBy === user.id;
+    }
+
+    return matchesSearch && matchesDate && matchesDateFilter && matchesCreatedByMe;
   }));
 
   // Functions for handling checkbox selections
@@ -645,7 +652,18 @@ export function ReservationList() {
                   }}
                   className="w-32 text-sm"
                 />
-             
+              </div>
+
+              {/* Filtro de reservaciones creadas por mi */}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="show-only-my-reservations"
+                  checked={showOnlyMyReservations}
+                  onCheckedChange={(checked) => setShowOnlyMyReservations(checked as boolean)}
+                />
+                <Label htmlFor="show-only-my-reservations" className="text-sm text-gray-700 cursor-pointer">
+                  Reservaciones creadas por mi
+                </Label>
               </div>
 
               {/* Filtro general */}

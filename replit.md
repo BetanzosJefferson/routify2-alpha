@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 18, 2025** - ENHANCED: Reservation list filtering system with personal reservation filter:
+  - **NEW FILTER OPTION**: Added "Reservaciones creadas por mi" checkbox filter to reservation list component
+  - **PERSONAL FILTERING**: Users can now filter reservations to show only those they created using the `createdBy` field
+  - **IMPROVED UX**: New checkbox filter positioned next to date selector with clear labeling
+  - **FILTERING LOGIC**: When enabled, filters reservations where `reservation.createdBy === user.id`
+  - **STATE MANAGEMENT**: Added `showOnlyMyReservations` state with proper filtering integration
+  - **RESPONSIVE DESIGN**: Filter checkbox integrates seamlessly with existing filter controls
+  - **USER EXPERIENCE**: Allows users to quickly identify and focus on their own reservation entries
+
 - **July 16, 2025** - CRITICAL FIX: Session table added to schema to prevent production migration resets:
   - **ROOT CAUSE RESOLVED**: Session table was missing from Drizzle schema causing production migration resets
   - **SCHEMA ADDITION**: Added sessions table definition to shared/schema.ts with proper PostgreSQL structure
