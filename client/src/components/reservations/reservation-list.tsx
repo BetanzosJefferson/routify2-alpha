@@ -556,7 +556,9 @@ export function ReservationList() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-blue-600" />
-              <CardTitle className="text-lg">Reservaciones</CardTitle>
+              <CardTitle className="text-lg">
+                {user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones'}
+              </CardTitle>
             </div>
           </div>
 

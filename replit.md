@@ -128,6 +128,7 @@ Preferred communication style: Simple, everyday language.
   - **UI RESTRICTION**: Checkbox filter is hidden from checador users (user?.role !== 'checador') to prevent filter changes
   - **NAVIGATION INTEGRATION**: Reservations section now properly visible in sidebar for checador role
   - **SECURITY ENHANCEMENT**: Ensures checador users can only view their own reservations without ability to bypass filter
+  - **PERSONALIZED TITLE**: Changed page title from "Reservaciones" to "Mis reservaciones" for checador role to reflect personal scope
 
 - **July 18, 2025** - ENHANCED: Reservation list filtering system with personal reservation filter:
   - **NEW FILTER OPTION**: Added "Reservaciones creadas por mi" checkbox filter to reservation list component
