@@ -761,6 +761,12 @@ export function ReservationDetailsSidebar({
 
                     {/* Botones de acción */}
                     <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                      {/* DEBUG: Estado de la reservación antes de renderizar botones */}
+                      {console.log('[DEBUG] Reservación', reservation.id, {
+                        paymentStatus: reservation.paymentStatus,
+                        loadingActions: loadingActions[reservation.id],
+                        isDisabled: loadingActions[reservation.id] === 'payment' || reservation.paymentStatus === 'pagado'
+                      })}
                       {/* Botón Marcar como check */}
                       <Button
                         size="sm"
