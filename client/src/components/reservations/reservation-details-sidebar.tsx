@@ -78,6 +78,7 @@ export function ReservationDetailsSidebar({
   
   // Estados para acciones de reservación
   const [loadingActions, setLoadingActions] = useState<Record<number, 'check' | 'payment' | null>>({});
+  const [loadingPackageActions, setLoadingPackageActions] = useState<Record<number, 'payment' | 'delivery' | null>>({});
   const [isLoadingBudget, setIsLoadingBudget] = useState(false);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [isRemovingExpense, setIsRemovingExpense] = useState<number | null>(null);
@@ -386,6 +387,89 @@ export function ReservationDetailsSidebar({
     }
     
     // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
+  };
+
+  // Funciones para manejar acciones de paquetes
+  const markPackageAsPaid = async (packageId: number) => {
+    console.log('[markPackageAsPaid] Iniciando proceso para paquete:', packageId);
+    
+    if (loadingPackageActions[packageId] === 'payment' || loadingPackageActions[packageId] === 'delivery') {
+      console.log('[markPackageAsPaid] Cancelando - ya hay acción en progreso:', loadingPackageActions[packageId]);
+      return;
+    }
+
+    setLoadingPackageActions(prev => ({ ...prev, [packageId]: 'payment' }));
+
+    try {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/packages/${packageId}`,
+        { isPaid: true }
+      );
+
+      if (response.ok) {
+        console.log('[markPackageAsPaid] Éxito - invalidando caché...');
+        await queryClient.invalidateQueries({ queryKey: ['/api/packages'] });
+        toast({
+          title: "Paquete marcado como pagado",
+          description: "El paquete ha sido marcado como pagado correctamente.",
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[markPackageAsPaid] Error en respuesta:', errorData);
+        throw new Error(errorData.message || 'Error al marcar como pagado');
+      }
+    } catch (error) {
+      console.error('[markPackageAsPaid] Error capturado:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo marcar el paquete como pagado. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      
+      setLoadingPackageActions(prev => ({ ...prev, [packageId]: null }));
+    }
+  };
+
+  const markPackageAsDelivered = async (packageId: number) => {
+    console.log('[markPackageAsDelivered] Iniciando proceso para paquete:', packageId);
+    
+    if (loadingPackageActions[packageId] === 'payment' || loadingPackageActions[packageId] === 'delivery') {
+      console.log('[markPackageAsDelivered] Cancelando - ya hay acción en progreso:', loadingPackageActions[packageId]);
+      return;
+    }
+
+    setLoadingPackageActions(prev => ({ ...prev, [packageId]: 'delivery' }));
+
+    try {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/packages/${packageId}`,
+        { deliveryStatus: 'entregado' }
+      );
+
+      if (response.ok) {
+        console.log('[markPackageAsDelivered] Éxito - invalidando caché...');
+        await queryClient.invalidateQueries({ queryKey: ['/api/packages'] });
+        toast({
+          title: "Paquete marcado como entregado",
+          description: "El paquete ha sido marcado como entregado correctamente.",
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[markPackageAsDelivered] Error en respuesta:', errorData);
+        throw new Error(errorData.message || 'Error al marcar como entregado');
+      }
+    } catch (error) {
+      console.error('[markPackageAsDelivered] Error capturado:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo marcar el paquete como entregado. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      
+      setLoadingPackageActions(prev => ({ ...prev, [packageId]: null }));
+    }
   };
 
   // Cargar datos al montar el componente si es chofer
@@ -971,7 +1055,7 @@ export function ReservationDetailsSidebar({
                   </div>
 
                   {/* Estado de entrega y asientos */}
-                  <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm">
+                  <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm mb-3">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Estado de entrega</div>
                       <Badge variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'} className="text-xs">
@@ -983,6 +1067,61 @@ export function ReservationDetailsSidebar({
                         <div className="text-xs text-gray-500">Asientos ocupados</div>
                         <div className="font-medium text-xs md:text-sm">{pkg.seatsQuantity || 0}</div>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Botones de acción para paquetes */}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {/* Botón Marcar como pagado - solo mostrar si no está pagado */}
+                    {!pkg.isPaid && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => markPackageAsPaid(pkg.id)}
+                        disabled={
+                          loadingPackageActions[pkg.id] === 'payment' ||
+                          loadingPackageActions[pkg.id] === 'delivery'
+                        }
+                      >
+                        {loadingPackageActions[pkg.id] === 'payment' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            Marcar como pagado
+                          </>
+                        )}
+                      </Button>
+                    )}
+
+                    {/* Botón Marcar como entregado - solo mostrar si no está entregado */}
+                    {pkg.deliveryStatus !== 'entregado' && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => markPackageAsDelivered(pkg.id)}
+                        disabled={
+                          loadingPackageActions[pkg.id] === 'delivery' ||
+                          loadingPackageActions[pkg.id] === 'payment'
+                        }
+                      >
+                        {loadingPackageActions[pkg.id] === 'delivery' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckIcon className="h-4 w-4 mr-2" />
+                            Marcar como entregado
+                          </>
+                        )}
+                      </Button>
                     )}
                   </div>
                 </CardContent>
