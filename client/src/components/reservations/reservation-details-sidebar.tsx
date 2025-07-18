@@ -73,6 +73,9 @@ export function ReservationDetailsSidebar({
     type: '',
     description: ''
   });
+  
+  // Estados para acciones de reservación
+  const [loadingActions, setLoadingActions] = useState<Record<number, 'check' | 'payment' | null>>({});
   const [isLoadingBudget, setIsLoadingBudget] = useState(false);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [isRemovingExpense, setIsRemovingExpense] = useState<number | null>(null);
@@ -273,6 +276,70 @@ export function ReservationDetailsSidebar({
       });
     } finally {
       setIsRemovingExpense(null);
+    }
+  };
+
+  // Función para marcar reservación como checked
+  const markAsChecked = async (reservationId: number) => {
+    setLoadingActions(prev => ({ ...prev, [reservationId]: 'check' }));
+    try {
+      const response = await fetch(`/api/reservations/${reservationId}/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Recargar la página para actualizar los datos
+        window.location.reload();
+        toast({
+          title: "Reservación marcada como check",
+          description: "La reservación ha sido marcada como check correctamente.",
+        });
+      } else {
+        throw new Error('Error al marcar como check');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo marcar la reservación como check. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
+    }
+  };
+
+  // Función para marcar reservación como pagada
+  const markAsPaid = async (reservationId: number) => {
+    setLoadingActions(prev => ({ ...prev, [reservationId]: 'payment' }));
+    try {
+      const response = await fetch(`/api/reservations/${reservationId}/mark-as-paid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Recargar la página para actualizar los datos
+        window.location.reload();
+        toast({
+          title: "Reservación marcada como pagada",
+          description: "La reservación ha sido marcada como pagada correctamente.",
+        });
+      } else {
+        throw new Error('Error al marcar como pagada');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo marcar la reservación como pagada. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
   };
 
@@ -543,6 +610,11 @@ export function ReservationDetailsSidebar({
                                 ? '$ 0'
                                 : `$ ${(reservation.totalAmount - (reservation.advanceAmount || 0)).toFixed(0)}`
                               }
+                              {reservation.paymentStatus !== 'pagado' && (
+                                <span className="text-xs font-normal text-gray-500 ml-1">
+                                  ({reservation.paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'})
+                                </span>
+                              )}
                             </span>
                           </div>
                         </div>
@@ -658,6 +730,57 @@ export function ReservationDetailsSidebar({
                       >
                         {reservation.paymentStatus === 'pagado' ? 'PAGADO' : 'PENDIENTE'}
                       </Badge>
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                      {/* Botón Marcar como check */}
+                      <Button
+                        size="sm"
+                        variant={reservation.checkCount && reservation.checkCount > 0 ? "outline" : "default"}
+                        className={reservation.checkCount && reservation.checkCount > 0 
+                          ? "text-green-600 border-green-200 hover:bg-green-50"
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                        }
+                        onClick={() => markAsChecked(reservation.id)}
+                        disabled={loadingActions[reservation.id] === 'check'}
+                      >
+                        {loadingActions[reservation.id] === 'check' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckIcon className="h-4 w-4 mr-2" />
+                            {reservation.checkCount && reservation.checkCount > 0 ? 'Checked' : 'Marcar como check'}
+                          </>
+                        )}
+                      </Button>
+
+                      {/* Botón Marcar como pagado */}
+                      <Button
+                        size="sm"
+                        variant={reservation.paymentStatus === 'pagado' ? "outline" : "default"}
+                        className={reservation.paymentStatus === 'pagado'
+                          ? "text-green-600 border-green-200 hover:bg-green-50"
+                          : "bg-green-600 hover:bg-green-700 text-white"
+                        }
+                        onClick={() => markAsPaid(reservation.id)}
+                        disabled={loadingActions[reservation.id] === 'payment' || reservation.paymentStatus === 'pagado'}
+                      >
+                        {loadingActions[reservation.id] === 'payment' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            {reservation.paymentStatus === 'pagado' ? 'Pagado' : 'Marcar como pagado'}
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
