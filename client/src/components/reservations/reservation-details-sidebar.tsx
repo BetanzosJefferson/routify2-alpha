@@ -326,7 +326,7 @@ export function ReservationDetailsSidebar({
     console.log('[markAsPaid] Estado actual loadingActions:', loadingActions);
     
     // Prevenir múltiples clics
-    if (loadingActions[reservationId] !== null) {
+    if (loadingActions[reservationId] === 'payment' || loadingActions[reservationId] === 'check') {
       console.log('[markAsPaid] Cancelando - ya hay acción en progreso:', loadingActions[reservationId]);
       return;
     }
