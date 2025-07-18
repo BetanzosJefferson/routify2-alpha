@@ -425,7 +425,7 @@ export function ReservationList() {
     onSuccess: (data) => {
       toast({
         title: "Reservación cancelada con reembolso",
-        description: `La reservación ha sido cancelada y se ha procesado un reembolso de ${formatPrice(data.refundAmount)}.`,
+        description: data.message || "La reservación ha sido cancelada y se ha procesado el reembolso correctamente.",
       });
 
       // Invalidate queries
