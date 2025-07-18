@@ -3833,9 +3833,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactionsFromOtherUsers = refundableTransactions.filter(t => t.assigned_to !== user.id);
       
       if (transactionsFromOtherUsers.length > 0) {
-        // Obtener información del usuario que creó la transacción original
-        const originalCreator = await storage.getUser(transactionsFromOtherUsers[0].assigned_to);
-        const creatorName = originalCreator ? `${originalCreator.firstName} ${originalCreator.lastName}` : 'usuario desconocido';
+        // Obtener información del usuario que creó la transacción original usando consulta directa
+        const originalCreatorId = transactionsFromOtherUsers[0].assigned_to;
+        const originalCreator = await db.select().from(schema.users).where(eq(schema.users.id, originalCreatorId)).limit(1);
+        const creatorName = originalCreator.length > 0 ? `${originalCreator[0].firstName} ${originalCreator[0].lastName}` : 'usuario desconocido';
         
         return res.status(400).json({ 
           error: `Solo el usuario que creó la transacción original puede procesarla. La transacción fue creada por: ${creatorName}. Solicite a ese usuario que realice el reembolso.`,
