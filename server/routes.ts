@@ -5513,6 +5513,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar el usuario
       const updatedUser = await storage.updateUser(id, updateData);
       
+      // Si se actualizó el usuario que está actualmente logueado, actualizar la sesión
+      if (req.user && req.user.id === id) {
+        console.log('[User Update] Actualizando sesión del usuario activo');
+        // Actualizar los datos en la sesión
+        req.user.commissionPercentage = updatedUser.commissionPercentage;
+        req.user.commissionEnabled = updatedUser.commissionEnabled;
+        req.user.cashBoxEnabled = updatedUser.cashBoxEnabled;
+        req.user.email = updatedUser.email;
+        
+        // Guardar la sesión actualizada
+        await new Promise((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) reject(err);
+            else resolve(null);
+          });
+        });
+        
+        console.log('[User Update] Sesión actualizada correctamente');
+      }
+      
       res.json(updatedUser);
     } catch (error) {
       console.error(`Error al actualizar usuario con ID ${req.params.id}:`, error);
