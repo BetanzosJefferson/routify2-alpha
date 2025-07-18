@@ -310,6 +310,11 @@ export function ReservationDetailsSidebar({
         console.log('[markAsChecked] Éxito - invalidando caché...');
         // Invalidar caché para refrescar los datos
         await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+        
+        // Limpiar el estado loading después de la actualización exitosa
+        console.log('[markAsChecked] Limpiando estado loading después de actualización exitosa...');
+        setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
+        
         toast({
           title: "Reservación marcada como check",
           description: "La reservación ha sido marcada como check correctamente.",
@@ -331,8 +336,6 @@ export function ReservationDetailsSidebar({
       console.log('[markAsChecked] Error - limpiando estado loading para permitir retry...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
-    
-    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Función para marcar reservación como pagada
@@ -363,6 +366,11 @@ export function ReservationDetailsSidebar({
         console.log('[markAsPaid] Éxito - invalidando caché...');
         // Invalidar caché para refrescar los datos
         await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+        
+        // Limpiar el estado loading después de la actualización exitosa
+        console.log('[markAsPaid] Limpiando estado loading después de actualización exitosa...');
+        setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
+        
         toast({
           title: "Reservación marcada como pagada",
           description: "La reservación ha sido marcada como pagada correctamente.",
@@ -384,8 +392,6 @@ export function ReservationDetailsSidebar({
       console.log('[markAsPaid] Error - limpiando estado loading para permitir retry...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
-    
-    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Cargar datos al montar el componente si es chofer
