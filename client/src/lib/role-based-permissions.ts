@@ -246,6 +246,12 @@ export function hasAccessToSection(userRole: string, sectionId: string, user?: a
  * @returns Verdadero si el comisionista tiene acceso, falso en caso contrario
  */
 function hasCommissionerAccessToSection(user: any, sectionId: string): boolean {
+  // Debugging: mostrar información del usuario
+  console.log('[Commissioner Access] User:', user?.firstName, user?.lastName);
+  console.log('[Commissioner Access] Role:', user?.role);
+  console.log('[Commissioner Access] cashBoxEnabled:', user?.cashBoxEnabled);
+  console.log('[Commissioner Access] Section requested:', sectionId);
+  
   // Secciones que siempre están disponibles para comisionistas
   const alwaysAvailable = [
     "trips",
@@ -264,15 +270,19 @@ function hasCommissionerAccessToSection(user: any, sectionId: string): boolean {
   
   // Si es una sección siempre disponible, permitir acceso
   if (alwaysAvailable.includes(sectionId)) {
+    console.log('[Commissioner Access] Always available section - GRANTED');
     return true;
   }
   
   // Si es una sección de caja, verificar si tiene caja individual activada
   if (cashBoxSections.includes(sectionId)) {
-    return user && user.cashBoxEnabled === true;
+    const hasAccess = user && user.cashBoxEnabled === true;
+    console.log('[Commissioner Access] Cash box section - Access:', hasAccess);
+    return hasAccess;
   }
   
   // Por defecto, denegar acceso a otras secciones
+  console.log('[Commissioner Access] Unknown section - DENIED');
   return false;
 }
 
