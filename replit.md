@@ -119,6 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 18, 2025** - ENHANCED: Refund cancellation system with negative transaction creation and user validation:
+  - **TRANSACTION HISTORY PRESERVATION**: "Cancelar con reembolso" now creates negative transactions instead of deleting original ones
+  - **NEGATIVE TRANSACTION LOGIC**: Creates identical transaction with negative amount (original $200 → new -$200)
+  - **USER VALIDATION**: Only the user who created the original transaction can process the refund
+  - **ALERT SYSTEM**: Shows alert when different user attempts refund: "Solo el usuario que creó la transacción original puede procesarla"
+  - **CREATOR IDENTIFICATION**: Displays original creator's name in error message for proper workflow
+  - **BACKEND ENHANCEMENT**: Modified `/api/reservations/:id/cancel-refund` endpoint with comprehensive validation
+  - **FRONTEND UPDATES**: Updated both reservation list dropdown and details modal to handle new error responses
+  - **TRANSACTION METADATA**: Refund transactions include `esReembolso: true`, `transaccionOriginalId`, and `motivoReembolso` fields
+  - **AUDIT TRAIL**: Maintains complete transaction history for accounting and audit purposes
+  - **BUSINESS LOGIC**: Ensures proper financial workflow where only transaction creators can authorize refunds
+
 - **July 18, 2025** - ENHANCED: Conditional "Cancelar con reembolso" visibility based on payment status:
   - **BUSINESS LOGIC IMPROVEMENT**: "Cancelar con reembolso" option now only appears when there's actually something to refund
   - **RESERVATION LIST DROPDOWN**: Added conditional rendering for "Cancelar con reembolso" menu item
