@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 18, 2025** - COMPLETED: New refund system implementation with negative transactions for complete audit trail:
+  - **REFUND LOGIC IMPROVEMENT**: "Cancelar con reembolso" now creates negative transactions instead of deleting original ones
+  - **AUDIT TRAIL PRESERVATION**: Original transactions remain intact for complete financial tracking
+  - **NEGATIVE TRANSACTION CREATION**: New transactions with negative amounts maintain same structure but opposite value
+  - **USER TRACKING**: Refund transactions record both original transaction ID and user who executed refund
+  - **COMPANY CONSISTENCY**: Refund transactions inherit company_id from original transaction for data integrity
+  - **FRONTEND SUPPORT**: Added "reservation_refund" type recognition in cash box component
+  - **TRANSACTION PROCESSING**: Fixed user_id and company_id field mapping issues in refund creation
+  - **COMPREHENSIVE DISPLAY**: Refund transactions now properly appear in user's cash box with negative amounts
+  - **ACCOUNTING ACCURACY**: System maintains complete record of payments and refunds without data loss
+
 - **July 18, 2025** - ENHANCED: Conditional "Cancelar con reembolso" visibility based on payment status:
   - **BUSINESS LOGIC IMPROVEMENT**: "Cancelar con reembolso" option now only appears when there's actually something to refund
   - **RESERVATION LIST DROPDOWN**: Added conditional rendering for "Cancelar con reembolso" menu item

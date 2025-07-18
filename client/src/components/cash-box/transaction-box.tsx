@@ -74,7 +74,7 @@ interface PackageDetails extends TransactionDetails {
 interface Transaction {
   id: number;
   detalles: {
-    type: "reservation" | "package" | "reservation-final-payment" | "package-final-payment";
+    type: "reservation" | "package" | "reservation-final-payment" | "package-final-payment" | "reservation_refund";
     details: TransactionDetails;
   };
   usuario_id: number; // Nombre en español que viene del cliente
@@ -299,7 +299,7 @@ const TransactionBox: React.FC = () => {
               }
               
               // Validar y mostrar todos los tipos de transacciones
-              if (transactionType === "reservation" || transactionType === "reservation-final-payment") {
+              if (transactionType === "reservation" || transactionType === "reservation-final-payment" || transactionType === "reservation_refund") {
                 console.log("Añadiendo transacción de reservación:", transaction.id);
                 reservations.push(transaction as Transaction);
               } else if (transactionType === "package" || transactionType === "package-final-payment") {
