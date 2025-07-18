@@ -283,6 +283,11 @@ export function ReservationDetailsSidebar({
 
   // Función para marcar reservación como checked
   const markAsChecked = async (reservationId: number) => {
+    // Prevenir múltiples clics
+    if (loadingActions[reservationId] !== null) {
+      return;
+    }
+    
     setLoadingActions(prev => ({ ...prev, [reservationId]: 'check' }));
     try {
       const response = await fetch(`/api/reservations/${reservationId}/check`, {
@@ -300,12 +305,14 @@ export function ReservationDetailsSidebar({
           description: "La reservación ha sido marcada como check correctamente.",
         });
       } else {
-        throw new Error('Error al marcar como check');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al marcar como check');
       }
     } catch (error) {
+      console.error('Error al marcar reservación como check:', error);
       toast({
         title: "Error",
-        description: "No se pudo marcar la reservación como check. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo marcar la reservación como check. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -315,9 +322,14 @@ export function ReservationDetailsSidebar({
 
   // Función para marcar reservación como pagada
   const markAsPaid = async (reservationId: number) => {
+    // Prevenir múltiples clics
+    if (loadingActions[reservationId] !== null) {
+      return;
+    }
+    
     setLoadingActions(prev => ({ ...prev, [reservationId]: 'payment' }));
     try {
-      const response = await fetch(`/api/reservations/${reservationId}/mark-as-paid`, {
+      const response = await fetch(`/api/reservations/${reservationId}/pay`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -332,12 +344,14 @@ export function ReservationDetailsSidebar({
           description: "La reservación ha sido marcada como pagada correctamente.",
         });
       } else {
-        throw new Error('Error al marcar como pagada');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al marcar como pagada');
       }
     } catch (error) {
+      console.error('Error al marcar reservación como pagada:', error);
       toast({
         title: "Error",
-        description: "No se pudo marcar la reservación como pagada. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo marcar la reservación como pagada. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -745,7 +759,10 @@ export function ReservationDetailsSidebar({
                           : "bg-blue-600 hover:bg-blue-700 text-white"
                         }
                         onClick={() => markAsChecked(reservation.id)}
-                        disabled={loadingActions[reservation.id] === 'check'}
+                        disabled={
+                          loadingActions[reservation.id] === 'check' ||
+                          loadingActions[reservation.id] !== null
+                        }
                       >
                         {loadingActions[reservation.id] === 'check' ? (
                           <>
@@ -769,7 +786,11 @@ export function ReservationDetailsSidebar({
                           : "bg-green-600 hover:bg-green-700 text-white"
                         }
                         onClick={() => markAsPaid(reservation.id)}
-                        disabled={loadingActions[reservation.id] === 'payment' || reservation.paymentStatus === 'pagado'}
+                        disabled={
+                          loadingActions[reservation.id] === 'payment' || 
+                          reservation.paymentStatus === 'pagado' ||
+                          loadingActions[reservation.id] !== null
+                        }
                       >
                         {loadingActions[reservation.id] === 'payment' ? (
                           <>
