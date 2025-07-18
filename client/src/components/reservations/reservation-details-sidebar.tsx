@@ -329,12 +329,11 @@ export function ReservationDetailsSidebar({
     
     setLoadingActions(prev => ({ ...prev, [reservationId]: 'payment' }));
     try {
-      const response = await fetch(`/api/reservations/${reservationId}/pay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiRequest(
+        "PUT",
+        `/api/reservations/${reservationId}`,
+        { paymentStatus: "pagado" }
+      );
 
       if (response.ok) {
         // Invalidar caché para refrescar los datos

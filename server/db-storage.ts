@@ -2028,28 +2028,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedReservation;
   }
-
-  async markAsPaid(id: number, userId: number): Promise<Reservation | undefined> {
-    console.log(`DB Storage: Marcando reservación ${id} como pagada por usuario ${userId}`);
-    
-    const [updatedReservation] = await db
-      .update(schema.reservations)
-      .set({
-        paymentStatus: 'pagado',
-        paidBy: userId,
-        markedAsPaidAt: new Date()
-      })
-      .where(eq(schema.reservations.id, id))
-      .returning();
-    
-    if (updatedReservation) {
-      console.log(`DB Storage: Reservación ${id} marcada como pagada exitosamente`);
-    } else {
-      console.log(`DB Storage: No se pudo marcar la reservación ${id} como pagada`);
-    }
-    
-    return updatedReservation;
-  }
   
   async deleteReservation(id: number): Promise<boolean> {
     const result = await db
