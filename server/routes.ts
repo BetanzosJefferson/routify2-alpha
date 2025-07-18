@@ -3880,10 +3880,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Crear la transacción de reembolso
           const refundTransaction = await storage.createTransaccion({
             details: refundTransactionData,
-            userId: user.id, // Usuario actual que ejecuta el reembolso
-            companyId: user.companyId || user.company,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            user_id: user.id, // Usar user_id en lugar de userId
+            company_id: user.companyId || user.company,
+            created_at: new Date(),
+            updated_at: new Date()
           });
 
           if (refundTransaction) {
