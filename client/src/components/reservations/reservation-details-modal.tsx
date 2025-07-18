@@ -184,16 +184,38 @@ export default function ReservationDetailsModal({
   };
 
   // Función para cancelar con reembolso
-  const cancelWithRefund = async () => {
+  const cancelWithRefund = async (forceRefund: boolean = false) => {
     if (!reservationId || !user) return;
     
     setIsCancelingWithRefund(true);
     
     try {
-      const response = await apiRequest("POST", `/api/reservations/${reservationId}/cancel-refund`);
+      const response = await apiRequest("POST", `/api/reservations/${reservationId}/cancel-refund`, {
+        forceRefund
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Manejo específico del error de reembolso cruzado
+        if (errorData.error === "cross_user_refund") {
+          // Mostrar confirmación al usuario
+          const confirmRefund = window.confirm(
+            `${errorData.message}\n\n¿Está seguro que desea continuar con el reembolso?`
+          );
+          
+          if (confirmRefund) {
+            // Llamar nuevamente con forzar reembolso
+            setIsCancelingWithRefund(false);
+            await cancelWithRefund(true);
+            return;
+          } else {
+            // Usuario canceló la operación
+            setIsCancelingWithRefund(false);
+            return;
+          }
+        }
+        
         throw new Error(errorData.message || "Error al cancelar con reembolso");
       }
       

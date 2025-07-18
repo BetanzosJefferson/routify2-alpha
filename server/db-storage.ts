@@ -2514,6 +2514,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUsersByIds(ids: number[]): Promise<schema.User[]> {
+    console.log(`DB Storage: Consultando usuarios por IDs: ${ids.join(', ')}`);
+    
+    try {
+      const users = await db
+        .select()
+        .from(schema.users)
+        .where(inArray(schema.users.id, ids));
+      
+      console.log(`DB Storage: Usuarios encontrados para IDs [${ids.join(', ')}]: ${users.length}`);
+      return users;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener usuarios por IDs [${ids.join(', ')}]:`, error);
+      throw error;
+    }
+  }
+
   async getUsersByCompany(companyId: string): Promise<schema.User[]> {
     console.log(`DB Storage: Consultando usuarios por compañía: ${companyId}`);
     

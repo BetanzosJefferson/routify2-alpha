@@ -3789,6 +3789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id, 10);
       const { user } = req as any;
+      const { forceRefund } = req.body; // Parámetro para forzar reembolso
 
       console.log(`[POST /reservations/${id}/cancel-refund] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
 
@@ -3827,6 +3828,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           error: "No se encontraron transacciones sin corte que puedan ser reembolsadas" 
         });
+      }
+
+      // Verificar si hay transacciones que no fueron creadas por el usuario actual
+      // Solo realizar esta validación si no se ha forzado el reembolso
+      if (!forceRefund) {
+        const transactionsFromOtherUsers = refundableTransactions.filter(t => t.user_id !== user.id);
+        
+        if (transactionsFromOtherUsers.length > 0) {
+          // Obtener información de los usuarios que crearon las transacciones
+          const userIds = [...new Set(transactionsFromOtherUsers.map(t => t.user_id))];
+          const transactionCreators = await storage.getUsersByIds(userIds);
+          
+          const creatorNames = transactionCreators.map(u => `${u.firstName} ${u.lastName}`).join(', ');
+          
+          return res.status(409).json({
+            error: "cross_user_refund",
+            message: `Algunas transacciones de esta reservación fueron creadas por otros usuarios: ${creatorNames}. ¿Desea continuar con el reembolso?`,
+            details: {
+              totalTransactions: refundableTransactions.length,
+              transactionsFromOtherUsers: transactionsFromOtherUsers.length,
+              creatorNames: creatorNames
+            }
+          });
+        }
       }
 
       // Cancelar reservación (igual que cancelación normal)

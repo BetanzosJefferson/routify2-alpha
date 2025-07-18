@@ -378,16 +378,39 @@ export function ReservationList() {
 
   // Cancel reservation with refund mutation
   const cancelReservationWithRefundMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/reservations/${id}/cancel-refund`, {
+    mutationFn: async (data: { id: number, forceRefund?: boolean }) => {
+      const response = await fetch(`/api/reservations/${data.id}/cancel-refund`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          forceRefund: data.forceRefund || false
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Manejo específico del error de reembolso cruzado
+        if (errorData.error === "cross_user_refund") {
+          // Mostrar confirmación al usuario
+          const confirmRefund = window.confirm(
+            `${errorData.message}\n\n¿Está seguro que desea continuar con el reembolso?`
+          );
+          
+          if (confirmRefund) {
+            // Llamar nuevamente con forzar reembolso
+            return await cancelReservationWithRefundMutation.mutateAsync({
+              id: data.id,
+              forceRefund: true
+            });
+          } else {
+            // Usuario canceló la operación
+            throw new Error("Operación cancelada por el usuario");
+          }
+        }
+        
         throw new Error(errorData.error || 'Error al cancelar la reservación con reembolso');
       }
 
@@ -408,11 +431,13 @@ export function ReservationList() {
       setConfirmingDelete(null);
     },
     onError: (error) => {
-      toast({
-        title: "Error al cancelar reservación con reembolso",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message !== "Operación cancelada por el usuario") {
+        toast({
+          title: "Error al cancelar reservación con reembolso",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -538,7 +563,7 @@ export function ReservationList() {
       if (confirmationType === 'cancel') {
         cancelReservationMutation.mutate(confirmingDelete);
       } else if (confirmationType === 'cancel-refund') {
-        cancelReservationWithRefundMutation.mutate(confirmingDelete);
+        cancelReservationWithRefundMutation.mutate({ id: confirmingDelete });
       } else {
         deleteReservationMutation.mutate(confirmingDelete);
       }
