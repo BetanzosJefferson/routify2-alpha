@@ -765,68 +765,64 @@ export function ReservationDetailsSidebar({
 
                     {/* Botones de acción */}
                     <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                      {/* Botón Marcar como check - solo mostrar si no está checked */}
+                      {!(reservation.checkCount && reservation.checkCount > 0) && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => markAsChecked(reservation.id)}
+                          disabled={
+                            loadingActions[reservation.id] === 'check' ||
+                            loadingActions[reservation.id] === 'payment'
+                          }
+                        >
+                          {loadingActions[reservation.id] === 'check' ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Procesando...
+                            </>
+                          ) : (
+                            <>
+                              <CheckIcon className="h-4 w-4 mr-2" />
+                              Marcar como check
+                            </>
+                          )}
+                        </Button>
+                      )}
 
-                      {/* Botón Marcar como check */}
-                      <Button
-                        size="sm"
-                        variant={reservation.checkCount && reservation.checkCount > 0 ? "outline" : "default"}
-                        className={reservation.checkCount && reservation.checkCount > 0 
-                          ? "text-green-600 border-green-200 hover:bg-green-50"
-                          : "bg-blue-600 hover:bg-blue-700 text-white"
-                        }
-                        onClick={() => markAsChecked(reservation.id)}
-                        disabled={
-                          loadingActions[reservation.id] === 'check' ||
-                          loadingActions[reservation.id] !== null
-                        }
-                      >
-                        {loadingActions[reservation.id] === 'check' ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Procesando...
-                          </>
-                        ) : (
-                          <>
-                            <CheckIcon className="h-4 w-4 mr-2" />
-                            {reservation.checkCount && reservation.checkCount > 0 ? 'Checked' : 'Marcar como check'}
-                          </>
-                        )}
-                      </Button>
-
-                      {/* Botón Marcar como pagado */}
-                      <Button
-                        size="sm"
-                        variant={reservation.paymentStatus === 'pagado' ? "outline" : "default"}
-                        className={reservation.paymentStatus === 'pagado'
-                          ? "text-green-600 border-green-200 hover:bg-green-50"
-                          : "bg-green-600 hover:bg-green-700 text-white"
-                        }
-                        onClick={() => {
-                          console.log('[Button Click] Reservación ID:', reservation.id);
-                          console.log('[Button Click] Payment Status:', reservation.paymentStatus);
-                          console.log('[Button Click] Loading Actions:', loadingActions);
-                          console.log('[Button Click] Is Loading Payment:', loadingActions[reservation.id] === 'payment');
-                          console.log('[Button Click] Is Paid:', reservation.paymentStatus === 'pagado');
-                          markAsPaid(reservation.id);
-                        }}
-                        disabled={
-                          loadingActions[reservation.id] === 'payment' || 
-                          loadingActions[reservation.id] === 'check' ||
-                          reservation.paymentStatus === 'pagado'
-                        }
-                      >
-                        {loadingActions[reservation.id] === 'payment' ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Procesando...
-                          </>
-                        ) : (
-                          <>
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            {reservation.paymentStatus === 'pagado' ? 'Pagado' : 'Marcar como pagado'}
-                          </>
-                        )}
-                      </Button>
+                      {/* Botón Marcar como pagado - solo mostrar si no está pagado */}
+                      {reservation.paymentStatus !== 'pagado' && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => {
+                            console.log('[Button Click] Reservación ID:', reservation.id);
+                            console.log('[Button Click] Payment Status:', reservation.paymentStatus);
+                            console.log('[Button Click] Loading Actions:', loadingActions);
+                            console.log('[Button Click] Is Loading Payment:', loadingActions[reservation.id] === 'payment');
+                            console.log('[Button Click] Is Paid:', reservation.paymentStatus === 'pagado');
+                            markAsPaid(reservation.id);
+                          }}
+                          disabled={
+                            loadingActions[reservation.id] === 'payment' || 
+                            loadingActions[reservation.id] === 'check'
+                          }
+                        >
+                          {loadingActions[reservation.id] === 'payment' ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Procesando...
+                            </>
+                          ) : (
+                            <>
+                              <DollarSign className="h-4 w-4 mr-2" />
+                              Marcar como pagado
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
