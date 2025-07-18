@@ -787,8 +787,7 @@ export function ReservationDetailsSidebar({
                         onClick={() => markAsPaid(reservation.id)}
                         disabled={
                           loadingActions[reservation.id] === 'payment' || 
-                          reservation.paymentStatus === 'pagado' ||
-                          loadingActions[reservation.id] !== null
+                          reservation.paymentStatus === 'pagado'
                         }
                       >
                         {loadingActions[reservation.id] === 'payment' ? (
