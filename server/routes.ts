@@ -4922,6 +4922,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // =========== ENDPOINT TEMPORAL PARA DIAGNOSTICAR USUARIO ===========
+  
+  // Endpoint temporal para diagnosticar estado del usuario
+  app.get(apiRouter('/auth/user-debug'), isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      console.log('[USER DEBUG] Estado completo del usuario:', {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        cashBoxEnabled: user.cashBoxEnabled,
+        commissionEnabled: user.commissionEnabled,
+        commissionPercentage: user.commissionPercentage,
+        company: user.company,
+        companyId: user.companyId,
+        sessionId: req.sessionID
+      });
+      
+      res.json({
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          cashBoxEnabled: user.cashBoxEnabled,
+          commissionEnabled: user.commissionEnabled,
+          commissionPercentage: user.commissionPercentage,
+          company: user.company,
+          companyId: user.companyId
+        },
+        session: {
+          id: req.sessionID,
+          cookie: req.session.cookie
+        }
+      });
+    } catch (error) {
+      console.error('[USER DEBUG] Error:', error);
+      res.status(500).json({ error: 'Error al obtener información del usuario' });
+    }
+  });
+  
   // =========== RUTAS PARA SOLICITUDES DE RESERVACIÓN ===========
   
   // Crear una solicitud de reservación (para comisionistas)
@@ -5516,6 +5558,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Si se actualizó el usuario que está actualmente logueado, actualizar la sesión
       if (req.user && req.user.id === id) {
         console.log('[User Update] Actualizando sesión del usuario activo');
+        console.log('[User Update] Datos antes de actualizar:', {
+          commissionPercentage: req.user.commissionPercentage,
+          commissionEnabled: req.user.commissionEnabled,
+          cashBoxEnabled: req.user.cashBoxEnabled
+        });
+        console.log('[User Update] Datos nuevos desde BD:', {
+          commissionPercentage: updatedUser.commissionPercentage,
+          commissionEnabled: updatedUser.commissionEnabled,
+          cashBoxEnabled: updatedUser.cashBoxEnabled
+        });
+        
         // Actualizar los datos en la sesión
         req.user.commissionPercentage = updatedUser.commissionPercentage;
         req.user.commissionEnabled = updatedUser.commissionEnabled;
@@ -5531,6 +5584,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         console.log('[User Update] Sesión actualizada correctamente');
+        console.log('[User Update] Datos después de actualizar:', {
+          commissionPercentage: req.user.commissionPercentage,
+          commissionEnabled: req.user.commissionEnabled,
+          cashBoxEnabled: req.user.cashBoxEnabled
+        });
       }
       
       res.json(updatedUser);
