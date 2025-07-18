@@ -322,20 +322,30 @@ export function ReservationDetailsSidebar({
 
   // Función para marcar reservación como pagada
   const markAsPaid = async (reservationId: number) => {
+    console.log('[markAsPaid] Iniciando proceso para reservación:', reservationId);
+    console.log('[markAsPaid] Estado actual loadingActions:', loadingActions);
+    
     // Prevenir múltiples clics
     if (loadingActions[reservationId] !== null) {
+      console.log('[markAsPaid] Cancelando - ya hay acción en progreso:', loadingActions[reservationId]);
       return;
     }
     
+    console.log('[markAsPaid] Estableciendo estado de loading...');
     setLoadingActions(prev => ({ ...prev, [reservationId]: 'payment' }));
+    
     try {
+      console.log('[markAsPaid] Enviando petición PUT a /api/reservations/' + reservationId);
       const response = await apiRequest(
         "PUT",
         `/api/reservations/${reservationId}`,
         { paymentStatus: "pagado" }
       );
 
+      console.log('[markAsPaid] Respuesta recibida:', response);
+      
       if (response.ok) {
+        console.log('[markAsPaid] Éxito - invalidando caché...');
         // Invalidar caché para refrescar los datos
         await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
         toast({
@@ -344,16 +354,18 @@ export function ReservationDetailsSidebar({
         });
       } else {
         const errorData = await response.json().catch(() => ({}));
+        console.error('[markAsPaid] Error en respuesta:', errorData);
         throw new Error(errorData.message || 'Error al marcar como pagada');
       }
     } catch (error) {
-      console.error('Error al marcar reservación como pagada:', error);
+      console.error('[markAsPaid] Error capturado:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo marcar la reservación como pagada. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
+      console.log('[markAsPaid] Finalizando - limpiando estado loading...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
   };
@@ -784,7 +796,14 @@ export function ReservationDetailsSidebar({
                           ? "text-green-600 border-green-200 hover:bg-green-50"
                           : "bg-green-600 hover:bg-green-700 text-white"
                         }
-                        onClick={() => markAsPaid(reservation.id)}
+                        onClick={() => {
+                          console.log('[Button Click] Reservación ID:', reservation.id);
+                          console.log('[Button Click] Payment Status:', reservation.paymentStatus);
+                          console.log('[Button Click] Loading Actions:', loadingActions);
+                          console.log('[Button Click] Is Loading Payment:', loadingActions[reservation.id] === 'payment');
+                          console.log('[Button Click] Is Paid:', reservation.paymentStatus === 'pagado');
+                          markAsPaid(reservation.id);
+                        }}
                         disabled={
                           loadingActions[reservation.id] === 'payment' || 
                           reservation.paymentStatus === 'pagado'
