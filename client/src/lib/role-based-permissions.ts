@@ -148,6 +148,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   ],
   [UserRole.CHECKER]: [
     "trips",
+    "reservations",
     "reservations-list",
     "notifications",
     "packages",
@@ -157,6 +158,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   ],
   "checador": [ // Alias en español para CHECKER
     "trips",
+    "reservations",
     "reservations-list",
     "notifications",
     "packages",
