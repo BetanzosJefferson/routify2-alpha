@@ -558,8 +558,9 @@ export function ReservationList() {
               <UserIcon className="h-5 w-5 text-blue-600" />
               <CardTitle className="text-lg">
                 {(() => {
-                  console.log('[DEBUG] User role:', user?.role);
-                  return user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones';
+                  const title = user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones';
+                  console.log('[DEBUG] Title calculation:', { userRole: user?.role, title });
+                  return title;
                 })()}
               </CardTitle>
             </div>
