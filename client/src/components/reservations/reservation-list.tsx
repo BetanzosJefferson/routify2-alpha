@@ -994,16 +994,19 @@ export function ReservationList() {
                                     <X className="mr-2 h-4 w-4" />
                                     Cancelar
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openDeleteConfirm(reservation.id, 'cancel-refund');
-                                    }}
-                                    className="text-red-600"
-                                  >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Cancelar con reembolso
-                                  </DropdownMenuItem>
+                                  {/* Solo mostrar "Cancelar con reembolso" si hay anticipo o está pagada */}
+                                  {((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDeleteConfirm(reservation.id, 'cancel-refund');
+                                      }}
+                                      className="text-red-600"
+                                    >
+                                      <X className="mr-2 h-4 w-4" />
+                                      Cancelar con reembolso
+                                    </DropdownMenuItem>
+                                  )}
                                 </>
                               )}
                             </>

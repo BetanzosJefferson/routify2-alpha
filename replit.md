@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 18, 2025** - ENHANCED: Conditional "Cancelar con reembolso" visibility based on payment status:
+  - **BUSINESS LOGIC IMPROVEMENT**: "Cancelar con reembolso" option now only appears when there's actually something to refund
+  - **RESERVATION LIST DROPDOWN**: Added conditional rendering for "Cancelar con reembolso" menu item
+  - **RESERVATION DETAILS MODAL**: Enhanced button visibility logic for refund cancellation
+  - **CONDITION LOGIC**: Option shows only when `(reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado'`
+  - **USER EXPERIENCE**: Prevents confusion by hiding refund option when no payment has been made
+  - **COMPREHENSIVE COVERAGE**: Applied to both dropdown menu in reservation list and modal footer buttons
+  - **SECURITY ENHANCEMENT**: Maintains existing role-based permissions while adding payment-based conditions
+
 - **July 18, 2025** - ENHANCED: Conditional access system for comisionistas based on individual cash box configuration:
   - **CONDITIONAL PERMISSIONS**: Modified `hasAccessToSection` function to handle comisionista role conditionally
   - **CASH BOX DEPENDENT**: Comisionistas can only access cash-related sections if `cashBoxEnabled: true`

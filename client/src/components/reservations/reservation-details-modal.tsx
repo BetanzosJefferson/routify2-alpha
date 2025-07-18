@@ -1531,8 +1531,9 @@ export default function ReservationDetailsModal({
                       </Button>
                     )}
 
-                    {/* Botón Cancelar con reembolso */}
-                    {hasRequiredRole(user, ['superAdmin', 'admin', 'dueño']) && (
+                    {/* Botón Cancelar con reembolso - Solo si hay anticipo o está pagada */}
+                    {hasRequiredRole(user, ['superAdmin', 'admin', 'dueño']) && 
+                     ((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
                       <Button
                         className="w-full sm:w-auto text-sm bg-orange-600 hover:bg-orange-700"
                         onClick={cancelWithRefund}
