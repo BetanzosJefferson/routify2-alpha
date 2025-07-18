@@ -557,7 +557,10 @@ export function ReservationList() {
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-blue-600" />
               <CardTitle className="text-lg">
-                {user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones'}
+                {(() => {
+                  console.log('[DEBUG] User role:', user?.role);
+                  return user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones';
+                })()}
               </CardTitle>
             </div>
           </div>
