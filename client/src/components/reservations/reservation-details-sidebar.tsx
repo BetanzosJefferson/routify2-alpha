@@ -365,10 +365,13 @@ export function ReservationDetailsSidebar({
         description: error instanceof Error ? error.message : "No se pudo marcar la reservación como pagada. Inténtalo de nuevo.",
         variant: "destructive",
       });
-    } finally {
-      console.log('[markAsPaid] Finalizando - limpiando estado loading...');
+      
+      // Solo limpiar el estado loading si hay error para permitir retry
+      console.log('[markAsPaid] Error - limpiando estado loading para permitir retry...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
+    
+    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Cargar datos al montar el componente si es chofer
@@ -762,12 +765,7 @@ export function ReservationDetailsSidebar({
 
                     {/* Botones de acción */}
                     <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                      {/* DEBUG: Estado de la reservación antes de renderizar botones */}
-                      {console.log('[DEBUG] Reservación', reservation.id, {
-                        paymentStatus: reservation.paymentStatus,
-                        loadingActions: loadingActions[reservation.id],
-                        isDisabled: loadingActions[reservation.id] === 'payment' || reservation.paymentStatus === 'pagado'
-                      })}
+
                       {/* Botón Marcar como check */}
                       <Button
                         size="sm"
@@ -813,6 +811,7 @@ export function ReservationDetailsSidebar({
                         }}
                         disabled={
                           loadingActions[reservation.id] === 'payment' || 
+                          loadingActions[reservation.id] === 'check' ||
                           reservation.paymentStatus === 'pagado'
                         }
                       >
