@@ -227,11 +227,53 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
 };
 
 // Función para verificar si un usuario tiene acceso a una sección
-export function hasAccessToSection(userRole: string, sectionId: string): boolean {
+export function hasAccessToSection(userRole: string, sectionId: string, user?: any): boolean {
   if (!userRole || !sectionId) return false;
+  
+  // Para comisionistas, verificar permisos condicionales basados en cashBoxEnabled
+  if (userRole === 'comisionista' || userRole === 'commissioner') {
+    return hasCommissionerAccessToSection(user, sectionId);
+  }
   
   const allowedSections = ROLE_SECTION_PERMISSIONS[userRole] || [];
   return allowedSections.includes(sectionId);
+}
+
+/**
+ * Comprueba si un comisionista tiene acceso a una sección específica basado en su configuración
+ * @param user - Usuario comisionista
+ * @param sectionId - ID de la sección a verificar
+ * @returns Verdadero si el comisionista tiene acceso, falso en caso contrario
+ */
+function hasCommissionerAccessToSection(user: any, sectionId: string): boolean {
+  // Secciones que siempre están disponibles para comisionistas
+  const alwaysAvailable = [
+    "trips",
+    "my-commissions",
+    "reservation-requests",
+    "notifications"
+  ];
+  
+  // Secciones que requieren caja individual activada
+  const cashBoxSections = [
+    "reservations",
+    "cash-register", 
+    "cash-box",
+    "cutoff-history"
+  ];
+  
+  // Si es una sección siempre disponible, permitir acceso
+  if (alwaysAvailable.includes(sectionId)) {
+    return true;
+  }
+  
+  // Si es una sección de caja, verificar si tiene caja individual activada
+  if (cashBoxSections.includes(sectionId)) {
+    return user && user.cashBoxEnabled === true;
+  }
+  
+  // Por defecto, denegar acceso a otras secciones
+  return false;
 }
 
 // Función para obtener todas las secciones permitidas para un rol

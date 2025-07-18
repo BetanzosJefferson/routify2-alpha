@@ -18,7 +18,7 @@ export default function CommissionsPage() {
   // Función para determinar si el usuario tiene acceso a esta sección
   const canAccess = (section: string): boolean => {
     if (!user) return false;
-    return hasAccessToSection(user.role, section);
+    return hasAccessToSection(user.role, section, user);
   };
 
   // Si el usuario no tiene acceso, mostrar mensaje de acceso denegado

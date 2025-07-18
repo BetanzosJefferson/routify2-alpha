@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 18, 2025** - ENHANCED: Conditional access system for comisionistas based on individual cash box configuration:
+  - **CONDITIONAL PERMISSIONS**: Modified `hasAccessToSection` function to handle comisionista role conditionally
+  - **CASH BOX DEPENDENT**: Comisionistas can only access cash-related sections if `cashBoxEnabled: true`
+  - **ALWAYS AVAILABLE**: Comisionistas always have access to "trips", "my-commissions", "reservation-requests", "notifications"
+  - **CONDITIONAL SECTIONS**: Access to "reservations", "cash-register", "cash-box", "cutoff-history" requires `cashBoxEnabled: true`
+  - **FUNCTION PARAMETERS**: Enhanced `hasAccessToSection` to accept optional `user` parameter for conditional logic
+  - **SYSTEM-WIDE UPDATE**: Updated all components (sidebar, topbar, dashboard, pages) to pass user object for conditional verification
+  - **INDIVIDUAL CONFIGURATION**: Each comisionista can have different access levels based on their individual cash box settings
+  - **SECURITY ENHANCEMENT**: Prevents comisionistas without cash box from accessing financial sections
+  - **BACKEND INTEGRATION**: Works with existing user management system where admin can toggle `cashBoxEnabled` for each comisionista
+
 - **July 18, 2025** - ENHANCED: Checador and Comisionista roles access to reservations with enforced personal filter:
   - **PERMISSION ADDED**: Added "reservations" permission to CHECKER, COMMISSIONER roles and their aliases ("checador", "comisionista")
   - **SIDEBAR ACCESS**: Checador and Comisionista users can now access "Reservaciones" section from sidebar navigation

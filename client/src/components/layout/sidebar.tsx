@@ -91,7 +91,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   // Función para verificar si el usuario tiene acceso a una sección
   const canAccess = (sectionId: string): boolean => {
     if (!user) return false;
-    return hasAccessToSection(user.role, sectionId);
+    return hasAccessToSection(user.role, sectionId, user);
   };
   
   return (

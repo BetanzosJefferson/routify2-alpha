@@ -45,14 +45,14 @@ export default function Dashboard() {
     
     if (tab && ["create-route", "publish-trip", "trips", "reservations", "trip-summary", "users", "vehicles", "commissions", "statistics"].includes(tab)) {
       // Solo actualizar si el usuario tiene acceso a esta sección
-      if (user && hasAccessToSection(user.role, tab)) {
+      if (user && hasAccessToSection(user.role, tab, user)) {
         setActiveTab(tab);
       } else {
         // Si no tiene acceso, buscar la primera sección a la que sí tenga acceso
         const accessibleSections = [
           "create-route", "publish-trip", "trips", "reservations", 
           "trip-summary", "users", "vehicles", "commissions", "statistics"
-        ].filter(section => hasAccessToSection(user?.role || "", section));
+        ].filter(section => hasAccessToSection(user?.role || "", section, user));
         
         if (accessibleSections.length > 0) {
           setActiveTab(accessibleSections[0] as TabType);
@@ -69,7 +69,7 @@ export default function Dashboard() {
   // Verificar si el usuario tiene acceso a la sección actual
   const canAccess = (sectionId: string): boolean => {
     if (!user) return false;
-    return hasAccessToSection(user.role, sectionId);
+    return hasAccessToSection(user.role, sectionId, user);
   };
   
   // Tab change handler for child components

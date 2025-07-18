@@ -19,7 +19,7 @@ export default function CouponsPageContainer() {
   // Verificar si el usuario tiene acceso a esta sección
   const canAccess = (sectionId: string): boolean => {
     if (!user) return false;
-    return hasAccessToSection(user.role, sectionId);
+    return hasAccessToSection(user.role, sectionId, user);
   };
 
   return (

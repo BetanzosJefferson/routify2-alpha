@@ -5,7 +5,7 @@ import TransactionHistoryPage from "@/components/transaction-history/transaction
 export default function TransactionHistoryPageRoute() {
   const { user } = useAuth();
 
-  if (!user || !hasAccessToSection(user.role, "transaction-history")) {
+  if (!user || !hasAccessToSection(user.role, "transaction-history", user)) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
