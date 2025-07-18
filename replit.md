@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 18, 2025** - ENHANCED: Checador role access to reservations with auto-filter default:
+  - **PERMISSION ADDED**: Added "reservations" permission to CHECKER role and "checador" alias
+  - **SIDEBAR ACCESS**: Checador users can now access "Reservaciones" section from sidebar navigation
+  - **AUTO-FILTER DEFAULT**: For checador role, "Reservaciones creadas por mi" filter is automatically enabled by default
+  - **ROLE-BASED BEHAVIOR**: Checador users see only their own created reservations (created_by = user.id) initially
+  - **FILTER FLEXIBILITY**: Checador users can still uncheck the filter to see all reservations if needed
+  - **NAVIGATION INTEGRATION**: Reservations section now properly visible in sidebar for checador role
+  - **CONSISTENT EXPERIENCE**: Maintains same filtering functionality while providing role-specific defaults
+
 - **July 18, 2025** - ENHANCED: Reservation list filtering system with personal reservation filter:
   - **NEW FILTER OPTION**: Added "Reservaciones creadas por mi" checkbox filter to reservation list component
   - **PERSONAL FILTERING**: Users can now filter reservations to show only those they created using the `createdBy` field

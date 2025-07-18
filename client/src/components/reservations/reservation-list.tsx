@@ -144,10 +144,12 @@ export function ReservationList() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedReservations, setSelectedReservations] = useState<number[]>([]);
-  const [showOnlyMyReservations, setShowOnlyMyReservations] = useState(false);
-
+  
   // Obtener información del usuario actual
   const { user } = useAuth();
+  
+  // Para rol checador, por defecto mostrar solo sus reservaciones
+  const [showOnlyMyReservations, setShowOnlyMyReservations] = useState(user?.role === 'checador');
 
   // Utilizar el nuevo hook especializado para cargar reservaciones
   const {
