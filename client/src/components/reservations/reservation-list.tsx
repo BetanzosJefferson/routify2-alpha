@@ -148,8 +148,10 @@ export function ReservationList() {
   // Obtener información del usuario actual
   const { user } = useAuth();
   
-  // Para rol checador, por defecto mostrar solo sus reservaciones
-  const [showOnlyMyReservations, setShowOnlyMyReservations] = useState(user?.role === 'checador');
+  // Para roles restringidos, por defecto mostrar solo sus reservaciones
+  const [showOnlyMyReservations, setShowOnlyMyReservations] = useState(
+    user?.role === 'checador' || user?.role === 'comisionista'
+  );
 
   // Utilizar el nuevo hook especializado para cargar reservaciones
   const {
@@ -557,7 +559,7 @@ export function ReservationList() {
             <div className="flex items-center gap-2">
               <UserIcon className="h-5 w-5 text-blue-600" />
               <CardTitle className="text-lg">
-                {user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones'}
+                {user?.role === 'checador' || user?.role === 'comisionista' ? 'Mis reservaciones' : 'Reservaciones'}
               </CardTitle>
             </div>
           </div>
@@ -658,8 +660,8 @@ export function ReservationList() {
                 />
               </div>
 
-              {/* Filtro de reservaciones creadas por mi - Solo visible para roles que no sean checador */}
-              {user?.role !== 'checador' && (
+              {/* Filtro de reservaciones creadas por mi - Solo visible para roles que no sean checador o comisionista */}
+              {user?.role !== 'checador' && user?.role !== 'comisionista' && (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="show-only-my-reservations"

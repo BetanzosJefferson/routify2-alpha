@@ -119,17 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 18, 2025** - ENHANCED: Checador role access to reservations with enforced personal filter:
-  - **PERMISSION ADDED**: Added "reservations" permission to CHECKER role and "checador" alias
-  - **SIDEBAR ACCESS**: Checador users can now access "Reservaciones" section from sidebar navigation
-  - **AUTO-FILTER DEFAULT**: For checador role, "Reservaciones creadas por mi" filter is automatically enabled by default
-  - **ROLE-BASED BEHAVIOR**: Checador users see only their own created reservations (created_by = user.id) initially
-  - **FILTER ENFORCEMENT**: Checador users cannot see or modify the "Reservaciones creadas por mi" checkbox - it's permanently active
-  - **UI RESTRICTION**: Checkbox filter is hidden from checador users (user?.role !== 'checador') to prevent filter changes
-  - **NAVIGATION INTEGRATION**: Reservations section now properly visible in sidebar for checador role
-  - **SECURITY ENHANCEMENT**: Ensures checador users can only view their own reservations without ability to bypass filter
-  - **PERSONALIZED NAVIGATION**: Changed sidebar and topbar labels from "Reservaciones" to "Mis reservaciones" for checador role to reflect personal scope
-  - **CONSISTENT INTERFACE**: Updated both page title and navigation elements to show "Mis reservaciones" for checador users
+- **July 18, 2025** - ENHANCED: Checador and Comisionista roles access to reservations with enforced personal filter:
+  - **PERMISSION ADDED**: Added "reservations" permission to CHECKER, COMMISSIONER roles and their aliases ("checador", "comisionista")
+  - **SIDEBAR ACCESS**: Checador and Comisionista users can now access "Reservaciones" section from sidebar navigation
+  - **AUTO-FILTER DEFAULT**: For checador and comisionista roles, "Reservaciones creadas por mi" filter is automatically enabled by default
+  - **ROLE-BASED BEHAVIOR**: Checador and Comisionista users see only their own created reservations (created_by = user.id) initially
+  - **FILTER ENFORCEMENT**: Checador and Comisionista users cannot see or modify the "Reservaciones creadas por mi" checkbox - it's permanently active
+  - **UI RESTRICTION**: Checkbox filter is hidden from checador and comisionista users (user?.role !== 'checador' && user?.role !== 'comisionista') to prevent filter changes
+  - **NAVIGATION INTEGRATION**: Reservations section now properly visible in sidebar for both restricted roles
+  - **SECURITY ENHANCEMENT**: Ensures checador and comisionista users can only view their own reservations without ability to bypass filter
+  - **PERSONALIZED NAVIGATION**: Changed sidebar and topbar labels from "Reservaciones" to "Mis reservaciones" for both restricted roles to reflect personal scope
+  - **CONSISTENT INTERFACE**: Updated both page title and navigation elements to show "Mis reservaciones" for checador and comisionista users
 
 - **July 18, 2025** - ENHANCED: Reservation list filtering system with personal reservation filter:
   - **NEW FILTER OPTION**: Added "Reservaciones creadas por mi" checkbox filter to reservation list component

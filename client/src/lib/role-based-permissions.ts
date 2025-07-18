@@ -206,6 +206,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   // Permisos para el nuevo rol COMISIONISTA
   [UserRole.COMMISSIONER]: [
     "trips",
+    "reservations",
     "my-commissions",
     "reservation-requests",
     "notifications",
@@ -215,6 +216,7 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
   ],
   "comisionista": [ // Alias en español para COMMISSIONER
     "trips",
+    "reservations",
     "my-commissions",
     "reservation-requests",
     "notifications",

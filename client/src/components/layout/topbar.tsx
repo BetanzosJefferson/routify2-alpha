@@ -167,7 +167,7 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
                         setMobileMenuOpen(false);
                       }}
                     >
-                      {user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones'}
+                      {user?.role === 'checador' || user?.role === 'comisionista' ? 'Mis reservaciones' : 'Reservaciones'}
                     </NavLink>
                   )}
                   

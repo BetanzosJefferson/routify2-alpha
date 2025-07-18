@@ -186,7 +186,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 active={location === "/reservations"}
                 onClick={() => setLocation("/reservations")}
               >
-                {user?.role === 'checador' ? 'Mis reservaciones' : 'Reservaciones'}
+                {user?.role === 'checador' || user?.role === 'comisionista' ? 'Mis reservaciones' : 'Reservaciones'}
               </NavItem>
             </div>
           )}
