@@ -36,6 +36,7 @@ import { usePackagesByTrip } from "@/hooks/use-packages-by-trip";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 type Expense = {
   id: number | string;
