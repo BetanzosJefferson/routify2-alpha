@@ -284,21 +284,30 @@ export function ReservationDetailsSidebar({
 
   // Función para marcar reservación como checked
   const markAsChecked = async (reservationId: number) => {
+    console.log('[markAsChecked] Iniciando proceso para reservación:', reservationId);
+    console.log('[markAsChecked] Estado actual loadingActions:', loadingActions);
+    
     // Prevenir múltiples clics
-    if (loadingActions[reservationId] !== null) {
+    if (loadingActions[reservationId] === 'check' || loadingActions[reservationId] === 'payment') {
+      console.log('[markAsChecked] Cancelando - ya hay acción en progreso:', loadingActions[reservationId]);
       return;
     }
     
+    console.log('[markAsChecked] Estableciendo estado de loading...');
     setLoadingActions(prev => ({ ...prev, [reservationId]: 'check' }));
+    
     try {
-      const response = await fetch(`/api/reservations/${reservationId}/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      console.log('[markAsChecked] Enviando petición POST a /api/reservations/' + reservationId + '/check');
+      const response = await apiRequest(
+        "POST",
+        `/api/reservations/${reservationId}/check`,
+        {}
+      );
 
+      console.log('[markAsChecked] Respuesta recibida:', response);
+      
       if (response.ok) {
+        console.log('[markAsChecked] Éxito - invalidando caché...');
         // Invalidar caché para refrescar los datos
         await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
         toast({
@@ -307,18 +316,23 @@ export function ReservationDetailsSidebar({
         });
       } else {
         const errorData = await response.json().catch(() => ({}));
+        console.error('[markAsChecked] Error en respuesta:', errorData);
         throw new Error(errorData.message || 'Error al marcar como check');
       }
     } catch (error) {
-      console.error('Error al marcar reservación como check:', error);
+      console.error('[markAsChecked] Error capturado:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo marcar la reservación como check. Inténtalo de nuevo.",
         variant: "destructive",
       });
-    } finally {
+      
+      // Solo limpiar el estado loading si hay error para permitir retry
+      console.log('[markAsChecked] Error - limpiando estado loading para permitir retry...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
+    
+    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Función para marcar reservación como pagada
