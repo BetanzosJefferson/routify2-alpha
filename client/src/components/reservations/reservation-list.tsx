@@ -656,17 +656,19 @@ export function ReservationList() {
                 />
               </div>
 
-              {/* Filtro de reservaciones creadas por mi */}
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="show-only-my-reservations"
-                  checked={showOnlyMyReservations}
-                  onCheckedChange={(checked) => setShowOnlyMyReservations(checked as boolean)}
-                />
-                <Label htmlFor="show-only-my-reservations" className="text-sm text-gray-700 cursor-pointer">
-                  Reservaciones creadas por mi
-                </Label>
-              </div>
+              {/* Filtro de reservaciones creadas por mi - Solo visible para roles que no sean checador */}
+              {user?.role !== 'checador' && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-only-my-reservations"
+                    checked={showOnlyMyReservations}
+                    onCheckedChange={(checked) => setShowOnlyMyReservations(checked as boolean)}
+                  />
+                  <Label htmlFor="show-only-my-reservations" className="text-sm text-gray-700 cursor-pointer">
+                    Reservaciones creadas por mi
+                  </Label>
+                </div>
+              )}
 
               {/* Filtro general */}
               <Button
