@@ -152,6 +152,19 @@ export function ReservationList() {
   const [showOnlyMyReservations, setShowOnlyMyReservations] = useState(
     user?.role === 'checador' || user?.role === 'comisionista'
   );
+  
+  // Estado para el modal de confirmación de reembolso cruzado
+  const [crossUserRefundDialog, setCrossUserRefundDialog] = useState<{
+    isOpen: boolean;
+    message: string;
+    creators: string;
+    reservationId: number | null;
+  }>({
+    isOpen: false,
+    message: '',
+    creators: '',
+    reservationId: null
+  });
 
   // Utilizar el nuevo hook especializado para cargar reservaciones
   const {
@@ -394,21 +407,14 @@ export function ReservationList() {
         
         // Manejo específico del error de reembolso cruzado
         if (errorData.error === "cross_user_refund") {
-          // Mostrar confirmación al usuario
-          const confirmRefund = window.confirm(
-            `${errorData.message}\n\n¿Está seguro que desea continuar con el reembolso?`
-          );
-          
-          if (confirmRefund) {
-            // Llamar nuevamente con forzar reembolso
-            return await cancelReservationWithRefundMutation.mutateAsync({
-              id: data.id,
-              forceRefund: true
-            });
-          } else {
-            // Usuario canceló la operación
-            throw new Error("Operación cancelada por el usuario");
-          }
+          // Mostrar modal de confirmación
+          setCrossUserRefundDialog({
+            isOpen: true,
+            message: errorData.message,
+            creators: errorData.details?.creatorNames || 'otros usuarios',
+            reservationId: data.id
+          });
+          throw new Error("Esperando confirmación del usuario");
         }
         
         throw new Error(errorData.error || 'Error al cancelar la reservación con reembolso');
@@ -568,6 +574,21 @@ export function ReservationList() {
         deleteReservationMutation.mutate(confirmingDelete);
       }
     }
+  };
+
+  // Funciones para manejar el modal de reembolso cruzado
+  const handleCrossUserRefundConfirm = async () => {
+    if (crossUserRefundDialog.reservationId) {
+      setCrossUserRefundDialog({ isOpen: false, message: '', creators: '', reservationId: null });
+      cancelReservationWithRefundMutation.mutate({ 
+        id: crossUserRefundDialog.reservationId, 
+        forceRefund: true 
+      });
+    }
+  };
+
+  const handleCrossUserRefundCancel = () => {
+    setCrossUserRefundDialog({ isOpen: false, message: '', creators: '', reservationId: null });
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1460,6 +1481,65 @@ export function ReservationList() {
                   Guardando...
                 </>
               ) : "Guardar cambios"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación para reembolso cruzado */}
+      <Dialog open={crossUserRefundDialog.isOpen} onOpenChange={handleCrossUserRefundCancel}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="h-5 w-5 text-orange-500" />
+              Confirmar Reembolso
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowRightLeft className="h-4 w-4 text-orange-600" />
+                <p className="text-sm font-medium text-orange-800">
+                  Transacciones de otro usuario
+                </p>
+              </div>
+              <p className="text-sm text-orange-700 mb-2">
+                {crossUserRefundDialog.message}
+              </p>
+              <p className="text-sm text-orange-600 font-medium">
+                ¿Está seguro que desea continuar con el reembolso?
+              </p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <p className="text-xs text-gray-600">
+                Esta acción creará transacciones negativas para mantener un registro completo de auditoría.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={handleCrossUserRefundCancel}
+              className="mr-2"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleCrossUserRefundConfirm}
+              disabled={cancelReservationWithRefundMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {cancelReservationWithRefundMutation.isPending ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  Confirmar Reembolso
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
