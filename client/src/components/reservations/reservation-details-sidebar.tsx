@@ -427,8 +427,11 @@ export function ReservationDetailsSidebar({
         variant: "destructive",
       });
       
+      // Solo limpiar el estado loading si hay error para permitir retry
       setLoadingPackageActions(prev => ({ ...prev, [packageId]: null }));
     }
+    
+    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   const markPackageAsDelivered = async (packageId: number) => {
@@ -468,8 +471,11 @@ export function ReservationDetailsSidebar({
         variant: "destructive",
       });
       
+      // Solo limpiar el estado loading si hay error para permitir retry
       setLoadingPackageActions(prev => ({ ...prev, [packageId]: null }));
     }
+    
+    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Cargar datos al montar el componente si es chofer
@@ -515,6 +521,32 @@ export function ReservationDetailsSidebar({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [onClose]);
+
+  // Efecto para limpiar el estado de loading cuando se actualiza la data de los paquetes
+  useEffect(() => {
+    if (packages.length > 0) {
+      // Limpiar cualquier estado de loading para paquetes que ya no están en estado de loading
+      setLoadingPackageActions(prev => {
+        const newState = { ...prev };
+        
+        // Verificar cada paquete y limpiar el estado si ya no está en loading
+        packages.forEach(pkg => {
+          if (prev[pkg.id]) {
+            // Si el paquete ya está marcado como pagado, limpiar el estado de loading de payment
+            if (prev[pkg.id] === 'payment' && pkg.isPaid) {
+              newState[pkg.id] = null;
+            }
+            // Si el paquete ya está marcado como entregado, limpiar el estado de loading de delivery
+            if (prev[pkg.id] === 'delivery' && pkg.deliveryStatus === 'entregado') {
+              newState[pkg.id] = null;
+            }
+          }
+        });
+        
+        return newState;
+      });
+    }
+  }, [packages]);
 
   // Función para obtener el índice de la parada desde el tripId
   const getStopIndexFromTripId = (reservation: ReservationWithDetails) => {
@@ -1072,6 +1104,31 @@ export function ReservationDetailsSidebar({
 
                   {/* Botones de acción para paquetes */}
                   <div className="flex flex-col sm:flex-row gap-2">
+                    {/* Botón Marcar como entregado - solo mostrar si no está entregado */}
+                    {pkg.deliveryStatus !== 'entregado' && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => markPackageAsDelivered(pkg.id)}
+                        disabled={
+                          loadingPackageActions[pkg.id] === 'delivery' ||
+                          loadingPackageActions[pkg.id] === 'payment'
+                        }
+                      >
+                        {loadingPackageActions[pkg.id] === 'delivery' ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Procesando...
+                          </>
+                        ) : (
+                          <>
+                            <CheckIcon className="h-4 w-4 mr-2" />
+                            Marcar como entregado
+                          </>
+                        )}
+                      </Button>
+                    )}
                     {/* Botón Marcar como pagado - solo mostrar si no está pagado */}
                     {!pkg.isPaid && (
                       <Button
@@ -1098,31 +1155,7 @@ export function ReservationDetailsSidebar({
                       </Button>
                     )}
 
-                    {/* Botón Marcar como entregado - solo mostrar si no está entregado */}
-                    {pkg.deliveryStatus !== 'entregado' && (
-                      <Button
-                        size="sm"
-                        variant="default"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => markPackageAsDelivered(pkg.id)}
-                        disabled={
-                          loadingPackageActions[pkg.id] === 'delivery' ||
-                          loadingPackageActions[pkg.id] === 'payment'
-                        }
-                      >
-                        {loadingPackageActions[pkg.id] === 'delivery' ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Procesando...
-                          </>
-                        ) : (
-                          <>
-                            <CheckIcon className="h-4 w-4 mr-2" />
-                            Marcar como entregado
-                          </>
-                        )}
-                      </Button>
-                    )}
+                   
                   </div>
                 </CardContent>
               </Card>
