@@ -35,6 +35,7 @@ import { ReservationWithDetails } from "@shared/schema";
 import { usePackagesByTrip } from "@/hooks/use-packages-by-trip";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Expense = {
   id: number | string;
@@ -83,6 +84,7 @@ export function ReservationDetailsSidebar({
   // Hooks
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
@@ -291,8 +293,8 @@ export function ReservationDetailsSidebar({
       });
 
       if (response.ok) {
-        // Recargar la página para actualizar los datos
-        window.location.reload();
+        // Invalidar caché para refrescar los datos
+        await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
         toast({
           title: "Reservación marcada como check",
           description: "La reservación ha sido marcada como check correctamente.",
@@ -323,8 +325,8 @@ export function ReservationDetailsSidebar({
       });
 
       if (response.ok) {
-        // Recargar la página para actualizar los datos
-        window.location.reload();
+        // Invalidar caché para refrescar los datos
+        await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
         toast({
           title: "Reservación marcada como pagada",
           description: "La reservación ha sido marcada como pagada correctamente.",
