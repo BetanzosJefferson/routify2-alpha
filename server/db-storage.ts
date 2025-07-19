@@ -1858,7 +1858,58 @@ export class DatabaseStorage implements IStorage {
           console.log(`[DEBUG_COMMISSION] Reservación ${reservation.id} - reservationResult.commissionPaid: ${reservationResult.commissionPaid}`);
         }
 
-        results.push(reservationResult);
+        // CARGAR TRANSACCIONES para la reservación
+        console.log(`[getReservations] Cargando transacciones para reservación ${reservation.id}`);
+        const transactionResults = await db
+          .select({
+            id: transacciones.id,
+            description: transacciones.description,
+            amount: transacciones.amount,
+            type: transacciones.type,
+            method: transacciones.method,
+            status: transacciones.status,
+            createdAt: transacciones.createdAt,
+            userId: transacciones.user_id,
+            cutoffId: transacciones.cutoff_id,
+            details: transacciones.details
+          })
+          .from(transacciones)
+          .where(
+            and(
+              sql`CAST(JSON_EXTRACT(${transacciones.details}, '$.details.id') AS INTEGER) = ${reservation.id}`,
+              eq(transacciones.companyId, reservation.companyId)
+            )
+          );
+        
+        console.log(`[getReservations] Encontradas ${transactionResults.length} transacciones para reservación ${reservation.id}`);
+        
+        const transactions = transactionResults.map(t => ({
+          id: t.id,
+          description: t.description,
+          amount: t.amount,
+          type: t.type,
+          method: t.method,
+          status: t.status,
+          createdAt: t.createdAt,
+          userId: t.userId,
+          cutoffId: t.cutoffId,
+          details: t.details
+        }));
+
+        // DEBUG: Logging específico para reservación 604
+        if (reservation.id === 604) {
+          console.log(`[DEBUG_TRANSACTIONS_getReservations] Reservación ${reservation.id}:`);
+          console.log(`  - Transacciones encontradas: ${transactions.length}`);
+          console.log(`  - Transacciones:`, JSON.stringify(transactions, null, 2));
+        }
+
+        // Agregar transacciones al resultado final
+        const finalReservationResult = {
+          ...reservationResult,
+          transactions
+        };
+
+        results.push(finalReservationResult);
       }
       
       const totalTime = Date.now() - startTime;
