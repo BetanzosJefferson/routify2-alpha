@@ -3678,49 +3678,19 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
       }
 
-      // Construir query con LEFT JOIN para incluir información del usuario creador
-      console.log(`DB Storage: [OPTIMIZED] Ejecutando query con información del usuario creador`);
-      const startTime = Date.now();
-      
-      // Query con LEFT JOIN para obtener información del usuario creador
-      let query = this.db
-        .select({
-          // Todos los campos de packages
-          id: schema.packages.id,
-          tripDetails: schema.packages.tripDetails,
-          senderName: schema.packages.senderName,
-          senderLastName: schema.packages.senderLastName,
-          senderPhone: schema.packages.senderPhone,
-          recipientName: schema.packages.recipientName,
-          recipientLastName: schema.packages.recipientLastName,
-          recipientPhone: schema.packages.recipientPhone,
-          packageDescription: schema.packages.packageDescription,
-          price: schema.packages.price,
-          isPaid: schema.packages.isPaid,
-          paymentMethod: schema.packages.paymentMethod,
-          deliveryStatus: schema.packages.deliveryStatus,
-          usesSeats: schema.packages.usesSeats,
-          seatsQuantity: schema.packages.seatsQuantity,
-          companyId: schema.packages.companyId,
-          createdAt: schema.packages.createdAt,
-          shippingDate: schema.packages.shippingDate,
-          createdBy: schema.packages.createdBy,
-          // Información del usuario creador
-          creatorFirstName: schema.users.firstName,
-          creatorLastName: schema.users.lastName,
-          creatorEmail: schema.users.email,
-        })
-        .from(schema.packages)
-        .leftJoin(schema.users, eq(schema.packages.createdBy, schema.users.id));
+      // Construir query básica sin JOIN complejo para evitar errores
+      let query = this.db.select().from(schema.packages);
 
       // Aplicar condiciones básicas
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
+      console.log(`DB Storage: [OPTIMIZED] Ejecutando query básica`);
+      const startTime = Date.now();
       const rawPackages = await query;
       const queryTime = Date.now() - startTime;
-      console.log(`DB Storage: [OPTIMIZED] Query con usuarios ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
+      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
 
       // Aplicar filtrado por conductor manualmente si es necesario (temporalmente)
       let filteredPackages = rawPackages;
@@ -3759,6 +3729,28 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
       }
 
+      // Obtener información de usuarios creadores para todos los paquetes
+      const userIds = [...new Set(filteredPackages.map(pkg => pkg.createdBy).filter(Boolean))];
+      const usersMap = new Map();
+      
+      if (userIds.length > 0) {
+        console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${userIds.length} usuarios creadores`);
+        const users = await this.db
+          .select({
+            id: schema.users.id,
+            firstName: schema.users.firstName,
+            lastName: schema.users.lastName,
+            email: schema.users.email,
+          })
+          .from(schema.users)
+          .where(inArray(schema.users.id, userIds));
+        
+        users.forEach(user => {
+          usersMap.set(user.id, user);
+        });
+        console.log(`DB Storage: [OPTIMIZED] Obtenida información de ${users.length} usuarios`);
+      }
+
       // Mapear resultados con información del viaje extraída de tripDetails
       const packagesWithTripInfo = filteredPackages.map(pkg => {
         let tripDetails;
@@ -3772,6 +3764,9 @@ export class DatabaseStorage implements IStorage {
           tripDetails = {};
         }
 
+        // Obtener información del usuario creador
+        const creator = usersMap.get(pkg.createdBy);
+
         const result = {
           ...pkg,
           // Campos de trip info desde tripDetails
@@ -3783,11 +3778,15 @@ export class DatabaseStorage implements IStorage {
           // Campos específicos del segmento
           segmentOrigin: tripDetails?.origin || 'No especificado',
           segmentDestination: tripDetails?.destination || 'No especificado',
+          // Información del usuario creador
+          creatorFirstName: creator?.firstName || null,
+          creatorLastName: creator?.lastName || null,
+          creatorEmail: creator?.email || null,
           // Mantener tripDetails original para compatibilidad
           tripDetails: tripDetails
         };
         
-        console.log(`DB Storage: [OPTIMIZED] Paquete ${pkg.id} - Origen: ${result.tripOrigin}, Destino: ${result.tripDestination}`);
+        console.log(`DB Storage: [OPTIMIZED] Paquete ${pkg.id} - Origen: ${result.tripOrigin}, Destino: ${result.tripDestination}${creator ? `, Creado por: ${creator.firstName} ${creator.lastName}` : ''}`);
         
         return result;
       });
