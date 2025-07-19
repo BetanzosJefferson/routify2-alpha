@@ -83,6 +83,12 @@ export function ReservationDetailsSidebar({
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [isRemovingExpense, setIsRemovingExpense] = useState<number | null>(null);
   
+  // Estado para actualizaciones optimistas del frontend
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<number, {
+    paymentStatus?: string;
+    checkedBy?: any;
+  }>>({});
+  
   // Hooks
   const { user } = useAuth();
   const { toast } = useToast();
@@ -309,12 +315,21 @@ export function ReservationDetailsSidebar({
       console.log('[markAsChecked] Respuesta recibida:', response);
       
       if (response.ok) {
-        console.log('[markAsChecked] Éxito - invalidando caché y limpiando estado...');
+        console.log('[markAsChecked] Éxito - actualizando UI inmediatamente...');
+        
+        // Actualización optimista inmediata del estado local
+        setOptimisticUpdates(prev => ({ 
+          ...prev, 
+          [reservationId]: { 
+            ...prev[reservationId], 
+            checkedBy: user?.id 
+          } 
+        }));
         
         // Limpiar estado de loading inmediatamente para actualizar UI
         setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
         
-        // Invalidar múltiples queries para refrescar todos los datos relacionados
+        // Invalidar múltiples queries para refrescar todos los datos relacionados en segundo plano
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
           queryClient.invalidateQueries({ queryKey: ['/api/trips'] }),
@@ -369,12 +384,21 @@ export function ReservationDetailsSidebar({
       console.log('[markAsPaid] Respuesta recibida:', response);
       
       if (response.ok) {
-        console.log('[markAsPaid] Éxito - invalidando caché y limpiando estado...');
+        console.log('[markAsPaid] Éxito - actualizando UI inmediatamente...');
+        
+        // Actualización optimista inmediata del estado local
+        setOptimisticUpdates(prev => ({ 
+          ...prev, 
+          [reservationId]: { 
+            ...prev[reservationId], 
+            paymentStatus: 'pagado' 
+          } 
+        }));
         
         // Limpiar estado de loading inmediatamente para actualizar UI
         setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
         
-        // Invalidar múltiples queries para refrescar todos los datos relacionados
+        // Invalidar múltiples queries para refrescar todos los datos relacionados en segundo plano
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
           queryClient.invalidateQueries({ queryKey: ['/api/trips'] }),
@@ -510,8 +534,26 @@ export function ReservationDetailsSidebar({
     return 0;
   };
 
+  // Función para aplicar actualizaciones optimistas a las reservaciones
+  const getUpdatedReservations = (originalReservations: ReservationWithDetails[]) => {
+    return originalReservations.map(reservation => {
+      const updates = optimisticUpdates[reservation.id];
+      if (updates) {
+        return {
+          ...reservation,
+          paymentStatus: updates.paymentStatus || reservation.paymentStatus,
+          checkedBy: updates.checkedBy !== undefined ? updates.checkedBy : reservation.checkedBy
+        };
+      }
+      return reservation;
+    });
+  };
+
+  // Obtener reservaciones con actualizaciones optimistas aplicadas
+  const updatedReservations = getUpdatedReservations(reservations);
+
   // Filtrar y ordenar reservaciones
-  const filteredReservations = reservations
+  const filteredReservations = updatedReservations
     .filter(reservation => {
       if (!searchQuery) return true;
       
@@ -551,7 +593,7 @@ export function ReservationDetailsSidebar({
 
 
 
-  const totalPassengers = reservations.reduce((total, reservation) => {
+  const totalPassengers = updatedReservations.reduce((total, reservation) => {
     const tripDetails = reservation.tripDetails as any;
     return total + (tripDetails?.seats || 1);
   }, 0);
@@ -678,7 +720,7 @@ export function ReservationDetailsSidebar({
                       <div className="w-full sm:w-auto flex justify-between sm:block"> {/* Sección de precios y por cobrar */}
                         {/* Indicador de Check basado en checkCount */}
                         <div className="flex sm:hidden mb-2">
-                          {reservation.checkCount && reservation.checkCount > 0 ? (
+                          {(reservation.checkCount && reservation.checkCount > 0) || reservation.checkedBy ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                               <CheckIcon className="h-3 w-3 mr-1" />
                               Check
@@ -706,7 +748,7 @@ export function ReservationDetailsSidebar({
                             <span className="text-sm font-medium mr-2">Por cobrar</span>
                             <span className="text-lg font-bold text-primary">
                               {reservation.paymentStatus === 'pagado'
-                                ? '$ 0'
+                                ? '$ 0 (Efectivo)'
                                 : `$ ${(reservation.totalAmount - (reservation.advanceAmount || 0)).toFixed(0)}`
                               }
                               {reservation.paymentStatus !== 'pagado' && (
@@ -725,7 +767,7 @@ export function ReservationDetailsSidebar({
                   <CardContent className="p-3 md:p-4"> {/* Aseguramos el padding adecuado */}
                     {/* Indicador de Check para pantallas más grandes */}
                     <div className="hidden sm:flex mb-3">
-                      {reservation.checkCount && reservation.checkCount > 0 ? (
+                      {(reservation.checkCount && reservation.checkCount > 0) || reservation.checkedBy ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                           <CheckIcon className="h-3 w-3 mr-1" />
                           Check
@@ -839,8 +881,8 @@ export function ReservationDetailsSidebar({
 
                     {/* Botones de acción */}
                     <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                      {/* Botón Marcar como check - solo mostrar si no está checked */}
-                      {!(reservation.checkCount && reservation.checkCount > 0) && (
+                      {/* Botón Marcar como check - solo mostrar si no está checked (considerando actualizaciones optimistas) */}
+                      {!(reservation.checkCount && reservation.checkCount > 0) && !reservation.checkedBy && (
                         <Button
                           size="sm"
                           variant="default"
