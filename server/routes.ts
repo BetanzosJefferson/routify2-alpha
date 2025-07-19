@@ -3689,10 +3689,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 
                 // Actualizar el trip_data con la nueva disponibilidad
-                const updatedTripData = {
-                  ...tripDataAny,
-                  availableSeats: newAvailableSeats
-                };
+                // Para viajes, necesito actualizar availableSeats en cada segmento del tripData array
+                const updatedTripData = Array.isArray(tripDataAny) 
+                  ? tripDataAny.map(segment => ({
+                      ...segment,
+                      availableSeats: newAvailableSeats
+                    }))
+                  : {
+                      ...tripDataAny,
+                      availableSeats: newAvailableSeats
+                    };
                 
                 console.log(`[PUT /reservations/${id}] Actualizando availableSeats en trip_data: ${currentAvailableSeats} → ${newAvailableSeats}`);
                 
