@@ -349,12 +349,41 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateTrip(id: number, tripUpdate: Partial<Trip>): Promise<Trip | undefined> {
-    const [updatedTrip] = await db
-      .update(schema.trips)
-      .set(tripUpdate)
-      .where(eq(schema.trips.id, id))
-      .returning();
-    return updatedTrip;
+    console.log(`[updateTrip] Actualizando viaje ${id} con datos:`, tripUpdate);
+    console.log(`[updateTrip] Tipo de id: ${typeof id}, id válido: ${!isNaN(id)}`);
+    
+    // Verificar que los datos de actualización sean válidos
+    if (!tripUpdate || Object.keys(tripUpdate).length === 0) {
+      console.error(`[updateTrip] tripUpdate está vacío o nulo`);
+      throw new Error('No hay datos para actualizar');
+    }
+    
+    try {
+      // Construir la consulta paso a paso para debug
+      console.log(`[updateTrip] Iniciando consulta UPDATE para viaje ${id}`);
+      
+      const updateQuery = db
+        .update(schema.trips)
+        .set(tripUpdate)
+        .where(eq(schema.trips.id, id));
+        
+      console.log(`[updateTrip] Consulta construida, ejecutando...`);
+      
+      const [updatedTrip] = await updateQuery.returning();
+      
+      console.log(`[updateTrip] Viaje ${id} actualizado exitosamente:`, updatedTrip ? 'encontrado' : 'no encontrado');
+      return updatedTrip;
+    } catch (error) {
+      console.error(`[updateTrip] Error SQL al actualizar viaje ${id}:`, error);
+      console.error(`[updateTrip] Datos que causaron el error:`, {
+        id,
+        tripUpdate,
+        idType: typeof id,
+        tripUpdateType: typeof tripUpdate,
+        keys: Object.keys(tripUpdate || {})
+      });
+      throw error;
+    }
   }
   
   async deleteTrip(id: number): Promise<boolean> {

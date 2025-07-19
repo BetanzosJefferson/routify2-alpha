@@ -3651,19 +3651,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? parseInt(newTripDetails.recordId.split('_')[0]) 
               : newTripDetails.recordId;
             
-            if (recordId) {
+            console.log(`[PUT /reservations/${id}] RecordId extraído: ${recordId} (tipo: ${typeof recordId})`);
+            
+            if (recordId && !isNaN(recordId) && recordId > 0) {
               // Obtener el viaje
               const trip = await storage.getTrip(recordId);
               if (trip) {
                 // Calcular la diferencia de asientos
                 const seatDifference = newSeats - originalSeats;
                 
+                // Validar que availableSeats no sea null/undefined
+                const currentAvailableSeats = trip.availableSeats || 0;
+                
                 // Actualizar disponibilidad del viaje (invertir lógica)
                 // Si aumentan asientos (+), disminuir disponibilidad (-)
                 // Si disminuyen asientos (-), aumentar disponibilidad (+)
-                const newAvailableSeats = trip.availableSeats - seatDifference;
+                const newAvailableSeats = currentAvailableSeats - seatDifference;
                 
-                console.log(`[PUT /reservations/${id}] Actualizando disponibilidad del viaje ${recordId}: ${trip.availableSeats} → ${newAvailableSeats}`);
+                console.log(`[PUT /reservations/${id}] Actualizando disponibilidad del viaje ${recordId}: ${currentAvailableSeats} → ${newAvailableSeats}`);
+                
+                // Validar que newAvailableSeats sea un número válido
+                if (isNaN(newAvailableSeats)) {
+                  console.error(`[PUT /reservations/${id}] newAvailableSeats es NaN. currentAvailableSeats: ${currentAvailableSeats}, seatDifference: ${seatDifference}`);
+                  return res.status(500).json({ 
+                    error: "Error interno al calcular disponibilidad de asientos",
+                    details: "Datos de asientos inválidos"
+                  });
+                }
                 
                 // Verificar que no se excedan los límites
                 if (newAvailableSeats < 0) {
@@ -3681,9 +3695,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 
                 // Actualizar el viaje con la nueva disponibilidad
-                await storage.updateTrip(recordId, { availableSeats: newAvailableSeats });
+                console.log(`[PUT /reservations/${id}] Intentando actualizar viaje ${recordId} con availableSeats: ${newAvailableSeats}`);
                 
-                console.log(`[PUT /reservations/${id}] Viaje ${recordId} actualizado exitosamente`);
+                try {
+                  await storage.updateTrip(recordId, { availableSeats: newAvailableSeats });
+                  console.log(`[PUT /reservations/${id}] Viaje ${recordId} actualizado exitosamente`);
+                } catch (updateError) {
+                  console.error(`[PUT /reservations/${id}] Error al actualizar viaje ${recordId}:`, updateError);
+                  throw updateError;
+                }
               } else {
                 console.warn(`[PUT /reservations/${id}] No se encontró el viaje ${recordId} para actualizar asientos`);
               }
