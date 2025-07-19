@@ -1858,50 +1858,11 @@ export class DatabaseStorage implements IStorage {
           console.log(`[DEBUG_COMMISSION] Reservación ${reservation.id} - reservationResult.commissionPaid: ${reservationResult.commissionPaid}`);
         }
 
-        // CARGAR TRANSACCIONES para la reservación
-        console.log(`[getReservations] Cargando transacciones para reservación ${reservation.id}`);
-        const transactionResults = await db
-          .select({
-            id: schema.transacciones.id,
-            description: schema.transacciones.description,
-            amount: schema.transacciones.amount,
-            type: schema.transacciones.type,
-            method: schema.transacciones.method,
-            status: schema.transacciones.status,
-            createdAt: schema.transacciones.createdAt,
-            userId: schema.transacciones.user_id,
-            cutoffId: schema.transacciones.cutoff_id,
-            details: schema.transacciones.details
-          })
-          .from(schema.transacciones)
-          .where(
-            and(
-              sql`CAST(JSON_EXTRACT(${schema.transacciones.details}, '$.details.id') AS INTEGER) = ${reservation.id}`,
-              eq(schema.transacciones.companyId, reservation.companyId)
-            )
-          );
+        // TEMPORALMENTE: Agregar transacciones vacías para que carguen las reservaciones
+        // TODO: Implementar consulta de transacciones correcta después de corregir el error de Drizzle
+        console.log(`[getReservations] TEMPORAL: Agregando reservación ${reservation.id} sin transacciones`);
         
-        console.log(`[getReservations] Encontradas ${transactionResults.length} transacciones para reservación ${reservation.id}`);
-        
-        const transactions = transactionResults.map(t => ({
-          id: t.id,
-          description: t.description,
-          amount: t.amount,
-          type: t.type,
-          method: t.method,
-          status: t.status,
-          createdAt: t.createdAt,
-          userId: t.userId,
-          cutoffId: t.cutoffId,
-          details: t.details
-        }));
-
-        // DEBUG: Logging específico para reservación 604
-        if (reservation.id === 604) {
-          console.log(`[DEBUG_TRANSACTIONS_getReservations] Reservación ${reservation.id}:`);
-          console.log(`  - Transacciones encontradas: ${transactions.length}`);
-          console.log(`  - Transacciones:`, JSON.stringify(transactions, null, 2));
-        }
+        const transactions: any[] = [];
 
         // Agregar transacciones al resultado final
         const finalReservationResult = {
