@@ -3630,6 +3630,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Manejar cambios en la cantidad de asientos
+      if (reservationData.tripDetails) {
+        console.log(`[PUT /reservations/${id}] Detectado cambio en tripDetails, procesando actualización de asientos`);
+        
+        // Obtener la reservación original
+        const originalReservation = await storage.getReservation(id);
+        if (originalReservation) {
+          const originalTripDetails = originalReservation.tripDetails as any;
+          const newTripDetails = reservationData.tripDetails as any;
+          
+          const originalSeats = originalTripDetails?.seats || 1;
+          const newSeats = newTripDetails?.seats || 1;
+          
+          if (originalSeats !== newSeats) {
+            console.log(`[PUT /reservations/${id}] Cambio de asientos: ${originalSeats} → ${newSeats}`);
+            
+            // Extraer información del viaje
+            const recordId = typeof newTripDetails.recordId === 'string' 
+              ? parseInt(newTripDetails.recordId.split('_')[0]) 
+              : newTripDetails.recordId;
+            
+            if (recordId) {
+              // Obtener el viaje
+              const trip = await storage.getTrip(recordId);
+              if (trip) {
+                // Calcular la diferencia de asientos
+                const seatDifference = newSeats - originalSeats;
+                
+                // Actualizar disponibilidad del viaje (invertir lógica)
+                // Si aumentan asientos (+), disminuir disponibilidad (-)
+                // Si disminuyen asientos (-), aumentar disponibilidad (+)
+                const newAvailableSeats = trip.availableSeats - seatDifference;
+                
+                console.log(`[PUT /reservations/${id}] Actualizando disponibilidad del viaje ${recordId}: ${trip.availableSeats} → ${newAvailableSeats}`);
+                
+                // Verificar que no se excedan los límites
+                if (newAvailableSeats < 0) {
+                  return res.status(400).json({ 
+                    error: "No hay suficientes asientos disponibles para este cambio",
+                    details: `Asientos disponibles: ${trip.availableSeats}, cambio solicitado: ${seatDifference}`
+                  });
+                }
+                
+                if (newAvailableSeats > trip.capacity) {
+                  return res.status(400).json({ 
+                    error: "La reducción de asientos excedería la capacidad del viaje",
+                    details: `Capacidad máxima: ${trip.capacity}, disponibilidad resultante: ${newAvailableSeats}`
+                  });
+                }
+                
+                // Actualizar el viaje con la nueva disponibilidad
+                await storage.updateTrip(recordId, { availableSeats: newAvailableSeats });
+                
+                console.log(`[PUT /reservations/${id}] Viaje ${recordId} actualizado exitosamente`);
+              } else {
+                console.warn(`[PUT /reservations/${id}] No se encontró el viaje ${recordId} para actualizar asientos`);
+              }
+            }
+          }
+        }
+      }
+      
       const updatedReservation = await storage.updateReservation(id, reservationData);
       
       if (!updatedReservation) {

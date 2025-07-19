@@ -20,6 +20,7 @@ import {
   Building2,
   ArrowRightLeft,
   Check as CheckIcon,
+  ClipboardCopy,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
@@ -452,6 +453,58 @@ export function ReservationList() {
   // Estados adicionales para el formulario de edición
   const [email, setEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
+  const [seatCount, setSeatCount] = useState<string>("");
+  
+  // Estados para copiar al portapapeles
+  const [copiedReservations, setCopiedReservations] = useState<Set<number>>(new Set());
+  
+  // Función mejorada para copiar al portapapeles con retroalimentación visual
+  const copyToClipboard = async (text: string, reservationId: number) => {
+    try {
+      // Intentar métodos modernos primero
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Método de respaldo para navegadores más antiguos
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      
+      // Agregar a la lista de copiados
+      setCopiedReservations(prev => new Set(prev.add(reservationId)));
+      
+      // Toast de confirmación
+      toast({
+        title: "Copiado al portapapeles",
+        description: "El código de reservación ha sido copiado exitosamente",
+      });
+      
+      // Remover el estado de copiado después de 2 segundos
+      setTimeout(() => {
+        setCopiedReservations(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reservationId);
+          return newSet;
+        });
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error al copiar al portapapeles:', error);
+      toast({
+        title: "Error al copiar",
+        description: "No se pudo copiar el código. Inténtalo manualmente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Edit reservation mutation
   const editReservationMutation = useMutation({
@@ -500,6 +553,12 @@ export function ReservationList() {
     setNotes(reservation.notes || "");
     setEmail(reservation.email || "");
     setPhone(reservation.phone || "");
+    
+    // Inicializar cantidad de asientos desde tripDetails
+    const tripDetails = reservation.tripDetails as any;
+    const currentSeatCount = tripDetails?.seats || reservation.passengers?.length || 1;
+    setSeatCount(currentSeatCount.toString());
+    
     setIsEditModalOpen(true);
   };
 
@@ -510,6 +569,17 @@ export function ReservationList() {
 
   const handleSaveEdit = () => {
     if (!editingReservation) return;
+
+    // Validar cantidad de asientos
+    const newSeatCountNum = parseInt(seatCount) || 0;
+    if (newSeatCountNum <= 0) {
+      toast({
+        title: "Error en cantidad de asientos",
+        description: "La cantidad de asientos debe ser mayor a 0",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Preparamos las actualizaciones básicas que siempre se envían
     const updates: Partial<Reservation> = {
@@ -545,10 +615,27 @@ export function ReservationList() {
     }
 
     updates.advanceAmount = advanceAmountNum;
+    
     // Actualizar el total amount si el restante es mayor (para casos de exceso de equipaje)
     const newTotal = advanceAmountNum + remainingAmountNum;
     if (newTotal !== editingReservation.totalAmount) {
       updates.totalAmount = newTotal;
+    }
+
+    // Manejar cambios en la cantidad de asientos
+    const currentTripDetails = editingReservation.tripDetails as any;
+    const currentSeatCount = currentTripDetails?.seats || editingReservation.passengers?.length || 1;
+    
+    if (newSeatCountNum !== currentSeatCount) {
+      // Actualizar tripDetails con la nueva cantidad de asientos
+      const updatedTripDetails = {
+        ...currentTripDetails,
+        seats: newSeatCountNum
+      };
+      
+      updates.tripDetails = updatedTripDetails;
+      
+      console.log(`[EditReservation] Actualizando asientos: ${currentSeatCount} → ${newSeatCountNum}`);
     }
 
     // Enviamos todas las actualizaciones
@@ -788,8 +875,26 @@ export function ReservationList() {
                         setIsDetailsModalOpen(true);
                       }}
                     >
-                      <div className="text-gray-500">
-                        #{generateReservationId(reservation.id)}
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <span>#{generateReservationId(reservation.id)}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(generateReservationId(reservation.id), reservation.id);
+                          }}
+                          className={`p-1 rounded transition-all duration-200 hover:bg-gray-100 ${
+                            copiedReservations.has(reservation.id) 
+                              ? 'text-green-600 hover:bg-green-50' 
+                              : 'text-gray-400 hover:text-gray-600'
+                          }`}
+                          title="Copiar código de reservación"
+                        >
+                          {copiedReservations.has(reservation.id) ? (
+                            <CheckIcon className="h-3 w-3" />
+                          ) : (
+                            <ClipboardCopy className="h-3 w-3" />
+                          )}
+                        </button>
                       </div>
                       {/* Indicador de Check */}
                       <div className="mt-1">
@@ -1252,7 +1357,29 @@ export function ReservationList() {
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div>
                   <Label htmlFor="reservation-id" className="text-gray-500 text-xs">CÓDIGO DE RESERVACIÓN</Label>
-                  <div id="reservation-id" className="text-sm font-medium">#{generateReservationId(editingReservation?.id || 0)}</div>
+                  <div id="reservation-id" className="flex items-center gap-2 text-sm font-medium">
+                    <span>#{generateReservationId(editingReservation?.id || 0)}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editingReservation) {
+                          copyToClipboard(generateReservationId(editingReservation.id), editingReservation.id);
+                        }
+                      }}
+                      className={`p-1 rounded transition-all duration-200 hover:bg-gray-100 ${
+                        editingReservation && copiedReservations.has(editingReservation.id)
+                          ? 'text-green-600 hover:bg-green-50' 
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      title="Copiar código de reservación"
+                    >
+                      {editingReservation && copiedReservations.has(editingReservation.id) ? (
+                        <CheckIcon className="h-3 w-3" />
+                      ) : (
+                        <ClipboardCopy className="h-3 w-3" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -1283,9 +1410,22 @@ export function ReservationList() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="seats" className="text-gray-500 text-xs">ASIENTOS</Label>
-                    <div id="seats" className="text-sm font-medium">
-                      {editingReservation.passengers.length}
+                    <Label htmlFor="seats" className="text-gray-500 text-xs">CANTIDAD DE ASIENTOS</Label>
+                    <Input
+                      id="seats"
+                      type="number"
+                      value={seatCount}
+                      onChange={(e) => setSeatCount(e.target.value)}
+                      className="h-8 w-20 text-sm"
+                      min="1"
+                      max="10"
+                      placeholder="1"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      Actual: {(() => {
+                        const tripDetails = editingReservation.tripDetails as any;
+                        return tripDetails?.seats || editingReservation.passengers?.length || 1;
+                      })()}
                     </div>
                   </div>
                 </div>
