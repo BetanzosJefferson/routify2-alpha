@@ -309,9 +309,18 @@ export function ReservationDetailsSidebar({
       console.log('[markAsChecked] Respuesta recibida:', response);
       
       if (response.ok) {
-        console.log('[markAsChecked] Éxito - invalidando caché...');
-        // Invalidar caché para refrescar los datos
-        await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+        console.log('[markAsChecked] Éxito - invalidando caché y limpiando estado...');
+        
+        // Limpiar estado de loading inmediatamente para actualizar UI
+        setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
+        
+        // Invalidar múltiples queries para refrescar todos los datos relacionados
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
+          queryClient.invalidateQueries({ queryKey: ['/api/trips'] }),
+          queryClient.refetchQueries({ queryKey: ['/api/reservations'] })
+        ]);
+        
         toast({
           title: "Reservación marcada como check",
           description: "La reservación ha sido marcada como check correctamente.",
@@ -329,12 +338,10 @@ export function ReservationDetailsSidebar({
         variant: "destructive",
       });
       
-      // Solo limpiar el estado loading si hay error para permitir retry
+      // Limpiar estado loading para permitir retry
       console.log('[markAsChecked] Error - limpiando estado loading para permitir retry...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
-    
-    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Función para marcar reservación como pagada
@@ -362,9 +369,18 @@ export function ReservationDetailsSidebar({
       console.log('[markAsPaid] Respuesta recibida:', response);
       
       if (response.ok) {
-        console.log('[markAsPaid] Éxito - invalidando caché...');
-        // Invalidar caché para refrescar los datos
-        await queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+        console.log('[markAsPaid] Éxito - invalidando caché y limpiando estado...');
+        
+        // Limpiar estado de loading inmediatamente para actualizar UI
+        setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
+        
+        // Invalidar múltiples queries para refrescar todos los datos relacionados
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
+          queryClient.invalidateQueries({ queryKey: ['/api/trips'] }),
+          queryClient.refetchQueries({ queryKey: ['/api/reservations'] })
+        ]);
+        
         toast({
           title: "Reservación marcada como pagada",
           description: "La reservación ha sido marcada como pagada correctamente.",
@@ -382,12 +398,10 @@ export function ReservationDetailsSidebar({
         variant: "destructive",
       });
       
-      // Solo limpiar el estado loading si hay error para permitir retry
+      // Limpiar estado loading para permitir retry
       console.log('[markAsPaid] Error - limpiando estado loading para permitir retry...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
-    
-    // NO limpiar el estado loading en caso de éxito - dejarlo para que se actualice con la data del servidor
   };
 
   // Cargar datos al montar el componente si es chofer

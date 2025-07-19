@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 19, 2025** - ENHANCED: Real-time status updates in reservation sidebar for immediate visual feedback:
+  - **IMMEDIATE UI RESPONSE**: Marking reservations as "check" or "pagado" now updates UI instantly without sidebar refresh
+  - **LOADING STATE MANAGEMENT**: Fixed loading states that were getting stuck on "Procesando..." after successful operations
+  - **ENHANCED CACHE INVALIDATION**: Improved query cache management with multiple invalidation strategies for better data consistency
+  - **COMPREHENSIVE REFRESH**: Added parallel invalidation of reservations and trips queries plus forced refetch for immediate updates
+  - **OPTIMIZED UX**: Users now see immediate visual feedback when status changes are successful
+  - **ERROR HANDLING MAINTAINED**: Preserved existing error handling while fixing success state management
+  - **REAL-TIME FEEDBACK**: Toast notifications appear immediately while data refreshes automatically in background
+  - **STATUS PERSISTENCE**: Status changes are immediately visible without requiring sidebar close/reopen cycle
+
 - **July 19, 2025** - COMPLETED: Seat quantity editing functionality in reservations section with comprehensive visual improvements:
   - **SEAT EDITING CAPABILITY**: Added full seat quantity editing functionality in reservation list modal with intelligent validation
   - **SEGMENT-AWARE MANAGEMENT**: Seat updates properly handle tripDetails.seats field and automatically recalculate trip availability
