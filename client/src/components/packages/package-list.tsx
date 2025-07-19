@@ -65,6 +65,7 @@ import {
   Filter,
   X,
   MapPin,
+  User,
 } from "lucide-react";
 
 // Importar componentes relacionados con paquetes
@@ -784,6 +785,19 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                   <p className="text-xs text-muted-foreground">{pkg.recipientPhone}</p>
                 </div>
               </div>
+              
+              {/* Creado por */}
+              {(pkg.creatorFirstName || pkg.creatorLastName) && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground font-medium flex items-center">
+                    <User className="mr-1 h-3 w-3" />
+                    Creado por
+                  </p>
+                  <p className="text-sm font-medium text-blue-600">
+                    {pkg.creatorFirstName} {pkg.creatorLastName}
+                  </p>
+                </div>
+              )}
               
               {/* Estados y Asientos */}
               <div className="flex justify-between items-center pt-2 border-t">

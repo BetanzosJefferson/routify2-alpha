@@ -3678,19 +3678,49 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
       }
 
-      // Construir query básica sin JOIN complejo para evitar errores
-      let query = this.db.select().from(schema.packages);
+      // Construir query con LEFT JOIN para incluir información del usuario creador
+      console.log(`DB Storage: [OPTIMIZED] Ejecutando query con información del usuario creador`);
+      const startTime = Date.now();
+      
+      // Query con LEFT JOIN para obtener información del usuario creador
+      let query = this.db
+        .select({
+          // Todos los campos de packages
+          id: schema.packages.id,
+          tripDetails: schema.packages.tripDetails,
+          senderName: schema.packages.senderName,
+          senderLastName: schema.packages.senderLastName,
+          senderPhone: schema.packages.senderPhone,
+          recipientName: schema.packages.recipientName,
+          recipientLastName: schema.packages.recipientLastName,
+          recipientPhone: schema.packages.recipientPhone,
+          packageDescription: schema.packages.packageDescription,
+          price: schema.packages.price,
+          isPaid: schema.packages.isPaid,
+          paymentMethod: schema.packages.paymentMethod,
+          deliveryStatus: schema.packages.deliveryStatus,
+          usesSeats: schema.packages.usesSeats,
+          seatsQuantity: schema.packages.seatsQuantity,
+          companyId: schema.packages.companyId,
+          createdAt: schema.packages.createdAt,
+          shippingDate: schema.packages.shippingDate,
+          createdBy: schema.packages.createdBy,
+          // Información del usuario creador
+          creatorFirstName: schema.users.firstName,
+          creatorLastName: schema.users.lastName,
+          creatorEmail: schema.users.email,
+        })
+        .from(schema.packages)
+        .leftJoin(schema.users, eq(schema.packages.createdBy, schema.users.id));
 
       // Aplicar condiciones básicas
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      console.log(`DB Storage: [OPTIMIZED] Ejecutando query básica`);
-      const startTime = Date.now();
       const rawPackages = await query;
       const queryTime = Date.now() - startTime;
-      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
+      console.log(`DB Storage: [OPTIMIZED] Query con usuarios ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
 
       // Aplicar filtrado por conductor manualmente si es necesario (temporalmente)
       let filteredPackages = rawPackages;

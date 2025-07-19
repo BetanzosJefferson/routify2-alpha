@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 19, 2025** - COMPLETED: Package creator display functionality in Paqueterías section:
+  - **BACKEND ENHANCEMENT**: Modified getPackagesWithTripInfo method to include LEFT JOIN with users table
+  - **CREATOR INFORMATION**: Added creatorFirstName, creatorLastName, and creatorEmail fields to package data
+  - **UI DISPLAY**: Added "Creado por" section in package cards showing creator's full name
+  - **VISUAL DESIGN**: Included User icon and blue text styling for creator information
+  - **CONDITIONAL RENDERING**: Creator info only shows when creator data is available
+  - **DATABASE OPTIMIZATION**: Enhanced existing query without performance impact
+  - **USER TRANSPARENCY**: Users can now see who created each package for better tracking
+  - **PROFESSIONAL LAYOUT**: Creator info positioned below remitente/destinatario with proper spacing
+
 - **July 19, 2025** - COMPLETED: Real-time cache optimization for reservations list with manual refresh functionality:
   - **RESTRICTIVE CACHE ELIMINATED**: Removed overly restrictive cache settings that prevented real-time updates in reservation list
   - **AUTOMATIC REFRESH**: Configured automatic data refresh every 30 seconds for live updates
