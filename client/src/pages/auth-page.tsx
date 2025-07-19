@@ -29,14 +29,21 @@ export default function AuthPage() {
   // Si el usuario ya está autenticado, redirigir según su rol
   useEffect(() => {
     if (user) {
-      // Si es comisionista, redirigir directamente a la sección de viajes
-      if (user.role === "comisionista") {
-        setLocation("/?tab=trips");
-      } else if (user.role === "chofer") {
-        // Si es chofer, redirigir directamente a reservaciones en lista
+      console.log(`[AUTH] Usuario autenticado: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Roles que deben ir directamente a reservaciones-list
+      if (user.role === "chofer" || user.role === "checador") {
+        console.log(`[AUTH] Redirigiendo ${user.role} a /reservations-list`);
         setLocation("/reservations-list");
-      } else {
-        // Para otros roles, ir a la página principal
+      } 
+      // Si es comisionista, redirigir directamente a la sección de viajes en dashboard
+      else if (user.role === "comisionista") {
+        console.log(`[AUTH] Redirigiendo ${user.role} a /?tab=trips`);
+        setLocation("/?tab=trips");
+      } 
+      // Para otros roles, ir a la página principal
+      else {
+        console.log(`[AUTH] Redirigiendo ${user.role} a /`);
         setLocation("/");
       }
     }
