@@ -68,14 +68,16 @@ function matchPackageToTrip(pkg: any, recordId?: string, tripInfo?: any): boolea
     const packageBaseId = packageTripId.split('_')[0];
     const currentBaseId = currentTripId.split('_')[0];
     
-    // Solo coincidir por base ID si ambos tienen el mismo ID base Y el mismo segmento (o ningún segmento)
+    // Solo coincidir por base ID si ambos tienen el mismo ID base
     if (packageBaseId === currentBaseId) {
       const packageSegment = packageTripId.includes('_') ? packageTripId.split('_')[1] : null;
       const currentSegment = currentTripId.includes('_') ? currentTripId.split('_')[1] : null;
       
-      // Solo coincidir si los segmentos también coinciden (o ambos son null)
-      if (packageSegment === currentSegment) {
-        console.log(`[matchPackageToTrip] Package ${pkg.id} matches by base tripId with segment:`, packageBaseId, 'segment:', packageSegment);
+      // Coincidir si:
+      // 1. Los segmentos son exactamente iguales, O
+      // 2. El viaje actual no tiene segmento (es el viaje principal) y el paquete sí tiene segmento
+      if (packageSegment === currentSegment || (currentSegment === null && packageSegment !== null)) {
+        console.log(`[matchPackageToTrip] Package ${pkg.id} matches by base tripId:`, packageBaseId, 'packageSegment:', packageSegment, 'currentSegment:', currentSegment);
         return true;
       }
     }
