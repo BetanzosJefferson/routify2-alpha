@@ -19,7 +19,8 @@ import {
   Calculator,
   PlusCircle,
   Trash2,
-  Loader2
+  Loader2,
+  Check
   
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +87,7 @@ export function ReservationDetailsSidebar({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
 
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
@@ -418,6 +420,44 @@ export function ReservationDetailsSidebar({
     packagesError: packagesError?.message
   });
 
+  // Función para copiar teléfono con feedback visual
+  const handleCopyPhone = async (phone: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        // Método moderno para navegadores compatibles
+        await navigator.clipboard.writeText(phone);
+      } else {
+        // Fallback para navegadores más antiguos
+        const textArea = document.createElement("textarea");
+        textArea.value = phone;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
+      
+      // Mostrar feedback visual
+      setCopiedPhone(phone);
+      setTimeout(() => setCopiedPhone(null), 2000);
+      
+      toast({
+        title: "Copiado",
+        description: "Número de teléfono copiado al portapapeles",
+      });
+    } catch (err) {
+      console.error('Error al copiar:', err);
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el número de teléfono",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Efecto para detectar clics fuera del sidebar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -743,13 +783,19 @@ export function ReservationDetailsSidebar({
                             {reservation.phone}
                           </a>
                           <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(reservation.phone || '');
-                            }}
-                            className="ml-2 p-1 rounded-sm hover:bg-gray-100"
+                            onClick={() => handleCopyPhone(reservation.phone || '')}
+                            className={`ml-2 p-1 rounded-sm hover:bg-gray-100 transition-colors duration-200 ${
+                              copiedPhone === reservation.phone 
+                                ? 'bg-green-100 text-green-600' 
+                                : 'text-gray-500'
+                            }`}
                             title="Copiar al portapapeles"
                           >
-                            <ClipboardCopy className="h-3.5 w-3.5 text-gray-500" />
+                            {copiedPhone === reservation.phone ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              <ClipboardCopy className="h-3.5 w-3.5" />
+                            )}
                           </button>
                         </div>
                       </div>
