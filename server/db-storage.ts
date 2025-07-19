@@ -1862,22 +1862,22 @@ export class DatabaseStorage implements IStorage {
         console.log(`[getReservations] Cargando transacciones para reservación ${reservation.id}`);
         const transactionResults = await db
           .select({
-            id: transacciones.id,
-            description: transacciones.description,
-            amount: transacciones.amount,
-            type: transacciones.type,
-            method: transacciones.method,
-            status: transacciones.status,
-            createdAt: transacciones.createdAt,
-            userId: transacciones.user_id,
-            cutoffId: transacciones.cutoff_id,
-            details: transacciones.details
+            id: schema.transacciones.id,
+            description: schema.transacciones.description,
+            amount: schema.transacciones.amount,
+            type: schema.transacciones.type,
+            method: schema.transacciones.method,
+            status: schema.transacciones.status,
+            createdAt: schema.transacciones.createdAt,
+            userId: schema.transacciones.user_id,
+            cutoffId: schema.transacciones.cutoff_id,
+            details: schema.transacciones.details
           })
-          .from(transacciones)
+          .from(schema.transacciones)
           .where(
             and(
-              sql`CAST(JSON_EXTRACT(${transacciones.details}, '$.details.id') AS INTEGER) = ${reservation.id}`,
-              eq(transacciones.companyId, reservation.companyId)
+              sql`CAST(JSON_EXTRACT(${schema.transacciones.details}, '$.details.id') AS INTEGER) = ${reservation.id}`,
+              eq(schema.transacciones.companyId, reservation.companyId)
             )
           );
         
