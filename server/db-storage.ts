@@ -1141,9 +1141,6 @@ export class DatabaseStorage implements IStorage {
     console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
     
     try {
-      // Crear alias para el usuario creador de la transacción
-      const transactionCreator = alias(schema.users, 'transaction_creator');
-
       // Consulta única con todos los JOINs necesarios
       const query = db
         .select({
@@ -1218,16 +1215,6 @@ export class DatabaseStorage implements IStorage {
           passengerAge: schema.passengers.age,
           passengerSeat: schema.passengers.seat,
 
-          // Campos de transacción
-          transactionId: schema.transacciones.id,
-          transactionUserId: schema.transacciones.user_id,
-          transactionCutoffId: schema.transacciones.cutoff_id,
-
-          // Campos del usuario creador de transacción
-          transactionCreatorId: transactionCreator.id,
-          transactionCreatorFirstName: transactionCreator.firstName,
-          transactionCreatorLastName: transactionCreator.lastName,
-
         })
         .from(schema.reservations)
         // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}
@@ -1236,9 +1223,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
         .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
-        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id))
-        .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->'details'->>'id' AS INTEGER) = ${schema.reservations.id}`)
-        .leftJoin(transactionCreator, eq(schema.transacciones.user_id, transactionCreator.id));
+        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id));
       
       // Aplicar filtros
       if (companyId) {
@@ -1250,66 +1235,10 @@ export class DatabaseStorage implements IStorage {
       const results = await query;
       console.log(`[getReservationsOptimized] Obtenidos ${results.length} resultados de la consulta`);
       
-      // Transformar resultados agrupando por reservación
+      // Transformar resultados
       const reservationsWithDetails: ReservationWithDetails[] = [];
-      const reservationMap = new Map<number, any>();
       
-      // Agrupar resultados por reservación ID para manejar múltiples transacciones
       for (const result of results) {
-        const reservationId = result.reservationId;
-        
-        if (!reservationMap.has(reservationId)) {
-          reservationMap.set(reservationId, {
-            result: result,
-            transactions: [],
-            passengers: new Set()
-          });
-        }
-        
-        const reservationData = reservationMap.get(reservationId);
-        
-        // Agregar información de transacción si existe
-        if (result.transactionId) {
-          console.log(`[getReservationsOptimized] Procesando transacción ${result.transactionId} para reservación ${result.reservationId}`);
-          const transaction = {
-            id: result.transactionId,
-            userId: result.transactionUserId,
-            cutoffId: result.transactionCutoffId,
-            creator: result.transactionCreatorId ? {
-              id: result.transactionCreatorId,
-              firstName: result.transactionCreatorFirstName,
-              lastName: result.transactionCreatorLastName,
-            } : null
-          };
-          
-          // Evitar duplicados de transacciones
-          const existingTransaction = reservationData.transactions.find(t => t.id === transaction.id);
-          if (!existingTransaction) {
-            console.log(`[getReservationsOptimized] Añadiendo transacción ${transaction.id} a reservación ${result.reservationId}`);
-            reservationData.transactions.push(transaction);
-          } else {
-            console.log(`[getReservationsOptimized] Transacción ${transaction.id} ya existe para reservación ${result.reservationId}`);
-          }
-        }
-        
-        // Agregar información de pasajero si existe
-        if (result.passengerId) {
-          reservationData.passengers.add({
-            id: result.passengerId,
-            firstName: result.passengerFirstName,
-            lastName: result.passengerLastName,
-            documentType: result.passengerDocumentType,
-            documentNumber: result.passengerDocumentNumber,
-            age: result.passengerAge,
-            seat: result.passengerSeat,
-            reservationId: result.reservationId
-          });
-        }
-      }
-      
-      // Procesar cada reservación agrupada
-      for (const [reservationId, reservationData] of reservationMap) {
-        const result = reservationData.result;
         // Reconstruir tripDetails
         let tripDetails = null;
         try {
@@ -1362,8 +1291,17 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
         
-        // Construir datos de pasajeros desde los datos agrupados
-        const passengers = Array.from(reservationData.passengers);
+        // Construir datos de pasajeros desde el LEFT JOIN
+        const passengers = result.passengerId ? [{
+          id: result.passengerId,
+          firstName: result.passengerFirstName,
+          lastName: result.passengerLastName,
+          documentType: result.passengerDocumentType,
+          documentNumber: result.passengerDocumentNumber,
+          age: result.passengerAge,
+          seat: result.passengerSeat,
+          reservationId: result.reservationId
+        }] : [];
         
         // Construir objetos de información
         const route = result.routeId ? {
@@ -1473,15 +1411,25 @@ export class DatabaseStorage implements IStorage {
           checkedAt: result.reservationCheckedAt,
           trip,
           passengers,
-          createdByUser,
-          transactions: reservationData.transactions
+          createdByUser
         };
 
-        // DEBUG: Logging específico para reservaciones con transacciones
-        if (result.reservationId === 604) {
-          console.log(`[DEBUG_TRANSACTIONS] Reservación ${result.reservationId}:`);
-          console.log(`  - Transacciones encontradas: ${reservationData.transactions.length}`);
-          console.log(`  - Transacciones:`, JSON.stringify(reservationData.transactions, null, 2));
+        // DEBUG: Logging específico para reservación 579
+        if (result.reservationId === 579) {
+          console.log(`[DEBUG_579] Datos de reservación 579:`);
+          console.log(`  - totalAmount: ${result.reservationTotalAmount}`);
+          console.log(`  - advanceAmount: ${result.reservationAdvanceAmount}`);
+          console.log(`  - advancePaymentMethod: ${result.reservationAdvancePaymentMethod}`);
+          console.log(`  - paymentStatus: ${result.reservationPaymentStatus}`);
+          console.log(`  - paymentMethod: ${result.reservationPaymentMethod}`);
+          console.log(`  - Objeto final:`, JSON.stringify({
+            id: reservation.id,
+            totalAmount: reservation.totalAmount,
+            advanceAmount: reservation.advanceAmount,
+            advancePaymentMethod: reservation.advancePaymentMethod,
+            paymentStatus: reservation.paymentStatus,
+            paymentMethod: reservation.paymentMethod
+          }, null, 2));
         }
         
         reservationsWithDetails.push(reservation);
@@ -1858,70 +1806,7 @@ export class DatabaseStorage implements IStorage {
           console.log(`[DEBUG_COMMISSION] Reservación ${reservation.id} - reservationResult.commissionPaid: ${reservationResult.commissionPaid}`);
         }
 
-        // CARGAR TRANSACCIONES usando SQL directo para evitar errores de Drizzle
-        console.log(`[getReservations] Cargando transacciones para reservación ${reservation.id}`);
-        
-        let transactions: any[] = [];
-        
-        try {
-          // Usar SQL directo para evitar problemas de Drizzle con campos nullable
-          const transactionQuery = `
-            SELECT 
-              id,
-              description,
-              amount,
-              type,
-              method,
-              status,
-              created_at,
-              user_id,
-              cutoff_id,
-              details,
-              company_id
-            FROM transactions 
-            WHERE CAST(JSON_EXTRACT(details, '$.details.id') AS INTEGER) = $1
-              AND company_id = $2
-            ORDER BY created_at DESC
-          `;
-          
-          const transactionResults = await this.db.execute(sql.raw(transactionQuery, [reservation.id, reservation.companyId]));
-          
-          console.log(`[getReservations] Encontradas ${transactionResults.length} transacciones para reservación ${reservation.id}`);
-          
-          transactions = transactionResults.map((t: any) => ({
-            id: t.id,
-            description: t.description,
-            amount: parseFloat(t.amount || 0),
-            type: t.type,
-            method: t.method,
-            status: t.status,
-            createdAt: t.created_at,
-            userId: t.user_id,
-            cutoffId: t.cutoff_id,
-            details: typeof t.details === 'string' ? JSON.parse(t.details) : t.details,
-            companyId: t.company_id
-          }));
-
-          // DEBUG: Logging específico para reservación 604
-          if (reservation.id === 604) {
-            console.log(`[DEBUG_TRANSACTIONS_SQL] Reservación ${reservation.id}:`);
-            console.log(`  - Query ejecutado: ${transactionQuery}`);
-            console.log(`  - Parámetros: [${reservation.id}, ${reservation.companyId}]`);
-            console.log(`  - Transacciones encontradas: ${transactions.length}`);
-            console.log(`  - Transacciones:`, JSON.stringify(transactions, null, 2));
-          }
-        } catch (error) {
-          console.error(`[getReservations] Error al cargar transacciones para reservación ${reservation.id}:`, error);
-          transactions = [];
-        }
-
-        // Agregar transacciones al resultado final
-        const finalReservationResult = {
-          ...reservationResult,
-          transactions
-        };
-
-        results.push(finalReservationResult);
+        results.push(reservationResult);
       }
       
       const totalTime = Date.now() - startTime;
@@ -3764,8 +3649,7 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
       }
 
-      // Por ahora usamos el método sin JOIN para evitar problemas de Drizzle
-      console.log(`DB Storage: [OPTIMIZED] Usando método sin JOIN para paquetes (temporal)`);
+      // Construir query básica sin JOIN complejo para evitar errores
       let query = this.db.select().from(schema.packages);
 
       // Aplicar condiciones básicas
@@ -3773,23 +3657,20 @@ export class DatabaseStorage implements IStorage {
         query = query.where(and(...conditions));
       }
 
-      console.log(`DB Storage: [OPTIMIZED] Ejecutando query básica de paquetes`);
+      console.log(`DB Storage: [OPTIMIZED] Ejecutando query básica`);
       const startTime = Date.now();
-      const packages = await query;
+      const rawPackages = await query;
       const queryTime = Date.now() - startTime;
-      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${packages.length} paquetes`);
+      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
 
-      // Agregar transacciones vacías temporalmente hasta que arreglemos el JOIN
-      let filteredPackages = packages.map(pkg => ({
-        ...pkg,
-        transactions: []
-      }));
+      // Aplicar filtrado por conductor manualmente si es necesario (temporalmente)
+      let filteredPackages = rawPackages;
       
       if (userRole === 'chofer' && currentUserId) {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro de conductor para usuario ${currentUserId}`);
-        const conductorFilteredPackages = [];
+        filteredPackages = [];
         
-        for (const pkg of filteredPackages) {
+        for (const pkg of rawPackages) {
           const tripDetails = typeof pkg.tripDetails === 'string' 
             ? JSON.parse(pkg.tripDetails) 
             : pkg.tripDetails;
@@ -3810,14 +3691,13 @@ export class DatabaseStorage implements IStorage {
               const tripRecord = await this.getTrip(recordId);
               
               if (tripRecord && tripRecord.driverId === currentUserId) {
-                conductorFilteredPackages.push(pkg);
+                filteredPackages.push(pkg);
               }
             }
           }
         }
         
-        filteredPackages = conductorFilteredPackages;
-        console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${packageMap.size} paquetes para conductor ${currentUserId}`);
+        console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
       }
 
       // Mapear resultados con información del viaje extraída de tripDetails

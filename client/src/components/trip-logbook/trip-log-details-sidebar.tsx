@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle, FileText, User, Receipt } from "lucide-react";
+import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -533,36 +533,6 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           </>
                         )}
                       </div>
-
-                      {/* Información de transacciones */}
-                      {reservation.transactions && reservation.transactions.length > 0 ? (
-                        <div className="space-y-1">
-                          {reservation.transactions.map((transaction, index) => (
-                            <div key={transaction.id} className="flex items-center gap-2 text-sm">
-                              <Receipt className="h-4 w-4 text-gray-600" />
-                              <span className="font-medium">Transacción #{transaction.id}:</span>
-                              <span>
-                                <User className="h-3 w-3 text-gray-600 inline mr-1" />
-                                <span className="font-medium">
-                                  {transaction.creator ? 
-                                    `${transaction.creator.firstName} ${transaction.creator.lastName}` : 
-                                    'Usuario no disponible'
-                                  }
-                                </span>
-                                <span className="text-gray-300 mx-1">|</span>
-                                <span className="font-medium">
-                                  {transaction.cutoffId ? `Corte #${transaction.cutoffId}` : 'Corte pendiente'}
-                                </span>
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Receipt className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium text-gray-400">Sin transacciones</span>
-                        </div>
-                      )}
                     </div>
                     
                     {/* Lista de pasajeros */}
@@ -686,36 +656,6 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           </span>
                           <span className="text-gray-500 ml-1">({pkg.paymentMethod || 'efectivo'})</span>
                         </div>
-
-                        {/* Información de transacciones */}
-                        {pkg.transactions && pkg.transactions.length > 0 ? (
-                          <div className="space-y-1">
-                            {pkg.transactions.map((transaction, index) => (
-                              <div key={transaction.id} className="flex items-center gap-2 text-sm">
-                                <Receipt className="h-4 w-4 text-gray-600" />
-                                <span className="font-medium">Transacción #{transaction.id}:</span>
-                                <span>
-                                  <User className="h-3 w-3 text-gray-600 inline mr-1" />
-                                  <span className="font-medium">
-                                    {transaction.creator ? 
-                                      `${transaction.creator.firstName} ${transaction.creator.lastName}` : 
-                                      'Usuario no disponible'
-                                    }
-                                  </span>
-                                  <span className="text-gray-300 mx-1">|</span>
-                                  <span className="font-medium">
-                                    {transaction.cutoffId ? `Corte #${transaction.cutoffId}` : 'Corte pendiente'}
-                                  </span>
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Receipt className="h-4 w-4 text-gray-400" />
-                            <span className="font-medium text-gray-400">Sin transacciones</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
