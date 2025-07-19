@@ -74,9 +74,9 @@ class GlobalErrorHandler {
       console.error('📋 Información adicional:', additionalInfo);
     }
 
-    // Detectar si es Android y aplicar fixes específicos
+    // Solo log silencioso para Android
     if (this.isAndroid()) {
-      this.handleAndroidSpecificError(error, additionalInfo);
+      console.warn('🤖 Error en Android (silenciado):', error.message);
     }
 
     // Enviar a servicio de logging si está disponible
@@ -87,41 +87,7 @@ class GlobalErrorHandler {
     return /Android/i.test(navigator.userAgent);
   }
 
-  private handleAndroidSpecificError(error: Error, additionalInfo: any) {
-    // Fixes específicos para Android
-    console.warn('🤖 Error en Android detectado:', error.message);
-    
-    // Si es un error de renderizado, intentar limpiar el DOM
-    if (error.message.includes('render') || error.message.includes('component')) {
-      this.clearDOMIfNeeded();
-    }
-    
-    // Si es un error de PDF/blob, mostrar mensaje específico
-    if (error.message.includes('blob') || error.message.includes('PDF')) {
-      this.showAndroidPDFError();
-    }
-  }
 
-  private clearDOMIfNeeded() {
-    try {
-      // Limpiar elementos que puedan estar causando problemas
-      const problematicElements = document.querySelectorAll('[data-error-prone]');
-      problematicElements.forEach(el => el.remove());
-    } catch (e) {
-      console.warn('No se pudo limpiar DOM:', e);
-    }
-  }
-
-  private showAndroidPDFError() {
-    // Mostrar mensaje específico para errores de PDF en Android
-    if (typeof window !== 'undefined' && (window as any).showToast) {
-      (window as any).showToast({
-        title: "Problema con Android",
-        description: "Los PDFs pueden no abrirse correctamente. Intenta usar otro navegador.",
-        variant: "destructive"
-      });
-    }
-  }
 
   private sendToLoggingService(errorInfo: ErrorInfo) {
     // Enviar al backend para logging (opcional)
