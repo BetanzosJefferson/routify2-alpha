@@ -119,6 +119,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 19, 2025** - COMPLETED: Real-time cache optimization for reservations list with manual refresh functionality:
+  - **RESTRICTIVE CACHE ELIMINATED**: Removed overly restrictive cache settings that prevented real-time updates in reservation list
+  - **AUTOMATIC REFRESH**: Configured automatic data refresh every 30 seconds for live updates
+  - **INSTANT DATA**: Set staleTime to 0 to ensure data is always fresh and up-to-date
+  - **WINDOW FOCUS REFRESH**: Added automatic refresh when user returns to window tab
+  - **MANUAL REFRESH BUTTON**: Added prominent "Actualizar" button with loading animation for immediate user control
+  - **LAST UPDATED INDICATOR**: Display timestamp showing when data was last refreshed for user transparency
+  - **OPTIMIZED PERFORMANCE**: Enhanced refetch options without compromising system performance
+  - **CACHE INVALIDATION**: Improved cache invalidation strategy for immediate data consistency
+  - **REAL-TIME UX**: Users now see live reservation changes without needing to reload the page
+
 - **July 19, 2025** - COMPLETED: Error modal removal for improved user experience:
   - **CONFUSING MODALS ELIMINATED**: Removed unnecessary "Error en la barra lateral" modal that was confusing users on Android devices
   - **SILENT ERROR HANDLING**: Converted error dialogs to silent console warnings that don't interrupt user workflow

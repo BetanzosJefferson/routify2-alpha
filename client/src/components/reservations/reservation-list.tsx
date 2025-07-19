@@ -13,7 +13,7 @@ import {
   PhoneIcon,
   MailIcon,
   CalendarIcon,
-
+  RefreshCw,
   FilterIcon,
   QrCode,
   ExternalLink,
@@ -167,11 +167,16 @@ export function ReservationList() {
     reservationId: null
   });
 
+  // Estado para actualización manual
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
   // Utilizar el nuevo hook especializado para cargar reservaciones
   const {
     data: reservations,
     isLoading,
-    error: reservationsError
+    error: reservationsError,
+    refetch: refetchReservations
   } = useReservations({
     // No filtrar por fecha en el backend - traer todas las reservaciones
     // El filtrado se hará en el frontend después de agrupar por viaje padre
@@ -685,6 +690,43 @@ export function ReservationList() {
     setCurrentPage(1); // Reset to first page on search
   };
 
+  // Función para actualización manual
+  const handleManualRefresh = async () => {
+    try {
+      setIsManualRefreshing(true);
+      
+      // Invalidar cache y refetch
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/reservations"]
+      });
+      
+      await refetchReservations();
+      setLastUpdated(new Date());
+      
+      toast({
+        title: "Actualizado",
+        description: "Las reservaciones se han actualizado correctamente",
+        variant: "default",
+      });
+    } catch (error) {
+      console.warn('Error al actualizar reservaciones:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar las reservaciones",
+        variant: "destructive",
+      });
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
+
+  // Efecto para actualizar timestamp cuando se cargan datos nuevos
+  useEffect(() => {
+    if (reservations && !isLoading) {
+      setLastUpdated(new Date());
+    }
+  }, [reservations, isLoading]);
+
   return (
     <div className="py-6">
       <Card>
@@ -696,6 +738,21 @@ export function ReservationList() {
               <CardTitle className="text-lg">
                 {user?.role === 'checador' || user?.role === 'comisionista' ? 'Mis reservaciones' : 'Reservaciones'}
               </CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualRefresh}
+                disabled={isManualRefreshing}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isManualRefreshing ? 'animate-spin' : ''}`} />
+                {isManualRefreshing ? 'Actualizando...' : 'Actualizar'}
+              </Button>
+              <div className="text-xs text-gray-500">
+                Última actualización: {lastUpdated.toLocaleTimeString()}
+              </div>
             </div>
           </div>
 
