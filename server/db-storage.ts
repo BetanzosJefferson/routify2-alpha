@@ -1141,6 +1141,9 @@ export class DatabaseStorage implements IStorage {
     console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
     
     try {
+      // Crear alias para el usuario creador de la transacción
+      const transactionCreator = alias(schema.users, 'transaction_creator');
+
       // Consulta única con todos los JOINs necesarios
       const query = db
         .select({
@@ -1215,6 +1218,16 @@ export class DatabaseStorage implements IStorage {
           passengerAge: schema.passengers.age,
           passengerSeat: schema.passengers.seat,
 
+          // Campos de transacción
+          transactionId: schema.transacciones.id,
+          transactionUserId: schema.transacciones.user_id,
+          transactionCutoffId: schema.transacciones.cutoff_id,
+
+          // Campos del usuario creador de transacción
+          transactionCreatorId: transactionCreator.id,
+          transactionCreatorFirstName: transactionCreator.firstName,
+          transactionCreatorLastName: transactionCreator.lastName,
+
         })
         .from(schema.reservations)
         // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}
@@ -1223,7 +1236,9 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
         .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
-        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id));
+        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id))
+        .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->>'reservationId' AS INTEGER) = ${schema.reservations.id}`)
+        .leftJoin(transactionCreator, eq(schema.transacciones.user_id, transactionCreator.id));
       
       // Aplicar filtros
       if (companyId) {
@@ -1235,10 +1250,62 @@ export class DatabaseStorage implements IStorage {
       const results = await query;
       console.log(`[getReservationsOptimized] Obtenidos ${results.length} resultados de la consulta`);
       
-      // Transformar resultados
+      // Transformar resultados agrupando por reservación
       const reservationsWithDetails: ReservationWithDetails[] = [];
+      const reservationMap = new Map<number, any>();
       
+      // Agrupar resultados por reservación ID para manejar múltiples transacciones
       for (const result of results) {
+        const reservationId = result.reservationId;
+        
+        if (!reservationMap.has(reservationId)) {
+          reservationMap.set(reservationId, {
+            result: result,
+            transactions: [],
+            passengers: new Set()
+          });
+        }
+        
+        const reservationData = reservationMap.get(reservationId);
+        
+        // Agregar información de transacción si existe
+        if (result.transactionId) {
+          const transaction = {
+            id: result.transactionId,
+            userId: result.transactionUserId,
+            cutoffId: result.transactionCutoffId,
+            creator: result.transactionCreatorId ? {
+              id: result.transactionCreatorId,
+              firstName: result.transactionCreatorFirstName,
+              lastName: result.transactionCreatorLastName,
+            } : null
+          };
+          
+          // Evitar duplicados de transacciones
+          const existingTransaction = reservationData.transactions.find(t => t.id === transaction.id);
+          if (!existingTransaction) {
+            reservationData.transactions.push(transaction);
+          }
+        }
+        
+        // Agregar información de pasajero si existe
+        if (result.passengerId) {
+          reservationData.passengers.add({
+            id: result.passengerId,
+            firstName: result.passengerFirstName,
+            lastName: result.passengerLastName,
+            documentType: result.passengerDocumentType,
+            documentNumber: result.passengerDocumentNumber,
+            age: result.passengerAge,
+            seat: result.passengerSeat,
+            reservationId: result.reservationId
+          });
+        }
+      }
+      
+      // Procesar cada reservación agrupada
+      for (const [reservationId, reservationData] of reservationMap) {
+        const result = reservationData.result;
         // Reconstruir tripDetails
         let tripDetails = null;
         try {
@@ -1291,17 +1358,8 @@ export class DatabaseStorage implements IStorage {
           continue;
         }
         
-        // Construir datos de pasajeros desde el LEFT JOIN
-        const passengers = result.passengerId ? [{
-          id: result.passengerId,
-          firstName: result.passengerFirstName,
-          lastName: result.passengerLastName,
-          documentType: result.passengerDocumentType,
-          documentNumber: result.passengerDocumentNumber,
-          age: result.passengerAge,
-          seat: result.passengerSeat,
-          reservationId: result.reservationId
-        }] : [];
+        // Construir datos de pasajeros desde los datos agrupados
+        const passengers = Array.from(reservationData.passengers);
         
         // Construir objetos de información
         const route = result.routeId ? {
@@ -1411,7 +1469,8 @@ export class DatabaseStorage implements IStorage {
           checkedAt: result.reservationCheckedAt,
           trip,
           passengers,
-          createdByUser
+          createdByUser,
+          transactions: reservationData.transactions
         };
 
         // DEBUG: Logging específico para reservación 579
@@ -3649,28 +3708,128 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
       }
 
-      // Construir query básica sin JOIN complejo para evitar errores
-      let query = this.db.select().from(schema.packages);
+      // Crear alias para el usuario creador de la transacción
+      const transactionCreator = alias(schema.users, 'package_transaction_creator');
+
+      // Construir query con JOIN para transacciones
+      let query = this.db.select({
+        // Campos del paquete
+        packageId: schema.packages.id,
+        packageCompanyId: schema.packages.companyId,
+        packageTripDetails: schema.packages.tripDetails,
+        packageSenderName: schema.packages.senderName,
+        packageSenderLastName: schema.packages.senderLastName,
+        packageSenderPhone: schema.packages.senderPhone,
+        packageRecipientName: schema.packages.recipientName,
+        packageRecipientLastName: schema.packages.recipientLastName,
+        packageRecipientPhone: schema.packages.recipientPhone,
+        packageDescription: schema.packages.packageDescription,
+        packagePrice: schema.packages.price,
+        packageUsesSeats: schema.packages.usesSeats,
+        packageSeatsQuantity: schema.packages.seatsQuantity,
+        packagePaymentMethod: schema.packages.paymentMethod,
+        packagePaymentStatus: schema.packages.paymentStatus,
+        packageDeliveryStatus: schema.packages.deliveryStatus,
+        packageCreatedAt: schema.packages.createdAt,
+        packageUpdatedAt: schema.packages.updatedAt,
+        packageShippingDate: schema.packages.shippingDate,
+        packageDeliveredAt: schema.packages.deliveredAt,
+        packageOrigin: schema.packages.origin,
+        packageDestination: schema.packages.destination,
+        packageTripId: schema.packages.tripId,
+
+        // Campos de transacción
+        transactionId: schema.transacciones.id,
+        transactionUserId: schema.transacciones.user_id,
+        transactionCutoffId: schema.transacciones.cutoff_id,
+
+        // Campos del usuario creador de transacción
+        transactionCreatorId: transactionCreator.id,
+        transactionCreatorFirstName: transactionCreator.firstName,
+        transactionCreatorLastName: transactionCreator.lastName,
+      })
+      .from(schema.packages)
+      .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->>'packageId' AS INTEGER) = ${schema.packages.id}`)
+      .leftJoin(transactionCreator, eq(schema.transacciones.user_id, transactionCreator.id));
 
       // Aplicar condiciones básicas
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      console.log(`DB Storage: [OPTIMIZED] Ejecutando query básica`);
+      console.log(`DB Storage: [OPTIMIZED] Ejecutando query con transacciones`);
       const startTime = Date.now();
-      const rawPackages = await query;
+      const rawResults = await query;
       const queryTime = Date.now() - startTime;
-      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
+      console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawResults.length} resultados`);
 
-      // Aplicar filtrado por conductor manualmente si es necesario (temporalmente)
-      let filteredPackages = rawPackages;
+      // Agrupar resultados por paquete ID para manejar múltiples transacciones
+      const packageMap = new Map<number, any>();
+      
+      for (const result of rawResults) {
+        const packageId = result.packageId;
+        
+        if (!packageMap.has(packageId)) {
+          packageMap.set(packageId, {
+            // Reconstruir objeto paquete
+            id: result.packageId,
+            companyId: result.packageCompanyId,
+            tripDetails: result.packageTripDetails,
+            senderName: result.packageSenderName,
+            senderLastName: result.packageSenderLastName,
+            senderPhone: result.packageSenderPhone,
+            recipientName: result.packageRecipientName,
+            recipientLastName: result.packageRecipientLastName,
+            recipientPhone: result.packageRecipientPhone,
+            packageDescription: result.packageDescription,
+            price: result.packagePrice,
+            usesSeats: result.packageUsesSeats,
+            seatsQuantity: result.packageSeatsQuantity,
+            paymentMethod: result.packagePaymentMethod,
+            paymentStatus: result.packagePaymentStatus,
+            deliveryStatus: result.packageDeliveryStatus,
+            createdAt: result.packageCreatedAt,
+            updatedAt: result.packageUpdatedAt,
+            shippingDate: result.packageShippingDate,
+            deliveredAt: result.packageDeliveredAt,
+            origin: result.packageOrigin,
+            destination: result.packageDestination,
+            tripId: result.packageTripId,
+            transactions: []
+          });
+        }
+        
+        const packageData = packageMap.get(packageId);
+        
+        // Agregar información de transacción si existe
+        if (result.transactionId) {
+          const transaction = {
+            id: result.transactionId,
+            userId: result.transactionUserId,
+            cutoffId: result.transactionCutoffId,
+            creator: result.transactionCreatorId ? {
+              id: result.transactionCreatorId,
+              firstName: result.transactionCreatorFirstName,
+              lastName: result.transactionCreatorLastName,
+            } : null
+          };
+          
+          // Evitar duplicados de transacciones
+          const existingTransaction = packageData.transactions.find(t => t.id === transaction.id);
+          if (!existingTransaction) {
+            packageData.transactions.push(transaction);
+          }
+        }
+      }
+
+      // Convertir Map a array de paquetes
+      let filteredPackages = Array.from(packageMap.values());
       
       if (userRole === 'chofer' && currentUserId) {
         console.log(`DB Storage: [OPTIMIZED] Aplicando filtro de conductor para usuario ${currentUserId}`);
-        filteredPackages = [];
+        const conductorFilteredPackages = [];
         
-        for (const pkg of rawPackages) {
+        for (const pkg of filteredPackages) {
           const tripDetails = typeof pkg.tripDetails === 'string' 
             ? JSON.parse(pkg.tripDetails) 
             : pkg.tripDetails;
@@ -3691,13 +3850,14 @@ export class DatabaseStorage implements IStorage {
               const tripRecord = await this.getTrip(recordId);
               
               if (tripRecord && tripRecord.driverId === currentUserId) {
-                filteredPackages.push(pkg);
+                conductorFilteredPackages.push(pkg);
               }
             }
           }
         }
         
-        console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
+        filteredPackages = conductorFilteredPackages;
+        console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${packageMap.size} paquetes para conductor ${currentUserId}`);
       }
 
       // Mapear resultados con información del viaje extraída de tripDetails
