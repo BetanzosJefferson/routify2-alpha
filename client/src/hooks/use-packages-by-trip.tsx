@@ -43,7 +43,7 @@ export function usePackagesByTrip({ recordId, tripInfo, enabled = true }: Packag
 function matchPackageToTrip(pkg: any, recordId?: string, tripInfo?: any): boolean {
   const packageTripDetails = pkg.tripDetails;
   
-  if (!packageTripDetails || !tripInfo) {
+  if (!packageTripDetails) {
     return false;
   }
   
@@ -53,26 +53,31 @@ function matchPackageToTrip(pkg: any, recordId?: string, tripInfo?: any): boolea
     return true;
   }
   
-  // 2. Coincidencia por tripId base (extraer el número base del tripId)
+  // 2. Coincidencia por tripId completo (incluyendo segmento si existe)
   if (recordId && packageTripDetails.tripId) {
-    const packageBaseId = packageTripDetails.tripId.toString().split('_')[0];
-    const tripBaseId = recordId.toString().split('_')[0];
+    const packageTripId = packageTripDetails.tripId.toString();
+    const currentTripId = recordId.toString();
     
-    if (packageBaseId === tripBaseId) {
-      console.log(`[matchPackageToTrip] Package ${pkg.id} matches by base tripId:`, packageBaseId);
+    // Comparación exacta del tripId completo
+    if (packageTripId === currentTripId) {
+      console.log(`[matchPackageToTrip] Package ${pkg.id} matches by exact tripId:`, packageTripId);
       return true;
     }
-  }
-  
-  // 3. Coincidencia por fecha + origen + destino del viaje padre
-  if (tripInfo.departureDate && tripInfo.origin && tripInfo.destination) {
-    const dateMatches = packageTripDetails.departureDate === tripInfo.departureDate;
-    const originMatches = packageTripDetails.origin === tripInfo.origin;
-    const destinationMatches = packageTripDetails.destination === tripInfo.destination;
     
-    if (dateMatches && originMatches && destinationMatches) {
-      console.log(`[matchPackageToTrip] Package ${pkg.id} matches by date+route`);
-      return true;
+    // Si el paquete tiene un tripId base y el viaje actual también, compararlos
+    const packageBaseId = packageTripId.split('_')[0];
+    const currentBaseId = currentTripId.split('_')[0];
+    
+    // Solo coincidir por base ID si ambos tienen el mismo ID base Y el mismo segmento (o ningún segmento)
+    if (packageBaseId === currentBaseId) {
+      const packageSegment = packageTripId.includes('_') ? packageTripId.split('_')[1] : null;
+      const currentSegment = currentTripId.includes('_') ? currentTripId.split('_')[1] : null;
+      
+      // Solo coincidir si los segmentos también coinciden (o ambos son null)
+      if (packageSegment === currentSegment) {
+        console.log(`[matchPackageToTrip] Package ${pkg.id} matches by base tripId with segment:`, packageBaseId, 'segment:', packageSegment);
+        return true;
+      }
     }
   }
   
