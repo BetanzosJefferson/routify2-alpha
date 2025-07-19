@@ -1237,7 +1237,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
         .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
         .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id))
-        .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->>'reservationId' AS INTEGER) = ${schema.reservations.id}`)
+        .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->'details'->>'id' AS INTEGER) = ${schema.reservations.id}`)
         .leftJoin(transactionCreator, eq(schema.transacciones.user_id, transactionCreator.id));
       
       // Aplicar filtros
@@ -3749,7 +3749,7 @@ export class DatabaseStorage implements IStorage {
         transactionCreatorLastName: transactionCreator.lastName,
       })
       .from(schema.packages)
-      .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->>'packageId' AS INTEGER) = ${schema.packages.id}`)
+      .leftJoin(schema.transacciones, sql`CAST(${schema.transacciones.details}->'details'->>'id' AS INTEGER) = ${schema.packages.id}`)
       .leftJoin(transactionCreator, eq(schema.transacciones.user_id, transactionCreator.id));
 
       // Aplicar condiciones básicas
