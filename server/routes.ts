@@ -5593,6 +5593,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // GET /api/users/quick-switch - Obtener usuarios para cambio rápido (solo información básica)
+  app.get(apiRouter('/users/quick-switch'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, 'superAdmin', 'dueño', 'admin']), async (req, res) => {
+    try {
+      const user = req.user as Express.User;
+      let users;
+      
+      console.log(`[GET /api/users/quick-switch] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      if (user.role === UserRole.SUPER_ADMIN || user.role === 'superAdmin') {
+        // Superadmin puede ver todos los usuarios
+        users = await storage.getUsers();
+      } else {
+        // Owner y Admin solo ven usuarios de su compañía
+        const companyFilter = user.companyId || user.company || '';
+        users = await storage.getUsersByCompany(companyFilter);
+      }
+      
+      // Devolver solo información básica necesaria para el selector
+      const quickSwitchUsers = users.map(u => ({
+        id: u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        companyId: u.companyId || u.company
+      }));
+      
+      console.log(`[GET /api/users/quick-switch] Encontrados ${quickSwitchUsers.length} usuarios para cambio rápido`);
+      
+      res.json(quickSwitchUsers);
+    } catch (error) {
+      console.error('Error al obtener usuarios para cambio rápido:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  });
+  
   // GET /api/users/:id - Obtener un usuario por ID
   app.get(apiRouter('/users/:id'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN]), async (req, res) => {
     try {
