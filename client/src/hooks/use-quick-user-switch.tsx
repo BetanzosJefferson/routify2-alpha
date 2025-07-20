@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "./use-auth";
 import { useToast } from "./use-toast";
 
@@ -16,6 +17,7 @@ const STORAGE_KEY = "transroute_quick_switch_users";
 export function useQuickUserSwitch() {
   const { loginMutation, logoutMutation, user: currentUser } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [savedUsers, setSavedUsers] = useState<QuickSwitchUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -87,7 +89,7 @@ export function useQuickUserSwitch() {
     saveUsersToStorage(updatedUsers);
   };
 
-  // Cambiar a otro usuario
+  // Cambiar a otro usuario sin cerrar sesión actual
   const switchToUser = async (targetUser: QuickSwitchUser) => {
     if (!targetUser.password) {
       toast({
@@ -100,24 +102,39 @@ export function useQuickUserSwitch() {
 
     setIsLoading(true);
     try {
-      console.log(`[QUICK_SWITCH] Cambiando de ${currentUser?.firstName} a ${targetUser.firstName}`);
+      console.log(`[QUICK_SWITCH] Cambiando de ${currentUser?.firstName} a ${targetUser.firstName} sin logout`);
       
-      // Hacer logout primero
-      await logoutMutation.mutateAsync();
-      
-      // Esperar un momento para asegurar que el logout se completó
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Hacer login con el nuevo usuario
-      await loginMutation.mutateAsync({
-        email: targetUser.email,
-        password: targetUser.password,
+      // Validar credenciales sin hacer logout
+      const response = await fetch("/api/auth/quick-switch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: targetUser.email,
+          password: targetUser.password,
+        }),
+        credentials: "include",
       });
+
+      if (!response.ok) {
+        throw new Error("Credenciales inválidas");
+      }
+
+      const newUserData = await response.json();
+      
+      // Invalidar la query del usuario actual para forzar actualización
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       
       toast({
         title: "Cambio exitoso",
-        description: `Ahora eres ${targetUser.firstName} ${targetUser.lastName}`,
+        description: `Ahora eres ${newUserData.firstName} ${newUserData.lastName}`,
       });
+      
+      // Recargar la página para asegurar que toda la interfaz se actualice con el nuevo usuario
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
       
     } catch (error) {
       console.error("Error switching user:", error);
