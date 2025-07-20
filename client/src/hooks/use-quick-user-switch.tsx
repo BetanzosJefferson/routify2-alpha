@@ -89,6 +89,29 @@ export function useQuickUserSwitch() {
     saveUsersToStorage(updatedUsers);
   };
 
+  // Agregar cualquier usuario a favoritos
+  const addUserToFavorites = (user: QuickSwitchUser) => {
+    const existingIndex = savedUsers.findIndex(u => u.email === user.email);
+    let updatedUsers: QuickSwitchUser[];
+
+    if (existingIndex >= 0) {
+      updatedUsers = [...savedUsers];
+      updatedUsers[existingIndex] = user;
+      toast({
+        title: "Usuario actualizado",
+        description: `${user.firstName} ${user.lastName} actualizado en favoritos`,
+      });
+    } else {
+      updatedUsers = [...savedUsers, user];
+      toast({
+        title: "Usuario agregado",
+        description: `${user.firstName} ${user.lastName} agregado a favoritos`,
+      });
+    }
+
+    saveUsersToStorage(updatedUsers);
+  };
+
   // Cambiar a otro usuario sin cerrar sesión actual
   const switchToUser = async (targetUser: QuickSwitchUser) => {
     if (!targetUser.password) {
@@ -171,6 +194,7 @@ export function useQuickUserSwitch() {
     savedUsers,
     isLoading,
     addCurrentUserToFavorites,
+    addUserToFavorites,
     switchToUser,
     removeUser,
     clearAllUsers,

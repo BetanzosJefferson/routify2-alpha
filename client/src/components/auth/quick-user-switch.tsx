@@ -44,6 +44,7 @@ export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
     savedUsers, 
     isLoading, 
     addCurrentUserToFavorites, 
+    addUserToFavorites,
     switchToUser, 
     removeUser, 
     clearAllUsers 
@@ -55,6 +56,9 @@ export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
   const [showBrowseDialog, setShowBrowseDialog] = useState(false);
   const [browsePassword, setBrowsePassword] = useState("");
   const [selectedUser, setSelectedUser] = useState<QuickSwitchUser | null>(null);
+  const [showAddOtherUserDialog, setShowAddOtherUserDialog] = useState(false);
+  const [otherUserEmail, setOtherUserEmail] = useState("");
+  const [otherUserPassword, setOtherUserPassword] = useState("");
 
   // Consultar usuarios disponibles
   const { data: availableUsers = [], isLoading: isLoadingUsers } = useQuery({
@@ -113,6 +117,51 @@ export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
     setShowBrowseDialog(false);
     setBrowsePassword("");
     setSelectedUser(null);
+  };
+
+  // Agregar otro usuario con email y contraseña
+  const handleAddOtherUser = async () => {
+    if (!otherUserEmail.trim() || !otherUserPassword.trim()) return;
+
+    try {
+      // Validar credenciales y obtener información del usuario
+      const response = await fetch("/api/users/quick-switch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: otherUserEmail,
+          password: otherUserPassword,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Credenciales inválidas o usuario no encontrado");
+      }
+
+      const userData = await response.json();
+      
+      // Agregar a la lista de usuarios favoritos
+      const userToAdd: QuickSwitchUser = {
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        password: otherUserPassword,
+      };
+
+      addUserToFavorites(userToAdd);
+      
+      setShowAddOtherUserDialog(false);
+      setOtherUserEmail("");
+      setOtherUserPassword("");
+    } catch (error) {
+      console.error("Error adding other user:", error);
+      // El toast de error se maneja en addCurrentUserToFavorites
+    }
   };
 
   // Filtrar usuarios guardados que no sean el actual
@@ -180,7 +229,13 @@ export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
           {/* Agregar usuario actual */}
           <DropdownMenuItem onClick={() => setShowAddDialog(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
-            {currentUserInFavorites ? "Actualizar credenciales" : "Agregar a favoritos"}
+            {currentUserInFavorites ? "Actualizar mis credenciales" : "Agregar mi usuario"}
+          </DropdownMenuItem>
+          
+          {/* Agregar otro usuario */}
+          <DropdownMenuItem onClick={() => setShowAddOtherUserDialog(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Agregar otro usuario
           </DropdownMenuItem>
           
           {/* Explorar usuarios disponibles */}
@@ -431,6 +486,76 @@ export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
                   </>
                 ) : (
                   'Cambiar usuario'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para agregar otro usuario */}
+      <Dialog open={showAddOtherUserDialog} onOpenChange={setShowAddOtherUserDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar otro usuario</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Agrega las credenciales de otro usuario para poder cambiar rápidamente entre cuentas.
+              </AlertDescription>
+            </Alert>
+            
+            <div className="space-y-2">
+              <Label htmlFor="otherUserEmail">Correo electrónico</Label>
+              <Input
+                id="otherUserEmail"
+                type="email"
+                value={otherUserEmail}
+                onChange={(e) => setOtherUserEmail(e.target.value)}
+                placeholder="ejemplo@correo.com"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="otherUserPassword">Contraseña</Label>
+              <Input
+                id="otherUserPassword"
+                type="password"
+                value={otherUserPassword}
+                onChange={(e) => setOtherUserPassword(e.target.value)}
+                placeholder="Contraseña del usuario"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddOtherUser();
+                  }
+                }}
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAddOtherUserDialog(false);
+                  setOtherUserEmail("");
+                  setOtherUserPassword("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleAddOtherUser}
+                disabled={!otherUserEmail.trim() || !otherUserPassword.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Verificando...
+                  </>
+                ) : (
+                  'Agregar usuario'
                 )}
               </Button>
             </div>

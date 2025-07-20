@@ -5628,6 +5628,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Error interno del servidor' });
     }
   });
+
+  // POST /api/users/quick-switch - Validar credenciales de usuario para cambio rápido
+  app.post(apiRouter('/users/quick-switch'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, 'superAdmin', 'dueño', 'admin']), async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email y contraseña son requeridos' });
+      }
+
+      console.log(`[POST /api/users/quick-switch] Validando credenciales para: ${email}`);
+      
+      // Buscar usuario por email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        console.log(`[POST /api/users/quick-switch] Usuario no encontrado: ${email}`);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      // Verificar contraseña
+      const bcrypt = require('bcryptjs');
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      
+      if (!isValidPassword) {
+        console.log(`[POST /api/users/quick-switch] Contraseña incorrecta para: ${email}`);
+        return res.status(401).json({ message: 'Contraseña incorrecta' });
+      }
+
+      // Verificar permisos de acceso (mismo que GET)
+      const requestingUser = req.user as Express.User;
+      
+      if (requestingUser.role !== UserRole.SUPER_ADMIN && requestingUser.role !== 'superAdmin') {
+        // Owner y Admin solo pueden validar usuarios de su compañía
+        const requestingUserCompany = requestingUser.companyId || requestingUser.company || '';
+        const targetUserCompany = user.companyId || user.company || '';
+        
+        if (targetUserCompany !== requestingUserCompany) {
+          console.log(`[POST /api/users/quick-switch] Sin permisos para usuario de otra compañía: ${email}`);
+          return res.status(403).json({ message: 'No tienes permisos para acceder a este usuario' });
+        }
+      }
+
+      // Devolver información del usuario validado (sin la contraseña)
+      const userInfo = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        companyId: user.companyId || user.company
+      };
+
+      console.log(`[POST /api/users/quick-switch] Credenciales válidas para: ${user.firstName} ${user.lastName}`);
+      
+      res.json(userInfo);
+    } catch (error) {
+      console.error('Error al validar credenciales para cambio rápido:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  });
   
   // GET /api/users/:id - Obtener un usuario por ID
   app.get(apiRouter('/users/:id'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN]), async (req, res) => {
