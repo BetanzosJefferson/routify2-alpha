@@ -301,8 +301,8 @@ export function setupAuthentication(app: Express) {
       console.log(`[QUICK_SWITCH] Usuario objetivo: ${targetUser.first_name}, Rol: ${targetUser.role}`);
       
       if (currentUser.role !== 'superAdmin' && currentUser.role !== 'SUPER_ADMIN') {
-        const currentUserCompany = currentUser.companyId || currentUser.company;
-        const targetUserCompany = targetUser.company_id || targetUser.company;
+        const currentUserCompany = currentUser.companyId || currentUser.company_id;
+        const targetUserCompany = targetUser.company_id;
         
         console.log(`[QUICK_SWITCH] Compañía usuario actual: ${currentUserCompany}`);
         console.log(`[QUICK_SWITCH] Compañía usuario objetivo: ${targetUserCompany}`);
