@@ -298,11 +298,11 @@ export function setupAuthentication(app: Express) {
       // Verificar permisos de compañía (solo super admin puede cambiar a cualquier usuario)
       const currentUser = req.user as any;
       console.log(`[QUICK_SWITCH] Usuario actual: ${currentUser.firstName}, Rol: ${currentUser.role}`);
-      console.log(`[QUICK_SWITCH] Usuario objetivo: ${targetUser.first_name}, Rol: ${targetUser.role}`);
+      console.log(`[QUICK_SWITCH] Usuario objetivo: ${targetUser.first_name || targetUser.firstName}, Rol: ${targetUser.role}`);
       
       if (currentUser.role !== 'superAdmin' && currentUser.role !== 'SUPER_ADMIN') {
         const currentUserCompany = currentUser.companyId || currentUser.company_id;
-        const targetUserCompany = targetUser.company_id;
+        const targetUserCompany = targetUser.company_id || targetUser.companyId;
         
         console.log(`[QUICK_SWITCH] Compañía usuario actual: ${currentUserCompany}`);
         console.log(`[QUICK_SWITCH] Compañía usuario objetivo: ${targetUserCompany}`);
