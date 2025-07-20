@@ -297,11 +297,18 @@ export function setupAuthentication(app: Express) {
 
       // Verificar permisos de compañía (solo super admin puede cambiar a cualquier usuario)
       const currentUser = req.user as any;
+      console.log(`[QUICK_SWITCH] Usuario actual: ${currentUser.firstName}, Rol: ${currentUser.role}`);
+      console.log(`[QUICK_SWITCH] Usuario objetivo: ${targetUser.first_name}, Rol: ${targetUser.role}`);
+      
       if (currentUser.role !== 'superAdmin' && currentUser.role !== 'SUPER_ADMIN') {
         const currentUserCompany = currentUser.companyId || currentUser.company;
         const targetUserCompany = targetUser.company_id || targetUser.company;
         
+        console.log(`[QUICK_SWITCH] Compañía usuario actual: ${currentUserCompany}`);
+        console.log(`[QUICK_SWITCH] Compañía usuario objetivo: ${targetUserCompany}`);
+        
         if (currentUserCompany !== targetUserCompany) {
+          console.log(`[QUICK_SWITCH] Error: Compañías no coinciden - actual: "${currentUserCompany}" vs objetivo: "${targetUserCompany}"`);
           return res.status(403).json({ message: "No autorizado para cambiar a usuarios de otra compañía" });
         }
       }
