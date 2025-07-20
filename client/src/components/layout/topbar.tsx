@@ -406,7 +406,10 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
           {/* Acciones del lado derecho */}
           <div className="flex items-center space-x-2">
             {/* Cambio rápido de usuario - Solo para roles administrativos */}
-            {(user?.role === 'dueño' || user?.role === 'admin' || user?.role === 'superAdmin') && (
+            {(() => {
+              console.log('[TOPBAR] User role:', user?.role);
+              return (user?.role === 'dueño' || user?.role === 'admin' || user?.role === 'superAdmin' || user?.role === 'dueno');
+            })() && (
               <QuickUserSwitch />
             )}
             
