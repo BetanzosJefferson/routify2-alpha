@@ -5655,7 +5655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = userResults[0];
 
       // Verificar contraseña
-      const bcrypt = require('bcryptjs');
+      const bcrypt = await import('bcryptjs');
       const isValidPassword = await bcrypt.compare(password, user.password);
       
       if (!isValidPassword) {
