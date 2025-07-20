@@ -22,9 +22,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 export default function Dashboard() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   // Establecemos tab por defecto basado en el rol del usuario
   const { user } = useAuth();
+  
+  // Redirigir automáticamente a choferes y checadores que intenten acceder al dashboard
+  useEffect(() => {
+    if (user && (user.role === 'chofer' || user.role === 'checador')) {
+      console.log(`[DASHBOARD] Redirigiendo ${user.role} desde dashboard a /reservations-list`);
+      setLocation('/reservations-list');
+      return;
+    }
+  }, [user, setLocation]);
+  
   const [activeTab, setActiveTab] = useState<TabType>(
     // Para choferes, la sección por defecto es trips
     // Para comisionistas, la sección por defecto es trips
