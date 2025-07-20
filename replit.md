@@ -119,19 +119,6 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **July 20, 2025** - COMPLETED: Quick user switching functionality for administrative users:
-  - **QUICK USER SWITCH COMPONENT**: Created comprehensive QuickUserSwitch component with dropdown interface in topbar
-  - **MULTI-SESSION MANAGEMENT**: Implemented secure quick re-login system maintaining single session integrity
-  - **USER FAVORITES SYSTEM**: Added localStorage-based favorite users management with password storage
-  - **ROLE-BASED ACCESS**: Restricted feature to dueño, admin, and superAdmin roles only
-  - **USER EXPLORATION**: Added "Explorar usuarios" feature to browse available company users
-  - **BACKEND ENDPOINT**: Created `/api/users/quick-switch` endpoint for user discovery with proper permissions
-  - **SEAMLESS SWITCHING**: Logout + login workflow maintains audit trail and transaction integrity
-  - **SECURE CREDENTIALS**: Local password storage for favorite users enables instant switching
-  - **USER MANAGEMENT**: Complete interface for adding, removing, and managing favorite users
-  - **PRODUCTION READY**: Comprehensive error handling, loading states, and security validations
-  - **NO BUSINESS LOGIC IMPACT**: Preserves all existing functionality (reservations, transactions, etc.) using single active session
-
 - **July 19, 2025** - COMPLETED: Login redirection fix for chofer role to prevent access denied errors:
   - **ROLE-BASED REDIRECTION**: Enhanced login authentication redirection to send choferes directly to /reservations-list
   - **ACCESS PREVENTION**: Fixed issue where choferes were being sent to "/" dashboard where they lack permissions
