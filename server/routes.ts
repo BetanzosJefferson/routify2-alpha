@@ -5640,13 +5640,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[POST /api/users/quick-switch] Validando credenciales para: ${email}`);
       
-      // Buscar usuario por email
-      const user = await storage.getUserByEmail(email);
+      // Buscar usuario por email usando Drizzle ORM directamente
+      const userResults = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.email, email))
+        .limit(1);
       
-      if (!user) {
+      if (userResults.length === 0) {
         console.log(`[POST /api/users/quick-switch] Usuario no encontrado: ${email}`);
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
+
+      const user = userResults[0];
 
       // Verificar contraseña
       const bcrypt = require('bcryptjs');

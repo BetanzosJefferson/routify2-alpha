@@ -33,6 +33,7 @@ import {
   Search
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuickUserSwitchProps {
   className?: string;
@@ -40,6 +41,7 @@ interface QuickUserSwitchProps {
 
 export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
   const { 
     savedUsers, 
     isLoading, 
@@ -160,7 +162,11 @@ export function QuickUserSwitch({ className }: QuickUserSwitchProps) {
       setOtherUserPassword("");
     } catch (error) {
       console.error("Error adding other user:", error);
-      // El toast de error se maneja en addCurrentUserToFavorites
+      toast({
+        title: "Error",
+        description: "No se pudieron validar las credenciales. Verifica el email y contraseña.",
+        variant: "destructive",
+      });
     }
   };
 
