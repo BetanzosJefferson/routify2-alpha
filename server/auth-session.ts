@@ -264,6 +264,81 @@ export function setupAuthentication(app: Express) {
     }
   });
 
+  // Cambio rápido de usuario (sin logout)
+  app.post("/api/auth/quick-switch", isAuthenticated, hasRole(['dueño', 'admin', 'superAdmin', 'SUPER_ADMIN', 'OWNER', 'ADMIN']), async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+      
+      console.log(`[QUICK_SWITCH] Usuario ${req.user?.firstName} intentando cambiar a ${email}`);
+      
+      // Buscar el usuario objetivo
+      const targetUserResults = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (targetUserResults.length === 0) {
+        return res.status(401).json({ message: "Usuario no encontrado" });
+      }
+
+      const targetUser = targetUserResults[0];
+      
+      // Verificar la contraseña del usuario objetivo
+      const isPasswordValid = await comparePasswords(password, targetUser.password as string);
+      
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Credenciales inválidas" });
+      }
+
+      // Verificar permisos de compañía (solo super admin puede cambiar a cualquier usuario)
+      const currentUser = req.user as any;
+      console.log(`[QUICK_SWITCH] Usuario actual: ${currentUser.firstName}, Rol: ${currentUser.role}`);
+      console.log(`[QUICK_SWITCH] Usuario objetivo: ${targetUser.first_name || targetUser.firstName}, Rol: ${targetUser.role}`);
+      
+      if (currentUser.role !== 'superAdmin' && currentUser.role !== 'SUPER_ADMIN') {
+        const currentUserCompany = currentUser.companyId || currentUser.company_id;
+        const targetUserCompany = targetUser.company_id || targetUser.companyId;
+        
+        console.log(`[QUICK_SWITCH] Compañía usuario actual: ${currentUserCompany}`);
+        console.log(`[QUICK_SWITCH] Compañía usuario objetivo: ${targetUserCompany}`);
+        
+        if (currentUserCompany !== targetUserCompany) {
+          console.log(`[QUICK_SWITCH] Error: Compañías no coinciden - actual: "${currentUserCompany}" vs objetivo: "${targetUserCompany}"`);
+          return res.status(403).json({ message: "No autorizado para cambiar a usuarios de otra compañía" });
+        }
+      }
+
+      // Eliminar la contraseña del objeto usuario objetivo
+      const { password: _, profile_picture, ...userWithoutPassword } = targetUser;
+      
+      // Mapear campos de snake_case a camelCase para compatibilidad con frontend
+      const userForFrontend = {
+        ...userWithoutPassword,
+        profilePicture: profile_picture || null
+      };
+
+      // Cambiar la sesión al nuevo usuario
+      req.logIn(userForFrontend as any, (err) => {
+        if (err) {
+          console.error("Error al cambiar sesión:", err);
+          return res.status(500).json({ message: "Error al cambiar usuario" });
+        }
+        
+        console.log(`[QUICK_SWITCH] Cambio exitoso de ${currentUser.firstName} a ${userForFrontend.firstName}`);
+        return res.json(userForFrontend);
+      });
+      
+    } catch (error) {
+      console.error("Error en cambio rápido de usuario:", error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
   // Actualizar foto de perfil
   app.post("/api/auth/update-profile-picture", isAuthenticated, async (req, res) => {
     try {

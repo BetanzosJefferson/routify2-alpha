@@ -5593,6 +5593,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // GET /api/users/quick-switch - Obtener usuarios para cambio rápido (solo información básica)
+  app.get(apiRouter('/users/quick-switch'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, 'superAdmin', 'dueño', 'admin']), async (req, res) => {
+    try {
+      const user = req.user as Express.User;
+      let users;
+      
+      console.log(`[GET /api/users/quick-switch] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      if (user.role === UserRole.SUPER_ADMIN || user.role === 'superAdmin') {
+        // Superadmin puede ver todos los usuarios
+        users = await storage.getUsers();
+      } else {
+        // Owner y Admin solo ven usuarios de su compañía
+        const companyFilter = user.companyId || user.company || '';
+        users = await storage.getUsersByCompany(companyFilter);
+      }
+      
+      // Devolver solo información básica necesaria para el selector
+      const quickSwitchUsers = users.map(u => ({
+        id: u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        companyId: u.companyId || u.company
+      }));
+      
+      console.log(`[GET /api/users/quick-switch] Encontrados ${quickSwitchUsers.length} usuarios para cambio rápido`);
+      
+      res.json(quickSwitchUsers);
+    } catch (error) {
+      console.error('Error al obtener usuarios para cambio rápido:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  });
+
+  // POST /api/users/quick-switch - Validar credenciales de usuario para cambio rápido
+  app.post(apiRouter('/users/quick-switch'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN, 'superAdmin', 'dueño', 'admin']), async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email y contraseña son requeridos' });
+      }
+
+      console.log(`[POST /api/users/quick-switch] Validando credenciales para: ${email}`);
+      
+      // Buscar usuario por email usando Drizzle ORM directamente
+      const userResults = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.email, email))
+        .limit(1);
+      
+      if (userResults.length === 0) {
+        console.log(`[POST /api/users/quick-switch] Usuario no encontrado: ${email}`);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      const user = userResults[0];
+
+      // Verificar contraseña
+      const bcrypt = await import('bcryptjs');
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      
+      if (!isValidPassword) {
+        console.log(`[POST /api/users/quick-switch] Contraseña incorrecta para: ${email}`);
+        return res.status(401).json({ message: 'Contraseña incorrecta' });
+      }
+
+      // Verificar permisos de acceso (mismo que GET)
+      const requestingUser = req.user as Express.User;
+      
+      if (requestingUser.role !== UserRole.SUPER_ADMIN && requestingUser.role !== 'superAdmin') {
+        // Owner y Admin solo pueden validar usuarios de su compañía
+        const requestingUserCompany = requestingUser.companyId || requestingUser.company || '';
+        const targetUserCompany = user.companyId || user.company || '';
+        
+        if (targetUserCompany !== requestingUserCompany) {
+          console.log(`[POST /api/users/quick-switch] Sin permisos para usuario de otra compañía: ${email}`);
+          return res.status(403).json({ message: 'No tienes permisos para acceder a este usuario' });
+        }
+      }
+
+      // Devolver información del usuario validado (sin la contraseña)
+      const userInfo = {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        companyId: user.companyId || user.company
+      };
+
+      console.log(`[POST /api/users/quick-switch] Credenciales válidas para: ${user.firstName} ${user.lastName}`);
+      
+      res.json(userInfo);
+    } catch (error) {
+      console.error('Error al validar credenciales para cambio rápido:', error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  });
+  
   // GET /api/users/:id - Obtener un usuario por ID
   app.get(apiRouter('/users/:id'), isAuthenticated, hasRole([UserRole.SUPER_ADMIN, UserRole.OWNER, UserRole.ADMIN]), async (req, res) => {
     try {
@@ -5694,71 +5797,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error(`Error al eliminar usuario con ID ${req.params.id}:`, error);
-      res.status(500).json({ message: 'Error interno del servidor' });
-    }
-  });
-
-  // POST /api/users/:id/reset-password - Resetear contraseña de usuario
-  app.post(apiRouter('/users/:id/reset-password'), isAuthenticated, hasRole([UserRole.ADMIN, UserRole.OWNER]), async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      
-      console.log(`[RESET PASSWORD] Usuario ${req.user?.firstName} ${req.user?.lastName} (ID: ${req.user?.id}) iniciando reset de contraseña para usuario ID: ${id}`);
-      
-      // Verificar si el usuario existe
-      const existingUser = await storage.getUserById(id);
-      if (!existingUser) {
-        console.log(`[RESET PASSWORD] Usuario ${id} no encontrado`);
-        return res.status(404).json({ message: 'Usuario no encontrado' });
-      }
-      
-      // No permitir resetear la contraseña de uno mismo
-      if (req.user && req.user.id === id) {
-        console.log(`[RESET PASSWORD] Usuario ${req.user?.id} intentó resetear su propia contraseña`);
-        return res.status(400).json({ message: 'No puedes resetear tu propia contraseña' });
-      }
-      
-      // Solo permitir resetear contraseñas de usuarios de la misma compañía (excepto para super admin)
-      if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-        const userCompany = req.user.company || req.user.companyId;
-        const existingUserCompany = existingUser.company || existingUser.companyId;
-        if (existingUserCompany !== userCompany) {
-          console.log(`[RESET PASSWORD] Permiso denegado: ${userCompany} != ${existingUserCompany}`);
-          return res.status(403).json({ message: 'No tienes permiso para resetear la contraseña de este usuario' });
-        }
-      }
-      
-      // Generar contraseña temporal (8 caracteres aleatorios)
-      const generateTempPassword = () => {
-        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let result = '';
-        for (let i = 0; i < 8; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-      };
-      
-      const temporaryPassword = generateTempPassword();
-      console.log(`[RESET PASSWORD] Generada contraseña temporal para usuario ${existingUser.firstName} ${existingUser.lastName}`);
-      
-      // Actualizar la contraseña en la base de datos
-      await storage.updateUser(id, { password: temporaryPassword });
-      
-      console.log(`[RESET PASSWORD] Contraseña actualizada exitosamente para usuario ${id}`);
-      
-      res.json({ 
-        success: true, 
-        message: 'Contraseña reseteada correctamente',
-        temporaryPassword: temporaryPassword,
-        user: {
-          id: existingUser.id,
-          firstName: existingUser.firstName,
-          lastName: existingUser.lastName,
-          email: existingUser.email
-        }
-      });
-    } catch (error) {
-      console.error(`[RESET PASSWORD] Error al resetear contraseña para usuario ${req.params.id}:`, error);
       res.status(500).json({ message: 'Error interno del servidor' });
     }
   });
