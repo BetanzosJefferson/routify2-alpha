@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, RefreshCw, Trash2, Edit, Pencil } from "lucide-react";
+import { UserPlus, RefreshCw, Trash2, Edit, Pencil, Key, Copy, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { CreateInvitationForm } from "./create-invitation";
@@ -45,8 +45,12 @@ export function UsersPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
+  const [newTempPassword, setNewTempPassword] = useState<string>("");
+  const [copySuccess, setCopySuccess] = useState(false);
   const [currentTab, setCurrentTab] = useState<"users" | "invitations">("users");
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
@@ -136,6 +140,59 @@ export function UsersPage() {
       });
     }
   });
+
+  // Mutation para resetear contraseña
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("POST", `/api/users/${userId}/reset-password`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al resetear contraseña");
+      }
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setNewTempPassword(data.temporaryPassword);
+      setIsPasswordResetDialogOpen(true);
+      
+      toast({
+        title: "Contraseña reseteada",
+        description: "Se ha generado una nueva contraseña temporal",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo resetear la contraseña",
+      });
+    }
+  });
+
+  // Función para iniciar el proceso de reset de contraseña
+  const handleResetPassword = (user: User) => {
+    setUserToResetPassword(user);
+    resetPasswordMutation.mutate(user.id);
+  };
+
+  // Función para copiar contraseña al portapapeles
+  const copyToClipboard = async (password: string) => {
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopySuccess(true);
+      toast({
+        title: "Copiado",
+        description: "Contraseña copiada al portapapeles",
+      });
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo copiar al portapapeles",
+      });
+    }
+  };
   
   // Función para iniciar el proceso de edición
   const handleEditUser = (user: User) => {
@@ -332,6 +389,20 @@ export function UsersPage() {
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               
+                              {/* Botón de resetear contraseña solo visible para admin y dueño */}
+                              {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.OWNER || currentUser?.role === "admin" || currentUser?.role === "dueño") && user.id !== currentUser.id && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleResetPassword(user)}
+                                  disabled={resetPasswordMutation.isPending}
+                                  title="Resetear contraseña"
+                                  className="text-orange-600 hover:text-orange-700"
+                                >
+                                  <Key className="h-4 w-4" />
+                                </Button>
+                              )}
+                              
                               {/* Botón de eliminar solo visible para superAdmin o Dueño */}
                               {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.OWNER) && (
                                 <Button
@@ -389,6 +460,20 @@ export function UsersPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
+                              
+                              {/* Botón de resetear contraseña solo visible para admin y dueño */}
+                              {(currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.OWNER || currentUser?.role === "admin" || currentUser?.role === "dueño") && user.id !== currentUser.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleResetPassword(user)}
+                                  disabled={resetPasswordMutation.isPending}
+                                  className="h-8 w-8"
+                                  title="Resetear contraseña"
+                                >
+                                  <Key className="h-4 w-4 text-orange-600" />
+                                </Button>
+                              )}
                               
                               {/* Botón de eliminar solo visible para superAdmin o Dueño */}
                               {(currentUser?.role === UserRole.SUPER_ADMIN || currentUser?.role === UserRole.OWNER) && (
@@ -732,6 +817,86 @@ export function UsersPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para mostrar nueva contraseña temporal */}
+      <Dialog open={isPasswordResetDialogOpen} onOpenChange={setIsPasswordResetDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-orange-600" />
+              Contraseña Reseteada
+            </DialogTitle>
+            <DialogDescription>
+              La contraseña ha sido reseteada exitosamente. La nueva contraseña temporal es:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {userToResetPassword && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">
+                  Usuario: <span className="font-semibold">{userToResetPassword.firstName} {userToResetPassword.lastName}</span>
+                </p>
+                <p className="text-sm text-gray-600 mb-3">
+                  Email: <span className="font-semibold">{userToResetPassword.email}</span>
+                </p>
+                
+                <div className="flex items-center gap-2 p-3 bg-white border rounded-md">
+                  <code className="flex-1 text-lg font-mono text-center bg-yellow-50 px-3 py-2 rounded border">
+                    {newTempPassword}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(newTempPassword)}
+                    title="Copiar contraseña"
+                    disabled={!newTempPassword}
+                  >
+                    {copySuccess ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="text-sm text-amber-800">
+                  <p className="font-semibold mb-1">Importante:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Esta contraseña es temporal y solo se mostrará una vez</li>
+                    <li>Comparte esta contraseña de forma segura con el usuario</li>
+                    <li>El usuario debe cambiar esta contraseña al ingresar</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              onClick={() => {
+                setIsPasswordResetDialogOpen(false);
+                setUserToResetPassword(null);
+                setNewTempPassword("");
+                setCopySuccess(false);
+              }}
+              className="w-full"
+            >
+              Entendido
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

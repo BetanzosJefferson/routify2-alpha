@@ -5698,6 +5698,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/users/:id/reset-password - Resetear contraseña de usuario
+  app.post(apiRouter('/users/:id/reset-password'), isAuthenticated, hasRole([UserRole.ADMIN, UserRole.OWNER]), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      console.log(`[RESET PASSWORD] Usuario ${req.user?.firstName} ${req.user?.lastName} (ID: ${req.user?.id}) iniciando reset de contraseña para usuario ID: ${id}`);
+      
+      // Verificar si el usuario existe
+      const existingUser = await storage.getUserById(id);
+      if (!existingUser) {
+        console.log(`[RESET PASSWORD] Usuario ${id} no encontrado`);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      
+      // No permitir resetear la contraseña de uno mismo
+      if (req.user && req.user.id === id) {
+        console.log(`[RESET PASSWORD] Usuario ${req.user?.id} intentó resetear su propia contraseña`);
+        return res.status(400).json({ message: 'No puedes resetear tu propia contraseña' });
+      }
+      
+      // Solo permitir resetear contraseñas de usuarios de la misma compañía (excepto para super admin)
+      if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+        const userCompany = req.user.company || req.user.companyId;
+        const existingUserCompany = existingUser.company || existingUser.companyId;
+        if (existingUserCompany !== userCompany) {
+          console.log(`[RESET PASSWORD] Permiso denegado: ${userCompany} != ${existingUserCompany}`);
+          return res.status(403).json({ message: 'No tienes permiso para resetear la contraseña de este usuario' });
+        }
+      }
+      
+      // Generar contraseña temporal (8 caracteres aleatorios)
+      const generateTempPassword = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      };
+      
+      const temporaryPassword = generateTempPassword();
+      console.log(`[RESET PASSWORD] Generada contraseña temporal para usuario ${existingUser.firstName} ${existingUser.lastName}`);
+      
+      // Actualizar la contraseña en la base de datos
+      await storage.updateUser(id, { password: temporaryPassword });
+      
+      console.log(`[RESET PASSWORD] Contraseña actualizada exitosamente para usuario ${id}`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Contraseña reseteada correctamente',
+        temporaryPassword: temporaryPassword,
+        user: {
+          id: existingUser.id,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          email: existingUser.email
+        }
+      });
+    } catch (error) {
+      console.error(`[RESET PASSWORD] Error al resetear contraseña para usuario ${req.params.id}:`, error);
+      res.status(500).json({ message: 'Error interno del servidor' });
+    }
+  });
+
 
 
   // POST /api/reservations/:id/check - Escanear/verificar un ticket
