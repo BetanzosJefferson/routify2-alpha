@@ -1159,10 +1159,20 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // Actualizar el registro en la base de datos con el tripData modificado
+    // CORRECCIÓN CRÍTICA: También actualizar el campo availableSeats principal del viaje
+    // Usar el segmento principal (primer segmento) para determinar los asientos disponibles generales
+    const mainSegment = updatedTripData.find(segment => segment.isMainTrip === true) || updatedTripData[0];
+    const newMainAvailableSeats = mainSegment ? mainSegment.availableSeats : tripRecord.availableSeats;
+    
+    console.log(`[updateRelatedTripsAvailability] Actualizando availableSeats principal: ${tripRecord.availableSeats} → ${newMainAvailableSeats}`);
+    
+    // Actualizar el registro en la base de datos con AMBOS campos
     await db
       .update(schema.trips)
-      .set({ tripData: updatedTripData })
+      .set({ 
+        tripData: updatedTripData,
+        availableSeats: newMainAvailableSeats // NUEVA LÍNEA CRÍTICA
+      })
       .where(eq(schema.trips.id, recordId));
   }
   
@@ -2046,6 +2056,27 @@ export class DatabaseStorage implements IStorage {
     
     console.log("Creando reservación con datos:", JSON.stringify(reservation, null, 2));
     const [newReservation] = await db.insert(schema.reservations).values(reservation).returning();
+    
+    // CORRECCIÓN CRÍTICA: Reducir asientos disponibles después de crear la reservación
+    if (reservation.tripDetails && typeof reservation.tripDetails === 'object') {
+      try {
+        const tripDetails = reservation.tripDetails as any;
+        const recordId = tripDetails.recordId;
+        const tripId = tripDetails.tripId;
+        const seats = tripDetails.seats || 1;
+        
+        console.log(`[createReservation] Reduciendo ${seats} asientos del viaje recordId: ${recordId}, tripId: ${tripId}`);
+        
+        // Usar la función updateRelatedTripsAvailability para mantener consistencia
+        await this.updateRelatedTripsAvailability(recordId, tripId, -seats);
+        
+        console.log(`[createReservation] Asientos reducidos exitosamente`);
+      } catch (error) {
+        console.error(`[createReservation] Error al reducir asientos:`, error);
+        // No fallar la creación de reservación por esto, solo log el error
+      }
+    }
+    
     return newReservation;
   }
   
