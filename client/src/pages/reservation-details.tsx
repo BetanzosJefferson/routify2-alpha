@@ -196,11 +196,23 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     
     setIsCanceling(true);
     try {
-      const response = await apiRequest("PATCH", `/api/reservations/${reservationId}/cancel`);
+      const response = await fetch(`/api/reservations/${reservationId}/cancel`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al cancelar la reservación");
+        let errorMessage = "Error al cancelar la reservación";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+        throw new Error(errorMessage);
       }
       
       toast({
@@ -227,29 +239,45 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     
     setIsCancelingWithRefund(true);
     try {
-      // Crear un objeto simple sin referencias circulares
-      const requestData = forceRefund ? { forceRefund: true } : {};
+      // Usar fetch directamente para evitar problemas de serialización
+      const url = `/api/reservations/${reservationId}/cancel-refund`;
+      const options: RequestInit = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      };
       
-      const response = await apiRequest(
-        "POST", 
-        `/api/reservations/${reservationId}/cancel-refund`,
-        requestData
-      );
+      // Solo agregar body si forceRefund es true
+      if (forceRefund) {
+        options.body = JSON.stringify({ forceRefund: true });
+      }
+      
+      const response = await fetch(url, options);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        
-        // Si es error de validación de usuario cruzado, mostrar modal
-        if (errorData.error === "cross_user_refund") {
-          setCrossUserRefundDialog({
-            isOpen: true,
-            message: errorData.message,
-            creators: errorData.details?.creatorNames || 'otros usuarios'
-          });
-          return;
+        let errorMessage = "Error al cancelar con reembolso";
+        try {
+          const errorData = await response.json();
+          
+          // Si es error de validación de usuario cruzado, mostrar modal
+          if (errorData.error === "cross_user_refund") {
+            setCrossUserRefundDialog({
+              isOpen: true,
+              message: errorData.message,
+              creators: errorData.details?.creatorNames || 'otros usuarios'
+            });
+            return;
+          }
+          
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          // Si no se puede parsear el error, usar el mensaje por defecto
+          console.error("Error parsing error response:", parseError);
         }
         
-        throw new Error(errorData.message || "Error al cancelar con reembolso");
+        throw new Error(errorMessage);
       }
       
       toast({
