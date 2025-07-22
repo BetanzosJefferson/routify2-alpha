@@ -119,19 +119,23 @@ export default function ReservationDetailsModal({
 
     setIsCanceling(true);
     try {
-      const response = await apiRequest(
-        "POST",
-        `/api/reservations/${reservationId}/cancel`,
-        {}
-      );
+      const response = await fetch(`/api/reservations/${reservationId}/cancel`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
       if (!response.ok) {
-        toast({
-          title: "Error al cancelar reservación",
-          description: "Para cancelar una reservación necesita iniciar sesión con una cuenta autorizada.",
-          variant: "destructive",
-        });
-        return;
+        let errorMessage = "Error al cancelar la reservación";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+        }
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -199,26 +203,46 @@ export default function ReservationDetailsModal({
     setIsCancelingWithRefund(true);
     
     try {
-      const response = await apiRequest("POST", `/api/reservations/${reservationId}/cancel-refund`, {
-        forceRefund
-      });
+      // Usar fetch directo para evitar problemas de serialización
+      const url = `/api/reservations/${reservationId}/cancel-refund`;
+      const options: RequestInit = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      };
+      
+      // Solo agregar body si forceRefund es true
+      if (forceRefund) {
+        options.body = JSON.stringify({ forceRefund: true });
+      }
+      
+      const response = await fetch(url, options);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        
-        // Manejo específico del error de reembolso cruzado
-        if (errorData.error === "cross_user_refund") {
-          // Mostrar modal de confirmación
-          setCrossUserRefundDialog({
-            isOpen: true,
-            message: errorData.message,
-            creators: errorData.details?.creatorNames || 'otros usuarios'
-          });
-          setIsCancelingWithRefund(false);
-          return;
+        let errorMessage = "Error al cancelar con reembolso";
+        try {
+          const errorData = await response.json();
+          
+          // Manejo específico del error de reembolso cruzado
+          if (errorData.error === "cross_user_refund") {
+            // Mostrar modal de confirmación
+            setCrossUserRefundDialog({
+              isOpen: true,
+              message: errorData.message,
+              creators: errorData.details?.creatorNames || 'otros usuarios'
+            });
+            setIsCancelingWithRefund(false);
+            return;
+          }
+          
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
         }
         
-        throw new Error(errorData.message || "Error al cancelar con reembolso");
+        throw new Error(errorMessage);
       }
       
       toast({
