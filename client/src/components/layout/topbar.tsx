@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ProfilePage } from "@/components/profile/profile-page";
-import { QuickUserSwitch } from "@/components/auth/quick-user-switch";
+
 import { TabType } from "@/hooks/use-active-tab";
 import { hasAccessToSection } from "@/lib/role-based-permissions";
 
@@ -405,14 +405,6 @@ export function Topbar({ activeTab, onTabChange }: TopbarProps) {
 
           {/* Acciones del lado derecho */}
           <div className="flex items-center space-x-2">
-            {/* Cambio rápido de usuario - Solo para roles administrativos */}
-            {(() => {
-              console.log('[TOPBAR] User role:', user?.role);
-              return (user?.role === 'dueño' || user?.role === 'admin' || user?.role === 'superAdmin' || user?.role === 'dueno');
-            })() && (
-              <QuickUserSwitch />
-            )}
-            
             {/* Menú de notificaciones */}
             <div className="relative">
               <NotificationsMenu />
