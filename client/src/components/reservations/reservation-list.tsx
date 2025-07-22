@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
+import { hasRequiredRole } from "@/lib/role-based-permissions";
 import ReservationDetailsModal from "@/components/reservations/reservation-details-modal";
 
 import {
@@ -1204,8 +1205,9 @@ export function ReservationList() {
                                     <X className="mr-2 h-4 w-4" />
                                     Cancelar
                                   </DropdownMenuItem>
-                                  {/* Solo mostrar "Cancelar con reembolso" si hay anticipo o está pagada */}
-                                  {((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
+                                  {/* Solo mostrar "Cancelar con reembolso" si hay anticipo o está pagada y tiene permisos */}
+                                  {hasRequiredRole(user, ['superAdmin', 'admin', 'dueño', 'checador']) && 
+                                   ((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
                                     <DropdownMenuItem
                                       onClick={(e) => {
                                         e.stopPropagation();

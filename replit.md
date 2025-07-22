@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 22, 2025** - COMPLETED: Checador role permissions enhanced with refund cancellation capability:
+  - **ROLE PERMISSIONS EXPANDED**: Added 'checador' role to refund cancellation permissions array
+  - **MODAL AUTHORIZATION**: Updated reservation-details-modal.tsx to include 'checador' in hasRequiredRole check
+  - **DROPDOWN CONSISTENCY**: Added same permission validation to reservation-list.tsx dropdown menu
+  - **COMPREHENSIVE COVERAGE**: Both modal and dropdown menu now allow checador role to access "Cancelar con reembolso"
+  - **PERMISSION ALIGNMENT**: Checador role now has same refund cancellation access as superAdmin, admin, and dueño
+  - **BUSINESS LOGIC MAINTAINED**: Refund option still only appears when reservation has advance payment or is fully paid
+  - **SECURITY ENHANCED**: Role validation prevents unauthorized access while expanding appropriate permissions
+  - **USER EXPERIENCE**: Checador users can now handle complete reservation lifecycle including refund processing
+
 - **July 22, 2025** - COMPLETED: Mobile cancellation buttons implemented in reservation details page:
   - **MOBILE UI ENHANCEMENT**: Added missing "Cancelar con reembolso" and "Cancelar Reservación" buttons to reservation-details.tsx
   - **FEATURE PARITY**: Mobile view now has same cancellation functionality as desktop modal interface

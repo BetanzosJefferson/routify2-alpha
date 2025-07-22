@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { hasRequiredRole } from "@/lib/role-based-permissions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -587,8 +588,9 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
             {/* Botones de cancelación solo para usuarios autenticados y reservaciones no canceladas */}
             {user && reservation.status !== 'canceled' && (
               <div className="mt-4 space-y-2">
-                {/* Botón Cancelar con reembolso - Solo si hay anticipo o está pagada */}
-                {((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
+                {/* Botón Cancelar con reembolso - Solo si hay anticipo o está pagada y tiene permisos */}
+                {hasRequiredRole(user, ['superAdmin', 'admin', 'dueño', 'checador']) && 
+                 ((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
                   <Button 
                     onClick={(e) => {
                       e.preventDefault();
