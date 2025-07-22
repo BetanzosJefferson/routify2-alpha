@@ -532,7 +532,10 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
             {/* Botón para marcar como pagado */}
             {reservation.paymentStatus !== 'pagado' && user && reservation.status !== 'canceled' && (
               <Button 
-                onClick={markAsPaid} 
+                onClick={(e) => {
+                  e.preventDefault();
+                  markAsPaid();
+                }}
                 disabled={isMarkingAsPaid}
                 className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
               >
@@ -556,7 +559,10 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
                 {/* Botón Cancelar con reembolso - Solo si hay anticipo o está pagada */}
                 {((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
                   <Button 
-                    onClick={() => cancelWithRefund(false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      cancelWithRefund(false);
+                    }}
                     disabled={isCancelingWithRefund}
                     className="w-full bg-orange-600 hover:bg-orange-700 text-white"
                   >
@@ -576,7 +582,10 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
                 
                 {/* Botón Cancelar Reservación */}
                 <Button 
-                  onClick={cancelReservation}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    cancelReservation();
+                  }}
                   disabled={isCanceling}
                   variant="destructive"
                   className="w-full"
