@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 22, 2025** - CRITICAL FIX: Seat availability reduction system completely corrected for multi-segment trips:
+  - **ROOT CAUSE IDENTIFIED**: System was storing seat availability in dual locations (trip.availableSeats and tripData[].availableSeats) but only updating one
+  - **UPDATERELATEDTRIPSAVAILABILITY ENHANCED**: Modified function to update both main availableSeats field and tripData JSON segments
+  - **DOUBLE REDUCTION PREVENTED**: Removed duplicate seat reduction in createReservation method to prevent over-reduction
+  - **CONSISTENT SEAT MANAGEMENT**: Now properly synchronizes seat availability across all storage locations
+  - **SEGMENT OVERLAP LOGIC**: Maintains intelligent seat reduction for overlapping route segments
+  - **PRODUCTION VERIFIED**: Corrected issue where 1 passenger reservation was reducing 2 seats instead of 1
+  - **DATABASE INTEGRITY**: Both trip.availableSeats and tripData[i].availableSeats now stay synchronized
+  - **CENTRALIZED LOGIC**: Seat reduction handled exclusively in POST /reservations endpoint for consistency
+
 - **July 20, 2025** - COMPLETED: Quick user switching functionality for administrative users:
   - **QUICK USER SWITCH COMPONENT**: Created comprehensive QuickUserSwitch component with dropdown interface in topbar
   - **MULTI-SESSION MANAGEMENT**: Implemented secure quick re-login system maintaining single session integrity

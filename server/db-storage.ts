@@ -2057,25 +2057,8 @@ export class DatabaseStorage implements IStorage {
     console.log("Creando reservación con datos:", JSON.stringify(reservation, null, 2));
     const [newReservation] = await db.insert(schema.reservations).values(reservation).returning();
     
-    // CORRECCIÓN CRÍTICA: Reducir asientos disponibles después de crear la reservación
-    if (reservation.tripDetails && typeof reservation.tripDetails === 'object') {
-      try {
-        const tripDetails = reservation.tripDetails as any;
-        const recordId = tripDetails.recordId;
-        const tripId = tripDetails.tripId;
-        const seats = tripDetails.seats || 1;
-        
-        console.log(`[createReservation] Reduciendo ${seats} asientos del viaje recordId: ${recordId}, tripId: ${tripId}`);
-        
-        // Usar la función updateRelatedTripsAvailability para mantener consistencia
-        await this.updateRelatedTripsAvailability(recordId, tripId, -seats);
-        
-        console.log(`[createReservation] Asientos reducidos exitosamente`);
-      } catch (error) {
-        console.error(`[createReservation] Error al reducir asientos:`, error);
-        // No fallar la creación de reservación por esto, solo log el error
-      }
-    }
+    // NOTA: La reducción de asientos se maneja en el endpoint POST /reservations
+    // para evitar duplicación y mantener la lógica centralizada
     
     return newReservation;
   }
