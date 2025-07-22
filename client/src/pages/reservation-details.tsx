@@ -227,21 +227,24 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     
     setIsCancelingWithRefund(true);
     try {
+      // Crear un objeto simple sin referencias circulares
+      const requestData = forceRefund ? { forceRefund: true } : {};
+      
       const response = await apiRequest(
-        "PATCH", 
-        `/api/reservations/${reservationId}/cancel-with-refund`,
-        forceRefund ? { forceRefund: true } : {}
+        "POST", 
+        `/api/reservations/${reservationId}/cancel-refund`,
+        requestData
       );
       
       if (!response.ok) {
         const errorData = await response.json();
         
         // Si es error de validación de usuario cruzado, mostrar modal
-        if (errorData.crossUserRefund) {
+        if (errorData.error === "cross_user_refund") {
           setCrossUserRefundDialog({
             isOpen: true,
             message: errorData.message,
-            creators: errorData.creators
+            creators: errorData.details?.creatorNames || 'otros usuarios'
           });
           return;
         }
