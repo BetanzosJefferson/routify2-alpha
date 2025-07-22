@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { formatDate, formatPrice, generateReservationId } from "@/lib/utils";
-import { Loader2, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import ReservationCanceledModal from "@/components/reservations/reservation-canceled-modal";
 
@@ -21,6 +31,17 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [isCanceledModalOpen, setIsCanceledModalOpen] = useState(false);
   const [hasAttemptedCheck, setHasAttemptedCheck] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [isCancelingWithRefund, setIsCancelingWithRefund] = useState(false);
+  const [crossUserRefundDialog, setCrossUserRefundDialog] = useState<{
+    isOpen: boolean;
+    message: string;
+    creators: string;
+  }>({
+    isOpen: false,
+    message: '',
+    creators: ''
+  });
 
   // Extraer el ID de la reservación de los parámetros de ruta
   useEffect(() => {
@@ -167,6 +188,93 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
     } finally {
       setIsMarkingAsPaid(false);
     }
+  };
+
+  // Función para cancelar reservación simple
+  const cancelReservation = async () => {
+    if (!reservationId || !user) return;
+    
+    setIsCanceling(true);
+    try {
+      const response = await apiRequest("PATCH", `/api/reservations/${reservationId}/cancel`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al cancelar la reservación");
+      }
+      
+      toast({
+        title: "Reservación cancelada",
+        description: "La reservación ha sido cancelada exitosamente.",
+        variant: "default",
+      });
+      
+      refetch();
+    } catch (error) {
+      toast({
+        title: "Error al cancelar",
+        description: error instanceof Error ? error.message : "Error al cancelar la reservación",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCanceling(false);
+    }
+  };
+
+  // Función para cancelar con reembolso
+  const cancelWithRefund = async (forceRefund = false) => {
+    if (!reservationId || !user) return;
+    
+    setIsCancelingWithRefund(true);
+    try {
+      const response = await apiRequest(
+        "PATCH", 
+        `/api/reservations/${reservationId}/cancel-with-refund`,
+        forceRefund ? { forceRefund: true } : {}
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        
+        // Si es error de validación de usuario cruzado, mostrar modal
+        if (errorData.crossUserRefund) {
+          setCrossUserRefundDialog({
+            isOpen: true,
+            message: errorData.message,
+            creators: errorData.creators
+          });
+          return;
+        }
+        
+        throw new Error(errorData.message || "Error al cancelar con reembolso");
+      }
+      
+      toast({
+        title: "Reservación cancelada y reembolsada",
+        description: "La reservación ha sido cancelada y el reembolso ha sido procesado.",
+        variant: "default",
+      });
+      
+      refetch();
+    } catch (error) {
+      toast({
+        title: "Error al cancelar con reembolso",
+        description: error instanceof Error ? error.message : "Error al cancelar con reembolso",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelingWithRefund(false);
+    }
+  };
+
+  // Función para confirmar reembolso forzado
+  const handleConfirmForceRefund = () => {
+    setCrossUserRefundDialog({
+      isOpen: false,
+      message: '',
+      creators: ''
+    });
+    cancelWithRefund(true);
   };
 
 
@@ -442,6 +550,52 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
               </Button>
             )}
             
+            {/* Botones de cancelación solo para usuarios autenticados y reservaciones no canceladas */}
+            {user && reservation.status !== 'canceled' && (
+              <div className="mt-4 space-y-2">
+                {/* Botón Cancelar con reembolso - Solo si hay anticipo o está pagada */}
+                {((reservation.advanceAmount && reservation.advanceAmount > 0) || reservation.paymentStatus === 'pagado') && (
+                  <Button 
+                    onClick={() => cancelWithRefund(false)}
+                    disabled={isCancelingWithRefund}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    {isCancelingWithRefund ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                        Procesando reembolso...
+                      </>
+                    ) : (
+                      <>
+                        <X className="mr-2 h-4 w-4" />
+                        Cancelar con reembolso
+                      </>
+                    )}
+                  </Button>
+                )}
+                
+                {/* Botón Cancelar Reservación */}
+                <Button 
+                  onClick={cancelReservation}
+                  disabled={isCanceling}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {isCanceling ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      Cancelando...
+                    </>
+                  ) : (
+                    <>
+                      <X className="mr-2 h-4 w-4" />
+                      Cancelar Reservación
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
             {/* Mensaje si está cancelada */}
             {reservation.status === 'canceled' && (
               <div className="w-full mt-4 p-3 bg-red-50 border border-red-200 rounded text-center text-red-600 text-sm">
@@ -482,6 +636,56 @@ export default function ReservationDetails({ params }: { params?: { id?: string 
           reservation={reservation}
         />
       )}
+
+      {/* Modal de confirmación para reembolso cruzado */}
+      <AlertDialog open={crossUserRefundDialog.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setCrossUserRefundDialog({
+            isOpen: false,
+            message: '',
+            creators: ''
+          });
+        }
+      }}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-orange-600">
+              <X className="h-5 w-5" />
+              Confirmar Reembolso
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left space-y-2">
+              <p className="font-medium text-gray-700">
+                {crossUserRefundDialog.message}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Creadores de transacciones:</span><br />
+                {crossUserRefundDialog.creators}
+              </p>
+              <p className="text-sm text-orange-600 font-medium">
+                ¿Está seguro de que desea continuar con el reembolso?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel
+              className="w-full sm:w-auto"
+              onClick={() => setCrossUserRefundDialog({
+                isOpen: false,
+                message: '',
+                creators: ''
+              })}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmForceRefund}
+              className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700"
+            >
+              Confirmar Reembolso
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

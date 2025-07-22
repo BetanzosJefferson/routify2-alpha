@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 22, 2025** - COMPLETED: Mobile cancellation buttons implemented in reservation details page:
+  - **MOBILE UI ENHANCEMENT**: Added missing "Cancelar con reembolso" and "Cancelar Reservación" buttons to reservation-details.tsx
+  - **FEATURE PARITY**: Mobile view now has same cancellation functionality as desktop modal interface
+  - **CONDITIONAL DISPLAY**: "Cancelar con reembolso" only shows when reservation has advance payment or is fully paid
+  - **CROSS-USER VALIDATION**: Implemented professional confirmation dialog for cross-user refund attempts
+  - **LOADING STATES**: Added proper loading indicators and disabled states during cancellation processes
+  - **ERROR HANDLING**: Comprehensive error handling with user-friendly toast notifications
+  - **AUTHENTICATION REQUIRED**: Cancellation buttons only visible to authenticated users
+  - **STATUS AWARENESS**: Buttons hidden for already cancelled reservations to prevent confusion
+
 - **July 22, 2025** - COMPLETED: User switching functionality completely removed from system:
   - **COMPONENT REMOVAL**: Deleted QuickUserSwitch component and useQuickUserSwitch hook entirely
   - **TOPBAR CLEANUP**: Removed "Cambiar usuario" button and dropdown from navigation interface

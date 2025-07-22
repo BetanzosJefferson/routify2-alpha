@@ -1260,11 +1260,9 @@ export function ReservationList() {
                   {/* Header principal con el nombre de la ruta */}
                   <div className="p-4 pb-3">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {reservation.trip.route.name}
+                       {reservation.trip.origin} → {reservation.trip.destination}
                     </h3>
-                    <div className="text-sm text-gray-600 mb-3">
-                      {reservation.trip.origin} → {reservation.trip.destination}
-                    </div>
+                  
                     
                     {/* Información con iconos en filas */}
                     <div className="space-y-2">
@@ -1280,12 +1278,7 @@ export function ReservationList() {
                         <span>{formatTripTime(reservation.trip.departureTime)} - {formatTripTime(reservation.trip.arrivalTime || "00:00")}</span>
                       </div>
                       
-                      {/* Vehículo */}
-                      <div className="flex items-center text-sm text-gray-700">
-                        <Car className="h-4 w-4 mr-3 text-gray-500" />
-                        <span>Sin Unidad Asignada</span>
-                      </div>
-                      
+                   
                       {/* Pasajeros */}
                       <div className="flex items-center text-sm text-gray-700">
                         <Users className="h-4 w-4 mr-3 text-gray-500" />
@@ -1293,8 +1286,8 @@ export function ReservationList() {
                           {reservation.passengers.length} pasajero{reservation.passengers.length !== 1 ? 's' : ''}
                           {reservation.passengers[0] && (
                             <span className="ml-1 text-gray-600">
-                              ({reservation.passengers[0].firstName} {reservation.passengers[0].lastName}
-                              {reservation.passengers.length > 1 && ` +${reservation.passengers.length - 1}`})
+                              {reservation.passengers[0].firstName} {reservation.passengers[0].lastName}
+                              {reservation.passengers.length > 1 && ` +${reservation.passengers.length - 1}`}
                             </span>
                           )}
                         </span>
