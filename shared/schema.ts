@@ -57,7 +57,6 @@ export const trips = pgTable("trips", {
   id: serial("id").primaryKey(),
   tripData: jsonb("trip_data").notNull(), // Contiene toda la información del viaje
   capacity: integer("capacity").notNull(),
-  availableSeats: integer("available_seats"), // Campo faltante agregado
   vehicleId: integer("vehicle_id"),
   driverId: integer("driver_id"),
   visibility: text("visibility").default("publicado"),
