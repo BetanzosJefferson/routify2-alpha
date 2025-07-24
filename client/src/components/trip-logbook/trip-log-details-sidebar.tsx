@@ -566,7 +566,7 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
               <TabsContent value="packages" className="p-6 space-y-3 m-0">
                 {tripData.packages.map((pkg: any) => {
                   // Determinar estado de pago para paqueterías
-                  const packagePaymentStatus = pkg.paymentStatus === 'paid' ? 'pagado' : 'pendiente';
+                  const packagePaymentStatus = pkg.isPaid ? 'pagado' : 'pendiente';
                   
                   // Función para obtener clase de borde
                   const getPackageBorderClass = (status: string) => {

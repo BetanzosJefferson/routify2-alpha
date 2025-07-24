@@ -119,6 +119,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 23, 2025** - CRITICAL FIX: Package payment status display corrected in Bitácora sidebar:
+  - **ROOT CAUSE IDENTIFIED**: Sidebar was checking `pkg.paymentStatus === 'paid'` instead of correct database field `pkg.isPaid`
+  - **FIELD CORRECTION**: Updated trip-log-details-sidebar.tsx to use boolean `pkg.isPaid` field from schema
+  - **STATUS ACCURACY**: Package payment badges now correctly show "Pagado" when isPaid=true and "Pendiente" when isPaid=false
+  - **VISUAL CONSISTENCY**: Color-coded borders (green=paid, red=unpaid) now accurately reflect actual payment status
+  - **USER EXPERIENCE**: Bitácora section now shows accurate package payment information preventing user confusion
+  - **DATABASE ALIGNMENT**: Fixed mismatch between database schema (isPaid boolean) and frontend logic (paymentStatus string)
+
 - **July 22, 2025** - COMPLETED: Checador role permissions enhanced with refund cancellation capability:
   - **ROLE PERMISSIONS EXPANDED**: Added 'checador' role to refund cancellation permissions array
   - **MODAL AUTHORIZATION**: Updated reservation-details-modal.tsx to include 'checador' in hasRequiredRole check
