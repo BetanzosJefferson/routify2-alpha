@@ -3743,81 +3743,14 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
       }
 
-      // Obtener información de viajes, conductores y usuarios creadores para todos los paquetes
-      const recordIds = new Set<number>();
+      // Obtener información de usuarios creadores para todos los paquetes
       const userIds = [...new Set(filteredPackages.map(pkg => pkg.createdBy).filter(Boolean))];
-      
-      // Extraer recordIds de los paquetes para obtener información de trips
-      filteredPackages.forEach(pkg => {
-        const tripDetails = typeof pkg.tripDetails === 'string' 
-          ? JSON.parse(pkg.tripDetails) 
-          : pkg.tripDetails;
-        
-        if (tripDetails?.recordId) {
-          recordIds.add(parseInt(tripDetails.recordId));
-        } else if (tripDetails?.tripId) {
-          // Extraer recordId del tripId (ej: "31_0" -> recordId = 31)
-          let recordId;
-          if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
-            recordId = parseInt(tripDetails.tripId.split('_')[0]);
-          } else {
-            recordId = typeof tripDetails.tripId === 'string' ? parseInt(tripDetails.tripId) : tripDetails.tripId;
-          }
-          if (!isNaN(recordId)) {
-            recordIds.add(recordId);
-          }
-        }
-      });
-
-      // Obtener información de trips y conductores
-      const tripsMap = new Map();
-      const driversMap = new Map();
       const usersMap = new Map();
-      
-      if (recordIds.size > 0) {
-        console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${recordIds.size} viajes`);
-        const trips = await this.db
-          .select()
-          .from(schema.trips)
-          .where(inArray(schema.trips.id, Array.from(recordIds)));
-        
-        // Obtener IDs de conductores únicos
-        const driverIds = [...new Set(trips.map(trip => trip.driverId).filter(Boolean))];
-        
-        if (driverIds.length > 0) {
-          console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${driverIds.length} conductores`);
-          const drivers = await this.db
-            .select({
-              id: schema.users.id,
-              firstName: schema.users.firstName,
-              lastName: schema.users.lastName,
-              email: schema.users.email,
-              phone: schema.users.phone,
-            })
-            .from(schema.users)
-            .where(inArray(schema.users.id, driverIds));
-          
-          drivers.forEach(driver => {
-            driversMap.set(driver.id, driver);
-          });
-          console.log(`DB Storage: [OPTIMIZED] Obtenida información de ${drivers.length} conductores`);
-        }
-        
-        trips.forEach(trip => {
-          tripsMap.set(trip.id, trip);
-        });
-        console.log(`DB Storage: [OPTIMIZED] Obtenida información de ${trips.length} viajes`);
-      }
       
       if (userIds.length > 0) {
         console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${userIds.length} usuarios creadores`);
         const users = await this.db
-          .select({
-            id: schema.users.id,
-            firstName: schema.users.firstName,
-            lastName: schema.users.lastName,
-            email: schema.users.email,
-          })
+          .select()
           .from(schema.users)
           .where(inArray(schema.users.id, userIds));
         
@@ -3827,8 +3760,8 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Obtenida información de ${users.length} usuarios`);
       }
 
-      // Mapear resultados con información del viaje extraída de tripDetails
-      const packagesWithTripInfo = filteredPackages.map(pkg => {
+      // Mapear resultados con información del viaje extraída de tripDetails (versión simplificada)
+      const packagesWithTripInfo = await Promise.all(filteredPackages.map(async (pkg) => {
         let tripDetails;
         
         try {
@@ -3843,20 +3776,51 @@ export class DatabaseStorage implements IStorage {
         // Obtener información del usuario creador
         const creator = usersMap.get(pkg.createdBy);
 
-        // Obtener información del viaje y conductor
-        let recordId;
-        if (tripDetails?.recordId) {
-          recordId = parseInt(tripDetails.recordId);
-        } else if (tripDetails?.tripId) {
-          if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
-            recordId = parseInt(tripDetails.tripId.split('_')[0]);
-          } else {
-            recordId = typeof tripDetails.tripId === 'string' ? parseInt(tripDetails.tripId) : tripDetails.tripId;
-          }
-        }
+        // Obtener información del conductor de manera simplificada
+        let operatorInfo = {
+          operatorFirstName: null,
+          operatorLastName: null,
+          operatorEmail: null,
+          operatorPhone: null,
+        };
 
-        const trip = recordId ? tripsMap.get(recordId) : null;
-        const driver = trip?.driverId ? driversMap.get(trip.driverId) : null;
+        try {
+          // Extraer recordId del tripDetails
+          let recordId;
+          if (tripDetails?.recordId) {
+            recordId = parseInt(tripDetails.recordId);
+          } else if (tripDetails?.tripId) {
+            if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+              recordId = parseInt(tripDetails.tripId.split('_')[0]);
+            } else {
+              recordId = typeof tripDetails.tripId === 'string' ? parseInt(tripDetails.tripId) : tripDetails.tripId;
+            }
+          }
+
+          if (recordId && !isNaN(recordId)) {
+            // Obtener información del viaje de manera individual
+            const trip = await this.getTrip(recordId);
+            if (trip && trip.driverId) {
+              // Obtener información del conductor
+              const driver = await this.db
+                .select()
+                .from(schema.users)
+                .where(eq(schema.users.id, trip.driverId))
+                .limit(1);
+              
+              if (driver.length > 0) {
+                operatorInfo = {
+                  operatorFirstName: driver[0].firstName || null,
+                  operatorLastName: driver[0].lastName || null,
+                  operatorEmail: driver[0].email || null,
+                  operatorPhone: driver[0].phone || null,
+                };
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`DB Storage: [OPTIMIZED] Error obteniendo información del conductor para paquete ${pkg.id}:`, error);
+        }
 
         const result = {
           ...pkg,
@@ -3874,18 +3838,15 @@ export class DatabaseStorage implements IStorage {
           creatorLastName: creator?.lastName || null,
           creatorEmail: creator?.email || null,
           // Información del conductor/operador asignado
-          operatorFirstName: driver?.firstName || null,
-          operatorLastName: driver?.lastName || null,
-          operatorEmail: driver?.email || null,
-          operatorPhone: driver?.phone || null,
+          ...operatorInfo,
           // Mantener tripDetails original para compatibilidad
           tripDetails: tripDetails
         };
         
-        console.log(`DB Storage: [OPTIMIZED] Paquete ${pkg.id} - Origen: ${result.tripOrigin}, Destino: ${result.tripDestination}${creator ? `, Creado por: ${creator.firstName} ${creator.lastName}` : ''}${driver ? `, Operador: ${driver.firstName} ${driver.lastName}` : ''}`);
+        console.log(`DB Storage: [OPTIMIZED] Paquete ${pkg.id} - Origen: ${result.tripOrigin}, Destino: ${result.tripDestination}${creator ? `, Creado por: ${creator.firstName} ${creator.lastName}` : ''}${operatorInfo.operatorFirstName ? `, Operador: ${operatorInfo.operatorFirstName} ${operatorInfo.operatorLastName}` : ''}`);
         
         return result;
-      });
+      }));
 
       console.log(`DB Storage: [OPTIMIZED] Procesados ${packagesWithTripInfo.length} paquetes con información de viaje`);
       console.log(`DB Storage: [OPTIMIZED] Mejora de rendimiento: Eliminadas consultas N+1, tiempo total: ${queryTime}ms`);
