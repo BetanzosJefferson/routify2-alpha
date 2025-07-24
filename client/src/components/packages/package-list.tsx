@@ -798,6 +798,19 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                   </p>
                 </div>
               )}
+
+              {/* Operador asignado */}
+              {(pkg.operatorFirstName || pkg.operatorLastName) && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground font-medium flex items-center">
+                    <User className="mr-1 h-3 w-3" />
+                    Operador asignado
+                  </p>
+                  <p className="text-sm font-medium text-green-600">
+                    {pkg.operatorFirstName} {pkg.operatorLastName}
+                  </p>
+                </div>
+              )}
               
               {/* Estados y Asientos */}
               <div className="flex justify-between items-center pt-2 border-t">
