@@ -2910,13 +2910,27 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Cache simple en memoria para notificaciones (evitar consultas cada 30 segundos)
+  private notificationsCache = new Map<number, { data: schema.Notification[], timestamp: number }>();
+  private readonly NOTIFICATIONS_CACHE_TTL = 60000; // 1 minuto de cache
+
   async getNotifications(userId: number): Promise<schema.Notification[]> {
-    console.log(`DB Storage: Consultando notificaciones para usuario ${userId}`);
+    console.log(`DB Storage: [CACHE_OPTIMIZED] Consultando notificaciones para usuario ${userId}`);
     
     try {
+      // Verificar cache primero
+      const cached = this.notificationsCache.get(userId);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < this.NOTIFICATIONS_CACHE_TTL) {
+        console.log(`DB Storage: [CACHE_HIT] Usando notificaciones en cache para usuario ${userId}`);
+        return cached.data;
+      }
+      
       const currentTime = new Date();
       
       // Obtener solo notificaciones no expiradas
+      console.log(`DB Storage: [CACHE_MISS] Consultando base de datos para usuario ${userId}`);
       const notifications = await db
         .select()
         .from(schema.notifications)
@@ -2926,14 +2940,23 @@ export class DatabaseStorage implements IStorage {
             sql`${schema.notifications.expiresAt} > ${currentTime}`
           )
         )
-        .orderBy(sql`${schema.notifications.createdAt} DESC`);
+        .orderBy(sql`${schema.notifications.createdAt} DESC`)
+        .limit(20); // Limitar resultados para mejor rendimiento
       
-      console.log(`DB Storage: Encontradas ${notifications.length} notificaciones válidas para usuario ${userId}`);
+      console.log(`DB Storage: [CACHE_OPTIMIZED] Encontradas ${notifications.length} notificaciones válidas para usuario ${userId}`);
       
-      // Ejecutar limpieza de notificaciones expiradas en segundo plano
-      this.cleanupExpiredNotifications().catch(error => {
-        console.error('Error en limpieza automática de notificaciones:', error);
+      // Actualizar cache
+      this.notificationsCache.set(userId, {
+        data: notifications,
+        timestamp: now
       });
+      
+      // Ejecutar limpieza de notificaciones expiradas en segundo plano menos frecuentemente
+      if (Math.random() < 0.1) { // Solo 10% de las veces para reducir carga
+        this.cleanupExpiredNotifications().catch(error => {
+          console.error('Error en limpieza automática de notificaciones:', error);
+        });
+      }
       
       return notifications;
     } catch (error) {
@@ -3706,20 +3729,22 @@ export class DatabaseStorage implements IStorage {
       const queryTime = Date.now() - startTime;
       console.log(`DB Storage: [OPTIMIZED] Query ejecutada en ${queryTime}ms, obtenidos ${rawPackages.length} resultados`);
 
-      // Aplicar filtrado por conductor manualmente si es necesario (temporalmente)
+      // CRITICAL FIX: Aplicar filtrado por conductor con JOIN optimizado para eliminar N+1 queries
       let filteredPackages = rawPackages;
       
       if (userRole === 'chofer' && currentUserId) {
-        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro de conductor para usuario ${currentUserId}`);
-        filteredPackages = [];
+        console.log(`DB Storage: [CRITICAL_FIX] Aplicando filtro de conductor optimizado para usuario ${currentUserId}`);
         
-        for (const pkg of rawPackages) {
+        // Extraer todos los recordIds únicos de los paquetes
+        const recordIds = new Set<number>();
+        const packageRecordMap = new Map<number, number[]>(); // recordId -> packageIds
+        
+        rawPackages.forEach((pkg, index) => {
           const tripDetails = typeof pkg.tripDetails === 'string' 
             ? JSON.parse(pkg.tripDetails) 
             : pkg.tripDetails;
           
           if (tripDetails?.tripId) {
-            // Extraer recordId del tripId (ej: "31_0" -> recordId = 31)
             let recordId;
             
             if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
@@ -3730,17 +3755,45 @@ export class DatabaseStorage implements IStorage {
             }
             
             if (!isNaN(recordId)) {
-              // Verificar si este viaje está asignado al conductor
-              const tripRecord = await this.getTrip(recordId);
-              
-              if (tripRecord && tripRecord.driverId === currentUserId) {
-                filteredPackages.push(pkg);
+              recordIds.add(recordId);
+              if (!packageRecordMap.has(recordId)) {
+                packageRecordMap.set(recordId, []);
               }
+              packageRecordMap.get(recordId)!.push(index);
             }
           }
-        }
+        });
         
-        console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
+        // OPTIMIZACIÓN CRÍTICA: Una sola consulta para todos los trips en lugar de N consultas
+        console.log(`DB Storage: [CRITICAL_FIX] Obteniendo ${recordIds.size} trips en una sola consulta`);
+        const driverTrips = await this.db
+          .select({
+            id: schema.trips.id,
+            driverId: schema.trips.driverId
+          })
+          .from(schema.trips)
+          .where(
+            and(
+              inArray(schema.trips.id, Array.from(recordIds)),
+              eq(schema.trips.driverId, currentUserId)
+            )
+          );
+        
+        // Crear set de recordIds válidos para este conductor
+        const validRecordIds = new Set(driverTrips.map(trip => trip.id));
+        console.log(`DB Storage: [CRITICAL_FIX] Encontrados ${validRecordIds.size} trips asignados al conductor`);
+        
+        // Filtrar paquetes basándose en los trips válidos
+        filteredPackages = [];
+        packageRecordMap.forEach((packageIndexes, recordId) => {
+          if (validRecordIds.has(recordId)) {
+            packageIndexes.forEach(index => {
+              filteredPackages.push(rawPackages[index]);
+            });
+          }
+        });
+        
+        console.log(`DB Storage: [CRITICAL_FIX] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes - ELIMINADAS ${recordIds.size} consultas N+1`);
       }
 
       // Obtener información de usuarios creadores para todos los paquetes
