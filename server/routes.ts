@@ -8677,9 +8677,11 @@ function setupPackageRoutes(app: Express) {
       }
       
       const companyId = user.companyId || user.company;
-      console.log(`[GET /cutoffs/pending] Obteniendo cortes pendientes para compañía: ${companyId}`);
+      const filterDate = req.query.date as string;
       
-      const pendingCutoffs = await storage.getPendingBoxCutoffs(companyId);
+      console.log(`[GET /cutoffs/pending] Obteniendo cortes pendientes para compañía: ${companyId}${filterDate ? `, fecha: ${filterDate}` : ''}`);
+      
+      const pendingCutoffs = await storage.getPendingBoxCutoffs(companyId, filterDate);
       
       console.log(`[GET /cutoffs/pending] Encontrados ${pendingCutoffs.length} cortes pendientes`);
       

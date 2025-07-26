@@ -2372,12 +2372,39 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPendingBoxCutoffs(companyId?: string): Promise<any[]> {
+  async getPendingBoxCutoffs(companyId?: string, filterDate?: string): Promise<any[]> {
     try {
-      console.log(`DB Storage: Obteniendo cortes pendientes de confirmación${companyId ? ` para compañía ${companyId}` : ''}`);
+      console.log(`DB Storage: Obteniendo cortes pendientes de confirmación${companyId ? ` para compañía ${companyId}` : ''}${filterDate ? ` filtrados por fecha ${filterDate}` : ''}`);
       
-      // Construir query base para cortes no confirmados
-      let query = this.db
+      // Construir condiciones para la consulta
+      const conditions = [eq(schema.boxCutoff.check, false)];
+      
+      // Aplicar filtro por compañía si se especifica
+      if (companyId) {
+        conditions.push(eq(schema.boxCutoff.companyId, companyId));
+      }
+      
+      // Aplicar filtro por fecha si se especifica
+      if (filterDate) {
+        // Filtrar por cortes creados en la fecha especificada
+        const startOfDay = new Date(filterDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(filterDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        console.log(`DB Storage: Filtrando cortes entre ${startOfDay.toISOString()} y ${endOfDay.toISOString()}`);
+        
+        conditions.push(
+          and(
+            gte(schema.boxCutoff.createdAt, startOfDay),
+            lte(schema.boxCutoff.createdAt, endOfDay)
+          )
+        );
+      }
+      
+      // Construir query con todas las condiciones
+      const query = this.db
         .select({
           id: schema.boxCutoff.id,
           fecha_inicio: schema.boxCutoff.fecha_inicio,
@@ -2397,15 +2424,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(schema.boxCutoff)
         .leftJoin(schema.users, eq(schema.boxCutoff.user_id, schema.users.id))
-        .where(eq(schema.boxCutoff.check, false));
-      
-      // Aplicar filtro por compañía si se especifica
-      if (companyId) {
-        query = query.where(and(
-          eq(schema.boxCutoff.check, false),
-          eq(schema.boxCutoff.companyId, companyId)
-        ));
-      }
+        .where(and(...conditions));
       
       // Ordenar por fecha de creación (más recientes primero)
       const pendingCutoffs = await query.orderBy(desc(schema.boxCutoff.createdAt));
