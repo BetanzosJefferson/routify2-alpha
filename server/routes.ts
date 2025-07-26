@@ -2674,26 +2674,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`📊 Reservas activas encontradas: ${tripReservations.length}`);
             
-            const updatedTripData = currentTrip.tripData.map((segment: any) => {
+            const updatedTripData = currentTrip.tripData.map((segment: any, index: number) => {
+              // Para debugging solo en los primeros 3 segmentos
+              const shouldLog = index < 3;
+              
               // Contar reservas para este segmento específico
-              const segmentReservations = tripReservations.filter(r => 
-                r.tripDetails?.tripId === segment.tripId
-              );
+              const segmentReservations = tripReservations.filter(r => {
+                // Comparar tanto con tripId del segmento como con recordId
+                const reservationTripId = r.tripDetails?.tripId;
+                const reservationRecordId = r.tripDetails?.recordId;
+                
+                // Extraer ID base del segmento (antes del guión bajo si existe)
+                const segmentBaseId = segment.tripId.toString().split('_')[0];
+                
+                const matches = reservationTripId === segment.tripId || 
+                       reservationRecordId === segment.tripId ||
+                       reservationTripId === segmentBaseId ||
+                       reservationRecordId === segmentBaseId ||
+                       reservationTripId === id ||
+                       reservationRecordId === id;
+                
+                if (shouldLog) {
+                  console.log(`[PATCH ${id}] Seg${index} (${segment.tripId}): Reserva ${r.id} - tripId:${reservationTripId}, recordId:${reservationRecordId}, segmentBaseId:${segmentBaseId}, matches:${matches}`);
+                }
+                
+                return matches;
+              });
               
               const occupiedSeats = segmentReservations.reduce((sum, r) => {
-                const passengersCount = r.tripDetails?.passengersData?.length || 0;
-                console.log(`📋 Reserva ${r.id} en segmento ${segment.tripId}: ${passengersCount} pasajeros`);
-                return sum + passengersCount;
+                // CORRECCIÓN CRÍTICA: Usar el campo correcto según la estructura de datos
+                const reservedSeats = r.tripDetails?.seats || r.tripDetails?.seatCount || r.tripDetails?.passengersData?.length || 0;
+                console.log(`[PATCH ${id}] 📋 Reserva ${r.id} en segmento ${segment.tripId}: ${reservedSeats} asientos (status: ${r.status}, seats: ${r.tripDetails?.seats}, seatCount: ${r.tripDetails?.seatCount}, passengers: ${r.tripDetails?.passengersData?.length || 0})`);
+                return sum + reservedSeats;
               }, 0);
               
               const availableSeats = newCapacity - occupiedSeats;
               
-              console.log(`📍 Segmento ${segment.tripId}: ${occupiedSeats} ocupados, ${availableSeats} disponibles`);
+              // VALIDACIÓN DE INTEGRIDAD: Verificar que el cálculo sea válido
+              if (availableSeats < 0) {
+                console.warn(`⚠️  ADVERTENCIA: Segmento ${segment.tripId} tendría asientos negativos (${availableSeats}). Ocupados: ${occupiedSeats}, Capacidad: ${newCapacity}`);
+              }
+              if (occupiedSeats > newCapacity) {
+                console.warn(`⚠️  ADVERTENCIA: Segmento ${segment.tripId} tiene más asientos ocupados (${occupiedSeats}) que capacidad (${newCapacity})`);
+              }
+              
+              console.log(`📍 Segmento ${segment.tripId}: ${occupiedSeats} ocupados, ${availableSeats} disponibles (capacidad: ${newCapacity})`);
               
               return {
                 ...segment,
                 capacity: newCapacity,
-                availableSeats: Math.max(0, availableSeats)
+                availableSeats: Math.max(0, Math.min(availableSeats, newCapacity)) // Asegurar que availableSeats esté en rango válido
               };
             });
             

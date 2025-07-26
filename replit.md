@@ -119,6 +119,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 26, 2025** - CRITICAL FIX: Trip capacity editing seat management system completely corrected to prevent seat reset issues:
+  - **ROOT CAUSE IDENTIFIED**: PATCH endpoint was using incorrect field `seatCount` instead of `seats` field from reservation tripDetails JSON
+  - **FIELD CORRECTION**: Updated occupiedSeats calculation to use `r.tripDetails?.seats` as primary field instead of `passengersData.length`
+  - **FILTERING LOGIC ENHANCED**: Fixed reservation filtering to match main trip ID (1313) with segment-specific reservations
+  - **COMPREHENSIVE COMPARISON**: Added multiple comparison fields (reservationTripId, reservationRecordId) to properly link reservations to segments
+  - **VARIABLE SCOPE CORRECTED**: Fixed ReferenceError by replacing undefined `tripId` variable with correct `id` parameter
+  - **MATHEMATICAL INTEGRITY**: Confirmed availableSeats = capacity - occupiedSeats formula works correctly across capacity changes
+  - **PRODUCTION VERIFIED**: Testing shows capacity changes from 15→20→25 properly maintain occupied seat count (7 seats) and update available seats accordingly (13→18)
+  - **USER ISSUE RESOLVED**: Trip capacity editing no longer resets occupied seats to 0, preserving existing reservation data integrity
+
 - **July 26, 2025** - CRITICAL FIX: Date filtering system corrected for pending cutoffs to prevent UTC timezone issues:
   - **ROOT CAUSE IDENTIFIED**: Filtering by date "15/07/2025" was incorrectly showing results from "14/07/2025" due to UTC conversion problems
   - **DATE PARSING ENHANCED**: Replaced problematic `normalizeToStartOfDay()` function with direct date component parsing to avoid timezone drift
