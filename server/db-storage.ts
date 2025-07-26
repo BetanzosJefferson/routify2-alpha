@@ -21,6 +21,7 @@ import { IStorage } from "./storage";
 import { db } from "./db";
 import { eq, and, gte, lte, lt, like, or, sql, isNotNull, isNull, inArray, ne, desc } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { normalizeToStartOfDay } from "./utils";
 
 export class DatabaseStorage implements IStorage {
   private db = db;
@@ -2386,14 +2387,18 @@ export class DatabaseStorage implements IStorage {
       
       // Aplicar filtro por fecha si se especifica
       if (filterDate) {
-        // Filtrar por cortes creados en la fecha especificada
-        const startOfDay = new Date(filterDate);
-        startOfDay.setHours(0, 0, 0, 0);
+        // Crear fechas sin conversión UTC usando los componentes directamente
+        const dateComponents = filterDate.split('-');
+        const year = parseInt(dateComponents[0], 10);
+        const month = parseInt(dateComponents[1], 10) - 1; // mes es 0-indexed
+        const day = parseInt(dateComponents[2], 10);
         
-        const endOfDay = new Date(filterDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        // Crear fechas locales sin problema de zona horaria
+        const startOfDay = new Date(year, month, day, 0, 0, 0, 0);
+        const endOfDay = new Date(year, month, day, 23, 59, 59, 999);
         
         console.log(`DB Storage: Filtrando cortes entre ${startOfDay.toISOString()} y ${endOfDay.toISOString()}`);
+        console.log(`DB Storage: Fecha original: ${filterDate}, Procesada como: ${year}-${month + 1}-${day}`);
         
         conditions.push(
           and(

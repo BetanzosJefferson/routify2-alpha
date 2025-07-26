@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 26, 2025** - CRITICAL FIX: Date filtering system corrected for pending cutoffs to prevent UTC timezone issues:
+  - **ROOT CAUSE IDENTIFIED**: Filtering by date "15/07/2025" was incorrectly showing results from "14/07/2025" due to UTC conversion problems
+  - **DATE PARSING ENHANCED**: Replaced problematic `normalizeToStartOfDay()` function with direct date component parsing to avoid timezone drift
+  - **LOCAL DATE CREATION**: Now creates Date objects using `new Date(year, month-1, day, hour, minute, second)` constructor for precise local time handling
+  - **FILTER ACCURACY**: Date filter now correctly matches the selected date without shifting to previous day
+  - **BACKEND OPTIMIZATION**: Enhanced `getPendingBoxCutoffs()` method in db-storage.ts with proper local date range creation
+  - **INTERFACE UPDATED**: Updated IStorage interface to support optional filterDate parameter for pending cutoffs
+  - **PRODUCTION READY**: Date filtering for cutoff confirmation now works accurately across all timezones without UTC conversion issues
+
 - **July 23, 2025** - CRITICAL FIX: Package payment status display corrected in Bitácora sidebar:
   - **ROOT CAUSE IDENTIFIED**: Sidebar was checking `pkg.paymentStatus === 'paid'` instead of correct database field `pkg.isPaid`
   - **FIELD CORRECTION**: Updated trip-log-details-sidebar.tsx to use boolean `pkg.isPaid` field from schema
