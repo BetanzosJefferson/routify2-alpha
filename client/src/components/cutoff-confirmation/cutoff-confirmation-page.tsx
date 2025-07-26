@@ -252,11 +252,7 @@ export default function CutoffConfirmationPage() {
                 Limpiar Filtro
               </Button>
             </div>
-            {filterDate && (
-              <div className="mt-2 text-sm text-gray-600">
-                Mostrando cortes del: {format(new Date(filterDate), 'PPP', { locale: es })}
-              </div>
-            )}
+        
           </CardContent>
         </Card>
 
