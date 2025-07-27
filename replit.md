@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 27, 2025** - COMPLETED: Default package view behavior updated for taquilla role to show all packages:
+  - **USER REQUEST IMPLEMENTED**: Taquilla role now shows all packages by default instead of auto-filtering by current date
+  - **AUTOMATIC FILTERING REMOVED**: Eliminated automatic date filter that was limiting taquilla users to only current day packages
+  - **FLEXIBLE FILTERING MAINTAINED**: Manual date filtering still works when user explicitly applies date filter
+  - **ENDPOINT BEHAVIOR CHANGED**: `/api/taquilla/packages` without date parameter now returns all company packages
+  - **VERIFICATION COMPLETE**: Testing shows 8 packages without filter vs 2 packages with specific date filter (2025-07-15)
+  - **USER EXPERIENCE IMPROVED**: Taquilla users can now see complete package history and manually filter when needed
+  - **PRODUCTION READY**: Consistent behavior with other roles that show all data by default
+
 - **July 27, 2025** - CRITICAL FIX: Package filtering bug completely resolved for taquilla role users:
   - **ROOT CAUSE IDENTIFIED**: Package filtering was using creation date instead of trip departure date causing incorrect results
   - **FILTERING LOGIC CORRECTED**: Modified `getPackagesWithTripInfo` method to filter by `tripDetails->>'departureDate'` instead of `created_at`

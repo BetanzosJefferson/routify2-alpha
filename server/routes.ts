@@ -6483,11 +6483,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[GET /taquilla/packages] Usuario: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
       
-      // OPTIMIZACIÓN: Si no hay filtro de fecha específico, usar fecha actual por defecto
+      // Permitir mostrar todas las paqueterías por defecto (sin filtro automático)
       let dateFilter = date as string;
-      if (!date) {
-        dateFilter = getCurrentLocalDate();
-        console.log(`[GET /taquilla/packages] Sin filtro de fecha - aplicando fecha actual: ${dateFilter}`);
+      if (date) {
+        console.log(`[GET /taquilla/packages] Aplicando filtro de fecha específico: ${dateFilter}`);
+      } else {
+        console.log(`[GET /taquilla/packages] Sin filtro de fecha - mostrando todas las paqueterías`);
       }
       
       // Verificar que el usuario sea taquillero o chofer
@@ -6528,9 +6529,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /taquilla/packages] RecordIds únicos: [${uniqueRecordIds.join(', ')}]`);
         
         // Obtener paqueterías solo de los viajes asignados - usar método específico para conductor
-        packages = await storage.getPackagesWithTripInfo({ 
-          date: dateFilter 
-        }, user.id, 'chofer');
+        const filters: any = {};
+        if (dateFilter) filters.date = dateFilter;
+        
+        packages = await storage.getPackagesWithTripInfo(filters, user.id, 'chofer');
       } else {
         // Para taquilleros: obtener todas las empresas asociadas al taquillero
         const userCompanies = await db
@@ -6546,14 +6548,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json([]);
         }
         
-        // Obtener paqueterías con información del viaje de todas las empresas del taquillero con filtro de fecha
-        packages = await storage.getPackagesWithTripInfo({ 
-          companyIds: companyIds,
-          date: dateFilter 
-        });
+        // Obtener paqueterías con información del viaje de todas las empresas del taquillero
+        const filters: any = { companyIds: companyIds };
+        if (dateFilter) filters.date = dateFilter;
+        
+        packages = await storage.getPackagesWithTripInfo(filters);
       }
       
-      console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para el usuario ${user.role} (fecha: ${dateFilter})`);
+      console.log(`[GET /taquilla/packages] Encontrados ${packages.length} paquetes para el usuario ${user.role} ${dateFilter ? `(fecha: ${dateFilter})` : '(sin filtro de fecha)'}`);;
       
       res.json(packages);
     } catch (error) {
