@@ -119,6 +119,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 27, 2025** - CRITICAL FIX: Package filtering bug completely resolved for taquilla role users:
+  - **ROOT CAUSE IDENTIFIED**: Package filtering was using creation date instead of trip departure date causing incorrect results
+  - **FILTERING LOGIC CORRECTED**: Modified `getPackagesWithTripInfo` method to filter by `tripDetails->>'departureDate'` instead of `created_at`
+  - **BUSINESS LOGIC ALIGNED**: Taquilla users now see packages filtered by actual travel date, not when package was registered
+  - **VERIFICATION COMPLETE**: Testing confirmed 2 packages with trips on 2025-07-15 vs 1 package created on 2025-07-15
+  - **ENDPOINT CONSISTENCY**: Both `/api/packages` and `/api/taquilla/packages` now use correct trip-based date filtering
+  - **USER EXPERIENCE**: Taquilla interface now shows accurate package lists based on departure dates for daily operations
+  - **PRODUCTION READY**: Package filtering now matches business requirements for trip-based organization
+
 - **July 26, 2025** - CRITICAL FIX: Trip capacity editing seat management system completely corrected and data corruption resolved:
   - **ROOT CAUSE IDENTIFIED**: Combination of incorrect field mapping and corrupted database records causing availableSeats > capacity scenarios
   - **FIELD CORRECTION**: Updated PATCH endpoint to use `r.tripDetails?.seats` as primary field for occupied seat calculations

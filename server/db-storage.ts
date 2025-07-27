@@ -3709,11 +3709,11 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Filtrando por múltiples tripIds: ${filters.tripIds.join(', ')}`);
       }
 
-      // Filtro por fecha
+      // Filtro por fecha del viaje (no fecha de creación)
       if (filters?.date) {
-        const dateCondition = sql`DATE(${schema.packages.createdAt}) = ${filters.date}`;
+        const dateCondition = sql`${schema.packages.tripDetails}->>'departureDate' = ${filters.date}`;
         conditions.push(dateCondition);
-        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha: ${filters.date}`);
+        console.log(`DB Storage: [OPTIMIZED] Aplicando filtro por fecha del viaje: ${filters.date}`);
       }
 
       // Construir query básica sin JOIN complejo para evitar errores
