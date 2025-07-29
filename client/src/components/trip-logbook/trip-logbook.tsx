@@ -36,7 +36,7 @@ export function TripLogbook() {
     date: selectedDate // Filtrar reservaciones por fecha seleccionada
   });
   const { data: packages = [], isLoading: isLoadingPackages } = usePackages({
-    // No filtrar paquetes por fecha para obtener todos los asociados a viajes
+    date: selectedDate // OPTIMIZACIÓN: Filtrar paquetes por fecha para mejorar performance de Bitácora
   });
   const { data: trips = [], isLoading: isLoadingTrips } = useTrips({
     date: selectedDate, // Filtrar viajes por fecha seleccionada
