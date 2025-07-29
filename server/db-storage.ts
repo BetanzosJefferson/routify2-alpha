@@ -4628,4 +4628,236 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // BITÁCORA OPTIMIZADA - Método unificado con JOINs
+  async getBitacoraData(companyId: string, date: string): Promise<{
+    trips: Array<{
+      recordId: number;
+      tripInfo: any;
+      reservations: any[];
+      packages: any[];
+      totalSales: number;
+      totalExpenses: number;
+      netProfit: number;
+      passengerCount: number;
+      packageCount: number;
+    }>;
+    summary: {
+      totalPorVender: number;
+      ventasReales: number;
+      totalTrips: number;
+      totalPassengers: number;
+      totalPackages: number;
+    };
+  }> {
+    const startTime = Date.now();
+    console.log(`[Bitácora Optimizada] Iniciando consulta unificada para compañía ${companyId}, fecha ${date}`);
+
+    try {
+      // 🔥 CONSULTA UNIFICADA CON CTEs Y MÚLTIPLES JOINs
+      const result = await db.execute(sql`
+        WITH trip_data AS (
+          SELECT 
+            t.id as trip_id,
+            t.trip_data,
+            t.capacity,
+            t.route_id,
+            t.company_id,
+            r.origin as route_origin,
+            r.destination as route_destination,
+            r.name as route_name,
+            COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '') as driver_name,
+            COALESCE(v.model, '') || ' ' || COALESCE(v.plate_number, '') as vehicle_info
+          FROM trips t
+          LEFT JOIN routes r ON t.route_id = r.id
+          LEFT JOIN users u ON t.assigned_driver_id = u.id
+          LEFT JOIN vehicles v ON t.assigned_vehicle_id = v.id
+          WHERE t.company_id = ${companyId}
+            AND t.trip_data->0->>'departureDate' = ${date}
+        ),
+        reservations_data AS (
+          SELECT 
+            res.*,
+            COALESCE(res_users.first_name, '') || ' ' || COALESCE(res_users.last_name, '') as passenger_name,
+            COALESCE(creator_users.first_name, '') || ' ' || COALESCE(creator_users.last_name, '') as creator_name,
+            (res.trip_details->>'recordId')::int as record_id,
+            COALESCE((res.trip_details->>'seats')::int, 1) as seat_count
+          FROM reservations res
+          LEFT JOIN users res_users ON res.user_id = res_users.id
+          LEFT JOIN users creator_users ON res.created_by = creator_users.id
+          WHERE res.company_id = ${companyId}
+            AND (res.trip_details->>'recordId')::int IN (
+              SELECT trip_id FROM trip_data
+            )
+        ),
+        packages_data AS (
+          SELECT 
+            pkg.*,
+            COALESCE(creator_users.first_name, '') || ' ' || COALESCE(creator_users.last_name, '') as creator_name,
+            (pkg.trip_details->>'recordId')::int as record_id
+          FROM packages pkg
+          LEFT JOIN users creator_users ON pkg.created_by = creator_users.id
+          WHERE pkg.company_id = ${companyId}
+            AND pkg.trip_details->>'departureDate' = ${date}
+            AND (pkg.trip_details->>'recordId')::int IN (
+              SELECT trip_id FROM trip_data
+            )
+        )
+        SELECT 
+          td.trip_id,
+          td.trip_data,
+          td.capacity,
+          td.route_origin,
+          td.route_destination,
+          td.route_name,
+          td.driver_name,
+          td.vehicle_info,
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', rd.id,
+                'totalAmount', rd.total_amount,
+                'advanceAmount', rd.advance_amount,
+                'paymentStatus', rd.payment_status,
+                'status', rd.status,
+                'passengerName', rd.passenger_name,
+                'creatorName', rd.creator_name,
+                'seatCount', rd.seat_count,
+                'phone', rd.phone,
+                'createdAt', rd.created_at
+              )
+            ) FILTER (WHERE rd.id IS NOT NULL), 
+            '[]'
+          ) as reservations,
+          COALESCE(
+            json_agg(
+              DISTINCT jsonb_build_object(
+                'id', pd.id,
+                'price', pd.price,
+                'isPaid', pd.is_paid,
+                'isDelivered', pd.is_delivered,
+                'senderName', pd.sender_name,
+                'recipientName', pd.recipient_name,
+                'creatorName', pd.creator_name,
+                'createdAt', pd.created_at
+              )
+            ) FILTER (WHERE pd.id IS NOT NULL), 
+            '[]'
+          ) as packages
+        FROM trip_data td
+        LEFT JOIN reservations_data rd ON td.trip_id = rd.record_id
+        LEFT JOIN packages_data pd ON td.trip_id = pd.record_id
+        GROUP BY 
+          td.trip_id, td.trip_data, td.capacity, td.route_origin, 
+          td.route_destination, td.route_name, td.driver_name, td.vehicle_info
+        ORDER BY td.trip_id;
+      `);
+
+      console.log(`[Bitácora Optimizada] Consulta ejecutada en ${Date.now() - startTime}ms, procesando ${result.length} viajes`);
+
+      // 🔥 PROCESAMIENTO OPTIMIZADO EN BACKEND
+      const processedTrips = [];
+      let totalPorVender = 0;
+      let ventasReales = 0;
+      let totalPassengers = 0;
+      let totalPackages = 0;
+
+      for (const row of result) {
+        const reservations = row.reservations as any[];
+        const packages = row.packages as any[];
+
+        // Filtrar reservaciones válidas (que representen ingresos)
+        const validReservations = reservations.filter((res: any) => {
+          if (res.status !== 'canceled' && res.status !== 'canceledAndRefund') {
+            return true;
+          }
+          // Reservaciones canceladas solo si tienen anticipo y no están reembolsadas
+          const hasAdvance = (res.advanceAmount || 0) > 0;
+          const isRefunded = res.status === 'canceledAndRefund';
+          return hasAdvance && !isRefunded;
+        });
+
+        // Calcular totales del viaje
+        let tripTotalSales = 0;
+        let tripVentasReales = 0;
+        let tripPassengers = 0;
+
+        validReservations.forEach((res: any) => {
+          const totalAmount = res.totalAmount || 0;
+          const advanceAmount = res.advanceAmount || 0;
+          const seatCount = res.seatCount || 1;
+
+          tripTotalSales += totalAmount;
+          tripPassengers += seatCount;
+
+          // Ventas reales según estado
+          if (res.status === 'canceled' || res.status === 'canceledAndRefund') {
+            tripVentasReales += advanceAmount; // Solo el anticipo
+          } else if (res.paymentStatus === 'pagado') {
+            tripVentasReales += totalAmount; // Monto total
+          } else {
+            tripVentasReales += advanceAmount; // Solo anticipo pagado
+          }
+        });
+
+        // Agregar ingresos de paquetes
+        packages.forEach((pkg: any) => {
+          const price = pkg.price || 0;
+          tripTotalSales += price;
+          if (pkg.isPaid) {
+            tripVentasReales += price;
+          }
+        });
+
+        // Agregar a totales generales
+        totalPorVender += tripTotalSales;
+        ventasReales += tripVentasReales;
+        totalPassengers += tripPassengers;
+        totalPackages += packages.length;
+
+        // Crear objeto de viaje procesado
+        processedTrips.push({
+          recordId: row.trip_id,
+          tripInfo: {
+            id: row.trip_id,
+            tripData: row.trip_data,
+            capacity: row.capacity,
+            origin: row.route_origin,
+            destination: row.route_destination,
+            routeName: row.route_name,
+            driverName: row.driver_name,
+            vehicleInfo: row.vehicle_info
+          },
+          reservations: validReservations,
+          packages: packages,
+          totalSales: tripVentasReales,
+          totalExpenses: 0, // TODO: Implementar gastos si es necesario
+          netProfit: tripVentasReales,
+          passengerCount: tripPassengers,
+          packageCount: packages.length
+        });
+      }
+
+      const totalTime = Date.now() - startTime;
+      console.log(`[Bitácora Optimizada] ✅ Procesamiento completado en ${totalTime}ms`);
+      console.log(`[Bitácora Optimizada] ✅ Viajes procesados: ${processedTrips.length}`);
+      console.log(`[Bitácora Optimizada] ✅ Performance: 3 consultas → 1 consulta (66% reducción)`);
+      console.log(`[Bitácora Optimizada] ✅ Datos: ${totalPassengers} pasajeros, ${totalPackages} paquetes`);
+
+      return {
+        trips: processedTrips,
+        summary: {
+          totalPorVender,
+          ventasReales,
+          totalTrips: processedTrips.length,
+          totalPassengers,
+          totalPackages
+        }
+      };
+
+    } catch (error) {
+      console.error(`[Bitácora Optimizada] Error en consulta unificada:`, error);
+      throw error;
+    }
+  }
 }

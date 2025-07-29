@@ -61,6 +61,28 @@ export interface IStorage {
   
   // Sistema de Cajas y operaciones de caja han sido eliminados
   
+  // Bitácora optimized method
+  getBitacoraData(companyId: string, date: string): Promise<{
+    trips: Array<{
+      recordId: number;
+      tripInfo: any;
+      reservations: any[];
+      packages: any[];
+      totalSales: number;
+      totalExpenses: number;
+      netProfit: number;
+      passengerCount: number;
+      packageCount: number;
+    }>;
+    summary: {
+      totalPorVender: number;
+      ventasReales: number;
+      totalTrips: number;
+      totalPassengers: number;
+      totalPackages: number;
+    };
+  }>;
+
   // Statistics methods
   getCouponUsageStatistics(companyId: string): Promise<{
     userId: number;

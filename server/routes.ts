@@ -8589,6 +8589,55 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // BITÁCORA OPTIMIZADA - Endpoint unificado
+  app.get(apiRouter("/bitacora"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /bitacora] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      // Obtener fecha del query parameter (requerido)
+      const date = req.query.date as string;
+      if (!date) {
+        return res.status(400).json({ 
+          error: "Fecha requerida", 
+          details: "Parámetro 'date' es obligatorio en formato YYYY-MM-DD" 
+        });
+      }
+      
+      console.log(`[GET /bitacora] Iniciando consulta optimizada para compañía: ${companyId}, fecha: ${date}`);
+      
+      const bitacoraData = await storage.getBitacoraData(companyId, date);
+      
+      console.log(`[GET /bitacora] ✅ Datos de bitácora obtenidos:`, {
+        trips: bitacoraData.trips.length,
+        totalSales: bitacoraData.summary.ventasReales,
+        totalPassengers: bitacoraData.summary.totalPassengers,
+        totalPackages: bitacoraData.summary.totalPackages
+      });
+      
+      res.json(bitacoraData);
+    } catch (error: any) {
+      console.error("[GET /bitacora] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener datos de bitácora",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para obtener usuarios que tienen transacciones en la compañía
   app.get(apiRouter("/transaction-users"), isAuthenticated, async (req: Request, res: Response) => {
     try {
