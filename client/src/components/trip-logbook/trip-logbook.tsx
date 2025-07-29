@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Calendar, FileText, DollarSign, Package, Users, Truck, UserCheck, Clock, Zap } from "lucide-react";
+import { Calendar, FileText, DollarSign, Package, Users, Truck, UserCheck, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
 import { usePackages } from "@/hooks/use-packages";
 import { useTrips } from "@/hooks/use-trips";
-import { useBitacoraOptimized } from "@/hooks/use-bitacora";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { TripLogDetailsSidebar } from "./trip-log-details-sidebar";
 
-type ReservationWithPassengers = any;
-type PackageWithDetails = any;
+type ReservationWithPassengers = any; // Usar el tipo ya definido
+type PackageWithDetails = any; // Usar el tipo ya definido
 
 type TripLogData = {
   recordId: number;
@@ -31,58 +30,84 @@ export function TripLogbook() {
     return format(today, 'yyyy-MM-dd');
   });
   const [selectedTrip, setSelectedTrip] = useState<TripLogData | null>(null);
-  const [useOptimized, setUseOptimized] = useState(true);
 
-  // 🔥 ENDPOINT OPTIMIZADO - Una sola consulta con JOINs
-  const { 
-    data: bitacoraOptimized, 
-    isLoading: isLoadingOptimized,
-    error: errorOptimized 
-  } = useBitacoraOptimized(selectedDate);
-
-  // 📊 ENDPOINT LEGACY - Múltiples consultas (para comparación)
+  // Hooks para obtener datos con filtros de fecha optimizados
   const { data: reservations = [], isLoading: isLoadingReservations } = useReservations({
-    date: selectedDate
+    date: selectedDate // Filtrar reservaciones por fecha seleccionada
   });
   const { data: packages = [], isLoading: isLoadingPackages } = usePackages({
+    date: selectedDate // OPTIMIZACIÓN: Filtrar paquetes por fecha para mejorar performance de Bitácora
   });
   const { data: trips = [], isLoading: isLoadingTrips } = useTrips({
-    date: selectedDate,
-    isSubTrip: false
+    date: selectedDate, // Filtrar viajes por fecha seleccionada
+    isSubTrip: false // Solo viajes principales para mejor rendimiento
   });
 
   // Filtrar reservaciones para excluir las que no representan ingresos
   const validReservations = useMemo(() => {
+    // Log detallado para depuración
+    console.log(`[Bitácora] Reservaciones antes del filtro:`, reservations.map(r => ({
+      id: r.id, 
+      status: r.status, 
+      advance: r.advanceAmount, 
+      total: r.totalAmount,
+      phone: r.phone
+    })));
+    
     const filtered = reservations.filter((reservation: any) => {
+      // Si no está cancelada en ninguna forma, siempre incluir
       if (reservation.status !== 'canceled' && reservation.status !== 'canceledAndRefund') {
         return true;
       }
       
+      // Si está cancelada, verificar si representa un ingreso
       const hasAdvance = (reservation.advanceAmount || 0) > 0;
       const wasFullyPaid = (reservation.advanceAmount || 0) >= (reservation.totalAmount || 0);
       const isRefunded = reservation.status === 'canceledAndRefund' || (reservation.status === 'canceled' && reservation.refunded);
       
+      // Log específico para reservaciones canceladas
+      console.log(`[Bitácora] Reservación cancelada ID ${reservation.id}: advance=${reservation.advanceAmount}, total=${reservation.totalAmount}, status=${reservation.status}, refunded=${isRefunded}`);
+      
+      // Excluir reservaciones canceladas Y reembolsadas (no representan ingreso)
       if (isRefunded) {
+        console.log(`[Bitácora] Excluyendo reservación ${reservation.id} - cancelada y reembolsada`);
         return false;
       }
       
+      // Excluir reservaciones canceladas SIN anticipo (no representan ingreso)
+      if (!hasAdvance && !wasFullyPaid) {
+        console.log(`[Bitácora] Excluyendo reservación ${reservation.id} - cancelada sin anticipo ni pago completo`);
+        return false;
+      }
+      
+      // Incluir reservaciones canceladas CON anticipo o que estaban pagadas (representan ingreso)
+      console.log(`[Bitácora] Incluyendo reservación ${reservation.id} - cancelada pero con ingreso`);
       return hasAdvance || wasFullyPaid;
     });
     
+    // Log para depuración de filtrado
+    console.log(`[Bitácora] Filtrado de reservaciones: ${reservations.length} → ${filtered.length} (excluidas ${reservations.length - filtered.length} sin ingreso)`);
+    console.log(`[Bitácora] Datos cargados - Reservaciones: ${filtered.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
+    
     return filtered;
-  }, [reservations]);
+  }, [reservations, packages.length, trips.length]);
 
+  // Mostrar todas las paqueterías asociadas a los viajes
   const validPackages = useMemo(() => {
-    return packages;
+    return packages; // Mostrar todos los paquetes sin filtros de pago
   }, [packages]);
 
+  // Los datos ya vienen filtrados por fecha desde el backend
   const dateFilteredReservations = validReservations;
+
+  // Los datos ya vienen filtrados por fecha desde el backend
   const dateFilteredPackages = validPackages;
 
-  // Agrupar por viajes legacy
+  // Agrupar por viajes
   const groupedTrips = useMemo(() => {
     const groups: { [key: string]: TripLogData } = {};
 
+    // Agrupar reservaciones por viaje
     dateFilteredReservations.forEach((reservation: any) => {
       const tripDetails = reservation.tripDetails as any;
       if (!tripDetails || !reservation.trip) return;
@@ -104,15 +129,19 @@ export function TripLogbook() {
 
       groups[tripKey].reservations.push(reservation);
       
+      // Calcular ventas reales según el estado de la reservación
       const advanceAmount = reservation.advanceAmount || 0;
       const isCanceled = reservation.status === 'canceled';
       const isRefunded = reservation.status === 'canceledAndRefund';
       
       if (isRefunded) {
+        // Reservaciones reembolsadas no generan ingresos
         groups[tripKey].totalSales += 0;
       } else if (isCanceled) {
+        // Reservaciones canceladas: solo el anticipo que se cobró
         groups[tripKey].totalSales += advanceAmount;
       } else {
+        // Reservaciones normales: usar paymentStatus o calcular basado en montos
         if (reservation.paymentStatus === 'pagado') {
           groups[tripKey].totalSales += reservation.totalAmount;
         } else {
@@ -121,22 +150,29 @@ export function TripLogbook() {
       }
     });
 
+    // Agregar paqueterías a los grupos existentes basándose en recordId del viaje padre
     dateFilteredPackages.forEach((pkg: any) => {
       const tripDetails = pkg.tripDetails as any;
       if (!tripDetails) return;
 
+      // Extraer recordId del viaje padre del tripId (ejemplo: "1223_98_98" -> "1223")
       let recordId = tripDetails.recordId || tripDetails.tripId;
       if (typeof recordId === 'string' && recordId.includes('_')) {
         recordId = recordId.split('_')[0];
       }
       recordId = parseInt(recordId);
       
+
+
       const tripKey = `${recordId}`;
 
+      // Si el grupo existe, agregar el paquete
       if (groups[tripKey]) {
         groups[tripKey].packages.push(pkg);
         groups[tripKey].totalSales += pkg.price || 0;
       } else {
+        // Si no existe el grupo, crear uno nuevo para el viaje padre
+        // Buscar información del viaje padre en los trips disponibles
         const parentTrip = trips.find((trip: any) => trip.id === recordId);
         if (parentTrip) {
           groups[tripKey] = {
@@ -152,73 +188,13 @@ export function TripLogbook() {
       }
     });
 
+    // Calcular ganancias netas (por ahora sin gastos, se agregará después)
     Object.values(groups).forEach(group => {
       group.netProfit = group.totalSales - group.totalExpenses;
     });
 
     return Object.values(groups);
   }, [dateFilteredReservations, dateFilteredPackages, trips]);
-
-  // 🔥 DATOS FINALES - Usar optimizados si están disponibles
-  const finalTripLogData = useMemo(() => {
-    if (useOptimized && bitacoraOptimized) {
-      return bitacoraOptimized.trips;
-    }
-    return groupedTrips;
-  }, [useOptimized, bitacoraOptimized, groupedTrips]);
-
-  // Calcular totales legacy
-  const dayTotals = useMemo(() => {
-    let totalPorVender = 0;
-    let ventasReales = 0;
-    let totalTrips = groupedTrips.length;
-    let totalPassengers = 0;
-    let totalPackages = 0;
-
-    groupedTrips.forEach(trip => {
-      totalPackages += trip.packages.length;
-
-      trip.reservations.forEach((reservation: any) => {
-        const advanceAmount = reservation.advanceAmount || 0;
-        const isCanceled = reservation.status === 'canceled';
-        const isRefunded = reservation.status === 'canceledAndRefund';
-        const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
-        
-        totalPassengers += seatCount;
-        
-        if (isRefunded) {
-          ventasReales += 0;
-          totalPorVender += 0;
-        } else if (isCanceled) {
-          ventasReales += advanceAmount;
-          totalPorVender += advanceAmount;
-        } else {
-          if (reservation.paymentStatus === 'pagado') {
-            ventasReales += reservation.totalAmount;
-            totalPorVender += reservation.totalAmount;
-          } else {
-            ventasReales += advanceAmount;
-            totalPorVender += reservation.totalAmount;
-          }
-        }
-      });
-
-      trip.packages.forEach((pkg: any) => {
-        totalPorVender += pkg.price || 0;
-        ventasReales += pkg.price || 0;
-      });
-    });
-
-    return { totalPorVender, ventasReales, totalTrips, totalPassengers, totalPackages };
-  }, [groupedTrips]);
-
-  // 🔥 ESTADÍSTICAS FINALES - Usar pre-calculadas si están disponibles
-  const finalDayTotals = useMemo(() => {
-    if (useOptimized && bitacoraOptimized) {
-      return bitacoraOptimized.summary;
-    }
-    return dayTotals;
-  }, [useOptimized, bitacoraOptimized, dayTotals]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -236,9 +212,60 @@ export function TripLogbook() {
     }
   };
 
-  const isLoading = useOptimized ? isLoadingOptimized : (isLoadingReservations || isLoadingPackages || isLoadingTrips);
+  // Totales generales del día
+  const dayTotals = useMemo(() => {
+    let totalPorVender = 0;
+    let ventasReales = 0;
+    let totalTrips = groupedTrips.length;
+    let totalPassengers = 0;
+    let totalPackages = 0;
 
-  if (isLoading) {
+    groupedTrips.forEach(trip => {
+      totalPackages += trip.packages.length;
+
+      // Calcular para reservaciones
+      trip.reservations.forEach((reservation: any) => {
+        const advanceAmount = reservation.advanceAmount || 0;
+        const isCanceled = reservation.status === 'canceled';
+        const isRefunded = reservation.status === 'canceledAndRefund';
+        const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
+        
+        // Contar pasajeros/asientos
+        totalPassengers += seatCount;
+        
+        // Calcular ventas reales según el estado
+        if (isRefunded) {
+          // Reservaciones reembolsadas no generan ingresos
+          ventasReales += 0;
+          totalPorVender += 0; // No cuenta como potencial venta
+        } else if (isCanceled) {
+          // Reservaciones canceladas: solo el anticipo que se cobró
+          ventasReales += advanceAmount;
+          totalPorVender += advanceAmount; // Solo cuenta el anticipo como venta potencial
+        } else {
+          // Reservaciones normales: usar paymentStatus o calcular basado en montos
+          if (reservation.paymentStatus === 'pagado') {
+            ventasReales += reservation.totalAmount;
+            totalPorVender += reservation.totalAmount;
+          } else {
+            ventasReales += advanceAmount;
+            totalPorVender += reservation.totalAmount; // Precio completo como potencial
+          }
+        }
+      });
+
+      // Calcular para paqueterías
+      trip.packages.forEach((pkg: any) => {
+        totalPorVender += pkg.price || 0;
+        // Asumir que paqueterías están pagadas (podrías verificar un campo de estado si existe)
+        ventasReales += pkg.price || 0;
+      });
+    });
+
+    return { totalPorVender, ventasReales, totalTrips, totalPassengers, totalPackages };
+  }, [groupedTrips]);
+
+  if (isLoadingReservations || isLoadingPackages || isLoadingTrips) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex justify-center items-center h-64">
@@ -250,6 +277,7 @@ export function TripLogbook() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Header con controles y métricas */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -261,36 +289,19 @@ export function TripLogbook() {
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={useOptimized ? "default" : "outline"}
-              size="sm"
-              onClick={() => setUseOptimized(!useOptimized)}
-              className="flex items-center gap-1"
-            >
-              <Zap className="h-4 w-4" />
-              {useOptimized ? "Optimizado" : "Legacy"}
-            </Button>
-            {useOptimized && (
-              <Badge variant="secondary" className="text-xs">
-                66% más rápido
-              </Badge>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-48"
-            />
-          </div>
+        {/* Selector de fecha */}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-48"
+          />
         </div>
       </div>
 
+      {/* Leyenda explicativa */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex items-start gap-2">
           <div className="bg-blue-500 rounded-full p-1 mt-0.5">
@@ -305,20 +316,21 @@ export function TripLogbook() {
         </div>
       </div>
 
+      {/* Métricas del día */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className={`h-5 w-5 ${finalDayTotals.ventasReales === finalDayTotals.totalPorVender ? 'text-green-600' : 'text-gray-500'}`} />
+              <DollarSign className={`h-5 w-5 ${dayTotals.ventasReales === dayTotals.totalPorVender ? 'text-green-600' : 'text-gray-500'}`} />
               <div>
                 <p className="text-sm text-gray-600">Ventas</p>
                 <p className="text-xl font-bold">
-                  <span className={finalDayTotals.ventasReales === finalDayTotals.totalPorVender ? 'text-green-600' : 'text-gray-500'}>
-                    {formatCurrency(finalDayTotals.ventasReales)}
+                  <span className={dayTotals.ventasReales === dayTotals.totalPorVender ? 'text-green-600' : 'text-gray-500'}>
+                    {formatCurrency(dayTotals.ventasReales)}
                   </span>
                   <span className="text-gray-400"> / </span>
                   <span className="text-green-600">
-                    {formatCurrency(finalDayTotals.totalPorVender)}
+                    {formatCurrency(dayTotals.totalPorVender)}
                   </span>
                 </p>
               </div>
@@ -332,7 +344,7 @@ export function TripLogbook() {
               <Truck className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-600">Viajes</p>
-                <p className="text-xl font-bold text-blue-600">{finalDayTotals.totalTrips}</p>
+                <p className="text-xl font-bold text-blue-600">{dayTotals.totalTrips}</p>
               </div>
             </div>
           </CardContent>
@@ -344,7 +356,7 @@ export function TripLogbook() {
               <Users className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-gray-600">Pasajeros</p>
-                <p className="text-xl font-bold text-purple-600">{finalDayTotals.totalPassengers}</p>
+                <p className="text-xl font-bold text-purple-600">{dayTotals.totalPassengers}</p>
               </div>
             </div>
           </CardContent>
@@ -356,15 +368,16 @@ export function TripLogbook() {
               <Package className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="text-sm text-gray-600">Paqueterías</p>
-                <p className="text-xl font-bold text-orange-600">{finalDayTotals.totalPackages}</p>
+                <p className="text-xl font-bold text-orange-600">{dayTotals.totalPackages}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Lista de viajes */}
       <div className="space-y-4">
-        {finalTripLogData.map((tripData) => (
+        {groupedTrips.map((tripData) => (
           <Card 
             key={tripData.recordId} 
             className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -380,28 +393,44 @@ export function TripLogbook() {
                     {tripData.tripInfo.route?.name}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(tripData.totalSales)}
-                  </p>
-                  <p className="text-xs text-gray-500">Ventas totales</p>
-                </div>
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  {formatCurrency(tripData.totalSales)}
+                </Badge>
               </div>
             </CardHeader>
+            
             <CardContent className="pt-0">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Horario */}
                 <div className="flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-blue-600" />
+                  <Clock className="h-4 w-4 text-blue-600" />
                   <div>
-                    <p className="text-xs text-blue-600 font-medium uppercase">Conductor</p>
-                    <p className="text-sm font-semibold">{tripData.tripInfo.driver?.firstName || 'Sin asignar'}</p>
+                    <p className="text-xs text-blue-600 font-medium uppercase">Horario</p>
+                    <p className="text-sm font-semibold">
+                      {(tripData.tripInfo.parentTrip || tripData.tripInfo).departureTime} - {(tripData.tripInfo.parentTrip || tripData.tripInfo).arrivalTime}
+                    </p>
                   </div>
                 </div>
                 
+                {/* Operador */}
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-purple-600" />
+                  <UserCheck className="h-4 w-4 text-purple-600" />
                   <div>
-                    <p className="text-xs text-purple-600 font-medium uppercase">Asientos</p>
+                    <p className="text-xs text-purple-600 font-medium uppercase">Operador</p>
+                    <p className="text-sm font-semibold">
+                      {tripData.tripInfo.driver?.firstName ? 
+                        `${tripData.tripInfo.driver.firstName} ${tripData.tripInfo.driver.lastName}` : 
+                        'Sin asignar'
+                      }
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Pasajeros */}
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-xs text-green-600 font-medium uppercase">Pasajeros</p>
                     <p className="text-sm font-semibold">
                       {tripData.reservations.reduce((total, reservation) => {
                         const seatCount = reservation.seatCount || reservation.passengers?.length || 1;
@@ -411,6 +440,7 @@ export function TripLogbook() {
                   </div>
                 </div>
                 
+                {/* Paqueterías */}
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-orange-600" />
                   <div>
@@ -430,7 +460,7 @@ export function TripLogbook() {
         ))}
       </div>
 
-      {finalTripLogData.length === 0 && (
+      {groupedTrips.length === 0 && (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <div className="text-gray-500">
@@ -439,6 +469,7 @@ export function TripLogbook() {
         </div>
       )}
 
+      {/* Sidebar de detalles */}
       {selectedTrip && (
         <TripLogDetailsSidebar
           tripData={selectedTrip}
