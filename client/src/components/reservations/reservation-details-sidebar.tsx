@@ -92,11 +92,7 @@ export function ReservationDetailsSidebar({
     deliveryStatus?: string;
   }>>({});
   
-  // Estado para actualizaciones optimistas del frontend
-  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<number, {
-    paymentStatus?: string;
-    checkedBy?: any;
-  }>>({});
+
   
   // Hooks
   const { user } = useAuth();
@@ -324,25 +320,12 @@ export function ReservationDetailsSidebar({
       console.log('[markAsChecked] Respuesta recibida:', response);
       
       if (response.ok) {
-        console.log('[markAsChecked] Éxito - actualizando UI inmediatamente...');
+        console.log('[markAsChecked] Éxito - invalidando cache para datos reales del servidor...');
         
-        // Actualización optimista inmediata del estado local
-        setOptimisticUpdates(prev => ({ 
-          ...prev, 
-          [reservationId]: { 
-            ...prev[reservationId], 
-            checkedBy: user?.id 
-          } 
-        }));
-        
-        // Limpiar estado de loading inmediatamente para actualizar UI
-        setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
-        
-        // Invalidar múltiples queries para refrescar todos los datos relacionados en segundo plano
+        // Invalidar queries para refrescar los datos inmediatamente con datos reales del servidor
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
-          queryClient.invalidateQueries({ queryKey: ['/api/trips'] }),
-          queryClient.refetchQueries({ queryKey: ['/api/reservations'] })
+          queryClient.invalidateQueries({ queryKey: ['/api/trips'] })
         ]);
         
         toast({
@@ -393,25 +376,12 @@ export function ReservationDetailsSidebar({
       console.log('[markAsPaid] Respuesta recibida:', response);
       
       if (response.ok) {
-        console.log('[markAsPaid] Éxito - actualizando UI inmediatamente...');
+        console.log('[markAsPaid] Éxito - invalidando cache para datos reales del servidor...');
         
-        // Actualización optimista inmediata del estado local
-        setOptimisticUpdates(prev => ({ 
-          ...prev, 
-          [reservationId]: { 
-            ...prev[reservationId], 
-            paymentStatus: 'pagado' 
-          } 
-        }));
-        
-        // Limpiar estado de loading inmediatamente para actualizar UI
-        setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
-        
-        // Invalidar múltiples queries para refrescar todos los datos relacionados en segundo plano
+        // Invalidar queries para refrescar los datos inmediatamente con datos reales del servidor
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
-          queryClient.invalidateQueries({ queryKey: ['/api/trips'] }),
-          queryClient.refetchQueries({ queryKey: ['/api/reservations'] })
+          queryClient.invalidateQueries({ queryKey: ['/api/trips'] })
         ]);
         
         toast({
@@ -643,26 +613,8 @@ export function ReservationDetailsSidebar({
     return 0;
   };
 
-  // Función para aplicar actualizaciones optimistas a las reservaciones
-  const getUpdatedReservations = (originalReservations: ReservationWithDetails[]) => {
-    return originalReservations.map(reservation => {
-      const updates = optimisticUpdates[reservation.id];
-      if (updates) {
-        return {
-          ...reservation,
-          paymentStatus: updates.paymentStatus || reservation.paymentStatus,
-          checkedBy: updates.checkedBy !== undefined ? updates.checkedBy : reservation.checkedBy
-        };
-      }
-      return reservation;
-    });
-  };
-
-  // Obtener reservaciones con actualizaciones optimistas aplicadas
-  const updatedReservations = getUpdatedReservations(reservations);
-
   // Filtrar y ordenar reservaciones
-  const filteredReservations = updatedReservations
+  const filteredReservations = reservations
     .filter(reservation => {
       if (!searchQuery) return true;
       
@@ -702,7 +654,7 @@ export function ReservationDetailsSidebar({
 
 
 
-  const totalPassengers = updatedReservations.reduce((total, reservation) => {
+  const totalPassengers = filteredReservations.reduce((total: number, reservation: ReservationWithDetails) => {
     const tripDetails = reservation.tripDetails as any;
     return total + (tripDetails?.seats || 1);
   }, 0);
