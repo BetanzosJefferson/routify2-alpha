@@ -67,6 +67,9 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('[PassengerTransfer] Datos recibidos del backend:', data);
+      console.log('[PassengerTransfer] data.reservation:', data.reservation);
+      console.log('[PassengerTransfer] data.reservation.trip:', data.reservation?.trip);
       setSelectedReservation(data.reservation);
       setSearchFilters(prev => ({
         ...prev,
