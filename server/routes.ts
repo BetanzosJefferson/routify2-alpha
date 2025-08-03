@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { eq, inArray, isNull, isNotNull, desc, gte, lte, or, like } from "drizzle-orm";
+import { eq, inArray, isNull, isNotNull, desc, gte, lte, or, like, and } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { WebSocketServer, WebSocket } from 'ws';
@@ -3143,6 +3143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Buscar reservación por código o ID
       console.log(`[GET /reservations/search] Buscando reservación con código: ${code}`);
+      console.log(`[GET /reservations/search] Usuario: ${user.firstName} ${user.lastName}, CompanyId: ${user.companyId}`);
       
       try {
         let reservations = [];
@@ -3158,7 +3159,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reservations = await db
             .select()
             .from(schema.reservations)
-            .where(eq(schema.reservations.id, numericId));
+            .where(
+              and(
+                eq(schema.reservations.id, numericId),
+                eq(schema.reservations.companyId, user.companyId)
+              )
+            );
         }
         
         // Si no se encuentra por ID y el código original contiene letras, buscar en el campo notes o email
@@ -3168,9 +3174,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .select()
             .from(schema.reservations)
             .where(
-              or(
-                like(schema.reservations.email, `%${code}%`),
-                like(schema.reservations.notes, `%${code}%`)
+              and(
+                or(
+                  like(schema.reservations.email, `%${code}%`),
+                  like(schema.reservations.notes, `%${code}%`)
+                ),
+                eq(schema.reservations.companyId, user.companyId)
               )
             );
         }
