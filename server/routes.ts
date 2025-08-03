@@ -3147,17 +3147,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         let reservations = [];
         
+        // Limpiar el código de entrada (remover prefijos como "RES")
+        let cleanCode = code.toUpperCase().replace(/^RES/i, '').trim();
+        console.log(`[GET /reservations/search] Código limpio: ${cleanCode}`);
+        
         // Primero intentar buscar por ID numérico
-        const numericId = parseInt(code, 10);
+        const numericId = parseInt(cleanCode, 10);
         if (!isNaN(numericId)) {
+          console.log(`[GET /reservations/search] Buscando por ID numérico: ${numericId}`);
           reservations = await db
             .select()
             .from(schema.reservations)
             .where(eq(schema.reservations.id, numericId));
         }
         
-        // Si no se encuentra por ID y el código contiene letras, buscar en el campo notes o email
+        // Si no se encuentra por ID y el código original contiene letras, buscar en el campo notes o email
         if (reservations.length === 0 && /[a-zA-Z]/.test(code)) {
+          console.log(`[GET /reservations/search] Buscando en campos de texto: ${code}`);
           reservations = await db
             .select()
             .from(schema.reservations)
