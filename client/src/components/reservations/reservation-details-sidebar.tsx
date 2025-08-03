@@ -323,9 +323,19 @@ export function ReservationDetailsSidebar({
         console.log('[markAsChecked] Éxito - invalidando cache para datos reales del servidor...');
         
         // Invalidar queries para refrescar los datos inmediatamente con datos reales del servidor
+        console.log('[markAsChecked] Invalidando queries específicas...');
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
-          queryClient.invalidateQueries({ queryKey: ['/api/trips'] })
+          queryClient.invalidateQueries({ 
+            predicate: (query) => {
+              return query.queryKey[0] === '/api/reservations';
+            }
+          }),
+          queryClient.refetchQueries({ 
+            predicate: (query) => {
+              return query.queryKey[0] === '/api/reservations';
+            }
+          })
         ]);
         
         toast({
@@ -379,9 +389,19 @@ export function ReservationDetailsSidebar({
         console.log('[markAsPaid] Éxito - invalidando cache para datos reales del servidor...');
         
         // Invalidar queries para refrescar los datos inmediatamente con datos reales del servidor
+        console.log('[markAsPaid] Invalidando queries específicas...');
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
-          queryClient.invalidateQueries({ queryKey: ['/api/trips'] })
+          queryClient.invalidateQueries({ 
+            predicate: (query) => {
+              return query.queryKey[0] === '/api/reservations';
+            }
+          }),
+          queryClient.refetchQueries({ 
+            predicate: (query) => {
+              return query.queryKey[0] === '/api/reservations';
+            }
+          })
         ]);
         
         toast({
