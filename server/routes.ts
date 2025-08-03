@@ -3220,10 +3220,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tripIdentifier = tripDetails.recordId || tripDetails.tripId;
         console.log(`[GET /reservations/search] Buscando viaje con ID: ${tripIdentifier}`);
         
-        const trip = await storage.getTripWithRouteInfo(tripIdentifier);
-        if (!trip) {
-          console.log(`[GET /reservations/search] No se encontró viaje con ID: ${tripIdentifier}`);
-          return res.status(404).json({ error: "No se encontró información del viaje" });
+        // Manejar tanto viajes principales como sub-viajes
+        let trip = null;
+        let actualTripId = tripIdentifier;
+        
+        // Si es un sub-viaje (formato: tripId_segmentIndex), extraer el ID principal
+        if (tripIdentifier.toString().includes('_')) {
+          const [mainTripId, segmentIndex] = tripIdentifier.toString().split('_');
+          actualTripId = parseInt(mainTripId);
+          const segmentIdx = parseInt(segmentIndex);
+          console.log(`[GET /reservations/search] Sub-viaje detectado: ${tripIdentifier} -> viaje principal: ${actualTripId}, índice segmento: ${segmentIdx}`);
+          
+          // Buscar el viaje principal
+          const mainTrip = await storage.getTripWithRouteInfo(actualTripId);
+          if (!mainTrip) {
+            console.log(`[GET /reservations/search] No se encontró viaje principal con ID: ${actualTripId}`);
+            return res.status(404).json({ error: "No se encontró información del viaje principal" });
+          }
+          
+          // Verificar que el índice del segmento existe en el trip_data
+          const tripData = mainTrip.tripData || [];
+          if (!Array.isArray(tripData) || segmentIdx >= tripData.length || segmentIdx < 0) {
+            console.log(`[GET /reservations/search] Segmento no encontrado: índice ${segmentIdx}, total segmentos: ${tripData.length}`);
+            return res.status(404).json({ error: "Segmento de viaje no encontrado" });
+          }
+          
+          const segmentData = tripData[segmentIdx];
+          console.log(`[GET /reservations/search] ✅ Segmento encontrado: ${JSON.stringify(segmentData)}`);
+          
+          // Crear objeto de viaje con información del segmento específico
+          trip = {
+            ...mainTrip,
+            id: tripIdentifier, // Mantener el ID completo del sub-viaje
+            origin: segmentData.origin,
+            destination: segmentData.destination,
+            departureTime: segmentData.departureTime,
+            arrivalTime: segmentData.arrivalTime,
+            price: segmentData.price,
+            availableSeats: segmentData.availableSeats,
+            capacity: segmentData.capacity,
+            isSubTrip: true,
+            segmentOrigin: segmentData.origin,
+            segmentDestination: segmentData.destination,
+            segmentIndex: segmentIdx
+          };
+        } else {
+          // Es un viaje principal normal
+          trip = await storage.getTripWithRouteInfo(tripIdentifier);
+          if (!trip) {
+            console.log(`[GET /reservations/search] No se encontró viaje con ID: ${tripIdentifier}`);
+            return res.status(404).json({ error: "No se encontró información del viaje" });
+          }
         }
         
         // Obtener pasajeros de la reservación
