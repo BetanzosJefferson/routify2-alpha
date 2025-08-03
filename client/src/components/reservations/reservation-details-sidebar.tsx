@@ -455,7 +455,7 @@ export function ReservationDetailsSidebar({
         `/api/packages/${packageId}`,
         { 
           isPaid: true,
-          paidAt: new Date(),
+          paidAt: new Date().toISOString(),
           paidBy: user?.id
         }
       );
@@ -514,7 +514,7 @@ export function ReservationDetailsSidebar({
         `/api/packages/${packageId}`,
         { 
           deliveryStatus: "entregado",
-          deliveredAt: new Date(),
+          deliveredAt: new Date().toISOString(),
           deliveredBy: user?.id
         }
       );
