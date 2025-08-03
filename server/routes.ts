@@ -7842,10 +7842,8 @@ function setupPackageRoutes(app: Express) {
       
       // Actualizar estado de entrega si corresponde
       if (req.body.deliveryStatus === 'entregado' && existingPackage.deliveryStatus !== 'entregado') {
-        // Solo establecer deliveredAt si no viene desde el frontend
-        if (!req.body.deliveredAt) {
-          req.body.deliveredAt = new Date().toISOString();
-        }
+        // Establecer deliveredAt cuando se marca como entregado
+        req.body.deliveredAt = new Date();
       }
       
       // Actualizar el paquete
