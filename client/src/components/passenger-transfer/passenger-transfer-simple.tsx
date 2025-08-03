@@ -272,7 +272,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
             <CardTitle className="text-green-600">Reservación Encontrada</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
                 <Label className="text-sm font-medium text-gray-500">Pasajero:</Label>
                 <p className="font-medium">
@@ -284,15 +284,21 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                 <p className="font-medium">{selectedReservation.passengers?.length || 0}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-500">Viaje Actual:</Label>
-                <p className="font-medium">
-                  {selectedReservation.trip?.route?.origin} → {selectedReservation.trip?.route?.destination}
-                </p>
-              </div>
-              <div>
                 <Label className="text-sm font-medium text-gray-500">Fecha:</Label>
                 <p className="font-medium">
                   {formatDate(selectedReservation.trip?.departureDate)}
+                </p>
+              </div>
+              <div className="md:col-span-2 lg:col-span-2">
+                <Label className="text-sm font-medium text-gray-500">Viaje Actual:</Label>
+                <p className="font-medium">
+                  {selectedReservation.trip?.origin || selectedReservation.trip?.route?.origin} → {selectedReservation.trip?.destination || selectedReservation.trip?.route?.destination}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Hora de Salida:</Label>
+                <p className="font-medium">
+                  {selectedReservation.trip?.departureTime}
                 </p>
               </div>
             </div>
