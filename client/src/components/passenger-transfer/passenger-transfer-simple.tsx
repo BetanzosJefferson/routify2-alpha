@@ -299,7 +299,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
           </CardHeader>
           <CardContent>
             <TripList 
-              customButtonText="Seleccionar Viaje"
+              customButtonText="Mover aquí"
               onTripSelect={handleTripSelect}
               defaultFilters={searchFilters}
             />

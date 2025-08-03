@@ -185,9 +185,20 @@ interface SearchParams {
   visibility?: 'publicado';
 }
 
+interface TripListProps {
+  customButtonText?: string;
+  onTripSelect?: (trip: TripWithRouteInfo, tripData?: any) => void;
+  defaultFilters?: {
+    origin?: string;
+    destination?: string;
+    date?: string;
+    passengers?: number;
+  };
+}
+
 import { normalizeToStartOfDay, formatDateForInput, formatDateToLocal } from "@/lib/utils";
 
-export function TripList() {
+export function TripList({ customButtonText, onTripSelect, defaultFilters }: TripListProps = {}) {
   // Obtener la fecha actual formateada como YYYY-MM-DD en hora local
   const today = formatDateForInput(new Date());
 
@@ -205,10 +216,10 @@ export function TripList() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   // Form state
-  const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
-  const [date, setDate] = useState(today);
-  const [seats, setSeats] = useState("");
+  const [origin, setOrigin] = useState(defaultFilters?.origin || "");
+  const [destination, setDestination] = useState(defaultFilters?.destination || "");
+  const [date, setDate] = useState(defaultFilters?.date || today);
+  const [seats, setSeats] = useState(defaultFilters?.passengers?.toString() || "");
   
   // Referencias para actualización automática
   const queryClient = useQueryClient();
@@ -363,9 +374,15 @@ export function TripList() {
   };
 
   // Handler for reservation button click
-  const handleReserve = (trip: TripWithRouteInfo) => {
-    setSelectedTrip(trip);
-    setShowModal(true);
+  const handleReserve = (trip: TripWithRouteInfo, tripData?: any) => {
+    if (onTripSelect) {
+      // Si hay un callback personalizado, usarlo en lugar del modal
+      onTripSelect(trip, tripData);
+    } else {
+      // Comportamiento normal: abrir modal de reservación
+      setSelectedTrip(trip);
+      setShowModal(true);
+    }
   };
 
   // Close modal handler
@@ -719,10 +736,10 @@ export function TripList() {
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => handleReserve(trip)}
+                    onClick={() => handleReserve(trip, (trip as any))}
                     disabled={((trip as any).availableSeats || 0) <= 0}
                   >
-                    Reservar
+                    {customButtonText || "Reservar"}
                   </Button>
                 </div>
 
