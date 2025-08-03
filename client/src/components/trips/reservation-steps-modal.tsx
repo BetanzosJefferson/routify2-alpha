@@ -114,17 +114,16 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
     const count = parseInt(value, 10);
     setNumPassengers(count);
     
-    // Resize passengers array
-    if (count > passengers.length) {
-      // Add empty passengers
-      setPassengers([
-        ...passengers,
-        ...Array(count - passengers.length).fill(0).map(() => ({ firstName: "", lastName: "" })),
-      ]);
-    } else if (count < passengers.length) {
-      // Remove excess passengers
-      setPassengers(passengers.slice(0, count));
-    }
+    // Get the first passenger's data to duplicate
+    const firstPassenger = passengers[0] || { firstName: "", lastName: "" };
+    
+    // Create new passengers array with all passengers having the same data as the first one
+    const newPassengers = Array(count).fill(0).map(() => ({ 
+      firstName: firstPassenger.firstName, 
+      lastName: firstPassenger.lastName 
+    }));
+    
+    setPassengers(newPassengers);
   };
   
   // Update passenger information
@@ -134,6 +133,15 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
       ...updatedPassengers[index],
       [field]: value,
     };
+    setPassengers(updatedPassengers);
+  };
+
+  // Update all passengers with the same information (simplified reservation)
+  const updateAllPassengers = (field: keyof Passenger, value: string) => {
+    const updatedPassengers = passengers.map(passenger => ({
+      ...passenger,
+      [field]: value,
+    }));
     setPassengers(updatedPassengers);
   };
   
@@ -1577,34 +1585,43 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                   <UsersIcon className="w-12 h-12 text-primary opacity-80 mb-2" />
                 </div>
                 
-                <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
-                  {passengers.map((passenger, index) => (
-                    <div key={index} className="border border-gray-200 rounded-md p-4">
-                      <div className="font-medium mb-3">
-                        Pasajero {index + 1}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor={`first-name-${index}`}>Nombre</Label>
-                          <Input
-                            id={`first-name-${index}`}
-                            value={passenger.firstName}
-                            onChange={(e) => updatePassenger(index, "firstName", e.target.value)}
-                            placeholder="Nombre"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`last-name-${index}`}>Apellido</Label>
-                          <Input
-                            id={`last-name-${index}`}
-                            value={passenger.lastName}
-                            onChange={(e) => updatePassenger(index, "lastName", e.target.value)}
-                            placeholder="Apellido"
-                          />
-                        </div>
+                {/* Información simplificada del pasajero */}
+                <div className="border border-gray-200 rounded-md p-4">
+                  <div className="font-medium mb-3">
+                    Información del Pasajero
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="first-name-0">Nombre</Label>
+                      <Input
+                        id="first-name-0"
+                        value={passengers[0]?.firstName || ""}
+                        onChange={(e) => updateAllPassengers("firstName", e.target.value)}
+                        placeholder="Nombre"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="last-name-0">Apellido</Label>
+                      <Input
+                        id="last-name-0"
+                        value={passengers[0]?.lastName || ""}
+                        onChange={(e) => updateAllPassengers("lastName", e.target.value)}
+                        placeholder="Apellido"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Mostrar información de cuántos pasajeros se registrarán */}
+                  {numPassengers > 1 && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded-md text-sm text-blue-700">
+                      <div className="flex items-center">
+                        <UsersIcon className="w-4 h-4 mr-2" />
+                        <span>
+                          Este nombre se aplicará a todos los {numPassengers} pasajeros de la reserva
+                        </span>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
