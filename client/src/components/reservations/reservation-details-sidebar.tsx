@@ -1192,7 +1192,7 @@ export function ReservationDetailsSidebar({
                   </div>
 
                   {/* Botones de acción para paquetes */}
-                  {(user?.role === 'admin' || user?.role === 'callCenter' || user?.role === 'taquilla' || user?.role === 'checador') && (
+                  {(user?.role === 'admin' || user?.role === 'callCenter' || user?.role === 'taquilla' || user?.role === 'checador' || user?.role === 'dueño' || user?.role === 'chofer') && (
                     <div className="flex flex-col sm:flex-row gap-2">
                       {/* Botón Marcar como pagado */}
                       {!pkg.isPaid && (
