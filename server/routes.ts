@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { eq, inArray, isNull, isNotNull, desc, gte, lte } from "drizzle-orm";
+import { eq, inArray, isNull, isNotNull, desc, gte, lte, or, like } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { WebSocketServer, WebSocket } from 'ws';
@@ -3141,14 +3141,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "No tienes permisos para transferir pasajeros" });
       }
       
-      // Buscar reservación por código
+      // Buscar reservación por código o ID
       console.log(`[GET /reservations/search] Buscando reservación con código: ${code}`);
       
       try {
-        const reservations = await db
-          .select()
-          .from(schema.reservations)
-          .where(eq(schema.reservations.reservationCode, code));
+        let reservations = [];
+        
+        // Primero intentar buscar por ID numérico
+        const numericId = parseInt(code, 10);
+        if (!isNaN(numericId)) {
+          reservations = await db
+            .select()
+            .from(schema.reservations)
+            .where(eq(schema.reservations.id, numericId));
+        }
+        
+        // Si no se encuentra por ID y el código contiene letras, buscar en el campo notes o email
+        if (reservations.length === 0 && /[a-zA-Z]/.test(code)) {
+          reservations = await db
+            .select()
+            .from(schema.reservations)
+            .where(
+              or(
+                like(schema.reservations.email, `%${code}%`),
+                like(schema.reservations.notes, `%${code}%`)
+              )
+            );
+        }
         
         if (reservations.length === 0) {
           return res.status(404).json({ error: "No se encontró una reservación con ese código" });
