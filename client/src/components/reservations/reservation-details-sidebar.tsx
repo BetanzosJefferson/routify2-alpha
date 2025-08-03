@@ -463,7 +463,8 @@ export function ReservationDetailsSidebar({
         // Invalidar queries para refrescar los datos inmediatamente
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
-          queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] })
+          queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] }),
+          queryClient.invalidateQueries({ queryKey: ["packages-by-trip"] })
         ]);
         
         toast({
@@ -512,7 +513,8 @@ export function ReservationDetailsSidebar({
         // Invalidar queries para refrescar los datos inmediatamente
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
-          queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] })
+          queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] }),
+          queryClient.invalidateQueries({ queryKey: ["packages-by-trip"] })
         ]);
         
         toast({
