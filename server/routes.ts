@@ -3324,7 +3324,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (oldTripId !== newTripId) {
         console.log(`[POST /reservations/transfer] Recalculando asientos para viajes ${oldTripId} y ${newTripId}`);
         
-        // El recálculo de asientos se hará automáticamente en la próxima consulta
+        // Liberar asientos del viaje origen (sumar asientos)
+        await storage.updateRelatedTripsAvailability(oldTripId, oldTripId.toString(), seatsToTransfer);
+        console.log(`[POST /reservations/transfer] ✅ Liberados ${seatsToTransfer} asientos en viaje ${oldTripId}`);
+        
+        // Ocupar asientos en el viaje destino (restar asientos)  
+        await storage.updateRelatedTripsAvailability(newTripId, newTripId.toString(), -seatsToTransfer);
+        console.log(`[POST /reservations/transfer] ✅ Ocupados ${seatsToTransfer} asientos en viaje ${newTripId}`);
         
         // Obtener los viajes actualizados para verificar los asientos
         const oldTripUpdated = await storage.getTripWithRouteInfo(oldTripId);
