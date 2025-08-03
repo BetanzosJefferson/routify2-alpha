@@ -3123,6 +3123,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para buscar reservaciones por código
+  app.get(apiRouter("/reservations/search/:code"), async (req: Request, res: Response) => {
+    try {
+      const code = req.params.code;
+      const { user } = req as any;
+      
+      console.log(`[GET /reservations/search/${code}] Usuario: ${user ? user.firstName + ' ' + user.lastName : 'No autenticado'}`);
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      // Verificar permisos para transferencia de pasajeros
+      const allowedRoles = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, UserRole.SUPER_ADMIN];
+      if (!allowedRoles.includes(user.role as UserRole)) {
+        return res.status(403).json({ error: "No tienes permisos para transferir pasajeros" });
+      }
+      
+      // Buscar reservación por código
+      console.log(`[GET /reservations/search] Buscando reservación con código: ${code}`);
+      
+      try {
+        const reservations = await db
+          .select()
+          .from(schema.reservations)
+          .where(eq(schema.reservations.reservationCode, code));
+        
+        if (reservations.length === 0) {
+          return res.status(404).json({ error: "No se encontró una reservación con ese código" });
+        }
+        
+        const reservation = reservations[0];
+        
+        // Obtener información del viaje
+        const trip = await storage.getTripWithRouteInfo(reservation.tripId);
+        if (!trip) {
+          return res.status(404).json({ error: "No se encontró información del viaje" });
+        }
+        
+        // Obtener pasajeros de la reservación
+        const passengers = await storage.getPassengers(reservation.id);
+        
+        const result = {
+          reservation: {
+            ...reservation,
+            passengers
+          },
+          trip
+        };
+        
+        console.log(`[GET /reservations/search] Reservación encontrada: ${reservation.passengerName}`);
+        res.json(result);
+        
+      } catch (error) {
+        console.error(`[GET /reservations/search] Error en base de datos:`, error);
+        return res.status(500).json({ error: "Error al buscar la reservación" });
+      }
+      
+    } catch (error: any) {
+      console.error(`[GET /reservations/search] Error:`, error);
+      res.status(500).json({ error: "Error al buscar reservación" });
+    }
+  });
+
   app.get(apiRouter("/reservations/:id"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
