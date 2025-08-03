@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatDate, formatPrice, formatTime } from "@/lib/utils";
 import { ReservationWithDetails } from "@shared/schema";
 import { usePackagesByTrip } from "@/hooks/use-packages-by-trip";
+import { useReservationsByTrip } from "@/hooks/use-reservations-by-trip";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -61,7 +62,7 @@ interface ReservationDetailsSidebarProps {
 export function ReservationDetailsSidebar({ 
   recordId, 
   tripInfo, 
-  reservations, 
+  reservations: propsReservations, // renombrar props para evitar conflicto
   onClose,
   onReservationUpdate
 }: ReservationDetailsSidebarProps) {
@@ -104,6 +105,19 @@ export function ReservationDetailsSidebar({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+  
+  // Usar hook para obtener reservaciones actuales del servidor
+  const { 
+    data: serverReservations = [], 
+    isLoading: isLoadingReservations 
+  } = useReservationsByTrip({ 
+    recordId, 
+    tripInfo, 
+    enabled: true 
+  });
+  
+  // Usar reservaciones del servidor si están disponibles, sino usar las de props como fallback
+  const reservations = serverReservations.length > 0 ? serverReservations : propsReservations;
 
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
@@ -327,14 +341,14 @@ export function ReservationDetailsSidebar({
       if (response.ok) {
         console.log('[markAsChecked] Éxito - invalidando cache para datos reales del servidor...');
         
-        // Invalidar queries con el queryKey exacto que usa useReservations
-        console.log('[markAsChecked] Invalidando queries con queryKey exacto...');
+        // Invalidar queries con el queryKey exacto que usa useReservationsByTrip
+        console.log('[markAsChecked] Invalidando queries con queryKey de useReservationsByTrip...');
         await Promise.all([
           queryClient.invalidateQueries({ 
-            queryKey: ["/api/reservations", { tripId: undefined, includeRelated: false, date: undefined, archived: false }] 
+            queryKey: ["reservations-by-trip", recordId, tripInfo?.departureDate, user?.role] 
           }),
           queryClient.invalidateQueries({ 
-            predicate: (query) => query.queryKey[0] === '/api/reservations'
+            predicate: (query) => query.queryKey[0] === 'reservations-by-trip'
           })
         ]);
         
@@ -393,14 +407,14 @@ export function ReservationDetailsSidebar({
       if (response.ok) {
         console.log('[markAsPaid] Éxito - invalidando cache para datos reales del servidor...');
         
-        // Invalidar queries con el queryKey exacto que usa useReservations
-        console.log('[markAsPaid] Invalidando queries con queryKey exacto...');
+        // Invalidar queries con el queryKey exacto que usa useReservationsByTrip
+        console.log('[markAsPaid] Invalidando queries con queryKey de useReservationsByTrip...');
         await Promise.all([
           queryClient.invalidateQueries({ 
-            queryKey: ["/api/reservations", { tripId: undefined, includeRelated: false, date: undefined, archived: false }] 
+            queryKey: ["reservations-by-trip", recordId, tripInfo?.departureDate, user?.role] 
           }),
           queryClient.invalidateQueries({ 
-            predicate: (query) => query.queryKey[0] === '/api/reservations'
+            predicate: (query) => query.queryKey[0] === 'reservations-by-trip'
           })
         ]);
         
