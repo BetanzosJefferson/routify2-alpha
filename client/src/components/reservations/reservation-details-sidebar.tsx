@@ -344,9 +344,9 @@ export function ReservationDetailsSidebar({
         description: error instanceof Error ? error.message : "No se pudo marcar la reservación como check. Inténtalo de nuevo.",
         variant: "destructive",
       });
-      
-      // Limpiar estado loading para permitir retry
-      console.log('[markAsChecked] Error - limpiando estado loading para permitir retry...');
+    } finally {
+      // Limpiar estado loading siempre al finalizar (éxito o error)
+      console.log('[markAsChecked] Finalizando - limpiando estado loading...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
   };
@@ -400,9 +400,9 @@ export function ReservationDetailsSidebar({
         description: error instanceof Error ? error.message : "No se pudo marcar la reservación como pagada. Inténtalo de nuevo.",
         variant: "destructive",
       });
-      
-      // Limpiar estado loading para permitir retry
-      console.log('[markAsPaid] Error - limpiando estado loading para permitir retry...');
+    } finally {
+      // Limpiar estado loading siempre al finalizar (éxito o error)
+      console.log('[markAsPaid] Finalizando - limpiando estado loading...');
       setLoadingActions(prev => ({ ...prev, [reservationId]: null }));
     }
   };
