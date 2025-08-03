@@ -428,7 +428,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                               >
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <p className="font-medium">{selectedReservation.passengers?.[0]?.name || 'Pasajero'}</p>
+                                    <p className="font-medium">{selectedReservation.passengers?.[0]?.firstName} {selectedReservation.passengers?.[0]?.lastName}</p>
                                     <p className="text-sm text-gray-600">
                                       {selectedReservation.passengers?.length || 0} asiento{(selectedReservation.passengers?.length || 0) > 1 ? 's' : ''}
                                     </p>

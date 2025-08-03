@@ -1,4 +1,4 @@
-import { PassengerTransfer } from "@/components/passenger-transfer/passenger-transfer";
+import { PassengerTransfer } from "@/components/passenger-transfer/passenger-transfer-simple";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 

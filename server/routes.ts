@@ -3252,6 +3252,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para transferir pasajeros
+  app.post(apiRouter("/reservations/transfer"), async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+
+      // Verificar permisos
+      const allowedRoles = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, 'superAdmin'];
+      if (!allowedRoles.includes(user.role as UserRole)) {
+        return res.status(403).json({ error: "No tienes permisos para transferir pasajeros" });
+      }
+
+      const { reservationId, newTripId, origin, destination } = req.body;
+
+      if (!reservationId || !newTripId) {
+        return res.status(400).json({ error: "Faltan datos requeridos" });
+      }
+
+      console.log(`[POST /reservations/transfer] Usuario: ${user.firstName} ${user.lastName}`);
+      console.log(`[POST /reservations/transfer] Transfiriendo reservación ${reservationId} al viaje ${newTripId}`);
+
+      // Obtener la reservación actual
+      const reservation = await db
+        .select()
+        .from(schema.reservations)
+        .where(
+          and(
+            eq(schema.reservations.id, reservationId),
+            eq(schema.reservations.companyId, user.companyId)
+          )
+        )
+        .limit(1);
+
+      if (reservation.length === 0) {
+        return res.status(404).json({ error: "Reservación no encontrada" });
+      }
+
+      const currentReservation = reservation[0];
+      const currentTripDetails = currentReservation.tripDetails as any;
+
+      // Verificar que el nuevo viaje existe
+      const newTrip = await storage.getTripWithRouteInfo(newTripId);
+      if (!newTrip) {
+        return res.status(404).json({ error: "Viaje destino no encontrado" });
+      }
+
+      // Actualizar la reservación con el nuevo viaje
+      const newTripDetails = {
+        ...currentTripDetails,
+        recordId: newTripId,
+        tripId: newTripId,
+        origin: origin || currentTripDetails.origin,
+        destination: destination || currentTripDetails.destination
+      };
+
+      await db
+        .update(schema.reservations)
+        .set({
+          tripDetails: newTripDetails,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.reservations.id, reservationId));
+
+      console.log(`[POST /reservations/transfer] ✅ Transferencia completada`);
+      res.json({ 
+        success: true, 
+        message: "Pasajero transferido exitosamente",
+        newTripId: newTripId
+      });
+
+    } catch (error: any) {
+      console.error(`[POST /reservations/transfer] Error:`, error);
+      res.status(500).json({ error: "Error al transferir pasajero" });
+    }
+  });
+
   app.get(apiRouter("/reservations/:id"), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id, 10);
