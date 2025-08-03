@@ -69,8 +69,15 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
     onSuccess: (data) => {
       console.log('[PassengerTransfer] Datos recibidos del backend:', data);
       console.log('[PassengerTransfer] data.reservation:', data.reservation);
-      console.log('[PassengerTransfer] data.reservation.trip:', data.reservation?.trip);
-      setSelectedReservation(data.reservation);
+      console.log('[PassengerTransfer] data.trip:', data.trip);
+      
+      // Combinar la información del viaje en la reservación para compatibilidad
+      const reservationWithTrip = {
+        ...data.reservation,
+        trip: data.trip // El backend envía trip separado
+      };
+      
+      setSelectedReservation(reservationWithTrip);
       setSearchFilters(prev => ({
         ...prev,
         passengers: data.reservation.passengers?.length || 1
@@ -295,7 +302,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
               <div className="md:col-span-2 lg:col-span-2">
                 <Label className="text-sm font-medium text-gray-500">Viaje Actual:</Label>
                 <p className="font-medium">
-                  {selectedReservation.trip?.origin || selectedReservation.trip?.route?.origin} → {selectedReservation.trip?.destination || selectedReservation.trip?.route?.destination}
+                  {selectedReservation.trip?.origin || selectedReservation.trip?.route?.origin || 'N/A'} → {selectedReservation.trip?.destination || selectedReservation.trip?.route?.destination || 'N/A'}
                 </p>
               </div>
               <div>
