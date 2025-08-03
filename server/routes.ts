@@ -3152,10 +3152,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let cleanCode = code.toUpperCase().replace(/^RES/i, '').trim();
         console.log(`[GET /reservations/search] Código limpio: ${cleanCode}`);
         
-        // Primero intentar buscar por ID numérico
+        // Primero intentar buscar por ID numérico (sin filtro de compañía para debug)
         const numericId = parseInt(cleanCode, 10);
         if (!isNaN(numericId)) {
           console.log(`[GET /reservations/search] Buscando por ID numérico: ${numericId}`);
+          
+          // Búsqueda sin filtro para debug
+          const allReservations = await db
+            .select()
+            .from(schema.reservations)
+            .where(eq(schema.reservations.id, numericId));
+          
+          console.log(`[GET /reservations/search] Sin filtro - Resultados encontrados: ${allReservations.length}`);
+          if (allReservations.length > 0) {
+            console.log(`[GET /reservations/search] Sin filtro - Reservación: ID=${allReservations[0].id}, CompanyId=${allReservations[0].companyId}`);
+          }
+          
+          // Búsqueda con filtro de compañía
           reservations = await db
             .select()
             .from(schema.reservations)
@@ -3165,6 +3178,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 eq(schema.reservations.companyId, user.companyId)
               )
             );
+          console.log(`[GET /reservations/search] Con filtro companyId=${user.companyId} - Resultados: ${reservations.length}`);
+          if (reservations.length > 0) {
+            console.log(`[GET /reservations/search] Con filtro - Reservación: ID=${reservations[0].id}, CompanyId=${reservations[0].companyId}`);
+          }
         }
         
         // Si no se encuentra por ID y el código original contiene letras, buscar en el campo notes o email
