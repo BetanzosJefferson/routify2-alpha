@@ -3212,17 +3212,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tripDetails = reservation.tripDetails as any;
         console.log(`[GET /reservations/search] TripDetails:`, tripDetails);
         
-        if (!tripDetails || !tripDetails.recordId) {
+        if (!tripDetails || (!tripDetails.recordId && !tripDetails.tripId)) {
           return res.status(404).json({ error: "No se encontró información del viaje en la reservación" });
         }
         
-        const trip = await storage.getTripWithRouteInfo(tripDetails.recordId);
+        // Usar recordId o tripId como fallback
+        const tripIdentifier = tripDetails.recordId || tripDetails.tripId;
+        console.log(`[GET /reservations/search] Buscando viaje con ID: ${tripIdentifier}`);
+        
+        const trip = await storage.getTripWithRouteInfo(tripIdentifier);
         if (!trip) {
+          console.log(`[GET /reservations/search] No se encontró viaje con ID: ${tripIdentifier}`);
           return res.status(404).json({ error: "No se encontró información del viaje" });
         }
         
         // Obtener pasajeros de la reservación
         const passengers = await storage.getPassengers(reservation.id);
+        console.log(`[GET /reservations/search] Obtenidos ${passengers.length} pasajeros`);
         
         const result = {
           reservation: {
@@ -3232,7 +3238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           trip
         };
         
-        console.log(`[GET /reservations/search] Reservación encontrada con ${passengers.length} pasajeros`);
+        console.log(`[GET /reservations/search] ✅ Reservación procesada exitosamente`);
         res.json(result);
         
       } catch (error) {
