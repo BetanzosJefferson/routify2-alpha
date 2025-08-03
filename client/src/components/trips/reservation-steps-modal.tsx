@@ -1558,22 +1558,44 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                 </div>
                 
                 <div className="border border-gray-200 rounded-md p-4">
-                  <Label htmlFor="num-passengers" className="block mb-2">Número de Pasajeros</Label>
-                  <Select
-                    value={numPassengers.toString()}
-                    onValueChange={handlePassengersChange}
-                  >
-                    <SelectTrigger id="num-passengers">
-                      <SelectValue placeholder="Seleccionar cantidad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[...Array(10)].map((_, i) => (
-                        <SelectItem key={i + 1} value={(i + 1).toString()}>
-                          {i + 1} {i === 0 ? "Pasajero" : "Pasajeros"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="block mb-4 text-base font-medium">Número de Pasajeros</Label>
+                  <div className="flex items-center justify-center space-x-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-12 w-12 rounded-full border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50"
+                      onClick={() => handlePassengersChange((numPassengers - 1).toString())}
+                      disabled={numPassengers <= 1}
+                    >
+                      <span className="text-xl font-bold text-blue-600">−</span>
+                    </Button>
+                    
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-gray-800 mb-1">
+                        {numPassengers}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {numPassengers === 1 ? "Pasajero" : "Pasajeros"}
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-12 w-12 rounded-full border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50"
+                      onClick={() => handlePassengersChange((numPassengers + 1).toString())}
+                      disabled={numPassengers >= (trip.capacity || 0)}
+                    >
+                      <span className="text-xl font-bold text-blue-600">+</span>
+                    </Button>
+                  </div>
+                  
+                  {/* Mostrar información de asientos disponibles */}
+                  <div className="mt-3 text-center text-sm text-gray-500">
+                    Capacidad máxima: {trip.capacity || 0}
+                  </div>
                 </div>
               </div>
             )}
