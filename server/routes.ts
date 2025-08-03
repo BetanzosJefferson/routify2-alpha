@@ -3298,11 +3298,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let newTrip = null;
       let actualTripId = newTripId;
       
-      // Si es un sub-viaje (formato: tripId_segmentId), extraer el ID principal
+      // Si es un sub-viaje (formato: tripId_segmentIndex), extraer el ID principal
       if (newTripId.includes('_')) {
-        const [mainTripId, segmentId] = newTripId.split('_');
+        const [mainTripId, segmentIndex] = newTripId.split('_');
         actualTripId = parseInt(mainTripId);
-        console.log(`[POST /reservations/transfer] Sub-viaje detectado: ${newTripId} -> viaje principal: ${actualTripId}, segmento: ${segmentId}`);
+        const segmentIdx = parseInt(segmentIndex);
+        console.log(`[POST /reservations/transfer] Sub-viaje detectado: ${newTripId} -> viaje principal: ${actualTripId}, índice segmento: ${segmentIdx}`);
         
         // Buscar el viaje principal
         newTrip = await storage.getTripWithRouteInfo(actualTripId);
@@ -3310,13 +3311,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ error: "Viaje principal no encontrado" });
         }
         
-        // Verificar que el segmento existe en el viaje
-        const segmentExists = newTrip.routeSegments && 
-          newTrip.routeSegments.some((segment: any) => segment.id === parseInt(segmentId));
-        
-        if (!segmentExists) {
+        // Verificar que el índice del segmento existe en el trip_data
+        const tripData = newTrip.tripData || [];
+        if (!Array.isArray(tripData) || segmentIdx >= tripData.length || segmentIdx < 0) {
+          console.log(`[POST /reservations/transfer] Segmento no encontrado: índice ${segmentIdx}, total segmentos: ${tripData.length}`);
           return res.status(404).json({ error: "Segmento de viaje no encontrado" });
         }
+        
+        console.log(`[POST /reservations/transfer] ✅ Segmento encontrado: ${JSON.stringify(tripData[segmentIdx])}`);
       } else {
         // Es un viaje principal normal
         newTrip = await storage.getTripWithRouteInfo(newTripId);
