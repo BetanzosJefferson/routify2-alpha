@@ -1,10 +1,5 @@
-import { PassengerTransferPage } from "@/components/passenger-transfer/passenger-transfer-page";
-import DefaultLayout from "@/components/layout/default-layout";
+import { PassengerTransfer } from "@/components/passenger-transfer/passenger-transfer";
 
-export default function PassengerTransferPageRoute() {
-  return (
-    <DefaultLayout activeTab="passenger-transfer">
-      <PassengerTransferPage />
-    </DefaultLayout>
-  );
+export function PassengerTransferPage() {
+  return <PassengerTransfer />;
 }

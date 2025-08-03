@@ -8873,4 +8873,146 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // PASSENGER TRANSFER ENDPOINT
+  app.post(apiRouter("/reservations/transfer"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[POST /reservations/transfer] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para transferir pasajeros
+      if (user.role !== UserRole.OWNER && 
+          user.role !== UserRole.ADMIN && 
+          user.role !== UserRole.CALL_CENTER &&
+          user.role !== UserRole.SUPER_ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños, administradores y call center pueden transferir pasajeros" 
+        });
+      }
+
+      const transferSchema = z.object({
+        transfers: z.array(z.object({
+          id: z.string(),
+          reservationId: z.number(),
+          passengerName: z.string(),
+          seats: z.number(),
+          tripId: z.number(),
+          originalTripId: z.number()
+        }))
+      });
+
+      const { transfers } = transferSchema.parse(req.body);
+      
+      if (transfers.length === 0) {
+        return res.status(400).json({ error: "No se especificaron transferencias" });
+      }
+
+      console.log(`[POST /reservations/transfer] Procesando ${transfers.length} transferencias`);
+
+      // Procesar cada transferencia
+      for (const transfer of transfers) {
+        console.log(`[TRANSFER] Moviendo reserva ${transfer.reservationId} del viaje ${transfer.originalTripId} al viaje ${transfer.tripId}`);
+        
+        // Obtener la reserva original
+        const reservation = await storage.getReservation(transfer.reservationId);
+        if (!reservation) {
+          console.error(`[TRANSFER] Reserva ${transfer.reservationId} no encontrada`);
+          return res.status(404).json({ error: `Reserva ${transfer.reservationId} no encontrada` });
+        }
+
+        // Verificar capacidad en el viaje destino
+        const destinationTrip = await storage.getTrip(transfer.tripId);
+        if (!destinationTrip) {
+          return res.status(404).json({ error: `Viaje destino ${transfer.tripId} no encontrado` });
+        }
+
+        // Obtener reservas actuales del viaje destino para calcular asientos disponibles
+        const destinationReservations = await storage.getReservationsByTrip(transfer.tripId);
+        const occupiedSeats = destinationReservations.reduce((sum, res) => sum + res.passengers.length, 0);
+        const availableSeats = destinationTrip.capacity - occupiedSeats;
+
+        if (transfer.seats > availableSeats) {
+          return res.status(400).json({ 
+            error: `Capacidad insuficiente en viaje destino. Disponibles: ${availableSeats}, Requeridos: ${transfer.seats}` 
+          });
+        }
+
+        // Actualizar la reserva con el nuevo viaje
+        const tripDetails = typeof reservation.tripDetails === 'string' 
+          ? JSON.parse(reservation.tripDetails) 
+          : reservation.tripDetails;
+
+        // Actualizar tripDetails con el nuevo viaje
+        const updatedTripDetails = {
+          ...tripDetails,
+          recordId: transfer.tripId,
+          tripId: transfer.tripId.toString()
+        };
+
+        // Actualizar la reserva en la base de datos
+        await db
+          .update(schema.reservations)
+          .set({
+            tripDetails: JSON.stringify(updatedTripDetails),
+            notes: `${reservation.notes || ''}\n[TRANSFERIDO] Movido del viaje ${transfer.originalTripId} al viaje ${transfer.tripId} por ${user.firstName} ${user.lastName}`.trim()
+          })
+          .where(eq(schema.reservations.id, transfer.reservationId));
+
+        console.log(`[TRANSFER] Reserva ${transfer.reservationId} transferida exitosamente al viaje ${transfer.tripId}`);
+      }
+
+      // Invalidar caché de viajes para reflejar los cambios
+      serverTripCache.clear();
+
+      // Notificar via WebSocket si está disponible
+      if (wss) {
+        const message = JSON.stringify({
+          type: 'PASSENGER_TRANSFER',
+          data: {
+            transfers: transfers.map(t => ({
+              reservationId: t.reservationId,
+              fromTrip: t.originalTripId,
+              toTrip: t.tripId,
+              seats: t.seats
+            })),
+            transferredBy: {
+              id: user.id,
+              name: `${user.firstName} ${user.lastName}`
+            },
+            timestamp: new Date().toISOString()
+          }
+        });
+
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+          }
+        });
+      }
+
+      res.json({ 
+        message: "Transferencias completadas exitosamente",
+        transferredCount: transfers.length,
+        transfers: transfers.map(t => ({
+          reservationId: t.reservationId,
+          fromTrip: t.originalTripId,
+          toTrip: t.tripId,
+          seats: t.seats
+        }))
+      });
+
+    } catch (error: any) {
+      console.error("[POST /reservations/transfer] Error:", error);
+      res.status(500).json({ 
+        error: "Error al transferir pasajeros",
+        details: error.message 
+      });
+    }
+  });
 }

@@ -215,6 +215,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               </NavItem>
             </div>
           )}
+
+          {/* Mover Pasajeros - Solo para roles con permisos */}
+          {(user?.role === 'dueño' || user?.role === 'admin' || user?.role === 'callCenter' || user?.role === 'superAdmin') && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<ArrowRightLeft className="h-5 w-5" />} 
+                active={location === "/passenger-transfer"}
+                onClick={() => setLocation("/passenger-transfer")}
+              >
+                Mover Pasajeros
+              </NavItem>
+            </div>
+          )}
           
 
 
