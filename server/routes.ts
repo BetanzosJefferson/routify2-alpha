@@ -3294,10 +3294,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentReservation = reservation[0];
       const currentTripDetails = currentReservation.tripDetails as any;
 
-      // Verificar que el nuevo viaje existe
-      const newTrip = await storage.getTripWithRouteInfo(newTripId);
-      if (!newTrip) {
-        return res.status(404).json({ error: "Viaje destino no encontrado" });
+      // Verificar que el nuevo viaje existe (manejar tanto viajes principales como sub-viajes)
+      let newTrip = null;
+      let actualTripId = newTripId;
+      
+      // Si es un sub-viaje (formato: tripId_segmentId), extraer el ID principal
+      if (newTripId.includes('_')) {
+        const [mainTripId, segmentId] = newTripId.split('_');
+        actualTripId = parseInt(mainTripId);
+        console.log(`[POST /reservations/transfer] Sub-viaje detectado: ${newTripId} -> viaje principal: ${actualTripId}, segmento: ${segmentId}`);
+        
+        // Buscar el viaje principal
+        newTrip = await storage.getTripWithRouteInfo(actualTripId);
+        if (!newTrip) {
+          return res.status(404).json({ error: "Viaje principal no encontrado" });
+        }
+        
+        // Verificar que el segmento existe en el viaje
+        const segmentExists = newTrip.routeSegments && 
+          newTrip.routeSegments.some((segment: any) => segment.id === parseInt(segmentId));
+        
+        if (!segmentExists) {
+          return res.status(404).json({ error: "Segmento de viaje no encontrado" });
+        }
+      } else {
+        // Es un viaje principal normal
+        newTrip = await storage.getTripWithRouteInfo(newTripId);
+        if (!newTrip) {
+          return res.status(404).json({ error: "Viaje destino no encontrado" });
+        }
       }
 
       const oldTripId = currentTripDetails.recordId || currentTripDetails.tripId;
@@ -3320,17 +3345,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(schema.reservations.id, reservationId));
 
+      // Obtener el ID del viaje anterior (puede ser principal o sub-viaje)
+      let oldActualTripId = oldTripId;
+      if (oldTripId.toString().includes('_')) {
+        const [mainTripId] = oldTripId.toString().split('_');
+        oldActualTripId = parseInt(mainTripId);
+      }
+
       // Recalcular asientos para ambos viajes (solo si son diferentes)
-      if (oldTripId !== newTripId) {
-        console.log(`[POST /reservations/transfer] Recalculando asientos para viajes ${oldTripId} y ${newTripId}`);
+      if (oldActualTripId !== actualTripId) {
+        console.log(`[POST /reservations/transfer] Recalculando asientos para viajes ${oldActualTripId} y ${actualTripId}`);
         
         // Liberar asientos del viaje origen (sumar asientos)
-        await storage.updateRelatedTripsAvailability(oldTripId, oldTripId.toString(), seatsToTransfer);
-        console.log(`[POST /reservations/transfer] ✅ Liberados ${seatsToTransfer} asientos en viaje ${oldTripId}`);
+        await storage.updateRelatedTripsAvailability(oldActualTripId, oldActualTripId.toString(), seatsToTransfer);
+        console.log(`[POST /reservations/transfer] ✅ Liberados ${seatsToTransfer} asientos en viaje ${oldActualTripId}`);
         
         // Ocupar asientos en el viaje destino (restar asientos)  
-        await storage.updateRelatedTripsAvailability(newTripId, newTripId.toString(), -seatsToTransfer);
-        console.log(`[POST /reservations/transfer] ✅ Ocupados ${seatsToTransfer} asientos en viaje ${newTripId}`);
+        await storage.updateRelatedTripsAvailability(actualTripId, actualTripId.toString(), -seatsToTransfer);
+        console.log(`[POST /reservations/transfer] ✅ Ocupados ${seatsToTransfer} asientos en viaje ${actualTripId}`);
         
         // Obtener los viajes actualizados para verificar los asientos
         const oldTripUpdated = await storage.getTripWithRouteInfo(oldTripId);
