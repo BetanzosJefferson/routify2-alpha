@@ -3206,9 +3206,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const reservation = reservations[0];
+        console.log(`[GET /reservations/search] Procesando reservación encontrada: ID=${reservation.id}`);
         
-        // Obtener información del viaje
-        const trip = await storage.getTripWithRouteInfo(reservation.tripId);
+        // Obtener información del viaje desde tripDetails
+        const tripDetails = reservation.tripDetails as any;
+        console.log(`[GET /reservations/search] TripDetails:`, tripDetails);
+        
+        if (!tripDetails || !tripDetails.recordId) {
+          return res.status(404).json({ error: "No se encontró información del viaje en la reservación" });
+        }
+        
+        const trip = await storage.getTripWithRouteInfo(tripDetails.recordId);
         if (!trip) {
           return res.status(404).json({ error: "No se encontró información del viaje" });
         }
@@ -3224,7 +3232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           trip
         };
         
-        console.log(`[GET /reservations/search] Reservación encontrada: ${reservation.passengerName}`);
+        console.log(`[GET /reservations/search] Reservación encontrada con ${passengers.length} pasajeros`);
         res.json(result);
         
       } catch (error) {
