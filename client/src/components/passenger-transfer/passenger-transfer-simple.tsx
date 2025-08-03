@@ -24,6 +24,18 @@ import { TripList } from "@/components/trips/trip-list";
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return '';
   try {
+    // Si la fecha está en formato YYYY-MM-DD, parsearla como fecha local
+    if (dateString.includes('-') && dateString.length === 10) {
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+    }
+    
+    // Para otros formatos, usar el método original
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
