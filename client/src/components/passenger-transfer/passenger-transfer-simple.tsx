@@ -101,13 +101,18 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setStep('confirmation');
+      // Invalidar caché específico y general
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/trips'] });
+      
+      // Forzar refetch completo de todos los trips
+      queryClient.removeQueries({ queryKey: ['/api/trips'] });
+      
       toast({
         title: "Transferencia exitosa",
-        description: "El pasajero ha sido transferido exitosamente",
+        description: `Pasajero movido del viaje ${data.oldTripId} al viaje ${data.newTripId}. Asientos transferidos: ${data.seatsTransferred}`,
       });
     },
     onError: (error: Error) => {

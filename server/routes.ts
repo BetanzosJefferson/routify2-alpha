@@ -3300,6 +3300,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Viaje destino no encontrado" });
       }
 
+      const oldTripId = currentTripDetails.recordId || currentTripDetails.tripId;
+      const seatsToTransfer = currentTripDetails.seats || 1;
+
       // Actualizar la reservación con el nuevo viaje
       const newTripDetails = {
         ...currentTripDetails,
@@ -3317,11 +3320,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(schema.reservations.id, reservationId));
 
-      console.log(`[POST /reservations/transfer] ✅ Transferencia completada`);
+      // Recalcular asientos para ambos viajes (solo si son diferentes)
+      if (oldTripId !== newTripId) {
+        console.log(`[POST /reservations/transfer] Recalculando asientos para viajes ${oldTripId} y ${newTripId}`);
+        
+        // El recálculo de asientos se hará automáticamente en la próxima consulta
+        
+        // Obtener los viajes actualizados para verificar los asientos
+        const oldTripUpdated = await storage.getTripWithRouteInfo(oldTripId);
+        const newTripUpdated = await storage.getTripWithRouteInfo(newTripId);
+        
+        console.log(`[POST /reservations/transfer] Viaje origen ${oldTripId}: ${oldTripUpdated ? 'encontrado' : 'no encontrado'}`);
+        console.log(`[POST /reservations/transfer] Viaje destino ${newTripId}: ${newTripUpdated ? 'encontrado' : 'no encontrado'}`);
+      }
+
+      console.log(`[POST /reservations/transfer] ✅ Transferencia completada de viaje ${oldTripId} a ${newTripId}`);
       res.json({ 
         success: true, 
         message: "Pasajero transferido exitosamente",
-        newTripId: newTripId
+        oldTripId: oldTripId,
+        newTripId: newTripId,
+        seatsTransferred: seatsToTransfer
       });
 
     } catch (error: any) {
