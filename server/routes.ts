@@ -3256,6 +3256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             destination: segmentData.destination,
             departureTime: segmentData.departureTime,
             arrivalTime: segmentData.arrivalTime,
+            departureDate: segmentData.departureDate, // ¡Agregar la fecha!
             price: segmentData.price,
             availableSeats: segmentData.availableSeats,
             capacity: segmentData.capacity,
