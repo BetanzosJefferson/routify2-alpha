@@ -70,6 +70,8 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
       console.log('[PassengerTransfer] Datos recibidos del backend:', data);
       console.log('[PassengerTransfer] data.reservation:', data.reservation);
       console.log('[PassengerTransfer] data.trip:', data.trip);
+      console.log('[PassengerTransfer] data.trip.departureDate:', data.trip?.departureDate);
+      console.log('[PassengerTransfer] data.trip campos disponibles:', Object.keys(data.trip || {}));
       
       // Combinar la información del viaje en la reservación para compatibilidad
       const reservationWithTrip = {
@@ -296,7 +298,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
               <div>
                 <Label className="text-sm font-medium text-gray-500">Fecha:</Label>
                 <p className="font-medium">
-                  {formatDate(selectedReservation.trip?.departureDate)}
+                  {formatDate(selectedReservation.trip?.departureDate || selectedReservation.trip?.date)}
                 </p>
               </div>
               <div className="md:col-span-2 lg:col-span-2">
