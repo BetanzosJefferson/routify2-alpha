@@ -86,6 +86,12 @@ export function ReservationDetailsSidebar({
   // Estados para acciones de paqueterías
   const [loadingPackageActions, setLoadingPackageActions] = useState<Record<number, 'payment' | 'delivery' | null>>({});
   
+  // Estado para actualizaciones optimistas de paquetes
+  const [optimisticPackageUpdates, setOptimisticPackageUpdates] = useState<Record<number, {
+    isPaid?: boolean;
+    deliveryStatus?: string;
+  }>>({});
+  
   // Estado para actualizaciones optimistas del frontend
   const [optimisticUpdates, setOptimisticUpdates] = useState<Record<number, {
     paymentStatus?: string;
@@ -118,7 +124,7 @@ export function ReservationDetailsSidebar({
       
       // Primero intentar desde trip.id y extraer la parte base
       if (firstReservation.trip?.id) {
-        const tripId = firstReservation.trip.id;
+        const tripId = firstReservation.trip.id as any;
         // Si es un string con formato "33_2", extraer solo la parte base "33"
         if (typeof tripId === 'string' && tripId.includes('_')) {
           const parts = tripId.split('_');
@@ -455,6 +461,15 @@ export function ReservationDetailsSidebar({
       );
       
       if (response.ok) {
+        // Actualización optimista inmediata del estado local
+        setOptimisticPackageUpdates(prev => ({ 
+          ...prev, 
+          [packageId]: { 
+            ...prev[packageId], 
+            isPaid: true 
+          } 
+        }));
+        
         // Invalidar queries para refrescar los datos
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
@@ -505,6 +520,15 @@ export function ReservationDetailsSidebar({
       );
       
       if (response.ok) {
+        // Actualización optimista inmediata del estado local
+        setOptimisticPackageUpdates(prev => ({ 
+          ...prev, 
+          [packageId]: { 
+            ...prev[packageId], 
+            deliveryStatus: 'entregado' 
+          } 
+        }));
+        
         // Invalidar queries para refrescar los datos
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
@@ -1095,11 +1119,11 @@ export function ReservationDetailsSidebar({
                       </div>
                       <Badge
                         variant="outline"
-                        className={`text-xs ${pkg.isPaid
+                        className={`text-xs ${(optimisticPackageUpdates[pkg.id]?.isPaid ?? pkg.isPaid)
                           ? 'bg-green-100 text-green-800 border-green-200'
                           : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}
                       >
-                        {pkg.isPaid ? 'PAGADO' : 'PENDIENTE'}
+                        {(optimisticPackageUpdates[pkg.id]?.isPaid ?? pkg.isPaid) ? 'PAGADO' : 'PENDIENTE'}
                       </Badge>
                     </div>
                   </div>
@@ -1179,8 +1203,8 @@ export function ReservationDetailsSidebar({
                   <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm mb-4">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Estado de entrega</div>
-                      <Badge variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'} className="text-xs">
-                        {pkg.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente'}
+                      <Badge variant={(optimisticPackageUpdates[pkg.id]?.deliveryStatus ?? pkg.deliveryStatus) === 'entregado' ? 'default' : 'secondary'} className="text-xs">
+                        {(optimisticPackageUpdates[pkg.id]?.deliveryStatus ?? pkg.deliveryStatus) === 'entregado' ? 'Entregado' : 'Pendiente'}
                       </Badge>
                     </div>
                     {pkg.usesSeats && (
@@ -1195,7 +1219,7 @@ export function ReservationDetailsSidebar({
                   {(user?.role === 'admin' || user?.role === 'callCenter' || user?.role === 'taquilla' || user?.role === 'checador' || user?.role === 'dueño' || user?.role === 'chofer') && (
                     <div className="flex flex-col sm:flex-row gap-2">
                       {/* Botón Marcar como pagado */}
-                      {!pkg.isPaid && (
+                      {!(optimisticPackageUpdates[pkg.id]?.isPaid ?? pkg.isPaid) && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -1213,7 +1237,7 @@ export function ReservationDetailsSidebar({
                       )}
 
                       {/* Botón Marcar como entregado */}
-                      {pkg.deliveryStatus !== 'entregado' && (
+                      {(optimisticPackageUpdates[pkg.id]?.deliveryStatus ?? pkg.deliveryStatus) !== 'entregado' && (
                         <Button
                           size="sm"
                           variant="outline"
