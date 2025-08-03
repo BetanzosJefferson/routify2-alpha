@@ -6821,6 +6821,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newSeatsUsed = newUsesSeats ? newSeatsQuantity : 0;
       const seatChangeDelta = newSeatsUsed - oldSeatsUsed;
       
+      // ESTADO DE ENTREGA: Establecer deliveredAt cuando se marca como entregado
+      if (updateData.deliveryStatus === 'entregado' && existingPackage.deliveryStatus !== 'entregado') {
+        console.log(`[PATCH /packages/${id}] Marcando paquete como entregado - estableciendo deliveredAt`);
+        updateData.deliveredAt = new Date();
+      }
+      
       // Actualizar la paquetería
       const updatedPackage = await storage.updatePackage(parseInt(id), updateData);
       

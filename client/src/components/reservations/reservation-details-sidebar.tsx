@@ -460,16 +460,7 @@ export function ReservationDetailsSidebar({
       );
       
       if (response.ok) {
-        // Actualización optimista inmediata del estado local
-        setOptimisticPackageUpdates(prev => ({ 
-          ...prev, 
-          [packageId]: { 
-            ...prev[packageId], 
-            isPaid: true 
-          } 
-        }));
-        
-        // Invalidar queries para refrescar los datos
+        // Invalidar queries para refrescar los datos inmediatamente
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
           queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] })
@@ -518,16 +509,7 @@ export function ReservationDetailsSidebar({
       );
       
       if (response.ok) {
-        // Actualización optimista inmediata del estado local
-        setOptimisticPackageUpdates(prev => ({ 
-          ...prev, 
-          [packageId]: { 
-            ...prev[packageId], 
-            deliveryStatus: 'entregado' 
-          } 
-        }));
-        
-        // Invalidar queries para refrescar los datos
+        // Invalidar queries para refrescar los datos inmediatamente
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
           queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] })
@@ -1117,11 +1099,11 @@ export function ReservationDetailsSidebar({
                       </div>
                       <Badge
                         variant="outline"
-                        className={`text-xs ${(optimisticPackageUpdates[pkg.id]?.isPaid ?? pkg.isPaid)
+                        className={`text-xs ${pkg.isPaid
                           ? 'bg-green-100 text-green-800 border-green-200'
                           : 'bg-yellow-100 text-yellow-800 border-yellow-200'}`}
                       >
-                        {(optimisticPackageUpdates[pkg.id]?.isPaid ?? pkg.isPaid) ? 'PAGADO' : 'PENDIENTE'}
+                        {pkg.isPaid ? 'PAGADO' : 'PENDIENTE'}
                       </Badge>
                     </div>
                   </div>
@@ -1201,8 +1183,8 @@ export function ReservationDetailsSidebar({
                   <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm mb-4">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Estado de entrega</div>
-                      <Badge variant={(optimisticPackageUpdates[pkg.id]?.deliveryStatus ?? pkg.deliveryStatus) === 'entregado' ? 'default' : 'secondary'} className="text-xs">
-                        {(optimisticPackageUpdates[pkg.id]?.deliveryStatus ?? pkg.deliveryStatus) === 'entregado' ? 'Entregado' : 'Pendiente'}
+                      <Badge variant={pkg.deliveryStatus === 'entregado' ? 'default' : 'secondary'} className="text-xs">
+                        {pkg.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente'}
                       </Badge>
                     </div>
                     {pkg.usesSeats && (
@@ -1217,7 +1199,7 @@ export function ReservationDetailsSidebar({
                   {(user?.role === 'admin' || user?.role === 'callCenter' || user?.role === 'taquilla' || user?.role === 'checador' || user?.role === 'dueño' || user?.role === 'chofer') && (
                     <div className="flex flex-col sm:flex-row gap-2">
                       {/* Botón Marcar como pagado */}
-                      {!(optimisticPackageUpdates[pkg.id]?.isPaid ?? pkg.isPaid) && (
+                      {!pkg.isPaid && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -1235,7 +1217,7 @@ export function ReservationDetailsSidebar({
                       )}
 
                       {/* Botón Marcar como entregado */}
-                      {(optimisticPackageUpdates[pkg.id]?.deliveryStatus ?? pkg.deliveryStatus) !== 'entregado' && (
+                      {pkg.deliveryStatus !== 'entregado' && (
                         <Button
                           size="sm"
                           variant="outline"
