@@ -6824,7 +6824,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // ESTADO DE ENTREGA: Establecer deliveredAt cuando se marca como entregado
       if (updateData.deliveryStatus === 'entregado' && existingPackage.deliveryStatus !== 'entregado') {
         console.log(`[PATCH /packages/${id}] Marcando paquete como entregado - estableciendo deliveredAt`);
-        updateData.deliveredAt = new Date();
+        // Crear fecha en zona horaria de México (UTC-6)
+        const now = new Date();
+        const mexicoTime = new Date(now.getTime() - (6 * 60 * 60 * 1000)); // UTC-6
+        updateData.deliveredAt = mexicoTime;
+        console.log(`[PATCH /packages/${id}] Timestamp ajustado a zona horaria de México: ${mexicoTime.toISOString()}`);
       }
       
       // Actualizar la paquetería
@@ -7849,7 +7853,10 @@ function setupPackageRoutes(app: Express) {
       // Actualizar estado de entrega si corresponde
       if (req.body.deliveryStatus === 'entregado' && existingPackage.deliveryStatus !== 'entregado') {
         // Establecer deliveredAt cuando se marca como entregado
-        req.body.deliveredAt = new Date();
+        // Crear fecha en zona horaria de México (UTC-6)
+        const now = new Date();
+        const mexicoTime = new Date(now.getTime() - (6 * 60 * 60 * 1000)); // UTC-6
+        req.body.deliveredAt = mexicoTime;
       }
       
       // Actualizar el paquete
