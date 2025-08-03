@@ -81,6 +81,12 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
   const queryClient = useQueryClient();
   const ticketRef = useRef<HTMLDivElement>(null);
   
+  // Obtener el viaje principal y sus asientos disponibles
+  const mainTrip = Array.isArray(trip.tripData) 
+    ? trip.tripData.find((t: any) => t.isMainTrip) || trip.tripData[0]
+    : trip.tripData;
+  const availableSeats = mainTrip?.availableSeats || trip.capacity || 0;
+  
   // Form state
   const [numPassengers, setNumPassengers] = useState(1);
   const [passengers, setPassengers] = useState<Passenger[]>([{ firstName: "", lastName: "" }]);
@@ -1586,7 +1592,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                       size="icon"
                       className="h-12 w-12 rounded-full border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50"
                       onClick={() => handlePassengersChange((numPassengers + 1).toString())}
-                      disabled={numPassengers >= (trip.capacity || 0)}
+                      disabled={numPassengers >= availableSeats}
                     >
                       <span className="text-xl font-bold text-blue-600">+</span>
                     </Button>
@@ -1594,7 +1600,7 @@ export function ReservationStepsModal({ trip, isOpen, onClose }: ReservationStep
                   
                   {/* Mostrar información de asientos disponibles */}
                   <div className="mt-3 text-center text-sm text-gray-500">
-                    Capacidad máxima: {trip.capacity || 0}
+                    Asientos disponibles: {availableSeats}
                   </div>
                 </div>
               </div>
