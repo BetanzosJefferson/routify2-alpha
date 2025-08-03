@@ -137,6 +137,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
   };
 
   const handleTripSelect = (trip: TripWithRouteInfo, tripData: any) => {
+    console.log('[PassengerTransfer] handleTripSelect called with:', { trip, tripData });
     setSelectedTrip(trip);
     // Actualizar filtros basado en la selección del viaje
     setSearchFilters(prev => ({
@@ -144,6 +145,10 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
       origin: tripData.origin,
       destination: tripData.destination
     }));
+    toast({
+      title: "Viaje seleccionado",
+      description: `Has seleccionado el viaje ${trip.id}`,
+    });
   };
 
   const handleTransfer = () => {

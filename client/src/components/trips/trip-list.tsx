@@ -2,10 +2,18 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon, MapPinIcon, CalendarIcon, RefreshCw } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
-import { formatDate, formatPrice } from "@/lib/utils";
+import { formatDate, formatPrice, normalizeToStartOfDay, formatDateForInput, formatDateToLocal } from "@/lib/utils";
 import { format } from "date-fns";
 import { extractLocationsFromTrips, formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
 import { tripCache } from "@/lib/trip-cache";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { LocationAdapter } from "@/components/ui/location-adapter";
+import { LocationOption } from "@/components/ui/command-combobox";
+import { TripWithRouteInfo } from "@shared/schema";
+import { ReservationStepsModal } from "./reservation-steps-modal";
 
 // Función para abreviar ubicaciones en móvil
 function abbreviateLocation(location: string): string {
@@ -167,15 +175,6 @@ function standardizeTimeFormat(time: string): string {
   }
 }
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { LocationAdapter } from "@/components/ui/location-adapter";
-import { LocationOption } from "@/components/ui/command-combobox";
-import { TripWithRouteInfo } from "@shared/schema";
-import { ReservationStepsModal } from "./reservation-steps-modal";
-
 interface SearchParams {
   origin?: string;
   destination?: string;
@@ -195,8 +194,6 @@ interface TripListProps {
     passengers?: number;
   };
 }
-
-import { normalizeToStartOfDay, formatDateForInput, formatDateToLocal } from "@/lib/utils";
 
 export function TripList({ customButtonText, onTripSelect, defaultFilters }: TripListProps = {}) {
   // Obtener la fecha actual formateada como YYYY-MM-DD en hora local
@@ -375,11 +372,14 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters }: Tri
 
   // Handler for reservation button click
   const handleReserve = (trip: TripWithRouteInfo, tripData?: any) => {
+    console.log('[TripList] handleReserve called with:', { trip: trip.id, tripData, onTripSelect: !!onTripSelect });
     if (onTripSelect) {
       // Si hay un callback personalizado, usarlo en lugar del modal
+      console.log('[TripList] Calling onTripSelect');
       onTripSelect(trip, tripData);
     } else {
       // Comportamiento normal: abrir modal de reservación
+      console.log('[TripList] Opening reservation modal');
       setSelectedTrip(trip);
       setShowModal(true);
     }
