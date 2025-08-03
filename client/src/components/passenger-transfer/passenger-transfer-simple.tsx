@@ -296,34 +296,137 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
             <CardTitle className="text-green-600">Reservación Encontrada</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Pasajero:</Label>
-                <p className="font-medium">
-                  {selectedReservation.passengers?.[0]?.firstName} {selectedReservation.passengers?.[0]?.lastName}
-                </p>
+            <div className="space-y-6">
+              {/* Información básica del pasajero */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Pasajero:</Label>
+                  <p className="font-medium">
+                    {selectedReservation.passengers?.[0]?.firstName} {selectedReservation.passengers?.[0]?.lastName}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Asientos:</Label>
+                  <p className="font-medium">{selectedReservation.passengers?.length || 0}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Fecha:</Label>
+                  <p className="font-medium">
+                    {formatDate(selectedReservation.trip?.departureDate || selectedReservation.trip?.date)}
+                  </p>
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Asientos:</Label>
-                <p className="font-medium">{selectedReservation.passengers?.length || 0}</p>
+
+              {/* Información del viaje */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label className="text-sm font-medium text-gray-500">Viaje Actual:</Label>
+                  <p className="font-medium">
+                    {selectedReservation.trip?.origin || selectedReservation.trip?.route?.origin || 'N/A'} → {selectedReservation.trip?.destination || selectedReservation.trip?.route?.destination || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Hora de Salida:</Label>
+                  <p className="font-medium">{selectedReservation.trip?.departureTime}</p>
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Fecha:</Label>
-                <p className="font-medium">
-                  {formatDate(selectedReservation.trip?.departureDate || selectedReservation.trip?.date)}
-                </p>
+
+              {/* Información de pago */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-700 mb-3">Información de Pago</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Estado de Pago:</Label>
+                    <p className={`font-medium ${selectedReservation.paymentStatus === 'pagado' ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedReservation.paymentStatus === 'pagado' ? 'Pagado' : 'Pendiente'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Total:</Label>
+                    <p className="font-medium">${selectedReservation.totalAmount}</p>
+                  </div>
+                  {selectedReservation.advanceAmount > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Anticipo:</Label>
+                      <p className="font-medium text-blue-600">${selectedReservation.advanceAmount}</p>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Resta:</Label>
+                    <p className="font-medium">
+                      ${(selectedReservation.totalAmount - (selectedReservation.advanceAmount || 0)).toFixed(2)}
+                    </p>
+                  </div>
+                  {selectedReservation.paidBy && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Marcado como pagado por:</Label>
+                      <p className="font-medium text-sm">Usuario ID: {selectedReservation.paidBy}</p>
+                    </div>
+                  )}
+                  {selectedReservation.markedAsPaidAt && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Fecha de pago:</Label>
+                      <p className="font-medium text-sm">{formatDate(selectedReservation.markedAsPaidAt)}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="md:col-span-2 lg:col-span-2">
-                <Label className="text-sm font-medium text-gray-500">Viaje Actual:</Label>
-                <p className="font-medium">
-                  {selectedReservation.trip?.origin || selectedReservation.trip?.route?.origin || 'N/A'} → {selectedReservation.trip?.destination || selectedReservation.trip?.route?.destination || 'N/A'}
-                </p>
+
+              {/* Información de cupón (si existe) */}
+              {selectedReservation.couponCode && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium text-gray-700 mb-3">Información de Descuento</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Cupón:</Label>
+                      <p className="font-medium text-purple-600">{selectedReservation.couponCode}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Descuento:</Label>
+                      <p className="font-medium text-green-600">${selectedReservation.discountAmount}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Información de check */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-700 mb-3">Estado de Check</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Estado:</Label>
+                    <p className={`font-medium ${selectedReservation.checkedAt ? 'text-green-600' : 'text-gray-500'}`}>
+                      {selectedReservation.checkedAt ? `Chequeado (${selectedReservation.checkCount || 1} ${selectedReservation.checkCount === 1 ? 'vez' : 'veces'})` : 'Sin chequear'}
+                    </p>
+                  </div>
+                  {selectedReservation.checkedBy && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Chequeado por:</Label>
+                      <p className="font-medium text-sm">Usuario ID: {selectedReservation.checkedBy}</p>
+                    </div>
+                  )}
+                  {selectedReservation.checkedAt && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Fecha de check:</Label>
+                      <p className="font-medium text-sm">{formatDate(selectedReservation.checkedAt)}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Hora de Salida:</Label>
-                <p className="font-medium">
-                  {selectedReservation.trip?.departureTime}
-                </p>
+
+              {/* Información de creación */}
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-700 mb-3">Información de Creación</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Creado por:</Label>
+                    <p className="font-medium text-sm">Usuario ID: {selectedReservation.createdBy}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Fecha de creación:</Label>
+                    <p className="font-medium text-sm">{formatDate(selectedReservation.createdAt)}</p>
+                  </div>
+                </div>
               </div>
             </div>
             <Button onClick={() => setStep('transfer')} className="mt-4 w-full">
