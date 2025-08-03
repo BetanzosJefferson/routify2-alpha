@@ -327,24 +327,16 @@ export function ReservationDetailsSidebar({
       if (response.ok) {
         console.log('[markAsChecked] Éxito - invalidando cache para datos reales del servidor...');
         
-        // Invalidar queries para refrescar los datos inmediatamente con datos reales del servidor
-        console.log('[markAsChecked] Invalidando queries específicas...');
+        // Invalidar queries con el queryKey exacto que usa useReservations
+        console.log('[markAsChecked] Invalidando queries con queryKey exacto...');
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
           queryClient.invalidateQueries({ 
-            predicate: (query) => {
-              return query.queryKey[0] === '/api/reservations';
-            }
+            queryKey: ["/api/reservations", { tripId: undefined, includeRelated: false, date: undefined, archived: false }] 
           }),
-          queryClient.refetchQueries({ 
-            predicate: (query) => {
-              return query.queryKey[0] === '/api/reservations';
-            }
+          queryClient.invalidateQueries({ 
+            predicate: (query) => query.queryKey[0] === '/api/reservations'
           })
         ]);
-        
-        // Forzar refresh del componente
-        setRefreshKey(prev => prev + 1);
         
         // Notificar al componente padre para que actualice los datos
         if (onReservationUpdate) {
@@ -401,24 +393,16 @@ export function ReservationDetailsSidebar({
       if (response.ok) {
         console.log('[markAsPaid] Éxito - invalidando cache para datos reales del servidor...');
         
-        // Invalidar queries para refrescar los datos inmediatamente con datos reales del servidor
-        console.log('[markAsPaid] Invalidando queries específicas...');
+        // Invalidar queries con el queryKey exacto que usa useReservations
+        console.log('[markAsPaid] Invalidando queries con queryKey exacto...');
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['/api/reservations'] }),
           queryClient.invalidateQueries({ 
-            predicate: (query) => {
-              return query.queryKey[0] === '/api/reservations';
-            }
+            queryKey: ["/api/reservations", { tripId: undefined, includeRelated: false, date: undefined, archived: false }] 
           }),
-          queryClient.refetchQueries({ 
-            predicate: (query) => {
-              return query.queryKey[0] === '/api/reservations';
-            }
+          queryClient.invalidateQueries({ 
+            predicate: (query) => query.queryKey[0] === '/api/reservations'
           })
         ]);
-        
-        // Forzar refresh del componente
-        setRefreshKey(prev => prev + 1);
         
         // Notificar al componente padre para que actualice los datos
         if (onReservationUpdate) {

@@ -667,7 +667,10 @@ function ReservationsListContent() {
             reservations={selectedTrip.reservations}
             onClose={() => setSelectedTrip(null)}
             onReservationUpdate={() => {
-              // Invalidar queries para refrescar los datos
+              // Invalidar queries con el queryKey exacto que usa useReservations
+              queryClient.invalidateQueries({ 
+                queryKey: ["/api/reservations", { tripId: undefined, includeRelated: false, date: undefined, archived: false }] 
+              });
               queryClient.invalidateQueries({ 
                 predicate: (query) => query.queryKey[0] === '/api/reservations'
               });
