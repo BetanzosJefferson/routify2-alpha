@@ -55,13 +55,15 @@ interface ReservationDetailsSidebarProps {
   tripInfo: any;
   reservations: ReservationWithDetails[];
   onClose: () => void;
+  onReservationUpdate?: () => void; // Callback para notificar actualizaciones
 }
 
 export function ReservationDetailsSidebar({ 
   recordId, 
   tripInfo, 
   reservations, 
-  onClose 
+  onClose,
+  onReservationUpdate
 }: ReservationDetailsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -91,6 +93,9 @@ export function ReservationDetailsSidebar({
     isPaid?: boolean;
     deliveryStatus?: string;
   }>>({});
+
+  // Estado para forzar refresh de datos
+  const [refreshKey, setRefreshKey] = useState(0);
   
 
   
@@ -338,6 +343,14 @@ export function ReservationDetailsSidebar({
           })
         ]);
         
+        // Forzar refresh del componente
+        setRefreshKey(prev => prev + 1);
+        
+        // Notificar al componente padre para que actualice los datos
+        if (onReservationUpdate) {
+          onReservationUpdate();
+        }
+        
         toast({
           title: "Reservación marcada como check",
           description: "La reservación ha sido marcada como check correctamente.",
@@ -403,6 +416,14 @@ export function ReservationDetailsSidebar({
             }
           })
         ]);
+        
+        // Forzar refresh del componente
+        setRefreshKey(prev => prev + 1);
+        
+        // Notificar al componente padre para que actualice los datos
+        if (onReservationUpdate) {
+          onReservationUpdate();
+        }
         
         toast({
           title: "Reservación marcada como pagada",

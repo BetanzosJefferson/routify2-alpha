@@ -666,6 +666,12 @@ function ReservationsListContent() {
             tripInfo={selectedTrip.tripInfo}
             reservations={selectedTrip.reservations}
             onClose={() => setSelectedTrip(null)}
+            onReservationUpdate={() => {
+              // Invalidar queries para refrescar los datos
+              queryClient.invalidateQueries({ 
+                predicate: (query) => query.queryKey[0] === '/api/reservations'
+              });
+            }}
           />
         </ErrorBoundary>
       )}
