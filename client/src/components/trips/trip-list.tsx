@@ -635,12 +635,17 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                     {trip.companyName && (
                       <span className="text-xs text-gray-600 mb-1">
                         {trip.companyName}
-                        {isTransferMode && (() => {
+                        {(() => {
                           console.log('[DEBUG] Trip data for driver:', trip);
-                          console.log('[DEBUG] Driver info:', trip.driver);
-                          if (trip.driver && trip.driver.firstName) {
+                          console.log('[DEBUG] Driver info:', trip.driver || trip.assignedDriver);
+                          // Verificar múltiples fuentes para el conductor
+                          const driver = trip.driver || trip.assignedDriver;
+                          if (driver && (driver.firstName || driver.name)) {
+                            const driverName = driver.firstName 
+                              ? `${driver.firstName} ${driver.lastName || ''}`.trim()
+                              : driver.name;
                             return (
-                              <span className="text-gray-500"> · Operador: {trip.driver.firstName} {trip.driver.lastName}</span>
+                              <span className="text-gray-500"> · Operador: {driverName}</span>
                             );
                           }
                           return null;
