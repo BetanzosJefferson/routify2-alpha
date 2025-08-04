@@ -866,9 +866,10 @@ export class DatabaseStorage implements IStorage {
       
       // Mapa de conductores
       if (result.trips.driverId && result.users) {
+        const driverName = `${result.users.firstName || ''} ${result.users.lastName || ''}`.trim();
         driverMap.set(result.trips.driverId, {
           id: result.trips.driverId,
-          name: result.users.name,
+          name: driverName,
           firstName: result.users.firstName,
           lastName: result.users.lastName,
           email: result.users.email,
