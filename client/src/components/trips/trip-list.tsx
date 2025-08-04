@@ -193,9 +193,10 @@ interface TripListProps {
     date?: string;
     passengers?: number;
   };
+  isTransferMode?: boolean; // Nueva prop para modo de transferencia
 }
 
-export function TripList({ customButtonText, onTripSelect, defaultFilters }: TripListProps = {}) {
+export function TripList({ customButtonText, onTripSelect, defaultFilters, isTransferMode = false }: TripListProps = {}) {
   // Obtener la fecha actual formateada como YYYY-MM-DD en hora local
   const today = formatDateForInput(new Date());
 
@@ -634,6 +635,9 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters }: Tri
                     {trip.companyName && (
                       <span className="text-xs text-gray-600 mb-1">
                         {trip.companyName}
+                        {isTransferMode && trip.driverName && (
+                          <span className="text-gray-500"> · Operador: {trip.driverName}</span>
+                        )}
                       </span>
                     )}
                     <div className="text-sm font-medium">

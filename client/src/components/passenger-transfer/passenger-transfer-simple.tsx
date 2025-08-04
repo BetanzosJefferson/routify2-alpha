@@ -428,16 +428,11 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                       {selectedReservation.userNames?.[selectedReservation.createdBy] || `Usuario ID: ${selectedReservation.createdBy}`}
                     </p>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Fecha de creación:</Label>
-                    <p className="font-medium text-sm">{formatDate(selectedReservation.createdAt)}</p>
-                  </div>
+
                 </div>
               </div>
             </div>
-            <Button onClick={() => setStep('transfer')} className="mt-4 w-full">
-              Proceder a Transferir
-            </Button>
+   
           </CardContent>
         </Card>
 
@@ -451,6 +446,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
               customButtonText="Mover aquí"
               onTripSelect={handleTripSelect}
               defaultFilters={searchFilters}
+              isTransferMode={true}
             />
             
             {selectedTrip && (
