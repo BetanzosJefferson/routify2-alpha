@@ -986,6 +986,12 @@ export class DatabaseStorage implements IStorage {
               id: assignedDriver.id,
               firstName: assignedDriver.firstName,
               lastName: assignedDriver.lastName
+            } : undefined,
+            // Agregar campo driver para compatibilidad con frontend
+            driver: assignedDriver ? {
+              id: assignedDriver.id,
+              firstName: assignedDriver.firstName,
+              lastName: assignedDriver.lastName
             } : undefined
           });
         }
@@ -1065,7 +1071,9 @@ export class DatabaseStorage implements IStorage {
             companyName: companyData.companyName,
             companyLogo: companyData.companyLogo,
             assignedVehicle,
-            assignedDriver
+            assignedDriver,
+            // Agregar campo driver para compatibilidad con frontend
+            driver: assignedDriver
           };
           
           console.log(`[searchTrips] [OPTIMIZED] Adding expanded trip ${uniqueTripId} with origin: ${expandedTrip.origin}, destination: ${expandedTrip.destination}, departureDate: ${expandedTrip.departureDate}`);
