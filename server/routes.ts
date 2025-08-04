@@ -3336,8 +3336,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Faltan datos requeridos" });
       }
 
+      // Convertir newTripId a string para manejar tanto números como strings
+      const newTripIdStr = String(newTripId);
+
       console.log(`[POST /reservations/transfer] Usuario: ${user.firstName} ${user.lastName}`);
-      console.log(`[POST /reservations/transfer] Transfiriendo reservación ${reservationId} al viaje ${newTripId}`);
+      console.log(`[POST /reservations/transfer] Transfiriendo reservación ${reservationId} al viaje ${newTripIdStr}`);
 
       // Obtener la reservación actual
       const reservation = await db
@@ -3363,11 +3366,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let actualTripId = newTripId;
       
       // Si es un sub-viaje (formato: tripId_segmentIndex), extraer el ID principal
-      if (newTripId.includes('_')) {
-        const [mainTripId, segmentIndex] = newTripId.split('_');
+      if (newTripIdStr.includes('_')) {
+        const [mainTripId, segmentIndex] = newTripIdStr.split('_');
         actualTripId = parseInt(mainTripId);
         const segmentIdx = parseInt(segmentIndex);
-        console.log(`[POST /reservations/transfer] Sub-viaje detectado: ${newTripId} -> viaje principal: ${actualTripId}, índice segmento: ${segmentIdx}`);
+        console.log(`[POST /reservations/transfer] Sub-viaje detectado: ${newTripIdStr} -> viaje principal: ${actualTripId}, índice segmento: ${segmentIdx}`);
         
         // Buscar el viaje principal
         newTrip = await storage.getTripWithRouteInfo(actualTripId);
@@ -3385,7 +3388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[POST /reservations/transfer] ✅ Segmento encontrado: ${JSON.stringify(tripData[segmentIdx])}`);
       } else {
         // Es un viaje principal normal
-        newTrip = await storage.getTripWithRouteInfo(newTripId);
+        newTrip = await storage.getTripWithRouteInfo(parseInt(newTripIdStr));
         if (!newTrip) {
           return res.status(404).json({ error: "Viaje destino no encontrado" });
         }
@@ -3397,8 +3400,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar la reservación con el nuevo viaje
       const newTripDetails = {
         ...currentTripDetails,
-        recordId: newTripId,
-        tripId: newTripId,
+        recordId: newTripIdStr,
+        tripId: newTripIdStr,
         origin: origin || currentTripDetails.origin,
         destination: destination || currentTripDetails.destination
       };
