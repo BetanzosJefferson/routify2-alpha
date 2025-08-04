@@ -3278,12 +3278,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const passengers = await storage.getPassengers(reservation.id);
         console.log(`[GET /reservations/search] Obtenidos ${passengers.length} pasajeros`);
         
+        // Obtener nombres de usuarios para mostrar en lugar de IDs
+        const userNames = {};
+        const userIds = [reservation.createdBy, reservation.paidBy, reservation.checkedBy].filter(Boolean);
+        
+        for (const userId of userIds) {
+          try {
+            const user = await storage.getUserById(userId);
+            if (user) {
+              userNames[userId] = `${user.firstName} ${user.lastName}`;
+            }
+          } catch (error) {
+            console.log(`[GET /reservations/search] No se pudo obtener usuario ${userId}:`, error);
+          }
+        }
+        
         const result = {
           reservation: {
             ...reservation,
             passengers
           },
-          trip
+          trip,
+          userNames // Agregar nombres de usuarios
         };
         
         console.log(`[GET /reservations/search] ✅ Reservación procesada exitosamente`);

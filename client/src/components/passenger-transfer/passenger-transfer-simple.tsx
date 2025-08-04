@@ -82,13 +82,13 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
       console.log('[PassengerTransfer] Datos recibidos del backend:', data);
       console.log('[PassengerTransfer] data.reservation:', data.reservation);
       console.log('[PassengerTransfer] data.trip:', data.trip);
-      console.log('[PassengerTransfer] data.trip.departureDate:', data.trip?.departureDate);
-      console.log('[PassengerTransfer] data.trip campos disponibles:', Object.keys(data.trip || {}));
+      console.log('[PassengerTransfer] data.userNames:', data.userNames);
       
       // Combinar la información del viaje en la reservación para compatibilidad
       const reservationWithTrip = {
         ...data.reservation,
-        trip: data.trip // El backend envía trip separado
+        trip: data.trip, // El backend envía trip separado
+        userNames: data.userNames // Agregar nombres de usuarios
       };
       
       setSelectedReservation(reservationWithTrip);
@@ -360,7 +360,9 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                   {selectedReservation.paidBy && (
                     <div>
                       <Label className="text-sm font-medium text-gray-500">Marcado como pagado por:</Label>
-                      <p className="font-medium text-sm">Usuario ID: {selectedReservation.paidBy}</p>
+                      <p className="font-medium text-sm">
+                        {selectedReservation.userNames?.[selectedReservation.paidBy] || `Usuario ID: ${selectedReservation.paidBy}`}
+                      </p>
                     </div>
                   )}
                   {selectedReservation.markedAsPaidAt && (
@@ -396,13 +398,15 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Estado:</Label>
                     <p className={`font-medium ${selectedReservation.checkedAt ? 'text-green-600' : 'text-gray-500'}`}>
-                      {selectedReservation.checkedAt ? `Chequeado (${selectedReservation.checkCount || 1} ${selectedReservation.checkCount === 1 ? 'vez' : 'veces'})` : 'Sin chequear'}
+                      {selectedReservation.checkedAt ? 'Chequeado' : 'Sin chequear'}
                     </p>
                   </div>
                   {selectedReservation.checkedBy && (
                     <div>
                       <Label className="text-sm font-medium text-gray-500">Chequeado por:</Label>
-                      <p className="font-medium text-sm">Usuario ID: {selectedReservation.checkedBy}</p>
+                      <p className="font-medium text-sm">
+                        {selectedReservation.userNames?.[selectedReservation.checkedBy] || `Usuario ID: ${selectedReservation.checkedBy}`}
+                      </p>
                     </div>
                   )}
                   {selectedReservation.checkedAt && (
@@ -420,7 +424,9 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Creado por:</Label>
-                    <p className="font-medium text-sm">Usuario ID: {selectedReservation.createdBy}</p>
+                    <p className="font-medium text-sm">
+                      {selectedReservation.userNames?.[selectedReservation.createdBy] || `Usuario ID: ${selectedReservation.createdBy}`}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-500">Fecha de creación:</Label>
