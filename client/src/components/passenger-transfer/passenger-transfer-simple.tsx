@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { TripWithRouteInfo, ReservationWithDetails } from "@shared/schema";
 import { TripList } from "@/components/trips/trip-list";
+import { getCurrentLocalDate } from "@/lib/utils";
 
 // Función auxiliar para formatear fechas
 const formatDate = (dateString: string | undefined) => {
@@ -64,7 +65,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
   const [searchFilters, setSearchFilters] = useState({
     origin: '',
     destination: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getCurrentLocalDate(),
     passengers: 1
   });
 
@@ -194,7 +195,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
     setSearchFilters({
       origin: '',
       destination: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getCurrentLocalDate(),
       passengers: 1
     });
   };

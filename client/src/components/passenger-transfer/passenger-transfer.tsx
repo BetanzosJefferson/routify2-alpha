@@ -21,6 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { TripWithRouteInfo, ReservationWithDetails } from "@shared/schema";
+import { getCurrentLocalDate } from "@/lib/utils";
 
 // Función auxiliar para formatear fechas
 const formatDate = (dateString: string | undefined) => {
@@ -71,7 +72,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Obtener fecha actual global (definida globalmente en el sistema)
-  const currentDate = new Date().toISOString().split('T')[0];
+  const currentDate = getCurrentLocalDate();
 
   // Buscar reservación por código
   const { data: reservationData, isLoading: isLoadingReservation, error: reservationError, refetch: searchReservation } = useQuery({

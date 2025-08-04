@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { useReservations } from "@/hooks/use-reservations";
-import { normalizeToStartOfDay } from "@/lib/utils";
+import { normalizeToStartOfDay, getCurrentLocalDate } from "@/lib/utils";
 import { CompanySelectionModal } from "./company-selection-modal";
 import { TransferHistory } from "./transfer-history";
 import {
@@ -208,10 +208,11 @@ function ReservationSelectionModal({
   const groupedReservations = React.useMemo(() => {
     if (!reservations) return {};
     
-    // Usar la fecha actual real del sistema
-    const SYSTEM_DATE = new Date();
-    console.log(`[TransferModal] Usando fecha del sistema: ${SYSTEM_DATE.toISOString()}`);
-    const today = normalizeToStartOfDay(SYSTEM_DATE);
+    // Usar la fecha actual real del sistema global
+    const currentLocalDate = getCurrentLocalDate();
+    console.log(`[TransferModal] Usando fecha del sistema local: ${currentLocalDate}`);
+    const [year, month, day] = currentLocalDate.split('-').map(Number);
+    const today = normalizeToStartOfDay(new Date(year, month - 1, day));
     
     // Filtrar solo reservaciones confirmadas y cuya fecha sea hoy o futura
     const activeReservations = reservations.filter(reservation => {
