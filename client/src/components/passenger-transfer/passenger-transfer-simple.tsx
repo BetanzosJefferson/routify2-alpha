@@ -250,7 +250,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
                   id="reservationCode"
                   value={reservationCode}
                   onChange={(e) => setReservationCode(e.target.value)}
-                  placeholder="RES622, 622, etc."
+                  placeholder="RES129, RES426, etc."
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
@@ -446,7 +446,6 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
               customButtonText="Mover aquí"
               onTripSelect={handleTripSelect}
               defaultFilters={searchFilters}
-              isTransferMode={true}
             />
             
             {selectedTrip && (

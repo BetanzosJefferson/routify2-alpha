@@ -217,7 +217,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           )}
 
           {/* Mover Pasajeros - Solo para roles con permisos */}
-          {(user?.role === 'dueño' || user?.role === 'admin' || user?.role === 'callCenter' || user?.role === 'superAdmin') && (
+          {(user?.role === 'dueño' || user?.role === 'admin' || user?.role === 'callCenter') && (
             <div className="space-y-1">
               <NavItem 
                 icon={<ArrowRightLeft className="h-5 w-5" />} 
