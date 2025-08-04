@@ -655,6 +655,14 @@ export function ReservationDetailsSidebar({
   // Filtrar y ordenar reservaciones
   const filteredReservations = reservations
     .filter(reservation => {
+      // Filtrar por estado: EXCLUIR reservaciones canceladas
+      const status = reservation.status?.toLowerCase();
+      if (status === 'canceled' || status === 'canceledandrefund') {
+        console.log(`[ReservationDetailsSidebar] Excluyendo reservación ${reservation.id} con estado: ${reservation.status}`);
+        return false;
+      }
+      
+      // Si no hay búsqueda, mostrar todas las no canceladas
       if (!searchQuery) return true;
       
       const searchLower = searchQuery.toLowerCase();
