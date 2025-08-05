@@ -228,6 +228,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               </NavItem>
             </div>
           )}
+
+          {/* Línea de tiempo operador - Solo para admin y dueño */}
+          {(user?.role === 'dueño' || user?.role === 'admin') && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<ClockIcon className="h-5 w-5" />} 
+                active={location === "/operator-timeline"}
+                onClick={() => setLocation("/operator-timeline")}
+              >
+                Línea de tiempo operador
+              </NavItem>
+            </div>
+          )}
           
 
 

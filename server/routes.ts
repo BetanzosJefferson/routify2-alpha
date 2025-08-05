@@ -9348,4 +9348,117 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // Ruta para obtener línea de tiempo del operador - Solo admin y dueño
+  app.get("/api/operator-timeline", async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      // Verificar autenticación
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo admin y dueño pueden acceder
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN) {
+        return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
+      }
+      
+      const { operatorId, startDate, endDate } = req.query;
+      
+      // Validar parámetros requeridos
+      if (!operatorId || !startDate || !endDate) {
+        return res.status(400).json({ 
+          message: "Parámetros requeridos: operatorId, startDate, endDate" 
+        });
+      }
+      
+      console.log(`[GET /api/operator-timeline] Usuario: ${user.firstName} ${user.lastName}, Operador: ${operatorId}, Rango: ${startDate} - ${endDate}`);
+      
+      // Convertir fechas
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999); // Incluir todo el día final
+      
+      // Obtener compañía del usuario para filtrado
+      const userCompany = user.companyId || user.company;
+      
+      // Obtener viajes del operador en el rango de fechas
+      const tripConditions = [
+        eq(schema.trips.driverId, parseInt(operatorId as string)),
+        gte(schema.trips.departureDate, start.toISOString().split('T')[0]),
+        lte(schema.trips.departureDate, end.toISOString().split('T')[0])
+      ];
+      
+      // Agregar filtro de compañía si no es superadmin
+      if (user.role !== UserRole.SUPER_ADMIN && userCompany) {
+        tripConditions.push(eq(schema.trips.companyId, userCompany));
+      }
+      
+      const trips = await db
+        .select()
+        .from(schema.trips)
+        .where(and(...tripConditions))
+        .orderBy(desc(schema.trips.departureDate));
+      
+      console.log(`[GET /api/operator-timeline] Encontrados ${trips.length} viajes`);
+      
+      // Obtener transacciones del operador en el rango de fechas
+      const transactionConditions = [
+        eq(schema.transacciones.user_id, parseInt(operatorId as string)),
+        gte(schema.transacciones.createdAt, start),
+        lte(schema.transacciones.createdAt, end)
+      ];
+      
+      // Agregar filtro de compañía para transacciones si no es superadmin
+      if (user.role !== UserRole.SUPER_ADMIN && userCompany) {
+        transactionConditions.push(eq(schema.transacciones.companyId, userCompany));
+      }
+      
+      const transactions = await db
+        .select()
+        .from(schema.transacciones)
+        .where(and(...transactionConditions))
+        .orderBy(desc(schema.transacciones.createdAt));
+      
+      console.log(`[GET /api/operator-timeline] Encontradas ${transactions.length} transacciones`);
+      
+      // Formatear datos para el frontend
+      const formattedTrips = trips.map(trip => ({
+        id: trip.id,
+        origin: typeof trip.tripData === 'string' 
+          ? JSON.parse(trip.tripData)[0]?.origin || 'Origen no disponible'
+          : trip.tripData[0]?.origin || 'Origen no disponible',
+        destination: typeof trip.tripData === 'string'
+          ? JSON.parse(trip.tripData)[JSON.parse(trip.tripData).length - 1]?.destination || 'Destino no disponible'
+          : trip.tripData[trip.tripData.length - 1]?.destination || 'Destino no disponible',
+        departureDate: trip.departureDate,
+        departureTime: typeof trip.tripData === 'string'
+          ? JSON.parse(trip.tripData)[0]?.departureTime || 'Hora no disponible'
+          : trip.tripData[0]?.departureTime || 'Hora no disponible',
+        driverId: trip.driverId,
+        companyId: trip.companyId
+      }));
+      
+      const formattedTransactions = transactions.map(transaction => ({
+        id: transaction.id,
+        amount: transaction.amount,
+        type: transaction.source || 'general',
+        description: transaction.description || 'Sin descripción',
+        createdAt: transaction.createdAt,
+        createdBy: transaction.user_id,
+        tripId: transaction.trip_record_id?.toString() || 'Sin viaje asociado'
+      }));
+      
+      res.json({
+        trips: formattedTrips,
+        transactions: formattedTransactions,
+        totalCount: formattedTrips.length + formattedTransactions.length
+      });
+      
+    } catch (error) {
+      console.error("Error al obtener línea de tiempo del operador:", error);
+      res.status(500).json({ message: "Error al obtener datos de línea de tiempo" });
+    }
+  });
 }

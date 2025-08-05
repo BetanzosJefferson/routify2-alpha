@@ -149,6 +149,51 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
       res.status(500).json({ message: "Error al obtener usuarios" });
     }
   });
+
+  // Endpoint para obtener lista de operadores (conductores) - Solo admin y dueño
+  app.get("/api/users/operators", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      console.log(`[GET /api/users/operators] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Solo admin y dueño pueden acceder
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN) {
+        return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
+      }
+      
+      let query = db.select().from(users).where(eq(users.role, UserRole.DRIVER));
+      
+      // Filtrar por compañía según el rol del usuario
+      if (user.role === UserRole.OWNER) {
+        if (user.companyId) {
+          query = query.where(and(
+            eq(users.role, UserRole.DRIVER),
+            eq(users.companyId, user.companyId)
+          ));
+        }
+      } else if (user.role === UserRole.ADMIN) {
+        const userCompany = user.companyId || user.company;
+        if (userCompany) {
+          query = query.where(and(
+            eq(users.role, UserRole.DRIVER),
+            or(
+              eq(users.companyId, userCompany),
+              eq(users.company, userCompany)
+            )
+          ));
+        }
+      }
+      
+      const operators = await query;
+      console.log(`[GET /api/users/operators] Encontrados ${operators.length} operadores`);
+      
+      res.json(operators);
+    } catch (error) {
+      console.error("Error al obtener operadores:", error);
+      res.status(500).json({ message: "Error al obtener operadores" });
+    }
+  });
   
   // Endpoint para eliminar un usuario - SOLO SUPERADMIN
   app.delete("/api/users/:id", authMiddleware, async (req: Request, res: Response) => {
