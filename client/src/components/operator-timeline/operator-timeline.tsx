@@ -50,10 +50,21 @@ export function OperatorTimeline() {
   const [showResults, setShowResults] = useState(false);
 
   // Obtener lista de operadores
-  const { data: operators = [] } = useQuery<Operator[]>({
+  const { data: operators = [], isLoading: operatorsLoading, error: operatorsError } = useQuery<Operator[]>({
     queryKey: ['/api/users/operators'],
     enabled: true
   });
+
+  // Depuración de operadores
+  React.useEffect(() => {
+    console.log('[OperatorTimeline] Componente cargado');
+    console.log('[OperatorTimeline] Operadores:', operators);
+    console.log('[OperatorTimeline] Loading:', operatorsLoading);
+    console.log('[OperatorTimeline] Error:', operatorsError);
+    if (operatorsError) {
+      console.error('[OperatorTimeline] Error completo:', operatorsError);
+    }
+  }, [operators, operatorsLoading, operatorsError]);
 
   // Obtener datos de la línea de tiempo
   const { data: timelineData, isLoading, refetch } = useQuery<TimelineData>({

@@ -162,13 +162,13 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
         return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
       }
       
-      let query = db.select().from(users).where(eq(users.role, UserRole.DRIVER));
+      let query = db.select().from(users).where(eq(users.role, 'chofer'));
       
       // Filtrar por compañía según el rol del usuario
       if (user.role === UserRole.OWNER) {
         if (user.companyId) {
           query = query.where(and(
-            eq(users.role, UserRole.DRIVER),
+            eq(users.role, 'chofer'),
             eq(users.companyId, user.companyId)
           ));
         }
@@ -176,7 +176,7 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
         const userCompany = user.companyId || user.company;
         if (userCompany) {
           query = query.where(and(
-            eq(users.role, UserRole.DRIVER),
+            eq(users.role, 'chofer'),
             or(
               eq(users.companyId, userCompany),
               eq(users.company, userCompany)

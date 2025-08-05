@@ -9384,8 +9384,9 @@ function setupPackageRoutes(app: Express) {
       const userCompany = user.companyId || user.company;
       
       // Obtener viajes del operador en el rango de fechas
+      const operatorIdNum = parseInt(operatorId as string);
       const tripConditions = [
-        eq(schema.trips.driverId, parseInt(operatorId as string)),
+        eq(schema.trips.driverId, operatorIdNum),
         gte(schema.trips.departureDate, start.toISOString().split('T')[0]),
         lte(schema.trips.departureDate, end.toISOString().split('T')[0])
       ];
@@ -9405,7 +9406,7 @@ function setupPackageRoutes(app: Express) {
       
       // Obtener transacciones del operador en el rango de fechas
       const transactionConditions = [
-        eq(schema.transacciones.user_id, parseInt(operatorId as string)),
+        eq(schema.transacciones.user_id, operatorIdNum),
         gte(schema.transacciones.createdAt, start),
         lte(schema.transacciones.createdAt, end)
       ];
