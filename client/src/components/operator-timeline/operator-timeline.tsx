@@ -52,6 +52,22 @@ export function OperatorTimeline() {
   // Obtener lista de operadores
   const { data: operators = [], isLoading: operatorsLoading, error: operatorsError } = useQuery<Operator[]>({
     queryKey: ['/api/users/operators'],
+    queryFn: async () => {
+      console.log('[OperatorTimeline] Ejecutando consulta de operadores...');
+      const response = await fetch('/api/users/operators');
+      console.log('[OperatorTimeline] Response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('[OperatorTimeline] Error en respuesta:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('[OperatorTimeline] Error text:', errorText);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('[OperatorTimeline] Datos recibidos:', data);
+      return data;
+    },
     enabled: true
   });
 
