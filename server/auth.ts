@@ -155,35 +155,34 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
     try {
       const { user } = req as any;
       
-      console.log(`[GET /api/users/operators] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      console.log(`[GET /api/users/operators] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}, CompanyId: ${user.companyId}, Company: ${user.company}`);
       
       // Solo admin y dueño pueden acceder
       if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
       }
       
-      let query = db.select().from(users).where(eq(users.role, 'chofer'));
+      // Construir condiciones de filtrado
+      const conditions = [eq(users.role, 'chofer')];
       
       // Filtrar por compañía según el rol del usuario
       if (user.role === UserRole.OWNER) {
         if (user.companyId) {
-          query = query.where(and(
-            eq(users.role, 'chofer'),
-            eq(users.companyId, user.companyId)
-          ));
+          conditions.push(eq(users.companyId, user.companyId));
         }
       } else if (user.role === UserRole.ADMIN) {
         const userCompany = user.companyId || user.company;
         if (userCompany) {
-          query = query.where(and(
-            eq(users.role, 'chofer'),
+          conditions.push(
             or(
               eq(users.companyId, userCompany),
               eq(users.company, userCompany)
             )
-          ));
+          );
         }
       }
+      
+      const query = db.select().from(users).where(and(...conditions));
       
       const operators = await query;
       console.log(`[GET /api/users/operators] Encontrados ${operators.length} operadores`);
