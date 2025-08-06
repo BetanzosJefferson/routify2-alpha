@@ -305,9 +305,43 @@ export default function OperatorTimelinePage() {
                   <div className="space-y-4">
                     {timelineData.trips
                       .sort((a, b) => {
-                        const dateA = a.tripData[0]?.departureDate || '';
-                        const dateB = b.tripData[0]?.departureDate || '';
-                        return new Date(dateA).getTime() - new Date(dateB).getTime();
+                        const segmentA = a.tripData[0];
+                        const segmentB = b.tripData[0];
+                        
+                        if (!segmentA || !segmentB) return 0;
+                        
+                        const dateA = segmentA.departureDate || '';
+                        const dateB = segmentB.departureDate || '';
+                        const timeA = segmentA.departureTime || '';
+                        const timeB = segmentB.departureTime || '';
+                        
+                        // Primero ordenar por fecha
+                        const dateDiff = new Date(dateA).getTime() - new Date(dateB).getTime();
+                        if (dateDiff !== 0) return dateDiff;
+                        
+                        // Si las fechas son iguales, ordenar por hora
+                        // Convertir formato 12h a 24h para comparar correctamente
+                        const convertTo24Hour = (time12h: string) => {
+                          const [time, modifier] = time12h.split(' ');
+                          if (!time || !modifier) return '';
+                          
+                          let [hours, minutes] = time.split(':');
+                          const hourNum = parseInt(hours, 10);
+                          const isPM = modifier.toLowerCase() === 'pm';
+                          
+                          if (isPM && hourNum !== 12) {
+                            hours = (hourNum + 12).toString();
+                          } else if (!isPM && hourNum === 12) {
+                            hours = '00';
+                          }
+                          
+                          return `${hours.padStart(2, '0')}:${minutes}`;
+                        };
+                        
+                        const time24A = convertTo24Hour(timeA);
+                        const time24B = convertTo24Hour(timeB);
+                        
+                        return time24A.localeCompare(time24B);
                       })
                       .map((trip) => {
                       const firstSegment = trip.tripData[0];
