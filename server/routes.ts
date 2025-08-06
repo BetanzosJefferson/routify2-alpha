@@ -9362,39 +9362,79 @@ function setupPackageRoutes(app: Express) {
 
       console.log(`[GET /operator-timeline] Consultando viajes para operador ${operatorId} desde ${startDate} hasta ${endDate}`);
 
-      // Consultar viajes asignados al operador
+      // Consultar viajes asignados al operador - simplificado para evitar errores SQL
       const trips = await db
         .select()
         .from(schema.trips)
-        .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
-        .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
-        .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
         .where(eq(schema.trips.driverId, parseInt(operatorId as string)))
         .orderBy(schema.trips.id);
+      
+      console.log(`[GET /operator-timeline] Encontrados ${trips.length} viajes totales para el operador ${operatorId}`);
+      
+      // Obtener datos adicionales por separado si es necesario
+      const tripsWithDetails = [];
+      for (const trip of trips) {
+        // Obtener conductor
+        let driver = null;
+        if (trip.driverId) {
+          const driverResult = await db
+            .select()
+            .from(schema.users)
+            .where(eq(schema.users.id, trip.driverId))
+            .limit(1);
+          driver = driverResult[0] || null;
+        }
+        
+        // Obtener ruta
+        let route = null;
+        if (trip.routeId) {
+          const routeResult = await db
+            .select()
+            .from(schema.routes)
+            .where(eq(schema.routes.id, trip.routeId))
+            .limit(1);
+          route = routeResult[0] || null;
+        }
+        
+        // Obtener vehículo
+        let vehicle = null;
+        if (trip.vehicleId) {
+          const vehicleResult = await db
+            .select()
+            .from(schema.vehicles)
+            .where(eq(schema.vehicles.id, trip.vehicleId))
+            .limit(1);
+          vehicle = vehicleResult[0] || null;
+        }
+        
+        tripsWithDetails.push({
+          trips: trip,
+          users: driver,
+          routes: route,
+          vehicles: vehicle
+        });
+      }
 
       // Filtrar por fechas usando JSON
-      const filteredTrips = trips.filter(trip => {
-        const tripData = trip.trips.tripData as any[];
-        if (!tripData || tripData.length === 0) return false;
-        
-        const departureDate = tripData[0]?.departureDate;
-        if (!departureDate) return false;
-        
-        return departureDate >= startDate && departureDate <= endDate;
+      const filteredTrips = tripsWithDetails.filter(trip => {
+        try {
+          const tripData = trip.trips.tripData as any[];
+          if (!tripData || tripData.length === 0) return false;
+          
+          const departureDate = tripData[0]?.departureDate;
+          if (!departureDate) return false;
+          
+          console.log(`[GET /operator-timeline] Viaje ${trip.trips.id} - Fecha: ${departureDate}, Rango: ${startDate} - ${endDate}`);
+          
+          return departureDate >= startDate && departureDate <= endDate;
+        } catch (e) {
+          console.log(`[GET /operator-timeline] Error filtrando viaje ${trip.trips.id}:`, e);
+          return false;
+        }
       });
 
-      // Consultar transacciones del operador en el mismo rango de fechas
-      const transactions = await db
-        .select()
-        .from(schema.transacciones)
-        .where(
-          and(
-            eq(schema.transacciones.userId, parseInt(operatorId as string)),
-            gte(schema.transacciones.createdAt, new Date(startDate as string)),
-            lte(schema.transacciones.createdAt, new Date(endDate as string))
-          )
-        )
-        .orderBy(schema.transacciones.createdAt);
+      // Transacciones deshabilitadas temporalmente
+      const transactions = [];
 
       // Formatear datos para el frontend
       const timelineData = {
@@ -9413,13 +9453,14 @@ function setupPackageRoutes(app: Express) {
           } : null,
           vehicle: trip.vehicles ? {
             id: trip.vehicles.id,
-            plates: trip.vehicles.plateNumber,
+            plates: trip.vehicles.plates,
             brand: trip.vehicles.brand,
             model: trip.vehicles.model,
             capacity: trip.vehicles.capacity,
             hasAC: trip.vehicles.hasAC,
             hasRecliningSeats: trip.vehicles.hasRecliningSeats,
-            services: trip.vehicles.services
+            services: trip.vehicles.services,
+            companyId: trip.vehicles.companyId
           } : null,
           driver: trip.users ? {
             id: trip.users.id,
@@ -9428,15 +9469,7 @@ function setupPackageRoutes(app: Express) {
             email: trip.users.email
           } : null
         })),
-        transactions: transactions.map(transaction => ({
-          id: transaction.id,
-          details: transaction.details,
-          user_id: transaction.userId,
-          cutoff_id: transaction.cutoffId,
-          createdAt: transaction.createdAt,
-          updatedAt: transaction.updatedAt,
-          companyId: transaction.companyId
-        }))
+        transactions: [] // Transacciones deshabilitadas temporalmente
       };
 
       console.log(`[GET /operator-timeline] Encontrados ${timelineData.trips.length} viajes y ${timelineData.transactions.length} transacciones`);
