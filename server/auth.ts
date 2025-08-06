@@ -4,9 +4,9 @@ import { Express, Request, Response, NextFunction } from "express";
 import { db } from "./db";
 import { 
   users, insertUserSchema, insertInvitationSchema, invitations, UserRole,
-  companies, insertCompanySchema, userCompanies
+  companies, insertCompanySchema, userCompanies, transacciones, trips
 } from "@shared/schema";
-import { eq, and, isNull, ne, or, inArray } from "drizzle-orm";
+import { eq, and, isNull, ne, or, inArray, sql, desc } from "drizzle-orm";
 import { add } from "date-fns";
 import { getAuthMiddleware } from "./auth-session";
 
@@ -222,32 +222,30 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
       // Buscar transacciones del operador en el rango de fechas
       const operatorTransactions = await db
         .select()
-        .from(transactions)
+        .from(transacciones)
         .where(
           and(
-            eq(transactions.userId, parseInt(operatorId as string)),
-            eq(transactions.companyId, user.companyId),
+            eq(transacciones.user_id, parseInt(operatorId as string)),
+            eq(transacciones.companyId, user.companyId),
             sql`created_at >= ${start.toISOString()}`,
             sql`created_at <= ${end.toISOString()}`
           )
         )
-        .orderBy(desc(transactions.createdAt));
+        .orderBy(desc(transacciones.createdAt));
 
       console.log(`[GET /api/operator-timeline] Encontradas ${operatorTransactions.length} transacciones`);
 
-      // Buscar viajes del operador en el rango de fechas
+      // Buscar viajes del operador en el rango de fechas  
+      // Nota: Los viajes almacenan la fecha en tripData JSON, no en columnas directas
       const operatorTrips = await db
         .select()
         .from(trips)
         .where(
           and(
             eq(trips.driverId, parseInt(operatorId as string)),
-            eq(trips.companyId, user.companyId),
-            sql`departure_date >= ${start.toISOString().split('T')[0]}`,
-            sql`departure_date <= ${end.toISOString().split('T')[0]}`
+            eq(trips.companyId, user.companyId)
           )
-        )
-        .orderBy(desc(trips.departureDate));
+        );
 
       console.log(`[GET /api/operator-timeline] Encontrados ${operatorTrips.length} viajes`);
 
