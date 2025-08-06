@@ -325,12 +325,18 @@ export function OperatorTimeline() {
                     </div>
                     {/* Total efectivo */}
                     <div className="text-center">
-                      <div className="text-xl font-bold text-green-600">${(timelineData.summary?.totalEfectivo || 0).toLocaleString()}</div>
+                      <div className="text-xl font-bold text-green-600">{(timelineData.summary?.totalEfectivo || 0).toLocaleString('es-MX', {
+                        style: 'currency',
+                        currency: 'MXN'
+                      })}</div>
                       <div className="text-xs text-gray-500">efectivo</div>
                     </div>
                     {/* Total transferencia */}
                     <div className="text-center">
-                      <div className="text-xl font-bold text-orange-600">${(timelineData.summary?.totalTransferencia || 0).toLocaleString()}</div>
+                      <div className="text-xl font-bold text-orange-600">{(timelineData.summary?.totalTransferencia || 0).toLocaleString('es-MX', {
+                        style: 'currency',
+                        currency: 'MXN'
+                      })}</div>
                       <div className="text-xs text-gray-500">transferencia</div>
                     </div>
                     {/* Total general */}

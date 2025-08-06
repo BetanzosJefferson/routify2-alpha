@@ -9377,45 +9377,77 @@ function setupPackageRoutes(app: Express) {
       
       // Convertir fechas considerando zona horaria
       // El frontend envía fechas en formato YYYY-MM-DD, necesitamos convertir a UTC correctamente
-      const startDateStr = startDate as string;
-      const endDateStr = endDate as string;
+      const startDateInput = startDate as string;
+      const endDateInput = endDate as string;
       
       // Crear fechas en UTC para el inicio y fin del día
-      const start = new Date(`${startDateStr}T00:00:00.000Z`);
-      const end = new Date(`${endDateStr}T23:59:59.999Z`);
+      const start = new Date(`${startDateInput}T00:00:00.000Z`);
+      const end = new Date(`${endDateInput}T23:59:59.999Z`);
       
-      console.log(`[GET /api/operator-timeline] Fechas recibidas: ${startDateStr} a ${endDateStr}`);
+      console.log(`[GET /api/operator-timeline] Fechas recibidas: ${startDateInput} a ${endDateInput}`);
       console.log(`[GET /api/operator-timeline] Buscando desde: ${start.toISOString()} hasta: ${end.toISOString()}`);
       
       // Obtener compañía del usuario para filtrado
       const userCompany = user.companyId || user.company;
       
       // Obtener viajes del operador en el rango de fechas
+      // IMPORTANTE: Los viajes usan campo JSON trip_data, no departureDate directo
       const operatorIdNum = parseInt(operatorId as string);
-      const tripConditions = [
-        eq(schema.trips.driverId, operatorIdNum),
-        gte(schema.trips.departureDate, start.toISOString().split('T')[0]),
-        lte(schema.trips.departureDate, end.toISOString().split('T')[0])
-      ];
+      
+      // Buscar viajes con SQL raw ya que necesitamos filtrar dentro del JSON
+      const startDateStr = start.toISOString().split('T')[0];
+      const endDateStr = end.toISOString().split('T')[0];
+      
+      console.log(`[GET /api/operator-timeline] Filtrando viajes del ${startDateStr} al ${endDateStr}`);
+      
+      // Obtener viajes usando consulta SQL directa para filtrar JSON
+      let tripsQuery = `
+        SELECT * FROM trips 
+        WHERE driver_id = $1
+        AND (
+          trip_data::text LIKE '%"departureDate":"${startDateStr}"%'
+      `;
+      
+      // Agregar fechas adicionales si el rango es más de un día
+      const startDateObj = new Date(startDateStr);
+      const endDateObj = new Date(endDateStr);
+      const daysDiff = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
+      
+      for (let i = 1; i <= daysDiff; i++) {
+        const currentDate = new Date(startDateObj);
+        currentDate.setDate(startDateObj.getDate() + i);
+        const dateStr = currentDate.toISOString().split('T')[0];
+        tripsQuery += ` OR trip_data::text LIKE '%"departureDate":"${dateStr}"%'`;
+      }
+      
+      tripsQuery += ')';
       
       // Agregar filtro de compañía si no es superadmin
       if (user.role !== UserRole.SUPER_ADMIN && userCompany) {
-        tripConditions.push(eq(schema.trips.companyId, userCompany));
+        tripsQuery += ` AND company_id = '${userCompany}'`;
       }
       
-      const trips = await db
-        .select()
-        .from(schema.trips)
-        .where(and(...tripConditions))
-        .orderBy(desc(schema.trips.departureDate));
+      tripsQuery += ' ORDER BY id DESC';
+      
+      console.log(`[GET /api/operator-timeline] Query de viajes: ${tripsQuery}`);
+      
+      const tripsResult = await db.execute(sql.raw(tripsQuery, [operatorIdNum]));
+      const trips = tripsResult.rows;
       
       console.log(`[GET /api/operator-timeline] Encontrados ${trips.length} viajes`);
       
       // Obtener transacciones del operador en el rango de fechas
+      // Ajustar para zona horaria de México (UTC-6)
+      const mexicoOffset = 6 * 60 * 60 * 1000; // 6 horas en milisegundos  
+      const startMexico = new Date(start.getTime() + mexicoOffset);
+      const endMexico = new Date(end.getTime() + mexicoOffset);
+      
+      console.log(`[GET /api/operator-timeline] Rango México - Desde: ${startMexico.toISOString()}, Hasta: ${endMexico.toISOString()}`);
+      
       const transactionConditions = [
         eq(schema.transacciones.user_id, operatorIdNum),
-        gte(schema.transacciones.createdAt, start),
-        lte(schema.transacciones.createdAt, end)
+        gte(schema.transacciones.createdAt, startMexico),
+        lte(schema.transacciones.createdAt, endMexico)
       ];
       
       // Agregar filtro de compañía para transacciones si no es superadmin
@@ -9423,7 +9455,7 @@ function setupPackageRoutes(app: Express) {
         transactionConditions.push(eq(schema.transacciones.companyId, userCompany));
       }
       
-      console.log(`[GET /api/operator-timeline] Condiciones de búsqueda de transacciones: usuario ${operatorIdNum}, desde ${start.toISOString()}, hasta ${end.toISOString()}`);
+      console.log(`[GET /api/operator-timeline] Condiciones de búsqueda de transacciones: usuario ${operatorIdNum}, desde ${startMexico.toISOString()}, hasta ${endMexico.toISOString()}`);
       
       const transactions = await db
         .select()
