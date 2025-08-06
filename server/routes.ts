@@ -9415,18 +9415,25 @@ function setupPackageRoutes(app: Express) {
         });
       }
 
-      // Filtrar por fechas usando comparación correcta
+      // Filtrar por fechas y solo incluir viajes principales
       const filteredTrips = tripsWithDetails.filter(trip => {
         try {
           const tripData = trip.trips.tripData as any[];
           if (!tripData || tripData.length === 0) return false;
+          
+          // Solo incluir viajes principales (isMainTrip: true)
+          const hasMainTrip = tripData.some(segment => segment.isMainTrip === true);
+          if (!hasMainTrip) {
+            console.log(`[GET /operator-timeline] Viaje ${trip.trips.id} - Excluido por ser sub-viaje`);
+            return false;
+          }
           
           const departureDate = tripData[0]?.departureDate;
           if (!departureDate) return false;
           
           // Usar comparación de strings directa para fechas en formato YYYY-MM-DD 
           // Esto evita problemas de zona horaria ya que todas las fechas están en el mismo formato
-          console.log(`[GET /operator-timeline] Viaje ${trip.trips.id} - Fecha: ${departureDate}, Rango: ${startDate} - ${endDate}`);
+          console.log(`[GET /operator-timeline] Viaje ${trip.trips.id} - Fecha: ${departureDate}, Rango: ${startDate} - ${endDate}, Es viaje principal: ${hasMainTrip}`);
           
           const isInRange = departureDate >= startDate && departureDate <= endDate;
           console.log(`[GET /operator-timeline] ¿En rango?: ${isInRange}`);
