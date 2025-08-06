@@ -9432,7 +9432,7 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /api/operator-timeline] Query de viajes corregido: ${tripsQuery}`);
       
       const tripsResult = await db.execute(sql.raw(tripsQuery, [operatorIdNum]));
-      const trips = tripsResult.rows;
+      const trips = tripsResult;
       
       console.log(`[GET /api/operator-timeline] Encontrados ${trips.length} viajes`);
       
