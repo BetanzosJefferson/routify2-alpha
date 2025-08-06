@@ -9374,6 +9374,7 @@ function setupPackageRoutes(app: Express) {
       }
       
       console.log(`[GET /api/operator-timeline] Usuario: ${user.firstName} ${user.lastName}, Operador: ${operatorId}, Rango: ${startDate} - ${endDate}`);
+      console.log(`[GET /api/operator-timeline] CÓDIGO CORREGIDO EJECUTÁNDOSE - Nueva lógica de fechas`);
       
       // Convertir fechas considerando zona horaria México (UTC-6)
       const startDateStr = startDate as string;
