@@ -9412,17 +9412,10 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /api/operator-timeline] Encontrados ${trips.length} viajes`);
       
       // Obtener transacciones del operador en el rango de fechas
-      // Ajustar para zona horaria de México (UTC-6)
-      const mexicoOffset = 6 * 60 * 60 * 1000; // 6 horas en milisegundos
-      const startMexico = new Date(start.getTime() + mexicoOffset);
-      const endMexico = new Date(end.getTime() + mexicoOffset);
-      
-      console.log(`[GET /api/operator-timeline] Rango México - Desde: ${startMexico.toISOString()}, Hasta: ${endMexico.toISOString()}`);
-      
       const transactionConditions = [
         eq(schema.transacciones.user_id, operatorIdNum),
-        gte(schema.transacciones.createdAt, startMexico),
-        lte(schema.transacciones.createdAt, endMexico)
+        gte(schema.transacciones.createdAt, start),
+        lte(schema.transacciones.createdAt, end)
       ];
       
       // Agregar filtro de compañía para transacciones si no es superadmin
@@ -9430,7 +9423,7 @@ function setupPackageRoutes(app: Express) {
         transactionConditions.push(eq(schema.transacciones.companyId, userCompany));
       }
       
-      console.log(`[GET /api/operator-timeline] Condiciones de búsqueda de transacciones: usuario ${operatorIdNum}, desde ${startMexico.toISOString()}, hasta ${endMexico.toISOString()}`);
+      console.log(`[GET /api/operator-timeline] Condiciones de búsqueda de transacciones: usuario ${operatorIdNum}, desde ${start.toISOString()}, hasta ${end.toISOString()}`);
       
       const transactions = await db
         .select()
