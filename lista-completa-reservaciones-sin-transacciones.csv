@@ -1,0 +1,788 @@
+ID_Reservacion,Monto,Usuario_Pagado_Por,Usuario_Creado_Por,Telefono,Email,Fecha_Creacion,Fecha_Marcado_Pagado,Metodo_Pago,Origen,Destino,Trip_ID,Asientos,Monto_Anticipo,Metodo_Pago_Anticipo,Notas,Estado,Company_ID
+10,450,7,7,"7471609064","Sin email",2025-07-10 19:12:53.274,2025-07-10 19:25:39.782,efectivo,"No especificado","No especificado",No especificado,1,100,efectivo,"",canceled,bamo-373009
+26,450,5,6,"5510313725","Sin email",2025-07-11 04:07:05.503,2025-07-11 04:52:21.331,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+29,0,19,6,"7712182721","Sin email",2025-07-11 04:15:45.195,2025-07-11 11:12:42.641,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"COPILOTO",confirmed,bamo-373009
+30,450,5,6,"7441816036","Sin email",2025-07-11 04:17:12.645,2025-07-11 05:25:15.946,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+31,450,5,6,"9241301946","Sin email",2025-07-11 04:19:02.351,2025-07-11 04:48:31.255,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+32,700,7,6,"5610601409","Sin email",2025-07-11 04:21:43.098,2025-07-11 05:17:14.694,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+35,450,5,6,"7202260486","Sin email",2025-07-11 04:39:26.126,2025-07-11 04:50:07.617,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+37,450,NULL,9,"7441247507","Sin email",2025-07-11 05:06:13.605,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+38,700,5,6,"5632856775","Sin email",2025-07-11 05:10:09.506,2025-07-11 05:43:54.057,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+42,450,11,4,"1234567788","Sin email",2025-07-11 14:29:30.907,2025-07-11 15:51:47.927,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+43,450,NULL,7,"9931041814","Sin email",2025-07-11 15:39:26.055,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+47,700,10,4,"5529947796","Sin email",2025-07-11 15:57:04.057,2025-07-11 16:12:52.791,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+50,450,NULL,14,"9931041814","Sin email",2025-07-11 16:02:50.843,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+51,900,NULL,11,"7441600768","Sin email",2025-07-11 16:10:15.838,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"",confirmed,bamo-373009
+53,350,11,3,"5617976146","Sin email",2025-07-11 16:24:17.086,2025-07-11 16:25:55.973,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+56,450,10,4,"56 3766 4652","Sin email",2025-07-11 17:14:49.242,2025-07-11 22:34:38.948,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asiento individual",confirmed,bamo-373009
+65,450,10,4,"5528286053","Sin email",2025-07-11 19:12:16.132,2025-07-15 23:01:19.793,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",canceledAndRefund,bamo-373009
+71,1350,10,4,"7421148767","Sin email",2025-07-11 21:07:22.645,2025-07-11 22:30:00.267,efectivo,"No especificado","No especificado",No especificado,1,600,efectivo,"",confirmed,bamo-373009
+74,450,19,6,"7444593903","Sin email",2025-07-11 22:22:52.358,2025-07-12 05:43:36.1,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asiento Copiloto",confirmed,bamo-373009
+79,3800,19,6,"6679524540","Sin email",2025-07-11 23:00:47.828,2025-07-12 05:46:19.278,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+80,450,NULL,14,"5643217052","Sin email",2025-07-11 23:15:35.548,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+85,900,NULL,6,"7442366596","Sin email",2025-07-12 02:13:28.516,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"",canceledAndRefund,bamo-373009
+88,620,19,6,"6679524540","Sin email",2025-07-12 02:21:37.076,2025-07-12 05:55:51.944,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+91,450,19,6,"7225467584","Sin email",2025-07-12 03:44:37.573,2025-07-12 05:48:12.364,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+92,450,16,16,"7441195753","Sin email",2025-07-12 03:48:23.308,2025-07-12 05:36:01.25,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Individual o atrás del chófer ya es adulto mayor",confirmed,bamo-373009
+93,450,16,16,"5564206722","Sin email",2025-07-12 03:48:27.781,2025-07-12 05:15:41.822,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+94,450,5,6,"2216564297","Sin email",2025-07-12 04:12:35.076,2025-07-13 04:16:00.806,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+98,450,5,6,"6643729701","Sin email",2025-07-12 04:57:46.066,2025-07-12 05:57:32.668,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+99,350,NULL,6,"5538942748","Sin email",2025-07-12 05:03:24.14,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"asiento individual",confirmed,bamo-373009
+102,1350,21,6,"5660482942","Sin email",2025-07-12 06:03:15.263,2025-07-12 16:05:26.786,efectivo,"No especificado","No especificado",No especificado,1,675,transferencia,"Detras de chofer",confirmed,bamo-373009
+103,450,21,6,"5513706533","Sin email",2025-07-12 06:06:34.742,2025-07-12 16:06:15.462,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+108,450,11,6,"5547992374","Sin email",2025-07-12 06:36:41.648,2025-07-12 15:55:45.03,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+111,1800,NULL,6,"5667518159","Sin email",2025-07-12 06:46:17.269,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"2da y tercer mancuerna",confirmed,bamo-373009
+113,450,11,6,"7443377192","Sin email",2025-07-12 14:22:46.227,2025-07-12 15:49:44.611,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+116,620,NULL,6,"6679524540","Sin email",2025-07-12 14:58:20.344,No marcado,efectivo,"No especificado","No especificado",No especificado,1,760,efectivo,"",confirmed,bamo-373009
+117,450,5,6,"5581031609","Sin email",2025-07-12 15:29:03.754,2025-07-13 04:04:22.839,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+118,1350,21,6,"5513816299","Sin email",2025-07-12 15:42:13.423,2025-07-12 23:23:30.391,transferencia,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+120,450,NULL,14,"5580662810","Sin email",2025-07-12 16:05:25.778,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+124,450,6,6,"5618661866","Sin email",2025-07-12 16:39:20.311,2025-07-12 16:53:11.528,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+133,450,NULL,6,"2711048983","Sin email",2025-07-12 20:49:41.525,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+136,450,21,6,"7445066733","Sin email",2025-07-12 21:09:07.661,2025-07-12 23:39:27.128,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+138,800,NULL,6,"7444593903","Sin email",2025-07-12 21:59:05.855,No marcado,efectivo,"No especificado","No especificado",No especificado,1,850,transferencia,"Copiloto",canceledAndRefund,bamo-373009
+139,800,5,6,"7444593903","Sin email",2025-07-12 22:12:43.725,2025-07-13 04:57:46.55,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asientos Copiloto",confirmed,bamo-373009
+145,400,21,6,"5616905683","Sin email",2025-07-12 22:30:22.449,2025-07-12 23:20:02.709,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+147,450,21,6,"7443321441","Sin email",2025-07-12 22:50:30.809,2025-07-12 23:41:11.743,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+148,450,NULL,14,"7441633983","Sin email",2025-07-12 22:59:29.135,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+149,450,NULL,14,"6241561422","Sin email",2025-07-12 23:26:26.813,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+151,450,5,14,"7201792335","Sin email",2025-07-13 01:13:02.052,2025-07-13 04:34:51.123,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+155,900,11,6,"5571312226","Sin email",2025-07-13 01:33:09.502,2025-07-13 16:06:07.854,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"3er mancuerna",confirmed,bamo-373009
+156,900,4,6,"5638982764","Sin email",2025-07-13 01:34:55.278,2025-07-13 17:56:02.881,transferencia,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+160,450,NULL,22,"+52 744 311 0070","Sin email",2025-07-13 02:05:06.055,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+164,700,11,6,"7711265195","Sin email",2025-07-13 02:27:06.263,2025-07-13 14:45:40.231,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"clientes Ivan",confirmed,bamo-373009
+166,450,6,6,"7441298561","Sin email",2025-07-13 02:36:39.007,2025-07-13 04:55:47.839,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+168,1600,4,6,"5667518159","Sin email",2025-07-13 02:44:13.393,2025-07-15 18:59:43.088,transferencia,"No especificado","No especificado",No especificado,1,1600,transferencia,"redondo Asientos juntos",confirmed,bamo-373009
+174,450,5,6,"7443188619","Sin email",2025-07-13 03:44:31.142,2025-07-13 04:44:24.137,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+184,1350,21,4,"5588127610","Sin email",2025-07-13 13:06:25.187,2025-07-13 15:37:08.776,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+188,400,11,4,"7443197363","Sin email",2025-07-13 15:46:27.808,2025-07-14 05:54:30.054,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+190,450,20,4,"7442981279","Sin email",2025-07-13 16:07:17.325,2025-07-14 00:14:13.67,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"sube en colegio militar",confirmed,bamo-373009
+191,450,21,4,"5578022452","Sin email",2025-07-13 16:53:53.884,2025-07-13 22:52:31.24,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+192,450,4,4,"7441808677","Sin email",2025-07-13 16:59:20.023,2025-07-13 18:35:11.98,efectivo,"No especificado","No especificado",No especificado,1,100,efectivo,"",confirmed,bamo-373009
+193,450,NULL,4,"5526764813","Sin email",2025-07-13 17:59:56.951,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+194,450,4,4,"1234567891","Sin email",2025-07-13 18:07:44.266,2025-07-13 19:04:13.679,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"sube en tuliman",confirmed,bamo-373009
+198,450,14,4,"7444473670","Sin email",2025-07-13 20:16:42.987,2025-07-14 04:19:04.8,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+201,400,11,4,"5532208772","Sin email",2025-07-13 21:12:13.358,2025-07-14 05:06:15.844,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"viaje redondo",confirmed,bamo-373009
+203,3800,NULL,4,"6679524540","Sin email",2025-07-13 21:22:03.769,No marcado,efectivo,"No especificado","No especificado",No especificado,1,3800,transferencia,"atras del chofer, todas las mancuernas e individuales",confirmed,bamo-373009
+204,1900,NULL,4,"6679524540","Sin email",2025-07-13 21:26:45.812,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1900,transferencia,"",confirmed,bamo-373009
+206,450,10,4,"5528297313","Sin email",2025-07-13 21:39:34.349,2025-07-14 15:40:08.743,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+207,450,11,4,"7442213985","Sin email",2025-07-13 21:49:06.761,2025-07-13 23:21:42.949,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+211,900,21,4,"7443110070","Sin email",2025-07-13 22:39:13.738,2025-07-13 22:40:46.377,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+213,450,NULL,14,"5610793543","Sin email",2025-07-13 22:56:03.942,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+215,1350,21,21,"7443383608","Sin email",2025-07-13 23:12:37.156,2025-07-13 23:15:07.606,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+217,450,19,4,"7445330001","Sin email",2025-07-13 23:20:24.371,2025-07-13 23:57:10.613,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+221,450,11,4,"5576881823","Sin email",2025-07-13 23:27:27.734,2025-07-14 15:35:02.624,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento atras del chofer, lleva 1 bebe",confirmed,bamo-373009
+225,1350,NULL,14,"5523381426","Sin email",2025-07-14 01:52:24.584,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1350,transferencia,"",confirmed,bamo-373009
+227,1350,11,14,"5534416362","Sin email",2025-07-14 02:45:47.967,2025-07-14 05:45:22.31,efectivo,"No especificado","No especificado",No especificado,1,700,efectivo,"",confirmed,bamo-373009
+228,450,NULL,4,"5514861714","Sin email",2025-07-14 04:00:46.467,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"1 individual",confirmed,bamo-373009
+229,450,NULL,4,"5633295946","Sin email",2025-07-14 04:02:16.64,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+236,450,11,4,"7444473670","Sin email",2025-07-14 04:44:46.717,2025-07-14 04:50:41.619,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+238,450,11,4,"5582551205","Sin email",2025-07-14 05:15:22.953,2025-07-14 15:58:24.161,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+240,350,10,4,"5529526255","Sin email",2025-07-14 13:05:24.84,2025-07-14 15:12:12.506,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"promocion",confirmed,bamo-373009
+241,450,10,4,"7472730246","Sin email",2025-07-14 14:44:56.491,2025-07-14 16:03:26.917,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+242,700,10,4,"5635707955","Sin email",2025-07-14 14:58:33.57,2025-07-14 16:05:11.513,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"promocion",confirmed,bamo-373009
+251,900,NULL,14,"5574948448","Sin email",2025-07-14 16:04:22.888,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+253,450,10,4,"5519231226","Sin email",2025-07-14 16:05:07.692,2025-07-14 17:52:17.854,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+254,450,10,4,"5552970780","Sin email",2025-07-14 16:06:02.37,2025-07-14 16:18:20.288,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+257,450,NULL,14,"5580034235","Sin email",2025-07-14 16:10:13.92,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+259,900,NULL,7,"7471585254","Sin email",2025-07-14 16:18:00.784,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"Pasajero de Zuri",confirmed,bamo-373009
+260,1800,NULL,7,"7441545253","Sin email",2025-07-14 16:19:29.065,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"Pasajeros de Zuri",confirmed,bamo-373009
+261,350,13,4,"7445370366","Sin email",2025-07-14 17:35:11.874,2025-07-15 05:27:27.782,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+266,1800,10,4,"5550641723","Sin email",2025-07-14 17:49:02.956,2025-07-17 15:47:01.974,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"asientos atras del chofer",confirmed,bamo-373009
+267,700,10,4,"7442297003","Sin email",2025-07-14 18:26:36.924,2025-07-14 23:19:19.999,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"promocion",confirmed,bamo-373009
+276,900,5,4,"5635569164","Sin email",2025-07-14 20:16:15.999,2025-07-15 05:53:28.132,transferencia,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+277,450,5,4,"7443412170","Sin email",2025-07-14 20:45:54.513,2025-07-15 05:28:09.015,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"segunda mancuerna",confirmed,bamo-373009
+280,600,10,6,"6311687387","Sin email",2025-07-14 22:13:23.959,2025-07-14 23:28:15.394,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"$150 de extra equipaje",confirmed,bamo-373009
+281,700,10,22,"5564970117","Sin email",2025-07-14 22:15:09.611,2025-07-14 23:34:39.397,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+290,450,13,6,"7441427206","Sin email",2025-07-14 23:03:02.082,2025-07-15 05:44:58.299,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Individual",confirmed,bamo-373009
+298,350,10,22,"5564970119","Sin email",2025-07-14 23:23:24.383,2025-07-14 23:37:59.547,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+303,350,10,22,"5618537926","Sin email",2025-07-15 00:12:07.609,2025-07-15 04:58:47.75,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+306,350,13,6,"5632464021","Sin email",2025-07-15 00:45:57.023,2025-07-15 05:57:24.493,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+307,1050,13,6,"5616157079","Sin email",2025-07-15 00:59:04.173,2025-07-15 05:43:08.688,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+310,450,5,6,"7444582845","Sin email",2025-07-15 03:37:28.159,2025-07-15 05:12:17.032,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+311,400,13,6,"7441653743","Sin email",2025-07-15 03:39:48.903,2025-07-15 05:30:11.738,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"lleva Gallos",confirmed,bamo-373009
+312,450,5,6,"5646446510","Sin email",2025-07-15 03:44:57.7,2025-07-18 22:59:49.672,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+313,350,13,6,"7444575209","Sin email",2025-07-15 03:54:36.934,2025-07-15 05:26:26.764,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+318,450,11,6,"7441877657","Sin email",2025-07-15 04:40:12.04,2025-07-15 15:48:33.978,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+320,450,NULL,14,"5530265672","Sin email",2025-07-15 04:55:28.505,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+324,1350,5,6,"7443510057","Sin email",2025-07-15 05:18:57.773,2025-07-15 23:23:09.514,efectivo,"No especificado","No especificado",No especificado,1,290,transferencia,"",confirmed,bamo-373009
+325,1800,NULL,14,"7441247395","Sin email",2025-07-15 05:44:38.438,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1800,efectivo,"",confirmed,bamo-373009
+326,450,NULL,14,"7446760578","Sin email",2025-07-15 06:00:28.221,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+327,450,7,6,"7563829323","Sin email",2025-07-15 06:06:57.493,2025-07-15 06:08:04.474,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+329,450,10,22,"5574564187","Sin email",2025-07-15 13:58:31.328,2025-07-15 16:10:16.956,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asiento individual,  viaja con una menor de 3 años",confirmed,bamo-373009
+331,450,10,22,"5511106801","Sin email",2025-07-15 15:40:21.836,2025-07-15 15:47:43.149,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+332,450,10,22,"3315542446","Sin email",2025-07-15 15:41:04.332,2025-07-15 15:49:27.167,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+333,450,NULL,16,"7421138322","Sin email",2025-07-15 16:02:09.062,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+334,350,NULL,22,"5528517305","Sin email",2025-07-15 16:27:28.199,No marcado,efectivo,"No especificado","No especificado",No especificado,1,350,efectivo,"De zury, pagado a zury",confirmed,bamo-373009
+339,450,10,16,"7441286184","Sin email",2025-07-15 17:07:50.052,2025-07-15 23:21:36.665,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Individual",confirmed,bamo-373009
+343,900,20,4,"5648891391","Sin email",2025-07-15 19:06:00.882,2025-07-16 05:59:30.302,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"segunda mancuerna",confirmed,bamo-373009
+344,1350,5,4,"9141295166","Sin email",2025-07-15 19:14:03.148,2025-07-16 05:34:53.624,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"lleva 2 niños",confirmed,bamo-373009
+345,450,5,4,"7445365739","Sin email",2025-07-15 19:28:04.391,2025-07-16 03:58:29.233,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+350,3150,NULL,4,"7445057407","Sin email",2025-07-15 20:37:38.361,No marcado,efectivo,"No especificado","No especificado",No especificado,1,3150,transferencia,"",confirmed,bamo-373009
+351,400,5,22,"5527040282","Sin email",2025-07-15 21:14:31.346,2025-07-15 23:16:38.778,efectivo,"No especificado","No especificado",No especificado,1,100,efectivo,"Viaje redondo",confirmed,bamo-373009
+352,450,9,6,"5615928372","Sin email",2025-07-15 21:58:30.657,2025-07-15 23:34:52.04,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"Anticipó con Zuri",confirmed,bamo-373009
+354,1400,11,6,"7443594315","Sin email",2025-07-15 22:06:14.849,2025-07-16 15:46:33.855,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"detras de chofer",confirmed,bamo-373009
+355,900,NULL,9,"7444583067","Sin email",2025-07-15 22:40:36.152,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"Atrás del chófer o mancuerna",confirmed,bamo-373009
+356,900,NULL,5,"7442413059","Sin email",2025-07-15 22:45:56.348,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+357,900,20,9,"5587641666","Sin email",2025-07-15 22:46:52.847,2025-07-16 00:22:18.31,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"El anticipo lo tiene Jose de turismo mega y voy a poner método de pago en efectivo ya que el cliente se le mando mensaje y no contesta",confirmed,bamo-373009
+359,450,NULL,9,"7443460601","Sin email",2025-07-15 22:51:46.591,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+360,450,NULL,9,"5548489920","Sin email",2025-07-15 23:03:04.317,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+361,1350,5,6,"7446778760","Sin email",2025-07-15 23:28:59.084,2025-07-16 22:49:07.639,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+363,450,20,6,"2463778556","Sin email",2025-07-16 00:42:19.037,2025-07-16 06:04:12.884,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+365,450,5,6,"7441802905","Sin email",2025-07-16 01:07:35.534,2025-07-17 05:35:05.297,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+368,450,11,14,"7442674323","Sin email",2025-07-16 01:34:24.827,2025-07-16 15:33:01.922,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Sube en la Diana cazadora",confirmed,bamo-373009
+372,1350,NULL,6,"7441317531","Sin email",2025-07-16 02:23:34.931,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1350,transferencia,"",confirmed,bamo-373009
+376,450,20,6,"7445319379","Sin email",2025-07-16 03:18:07.797,2025-07-16 05:57:05.302,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+378,800,11,6,"5616905683","Sin email",2025-07-16 04:24:30.434,2025-07-16 15:54:20.898,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"redondo",confirmed,bamo-373009
+383,400,NULL,6,"5562271809","Sin email",2025-07-16 05:20:50.203,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+386,800,20,6,"5562570134","Sin email",2025-07-16 06:22:16.49,2025-07-16 12:33:45.115,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"General Anaya",confirmed,bamo-373009
+387,850,10,6,"7441802905","Sin email",2025-07-16 06:41:06.447,2025-07-17 15:48:35.39,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"1 es redondo",confirmed,bamo-373009
+389,450,21,6,"7451165234","Sin email",2025-07-16 14:45:27.488,2025-07-16 16:00:28.884,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+390,450,19,6,"7441384461","Sin email",2025-07-16 14:55:10.671,2025-07-18 05:52:31.16,transferencia,"No especificado","No especificado",No especificado,1,200,transferencia,"copiloto ventana",confirmed,bamo-373009
+393,450,9,9,"5469782454","Sin email",2025-07-16 15:57:31.301,2025-07-16 16:20:47.252,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"Anticipo lo tiene zury",confirmed,bamo-373009
+394,900,10,6,"5549213097","Sin email",2025-07-16 16:00:40.258,2025-07-17 16:02:44.255,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+395,450,NULL,16,"7205644171","Sin email",2025-07-16 16:04:21.569,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+396,450,NULL,9,"5494646852","Sin email",2025-07-16 16:09:29.766,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+397,450,9,9,"5468079623","Sin email",2025-07-16 16:11:46.615,2025-07-16 16:24:26.836,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+400,450,21,16,"5636216823","Sin email",2025-07-16 17:09:55.493,2025-07-16 23:23:09.759,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+401,450,5,6,"7442679997","Sin email",2025-07-16 17:55:23.768,2025-07-16 23:07:45.441,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+403,800,9,6,"5588127610","Sin email",2025-07-16 18:07:54.995,2025-07-16 22:46:32.546,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"redondo",confirmed,bamo-373009
+409,450,NULL,11,"7735409060","Sin email",2025-07-16 19:58:16.991,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"INDIVIDUAL SEGUNDA MANCUERNA",canceledAndRefund,bamo-373009
+412,450,21,6,"6643729701","Sin email",2025-07-16 20:34:33.967,2025-07-16 22:57:24.889,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"lleva perro Individual 1",confirmed,bamo-373009
+413,450,21,6,"5520828262","Sin email",2025-07-16 20:39:45.141,2025-07-16 22:46:14.931,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+419,450,5,6,"7441633073","Sin email",2025-07-16 21:25:20.58,2025-07-18 22:58:45.673,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"detras de chofer va con Brisa",confirmed,bamo-373009
+424,400,21,6,"5566633597","Sin email",2025-07-16 22:11:30.449,2025-07-16 22:13:03.058,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+425,900,21,6,"5587685801","Sin email",2025-07-16 22:17:25.383,2025-07-16 22:50:49.046,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+428,900,21,21,"7442786654","Sin email",2025-07-16 22:41:06.667,2025-07-16 22:42:20.589,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",canceledAndRefund,bamo-373009
+448,450,6,6,"7446765866","Sin email",2025-07-17 06:00:44.558,2025-07-17 06:09:11.716,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",canceledAndRefund,bamo-373009
+450,900,10,4,"5571987583","Sin email",2025-07-17 13:48:57.011,2025-07-18 15:24:13.749,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+456,450,10,4,"9931525180","Sin email",2025-07-17 14:58:18.499,2025-07-17 15:47:31.364,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+462,700,10,4,"1234567891","Sin email",2025-07-17 16:57:27.486,2025-07-17 16:59:14.721,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"asientos atras del chofer   pasajero de zuri",confirmed,bamo-373009
+463,350,10,4,"1234567891","Sin email",2025-07-17 17:06:10.009,2025-07-17 21:57:54.367,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"pasajero de zuri",confirmed,bamo-373009
+469,900,5,16,"5636216823","Sin email",2025-07-17 18:51:09.979,2025-07-18 04:33:38.123,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"Mancuerna",confirmed,bamo-373009
+473,900,19,22,"5512302847","Sin email",2025-07-17 20:07:59.715,2025-07-18 05:48:51.502,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+475,450,5,4,"5569381478","Sin email",2025-07-17 20:38:20.414,2025-07-17 23:26:13.662,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+478,1050,10,4,"1234567891","Sin email",2025-07-17 21:51:36.963,2025-07-17 21:58:15.354,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+483,450,10,6,"7444738642","Sin email",2025-07-17 23:33:47.422,2025-07-17 23:37:49.151,efectivo,"No especificado","No especificado",No especificado,1,225,efectivo,"anticipó con jose",confirmed,bamo-373009
+485,1400,19,6,"7203936988","Sin email",2025-07-18 00:19:11.015,2025-07-18 05:47:54.944,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+486,450,19,6,"7443400005","Sin email",2025-07-18 00:21:02.007,2025-07-18 05:50:37.654,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"Individual",confirmed,bamo-373009
+487,450,5,6,"5645313805","Sin email",2025-07-18 00:22:41.269,2025-07-18 05:35:52.582,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+488,700,19,22,"7441335563","Sin email",2025-07-18 00:37:22.295,2025-07-18 19:02:10.047,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asientos copilotos",confirmed,bamo-373009
+491,800,19,6,"5534883517","Sin email",2025-07-18 01:56:13.596,2025-07-18 06:09:34.195,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"mancuerna",confirmed,bamo-373009
+495,450,19,6,"5569112884","Sin email",2025-07-18 02:23:36.751,2025-07-18 05:51:53.197,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+497,900,10,6,"7224583709","Sin email",2025-07-18 02:31:31.42,2025-07-18 15:46:54.008,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+499,450,NULL,16,"5658736476","Sin email",2025-07-18 04:30:19.569,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+502,450,10,4,"5578999413","Sin email",2025-07-18 13:31:33.981,2025-07-18 16:02:55.751,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+503,900,10,4,"7441868678","Sin email",2025-07-18 13:33:33.707,2025-07-18 15:55:38.037,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+504,450,21,4,"5522986575","Sin email",2025-07-18 14:49:21.846,2025-07-19 15:54:07.732,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento en ventana",confirmed,bamo-373009
+505,450,10,10,"5618661866","Sin email",2025-07-18 15:09:44.571,2025-07-18 16:17:54.795,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+506,450,NULL,4,"5535129465","Sin email",2025-07-18 16:13:34.917,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+508,450,9,4,"7671029970","Sin email",2025-07-18 16:46:59.119,2025-07-19 06:34:34.359,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+511,450,9,4,"5518422157","Sin email",2025-07-18 18:59:12.814,2025-07-18 20:16:10.531,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+512,700,10,4,"6121367548","Sin email",2025-07-18 19:09:34.138,2025-07-19 01:21:40.952,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asientos atras del operador",confirmed,bamo-373009
+516,450,NULL,16,"5620795750","Sin email",2025-07-18 20:03:31.132,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+522,450,5,22,"5641074142","Sin email",2025-07-18 21:20:14.029,2025-07-18 23:24:16.672,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+523,450,5,4,"5514575306","Sin email",2025-07-18 21:45:55.169,2025-07-18 22:35:16.725,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+524,450,5,4,"7202415952","Sin email",2025-07-18 21:47:25.224,2025-07-18 22:59:14.242,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+528,450,NULL,16,"5574047790","Sin email",2025-07-18 23:07:40.244,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+529,450,5,22,"5520467669","Sin email",2025-07-18 23:11:53.295,2025-07-18 23:24:57.838,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+531,800,NULL,9,"5620645193","Sin email",2025-07-18 23:37:49.922,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,efectivo,"Nos los pasó mega pero ellos son sus clientes y les dan precio de $800",confirmed,bamo-373009
+533,900,10,6,"7441913870","Sin email",2025-07-19 01:15:50.943,2025-07-19 01:41:55.879,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+534,450,10,6,"1234567890","Sin email",2025-07-19 01:24:29.752,2025-07-19 01:30:47.235,efectivo,"No especificado","No especificado",No especificado,1,250,transferencia,"anticipó con mega",confirmed,bamo-373009
+535,450,11,6,"7441772969","Sin email",2025-07-19 01:46:34.839,2025-07-20 19:28:18.848,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual, lleva gatito",confirmed,bamo-373009
+537,4400,26,6,"5554649474","Sin email",2025-07-19 02:40:27.426,2025-07-19 06:47:42.212,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"pasajeros Zuri, el anticipo lo tienen con mostacho, a nosotros se nos vendio de $400 c/u",confirmed,bamo-373009
+540,900,26,6,"5539231250","Sin email",2025-07-19 02:47:52.181,2025-07-19 06:51:46.1,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"pasajeros Zury",confirmed,bamo-373009
+545,2300,27,6,"6679524540","Sin email",2025-07-19 03:10:28.394,2025-07-19 18:16:06.713,efectivo,"No especificado","No especificado",No especificado,1,2000,transferencia,"pasajeros Agustin Castelan se le mando numero de Jonathan",confirmed,bamo-373009
+546,450,11,6,"5562903710","Sin email",2025-07-19 03:14:24.276,2025-07-19 19:53:51.781,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+548,800,27,6,"5638042397","Sin email",2025-07-19 03:16:37.711,2025-07-19 06:27:01.201,efectivo,"No especificado","No especificado",No especificado,1,300,transferencia,"pasajero zuri anticpó con. ella",confirmed,bamo-373009
+549,1350,26,6,"5513784682","Sin email",2025-07-19 03:26:48.314,2025-07-20 05:51:15.577,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+551,450,21,6,"6181244008","Sin email",2025-07-19 04:12:03.107,2025-07-19 16:29:52.421,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+554,900,26,6,"5545592656","Sin email",2025-07-19 04:27:34.295,2025-07-19 07:00:41.602,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+555,0,9,6,"5636216823","Sin email",2025-07-19 04:32:08.019,2025-07-19 06:20:14.99,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Detras de chofer",confirmed,bamo-373009
+560,450,26,3,"1234567890","Sin email",2025-07-19 07:03:56.866,2025-07-19 07:04:24.742,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+561,900,21,6,"7443458957","Sin email",2025-07-19 14:42:20.996,2025-07-19 16:15:17.655,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+563,450,21,6,"5537969195","Sin email",2025-07-19 14:49:05.383,2025-07-19 16:37:35.357,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+569,1600,11,6,"5550641723","Sin email",2025-07-19 15:22:59.12,2025-07-20 15:12:00.445,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"Detras de chofer, redondo",confirmed,bamo-373009
+571,450,21,6,"6611360341","Sin email",2025-07-19 15:33:43.873,2025-07-19 16:52:03.342,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"blablacar Nancy",confirmed,bamo-373009
+574,450,21,6,"6181244008","Sin email",2025-07-19 15:54:01.406,2025-07-19 16:51:29.816,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"va con pedro casimiro",confirmed,bamo-373009
+577,900,21,6,"9612031033","Sin email",2025-07-19 16:47:03.294,2025-07-19 16:49:42.89,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+578,1350,7,14,"6621237058","Sin email",2025-07-19 17:05:07.262,2025-07-19 23:18:04.696,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Abordan en la Diana cazadora",confirmed,bamo-373009
+580,450,11,6,"5535129465","Sin email",2025-07-19 17:11:15.143,2025-07-19 19:59:18.627,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+585,2400,NULL,14,"5510270467","Sin email",2025-07-19 18:56:34.8,No marcado,efectivo,"No especificado","No especificado",No especificado,1,2400,efectivo,"",confirmed,bamo-373009
+588,650,26,22,"5640956420","Sin email",2025-07-19 19:11:46.632,2025-07-20 05:48:33.542,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"Paga $200 más de extra equipaje en canastilla",confirmed,bamo-373009
+589,900,10,6,"9841427820","Sin email",2025-07-19 19:13:46.589,2025-07-22 15:20:23.403,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+590,450,11,14,"5528853853","Sin email",2025-07-19 19:17:25.389,2025-07-19 20:02:19.369,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+591,450,21,6,"9841199010","Sin email",2025-07-19 19:19:44.657,2025-08-02 16:21:48.639,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"fue otro pasajero el no llego",confirmed,bamo-373009
+594,450,26,6,"5551726149","Sin email",2025-07-19 19:27:34.434,2025-07-20 05:36:27.434,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+595,400,20,6,"7671029970","Sin email",2025-07-19 19:46:36.534,2025-07-21 05:31:00.61,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual, redondo",confirmed,bamo-373009
+596,450,NULL,14,"5579000116","Sin email",2025-07-19 19:52:53.68,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+600,900,11,6,"5519685478","Sin email",2025-07-19 22:10:20.286,2025-07-20 19:58:13.796,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+602,450,21,6,"7441816036","Sin email",2025-07-19 22:13:34.31,2025-07-19 22:48:49.861,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",canceledAndRefund,bamo-373009
+605,380,26,6,"5578434327","Sin email",2025-07-19 22:22:36.786,2025-07-20 05:36:48.627,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+606,900,NULL,14,"5643755201","Sin email",2025-07-19 22:29:07.216,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+608,450,26,6,"7441442038","Sin email",2025-07-19 22:34:34.503,2025-07-20 05:36:41.858,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+609,450,NULL,7,"5645545411","Sin email",2025-07-19 22:54:21.943,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceled,bamo-373009
+612,450,NULL,14,"5645545411","Sin email",2025-07-19 23:05:57.316,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+617,900,26,6,"5547867026","Sin email",2025-07-20 00:05:44.569,2025-07-20 05:38:23.368,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+626,2400,11,6,"1234567890","Sin email",2025-07-20 03:20:00.884,2025-07-20 20:02:01.968,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"pasajeros Hotel Magallanes pagados a la señora del Hotel",confirmed,bamo-373009
+628,1200,26,6,"5565110548","Sin email",2025-07-20 04:56:28.288,2025-07-20 05:36:51.101,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+629,400,20,6,"5569381478","Sin email",2025-07-20 04:59:12.308,2025-07-21 05:44:34.916,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"redondo",confirmed,bamo-373009
+631,450,21,6,"7411041962","Sin email",2025-07-20 15:00:00.876,2025-07-20 15:50:23.338,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+632,450,21,6,"5515758776","Sin email",2025-07-20 15:02:25.501,2025-07-20 15:34:57.809,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+633,450,11,6,"7446765866","Sin email",2025-07-20 15:09:50.774,2025-07-20 15:58:07.066,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+634,450,NULL,14,"5643052964","Sin email",2025-07-20 15:19:01.22,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+635,1350,NULL,14,"5630459011","Sin email",2025-07-20 15:33:37.744,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1350,efectivo,"",confirmed,bamo-373009
+637,800,11,6,"1234567890","Sin email",2025-07-20 15:44:22.903,2025-07-20 15:47:05.376,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"3er mancuerna",confirmed,bamo-373009
+640,450,21,6,"7203670926","Sin email",2025-07-20 15:53:00.415,2025-07-20 23:17:02.481,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+641,450,21,6,"5515758776","Sin email",2025-07-20 16:01:00.285,2025-07-20 16:08:02.621,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"mancuerna, perro de Miguel Angel",confirmed,bamo-373009
+642,1050,20,6,"7444154584","Sin email",2025-07-20 16:16:11.985,2025-07-21 05:24:10.495,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"detras de chofer",confirmed,bamo-373009
+644,450,11,14,"2219304245","Sin email",2025-07-20 17:20:01.506,2025-07-21 05:07:51.79,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+645,700,11,6,"5510265460","Sin email",2025-07-20 17:46:12.284,2025-07-20 22:47:53.949,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"tercera mancuerna",confirmed,bamo-373009
+648,1200,NULL,6,"5537247184","Sin email",2025-07-20 17:50:57.526,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"pasajero Zuri",canceledAndRefund,bamo-373009
+652,1200,NULL,6,"5537247184","Sin email",2025-07-20 18:08:20.095,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"",confirmed,bamo-373009
+653,450,11,6,"7445760566","Sin email",2025-07-20 18:16:04.432,2025-07-20 20:08:24.642,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+654,450,NULL,11,"5551495657","Sin email",2025-07-20 18:19:21.293,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+657,450,20,6,"5511874615","Sin email",2025-07-20 20:09:57.082,2025-07-21 05:50:38.058,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+658,450,11,6,"7441329395","Sin email",2025-07-20 20:14:18.034,2025-07-21 15:57:38.917,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+663,900,21,16,"5636216823","Sin email",2025-07-20 21:27:28.776,2025-07-20 22:11:10.16,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"Mancuerna",confirmed,bamo-373009
+665,900,21,6,"7442253367","Sin email",2025-07-20 22:20:11.973,2025-07-20 22:24:31.852,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+667,400,NULL,6,"5619567199","Sin email",2025-07-20 22:49:28.706,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+671,400,21,6,"3103125013","Sin email",2025-07-20 22:57:23.182,2025-07-20 23:19:59.705,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+672,350,21,6,"8713850370","Sin email",2025-07-20 23:10:59.048,2025-07-20 23:11:52.299,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+673,900,11,14,"5611186802","Sin email",2025-07-20 23:26:13.802,2025-07-21 05:46:12.644,transferencia,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+682,1350,28,6,"5512631683","Sin email",2025-07-21 00:37:10.823,2025-07-30 05:17:34.008,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+683,1050,20,6,"5630316298","Sin email",2025-07-21 00:39:06.953,2025-07-21 06:17:52.393,efectivo,"No especificado","No especificado",No especificado,1,500,transferencia,"2da mancuerna y 2do individual",confirmed,bamo-373009
+684,1200,NULL,6,"5530408861","Sin email",2025-07-21 02:06:43.333,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"zuri pasajeros",confirmed,bamo-373009
+686,900,11,6,"7442786654","Sin email",2025-07-21 02:36:28.965,2025-07-21 15:32:36.942,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+688,450,14,6,"5519799040","Sin email",2025-07-21 02:53:48.527,2025-07-21 06:13:50.436,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+689,700,13,6,"5565059570","Sin email",2025-07-21 02:57:49.029,2025-07-21 05:42:33.33,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+690,800,NULL,14,"5534883517","Sin email",2025-07-21 03:05:45.664,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,efectivo,"Asientos juntos en splinter",confirmed,bamo-373009
+691,450,20,6,"7442324346","Sin email",2025-07-21 03:06:48.871,2025-07-21 06:16:43.761,efectivo,"No especificado","No especificado",No especificado,1,350,transferencia,"",confirmed,bamo-373009
+692,450,11,6,"7442945554","Sin email",2025-07-21 03:10:13.853,2025-07-21 05:37:58.048,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+695,450,13,14,"7443172368","Sin email",2025-07-21 03:50:47.051,2025-07-21 05:30:37.486,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+700,0,13,6,"5636216823","Sin email",2025-07-21 04:33:23.137,2025-07-21 05:48:06.853,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+702,900,10,6,"5530171803","Sin email",2025-07-21 05:24:14.465,2025-07-21 15:45:32.554,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+703,700,13,6,"7441487160","Sin email",2025-07-21 05:30:04.303,2025-07-21 05:52:36.751,transferencia,"No especificado","No especificado",No especificado,1,300,transferencia,"detras de chofer",confirmed,bamo-373009
+704,800,13,6,"1234656789","Sin email",2025-07-21 05:37:17.359,2025-07-21 05:41:17.34,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+707,1350,20,6,"9681198907","Sin email",2025-07-21 06:05:57.694,2025-07-21 06:16:28.097,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"anticipo a zuri",confirmed,bamo-373009
+708,450,13,6,"5589620033","Sin email",2025-07-21 06:08:57.279,2025-07-21 06:10:33.332,efectivo,"No especificado","No especificado",No especificado,1,250,transferencia,"anticipo con Jose",confirmed,bamo-373009
+709,1200,10,6,"5540819630","Sin email",2025-07-21 07:03:58.401,2025-07-21 15:57:23.824,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"mancuerna y individual",confirmed,bamo-373009
+711,450,11,6,"5658505516","Sin email",2025-07-21 07:07:10.198,2025-07-21 15:57:15.518,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+712,450,11,6,"7445008427","Sin email",2025-07-21 07:08:46.892,2025-07-21 16:01:03.999,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+714,1200,10,6,"5585461975","Sin email",2025-07-21 14:28:48.189,2025-07-21 15:52:28.092,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+715,400,10,6,"5518525919","Sin email",2025-07-21 14:34:16.252,2025-07-21 15:29:57.574,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+716,1350,10,6,"8141114283","Sin email",2025-07-21 14:55:46.801,2025-07-21 15:35:03.757,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+717,1800,7,14,"5611112245","Sin email",2025-07-21 15:08:08.069,2025-07-21 15:53:25.396,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"Aborda en la Diana cazadora",confirmed,bamo-373009
+718,700,10,10,"5564971149","Sin email",2025-07-21 15:08:31.487,2025-07-21 15:38:52.639,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+720,450,11,11,"5524179890","Sin email",2025-07-21 16:59:19.941,2025-07-21 19:53:17.951,efectivo,"No especificado","No especificado",No especificado,1,225,transferencia,"",confirmed,bamo-373009
+723,4050,10,6,"5564654688","Sin email",2025-07-21 17:43:21.679,2025-07-22 16:02:16.636,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"",confirmed,bamo-373009
+725,450,8,6,"5562903710","Sin email",2025-07-21 17:52:28.28,2025-07-22 06:24:05.73,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+726,400,10,6,"7443587601","Sin email",2025-07-21 17:54:21.044,2025-07-21 20:23:23.905,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+734,450,5,22,"5514581622","Sin email",2025-07-21 18:42:15.917,2025-07-21 22:21:19.843,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+738,450,NULL,7,"5576849572","Sin email",2025-07-21 19:21:13.67,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+740,700,10,22,"9996035562","Sin email",2025-07-21 19:34:49.016,2025-07-21 19:38:37.414,efectivo,"No especificado","No especificado",No especificado,1,500,transferencia,"",confirmed,bamo-373009
+742,900,NULL,14,"7411657199","Sin email",2025-07-21 19:44:28.125,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+743,450,6,6,"7445310017","Sin email",2025-07-21 19:56:16.038,2025-07-23 03:32:40.482,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"detras de chofer",confirmed,bamo-373009
+745,450,NULL,14,"5657186445","Sin email",2025-07-21 20:12:06.1,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+746,450,10,6,"5588108100","Sin email",2025-07-21 20:17:16.218,2025-07-21 20:24:01.084,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+754,900,8,6,"5581056146","Sin email",2025-07-21 21:42:38.76,2025-07-22 06:25:30.129,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"detras de chofer",confirmed,bamo-373009
+755,900,5,6,"5565541586","Sin email",2025-07-21 21:48:16.659,2025-07-21 22:54:42.878,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+756,450,5,6,"5518507352","Sin email",2025-07-21 21:54:16.458,2025-07-21 22:25:18.003,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+759,450,NULL,6,"7443510057","Sin email",2025-07-21 22:04:33.993,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",canceledAndRefund,bamo-373009
+761,800,NULL,6,"5581056146","Sin email",2025-07-21 22:21:16.825,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"detras de chofer",canceledAndRefund,bamo-373009
+764,1400,8,22,"7441427100","Sin email",2025-07-22 00:00:26.476,2025-07-22 06:30:13.778,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+765,900,5,6,"7441238638","Sin email",2025-07-22 01:08:41.598,2025-07-23 04:46:07.468,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"2da mancuerna",confirmed,bamo-373009
+768,1100,8,6,"5971220402","Sin email",2025-07-22 01:33:53.873,2025-07-22 06:30:18.176,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"$200 de extra equipaje",confirmed,bamo-373009
+769,900,10,6,"5531111145","Sin email",2025-07-22 01:36:29.17,2025-07-23 15:51:07.976,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+775,450,11,6,"7443804782","Sin email",2025-07-22 02:01:58.288,2025-07-28 04:30:07.559,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+781,200,8,6,"7472749067","Sin email",2025-07-22 04:15:34.264,2025-07-22 06:22:02.626,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+782,850,8,6,"7445760566","Sin email",2025-07-22 05:33:18.662,2025-07-22 06:23:54.319,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"1 es redondo",confirmed,bamo-373009
+784,800,10,6,"5564163661","Sin email",2025-07-22 07:10:42.598,2025-07-22 15:22:21.104,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+786,1200,10,4,"5581860985","Sin email",2025-07-22 12:36:10.046,2025-07-22 15:41:38.001,efectivo,"No especificado","No especificado",No especificado,1,300,transferencia,"",confirmed,bamo-373009
+787,400,10,4,"5548245053","Sin email",2025-07-22 12:39:07.79,2025-07-22 15:55:25.29,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+788,800,10,4,"5548397577","Sin email",2025-07-22 12:41:30.185,2025-07-22 16:23:57.794,efectivo,"No especificado","No especificado",No especificado,1,350,transferencia,"",confirmed,bamo-373009
+789,450,10,4,"7441155083","Sin email",2025-07-22 12:43:36.231,2025-07-22 15:36:12.866,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+791,450,NULL,4,"5531369443","Sin email",2025-07-22 15:05:58.214,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+792,450,10,4,"7446797388","Sin email",2025-07-22 15:21:56.766,2025-07-22 23:01:31.296,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+797,900,10,4,"5620202903","Sin email",2025-07-22 15:50:29.266,2025-07-22 16:00:59.96,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+798,450,10,4,"5541089705","Sin email",2025-07-22 15:59:19.635,2025-07-22 16:03:34.827,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+803,450,13,4,"5517041751","Sin email",2025-07-22 17:44:24.465,2025-07-23 05:29:50.968,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+806,900,5,4,"7445369317","Sin email",2025-07-22 20:35:29.958,2025-07-23 05:42:23.118,efectivo,"No especificado","No especificado",No especificado,1,700,transferencia,"",confirmed,bamo-373009
+807,450,9,22,"7442729825","Sin email",2025-07-22 20:44:26.807,2025-07-23 05:51:54.889,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+808,900,10,4,"5542775698","Sin email",2025-07-22 21:07:55.31,2025-07-24 16:27:08.473,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+809,450,5,16,"5636216823","Sin email",2025-07-22 21:14:24.967,2025-07-22 22:37:47.72,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+812,1400,10,6,"1234567890","Sin email",2025-07-22 22:14:23.018,2025-07-23 03:55:42.251,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"pasajeros chilpo",confirmed,bamo-373009
+813,2000,10,6,"3441293380","Sin email",2025-07-22 22:26:21.441,2025-07-22 23:21:31.921,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+814,450,11,6,"7441305401","Sin email",2025-07-22 22:35:26.677,2025-07-25 14:55:05.372,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+816,900,10,6,"5576264306","Sin email",2025-07-22 22:55:37.228,2025-07-24 15:48:14.378,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+817,450,NULL,16,"5636216823","Sin email",2025-07-22 23:02:48.111,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+818,900,5,16,"7445062841","Sin email",2025-07-22 23:08:44.002,2025-07-23 03:16:26.665,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"3er mancuerna",confirmed,bamo-373009
+820,900,10,6,"5631066120","Sin email",2025-07-22 23:14:53.957,2025-07-22 23:18:40.974,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+823,450,10,6,"7472229287","Sin email",2025-07-22 23:32:14.767,2025-07-23 22:24:24.999,efectivo,"No especificado","No especificado",No especificado,1,300,transferencia,"",confirmed,bamo-373009
+825,450,10,6,"1234567890","Sin email",2025-07-22 23:37:01.282,2025-07-22 23:47:08.586,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+828,450,NULL,16,"7443911154","Sin email",2025-07-23 00:37:32.108,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"individual",confirmed,bamo-373009
+829,900,13,6,"5514710783","Sin email",2025-07-23 00:46:38.731,2025-07-23 05:35:26.105,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+831,450,13,16,"5636216823","Sin email",2025-07-23 01:30:53.961,2025-07-23 05:30:20.97,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"Individual",confirmed,bamo-373009
+832,800,NULL,6,"5581056146","Sin email",2025-07-23 01:39:27.055,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"redondo",canceled,bamo-373009
+835,1600,9,6,"7293433541","Sin email",2025-07-23 02:10:06.055,2025-07-23 06:02:46.266,transferencia,"No especificado","No especificado",No especificado,1,400,transferencia,"DETRAS DE CHOFER Y 2DA MANCUERNA",confirmed,bamo-373009
+838,450,5,6,"7441069800","Sin email",2025-07-23 02:49:41.1,2025-07-23 05:00:21.24,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+839,400,5,6,"5530542898","Sin email",2025-07-23 02:51:23.652,2025-07-23 06:03:21.007,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"redondo",confirmed,bamo-373009
+842,450,NULL,16,"5636216823","Sin email",2025-07-23 03:02:09.166,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+843,450,NULL,6,"5534999569","Sin email",2025-07-23 03:06:01.701,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+850,450,13,22,"7475172196","Sin email",2025-07-23 05:22:46.413,2025-07-23 05:31:01.806,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+852,900,10,6,"3331416458","Sin email",2025-07-23 05:27:24.287,2025-07-23 16:00:29.14,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+854,450,5,6,"7444393970","Sin email",2025-07-23 05:42:45.172,2025-07-23 05:46:30.16,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+856,900,13,4,"5613975882","Sin email",2025-07-23 15:14:39.806,2025-07-24 05:41:10.804,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",canceledAndRefund,bamo-373009
+857,800,10,4,"5536438466","Sin email",2025-07-23 15:16:56.541,2025-07-23 16:02:24.475,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+862,450,10,4,"5545080184","Sin email",2025-07-23 15:54:44.282,2025-07-23 15:56:53.875,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+864,500,NULL,10,"5578741121","Sin email",2025-07-23 16:46:17.577,No marcado,efectivo,"No especificado","No especificado",No especificado,1,500,efectivo,"Eran pasajeros de mostacho quedaron de pagar el resto en el camino",confirmed,bamo-373009
+865,450,10,4,"5572286315","Sin email",2025-07-23 16:50:02.808,2025-07-23 23:03:02.292,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+868,900,21,4,"5522990495","Sin email",2025-07-23 17:32:59.687,2025-07-25 16:03:44.323,transferencia,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+869,450,NULL,4,"7441288463","Sin email",2025-07-23 17:38:54.203,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"asiento atras de operador",confirmed,bamo-373009
+870,900,NULL,4,"7441288463","Sin email",2025-07-23 17:40:01.599,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"asientos copiloto",confirmed,bamo-373009
+871,4050,5,4,"5585590589","Sin email",2025-07-23 17:46:48.909,2025-07-25 05:31:38.576,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"",confirmed,bamo-373009
+873,900,10,4,"7445369317","Sin email",2025-07-23 18:03:51.101,2025-07-23 21:41:22.448,efectivo,"No especificado","No especificado",No especificado,1,700,transferencia,"",confirmed,bamo-373009
+874,450,13,22,"7443329583","Sin email",2025-07-23 18:43:59.917,2025-07-24 05:40:52.459,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",canceledAndRefund,bamo-373009
+875,900,NULL,16,"5636216823","Sin email",2025-07-23 18:44:10.115,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"Mancuerna",confirmed,bamo-373009
+882,400,16,4,"5528570620","Sin email",2025-07-23 20:14:53.847,2025-07-23 22:56:15.572,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+883,400,10,4,"7441766864","Sin email",2025-07-23 20:16:11.79,2025-07-23 23:04:39.471,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+884,400,11,4,"5520285868","Sin email",2025-07-23 22:19:41.05,2025-07-23 22:57:49.232,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+885,450,NULL,16,"9222850163","Sin email",2025-07-23 22:38:15.737,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+889,800,13,4,"7441238638","Sin email",2025-07-23 22:59:29.192,2025-07-24 05:40:00.768,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"viaje redondo",canceledAndRefund,bamo-373009
+890,900,20,4,"5528427140","Sin email",2025-07-23 23:31:03.751,2025-07-26 05:27:19.234,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+893,450,9,16,"5616416215","Sin email",2025-07-24 00:23:04.27,2025-07-24 05:53:52.795,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"Asiento individual",confirmed,bamo-373009
+894,450,10,4,"7445310017","Sin email",2025-07-24 01:07:54.849,2025-07-24 22:26:44.51,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"viaje redondo",confirmed,bamo-373009
+895,850,NULL,4,"7443494105","Sin email",2025-07-24 01:31:19.886,No marcado,efectivo,"No especificado","No especificado",No especificado,1,850,transferencia,"viaje redondo",confirmed,bamo-373009
+897,450,10,22,"5951011446","Sin email",2025-07-24 02:26:35.729,2025-07-24 16:13:46.507,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+903,450,11,4,"7441377850","Sin email",2025-07-24 04:02:43.167,2025-07-24 15:45:58.216,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+908,900,21,4,"4494756534","Sin email",2025-07-24 05:27:13.163,2025-07-27 15:30:05.269,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"asientos atras del operador",confirmed,bamo-373009
+909,450,10,4,"5525046764","Sin email",2025-07-24 05:55:24.567,2025-07-24 15:48:48.494,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+912,450,10,10,"7441128685","Sin email",2025-07-24 15:52:02.638,2025-07-24 15:52:49.077,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+914,450,NULL,16,"5548646295","Sin email",2025-07-24 16:20:54.328,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+915,450,NULL,16,"7712141547","Sin email",2025-07-24 16:33:04.705,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",canceledAndRefund,bamo-373009
+918,450,NULL,16,"5636216823","Sin email",2025-07-24 17:06:56.763,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+919,1350,11,4,"7443709225","Sin email",2025-07-24 17:11:39.274,2025-07-28 15:20:16.154,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+926,450,10,10,"5662044506","Sin email",2025-07-24 22:09:46.551,2025-07-24 22:16:28.227,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+927,800,10,4,"5529196399","Sin email",2025-07-24 22:21:34.722,2025-07-24 23:10:43.165,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+928,450,10,10,"5611277116","Sin email",2025-07-24 22:25:20.015,2025-07-24 22:28:07.52,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+930,350,10,10,"5524068815","Sin email",2025-07-24 23:02:12.175,2025-07-24 23:02:45.234,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+931,1350,NULL,16,"5545705991","Sin email",2025-07-24 23:03:58.868,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1350,efectivo,"Mancuerna y individual",confirmed,bamo-373009
+932,400,9,9,"3223517336","Sin email",2025-07-24 23:07:34.82,2025-07-24 23:30:40.854,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"El anticipo lo tiene zury",confirmed,bamo-373009
+933,800,NULL,9,"5620202903","Sin email",2025-07-24 23:12:24.247,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,efectivo,"Viaje redondo lo paso zury",confirmed,bamo-373009
+936,1750,NULL,4,"5553375634","Sin email",2025-07-24 23:29:16.193,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1750,transferencia,"pasajeros Jose pendiente de pago",confirmed,bamo-373009
+937,400,NULL,9,"3121546793","Sin email",2025-07-24 23:42:20.652,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"Me lo paso Ibarra $400",confirmed,bamo-373009
+938,450,21,4,"5511478154","Sin email",2025-07-24 23:53:21.354,2025-07-26 15:19:46.685,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+941,3600,11,4,"5564654688","Sin email",2025-07-25 00:03:26.518,2025-07-25 15:34:52.138,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"redondo",confirmed,bamo-373009
+942,900,21,6,"7443761284","Sin email",2025-07-25 00:07:02.144,2025-07-25 19:11:42.242,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+944,1350,21,6,"5631178727","Sin email",2025-07-25 00:31:39.846,2025-07-26 15:34:42.347,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"detras de chofer e individual",confirmed,bamo-373009
+945,450,11,22,"7441579906","Sin email",2025-07-25 00:42:00.861,2025-07-25 15:47:52.94,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+946,450,21,6,"7445343098","Sin email",2025-07-25 00:45:19.087,2025-07-25 15:39:55.803,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"lleva Bebe",confirmed,bamo-373009
+947,450,5,6,"7443594315","Sin email",2025-07-25 02:13:56.436,2025-07-25 05:29:55.012,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+949,450,19,6,"7449098014","Sin email",2025-07-25 02:40:41.172,2025-07-25 05:35:35.961,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+950,450,19,6,"5562297850","Sin email",2025-07-25 02:42:39.974,2025-07-25 05:11:25.848,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+951,1350,19,22,"5549120858","Sin email",2025-07-25 04:37:30.175,2025-07-25 05:14:41.808,efectivo,"No especificado","No especificado",No especificado,1,300,transferencia,"",confirmed,bamo-373009
+952,400,NULL,6,"7441850280","Sin email",2025-07-25 04:41:14.827,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"segundo individual",confirmed,bamo-373009
+956,450,10,4,"5584902920","Sin email",2025-07-25 14:37:33.382,2025-07-25 22:45:07.476,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+960,450,5,4,"7441035657","Sin email",2025-07-25 15:29:44.196,2025-07-25 22:47:57.986,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+961,1350,21,4,"5539318463","Sin email",2025-07-25 15:46:23.531,2025-07-25 15:56:57.653,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+963,450,5,4,"7447024945","Sin email",2025-07-25 15:52:39.161,2025-07-25 23:17:23.759,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+966,450,NULL,4,"7441288463","Sin email",2025-07-25 16:56:30.479,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"copiloto",canceledAndRefund,bamo-373009
+967,450,10,4,"7442936734","Sin email",2025-07-25 17:21:33.092,2025-07-25 22:59:15.927,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+968,900,5,4,"5660482942","Sin email",2025-07-25 17:32:22.897,2025-07-25 22:47:07.399,transferencia,"No especificado","No especificado",No especificado,1,450,transferencia,"segunda mancuerna",confirmed,bamo-373009
+971,1600,21,4,"5519674002","Sin email",2025-07-25 17:49:12.27,2025-07-25 19:39:52.523,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"viaje redondo",confirmed,bamo-373009
+976,400,20,4,"5657674385","Sin email",2025-07-25 19:07:37.126,2025-07-26 05:56:31.656,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Lugar individual al lado de la puerta",confirmed,bamo-373009
+977,1200,NULL,4,"5528201376","Sin email",2025-07-25 19:16:59.587,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"los 3 asientos de la primera fila y el primer individual",canceledAndRefund,bamo-373009
+980,900,20,4,"7444393970","Sin email",2025-07-25 20:42:44.136,2025-07-26 05:28:27.56,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+981,450,20,22,"5618277570","Sin email",2025-07-25 21:18:34.837,2025-07-26 05:25:59.79,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+989,2250,10,6,"5614287125","Sin email",2025-07-25 23:20:47.478,2025-07-28 16:07:12.594,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"",canceledAndRefund,bamo-373009
+990,2250,10,6,"5614287125","Sin email",2025-07-25 23:42:57.568,2025-07-28 16:20:59.58,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"",confirmed,bamo-373009
+992,450,20,6,"7441946627","Sin email",2025-07-26 02:50:11.655,2025-07-26 05:26:26.68,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+993,450,7,6,"5519850780","Sin email",2025-07-26 02:52:15.298,2025-07-26 22:46:35.187,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+994,1350,10,6,"5614287125","Sin email",2025-07-26 02:54:24.7,2025-07-28 16:06:43.831,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"van con el grupo de 5",confirmed,bamo-373009
+996,900,5,22,"5514955363","Sin email",2025-07-26 03:08:17.609,2025-07-26 05:02:51.947,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+997,400,NULL,16,"5623436362","Sin email",2025-07-26 03:08:22.482,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+1000,450,9,6,"7442566437","Sin email",2025-07-26 03:55:19.208,2025-07-26 05:55:14.554,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1001,900,5,22,"5514955363","Sin email",2025-07-26 03:59:02.696,2025-07-26 05:03:01.327,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1004,3040,20,6,"5645598163","Sin email",2025-07-26 05:06:35.172,2025-07-26 05:33:46.823,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"$380 cada uno unicamente hasta Costera",confirmed,bamo-373009
+1005,900,NULL,16,"5636216823","Sin email",2025-07-26 05:51:04.84,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+1006,450,NULL,16,"5636216823","Sin email",2025-07-26 05:51:07.517,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1007,0,21,6,"1234567890","Sin email",2025-07-26 06:05:42.986,2025-07-26 15:49:44.407,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"copiloto",confirmed,bamo-373009
+1009,450,7,6,"5612720972","Sin email",2025-07-26 06:11:16.749,2025-07-26 23:15:46.739,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1010,450,7,6,"5568854484","Sin email",2025-07-26 14:51:59.868,2025-07-26 16:01:38.974,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1011,800,21,6,"4611126308","Sin email",2025-07-26 14:57:29.832,2025-07-26 15:54:00.487,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1015,450,NULL,14,"5545876007","Sin email",2025-07-26 16:10:00.524,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1018,450,NULL,14,"5616703080","Sin email",2025-07-26 16:31:28.92,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1019,450,21,6,"5573584905","Sin email",2025-07-26 16:34:33.332,2025-07-26 22:51:34.01,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1020,450,21,6,"5523771062","Sin email",2025-07-26 16:36:14.488,2025-07-27 15:31:07.165,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1021,450,21,6,"5621455750","Sin email",2025-07-26 16:37:37.493,2025-07-26 23:28:55.815,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1022,450,6,6,"5611229520","Sin email",2025-07-26 17:48:03.764,2025-07-27 06:30:32.622,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1023,350,21,6,"7442077411","Sin email",2025-07-26 17:51:02.908,2025-07-26 23:04:22.284,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"se le hizo descuento por cambio de horario",confirmed,bamo-373009
+1030,450,11,6,"5543203448","Sin email",2025-07-26 18:58:21.136,2025-07-27 15:35:09.824,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1032,900,20,6,"5515335005","Sin email",2025-07-26 19:06:14.797,2025-07-27 05:30:13.242,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1034,450,NULL,14,"3346549090","Sin email",2025-07-26 19:20:20.476,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1035,1350,11,6,"3325212026","Sin email",2025-07-26 19:29:49.812,2025-07-27 15:54:13.247,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1039,450,NULL,14,"7443542180","Sin email",2025-07-26 20:09:33.22,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1042,1050,5,6,"5630316298","Sin email",2025-07-26 20:30:37.508,2025-07-27 05:53:22.333,efectivo,"No especificado","No especificado",No especificado,1,500,transferencia,"2da mancuerna",confirmed,bamo-373009
+1043,0,28,6,"1234567890","Sin email",2025-07-26 20:49:16.829,2025-07-26 22:21:04.964,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"copiloto",confirmed,bamo-373009
+1045,450,21,6,"7443263062","Sin email",2025-07-26 21:42:25.814,2025-07-26 23:04:18.738,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1050,1200,7,6,"1234567890","Sin email",2025-07-26 22:11:07.235,2025-07-26 23:04:52.403,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"Zuri",confirmed,bamo-373009
+1055,900,20,6,"6674522714","Sin email",2025-07-26 23:09:54.241,2025-07-27 05:31:19.171,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1056,900,5,6,"7442251787","Sin email",2025-07-27 00:18:32.555,2025-07-27 05:48:28.8,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1060,800,20,6,"7442244203","Sin email",2025-07-27 02:33:20.033,2025-07-27 05:28:13.389,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1061,450,5,6,"5552486203","Sin email",2025-07-27 02:39:02.168,2025-07-27 06:09:28.446,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1062,450,20,6,"5655058648","Sin email",2025-07-27 02:41:21.952,2025-07-27 05:31:48.913,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1064,1350,20,6,"5636284473","Sin email",2025-07-27 02:45:11.886,2025-07-27 06:03:51.313,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1065,450,5,14,"7295892851","Sin email",2025-07-27 02:46:16.9,2025-07-27 05:43:55.404,efectivo,"No especificado","No especificado",No especificado,1,250,efectivo,"",confirmed,bamo-373009
+1067,450,20,6,"7442731644","Sin email",2025-07-27 03:08:21,2025-07-27 05:33:30.054,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1068,450,20,6,"7442731644","Sin email",2025-07-27 03:14:11.272,2025-07-27 05:36:24.586,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1072,450,21,6,"7441877657","Sin email",2025-07-27 03:36:18.264,2025-07-27 15:28:47.304,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1075,900,20,6,"1234567890","Sin email",2025-07-27 05:11:20.502,2025-07-27 05:37:22.775,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1076,450,20,6,"1234567890","Sin email",2025-07-27 05:30:37.997,2025-07-27 06:04:02.509,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1077,1200,NULL,6,"5528201376","Sin email",2025-07-27 05:58:38.267,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"2 asientos detras de chofer y 2 en 2da mancuerna",canceledAndRefund,bamo-373009
+1078,1200,NULL,6,"5528201376","Sin email",2025-07-27 05:59:55.749,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"2 asientos detras de chofer y 2 en 2da mancuerna",confirmed,bamo-373009
+1081,450,11,6,"7445312100","Sin email",2025-07-27 14:14:46.453,2025-07-27 15:35:35.136,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1082,450,11,6,"5514759766","Sin email",2025-07-27 14:18:23.25,2025-07-27 15:46:20.357,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+1083,400,11,6,"5587990052","Sin email",2025-07-27 14:19:58.186,2025-07-27 15:59:35.505,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1084,900,21,22,"5510603195","Sin email",2025-07-27 15:49:36.549,2025-07-27 19:23:51.988,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Segundo asiento individual y el lugar del lado del pasillo de la tercera mancuerna",confirmed,bamo-373009
+1088,450,11,4,"5618727599","Sin email",2025-07-27 16:13:14.003,2025-07-27 22:39:28.755,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+1092,450,11,4,"7443488806","Sin email",2025-07-27 16:36:20.812,2025-07-28 05:53:11.144,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"aborda en hotel magallanes",confirmed,bamo-373009
+1097,450,NULL,4,"5551997998","Sin email",2025-07-27 17:23:38.065,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",canceledAndRefund,bamo-373009
+1098,450,NULL,4,"5551997998","Sin email",2025-07-27 17:25:16.184,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1100,350,28,4,"5522498876","Sin email",2025-07-27 17:46:15.243,2025-07-28 06:04:08.178,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"atrás del conductor",confirmed,bamo-373009
+1101,350,21,4,"7443443724","Sin email",2025-07-27 17:53:13.977,2025-07-27 19:39:17.379,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1106,450,11,4,"7441747579","Sin email",2025-07-27 19:17:37.261,2025-07-27 22:44:09.99,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+1107,450,NULL,4,"5542201208","Sin email",2025-07-27 19:20:09.351,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1108,350,21,4,"5660755002","Sin email",2025-07-27 19:45:49.045,2025-07-27 23:37:43.942,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1109,1350,11,4,"5539318463","Sin email",2025-07-27 19:48:32.617,2025-07-28 16:01:14.16,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1112,450,7,14,"5551081012","Sin email",2025-07-27 20:42:12.465,2025-07-27 22:59:04.978,efectivo,"No especificado","No especificado",No especificado,1,300,efectivo,"Sube en La Diana",confirmed,bamo-373009
+1114,450,NULL,11,"5562066336","Sin email",2025-07-27 21:43:45.809,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1116,1200,21,4,"7441766864","Sin email",2025-07-27 22:01:08.301,2025-07-27 23:36:44.794,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1117,400,11,4,"2202202429","Sin email",2025-07-27 22:03:24.455,2025-07-27 22:56:52.36,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"VIAJE REDONDO",confirmed,bamo-373009
+1118,400,28,22,"7441579906","Sin email",2025-07-27 22:04:24.533,2025-07-28 06:30:46.407,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Viaje redondo",confirmed,bamo-373009
+1119,900,21,22,"7444472915","Sin email",2025-07-27 22:21:31.203,2025-07-27 23:41:10.388,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1120,450,11,4,"5662044506","Sin email",2025-07-27 22:53:28.765,2025-07-28 05:19:25.272,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1124,1200,11,4,"6681166240","Sin email",2025-07-27 23:18:54.208,2025-07-28 05:48:30.396,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"segunda mancuerna y 1 individual",confirmed,bamo-373009
+1128,400,21,4,"7441386957","Sin email",2025-07-28 00:07:57.286,2025-07-28 00:17:12.437,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1132,450,NULL,14,"5523551584","Sin email",2025-07-28 01:32:21.46,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1136,800,11,4,"7711265195","Sin email",2025-07-28 02:28:29.644,2025-07-28 02:45:57.329,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"segunda mancuerna",confirmed,bamo-373009
+1143,1800,11,4,"5513784682","Sin email",2025-07-28 03:20:31.972,2025-07-28 06:34:20.57,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"",confirmed,bamo-373009
+1144,450,NULL,14,"5548156287","Sin email",2025-07-28 03:21:56.659,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1147,900,NULL,4,"5637700262","Sin email",2025-07-28 03:57:23.141,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"",canceledAndRefund,bamo-373009
+1148,900,10,4,"5547838218","Sin email",2025-07-28 04:20:16.062,2025-07-28 15:28:32.725,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1150,350,NULL,4,"5612703751","Sin email",2025-07-28 04:26:24.222,No marcado,efectivo,"No especificado","No especificado",No especificado,1,350,transferencia,"",confirmed,bamo-373009
+1152,1200,NULL,14,"7441640789","Sin email",2025-07-28 04:58:33.587,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,efectivo,"3 pasajeros de Zuri",confirmed,bamo-373009
+1153,400,NULL,4,"7441014190","Sin email",2025-07-28 05:28:40.026,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"copiloto",confirmed,bamo-373009
+1155,350,28,4,"1234567891","Sin email",2025-07-28 06:15:10.328,2025-07-28 06:20:06.572,efectivo,"No especificado","No especificado",No especificado,1,50,transferencia,"",canceledAndRefund,bamo-373009
+1156,350,28,4,"1234567891","Sin email",2025-07-28 06:20:43.605,2025-07-28 06:23:16.404,efectivo,"No especificado","No especificado",No especificado,1,50,transferencia,"",confirmed,bamo-373009
+1160,450,7,16,"5636216823","Sin email",2025-07-28 06:44:30.106,2025-07-28 15:47:51.359,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"Individual",confirmed,bamo-373009
+1162,700,19,4,"5647542644","Sin email",2025-07-28 12:44:15.877,2025-07-28 14:51:02.445,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1163,450,10,4,"5511211605","Sin email",2025-07-28 12:47:40.219,2025-07-29 16:07:15.12,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"atras del operador",confirmed,bamo-373009
+1164,900,11,4,"5528616877","Sin email",2025-07-28 12:57:30.353,2025-07-28 15:54:08.397,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1168,350,10,4,"7443488806","Sin email",2025-07-28 15:23:05.279,2025-07-28 23:13:46.374,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1169,450,10,4,"5631461378","Sin email",2025-07-28 15:25:57.727,2025-07-29 15:49:31.939,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1172,900,NULL,14,"5529293178","Sin email",2025-07-28 15:54:30.171,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+1173,1200,10,10,"5611277116","Sin email",2025-07-28 16:20:00.852,2025-07-28 16:21:08.779,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1177,3150,27,4,"5574567387","Sin email",2025-07-28 17:12:18.464,2025-08-01 07:11:41.833,efectivo,"No especificado","No especificado",No especificado,1,1400,transferencia,"",confirmed,bamo-373009
+1184,450,11,25,"7444271760","Sin email",2025-07-28 18:59:45.85,2025-07-28 20:29:43.268,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Pagara en efectido todo al abordar se le pidio estar 20 minutos antes",confirmed,bamo-373009
+1188,350,10,4,"7441816036","Sin email",2025-07-28 19:27:36.605,2025-07-28 22:56:24.84,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1189,1350,9,4,"5551722921","Sin email",2025-07-28 19:36:42.989,2025-07-29 23:16:08.616,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1190,1800,11,4,"5578150754","Sin email",2025-07-28 19:40:13.855,2025-07-29 15:05:35.407,efectivo,"No especificado","No especificado",No especificado,1,1050,transferencia,"",confirmed,bamo-373009
+1191,800,NULL,4,"5522990495","Sin email",2025-07-28 19:47:01.475,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"viaje redondo",confirmed,bamo-373009
+1192,2000,6,4,"5530305221","Sin email",2025-07-28 20:32:32.76,2025-07-29 06:28:57.074,efectivo,"No especificado","No especificado",No especificado,1,2000,transferencia,"no llego",confirmed,bamo-373009
+1195,1200,11,6,"5579256122","Sin email",2025-07-28 21:47:23.532,2025-07-28 22:57:04.803,efectivo,"No especificado","No especificado",No especificado,1,300,transferencia,"",confirmed,bamo-373009
+1196,1600,11,6,"9517545672","Sin email",2025-07-28 22:00:49.296,2025-07-28 22:56:13.588,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1197,1050,10,6,"7441226565","Sin email",2025-07-28 22:08:41.788,2025-07-28 22:50:16.333,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1198,450,11,22,"5531951419","Sin email",2025-07-28 22:15:50.786,2025-07-29 15:25:33.815,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1199,1350,11,14,"5565712410","Sin email",2025-07-28 22:16:03.301,2025-07-29 20:00:37.954,efectivo,"No especificado","No especificado",No especificado,1,500,efectivo,"",confirmed,bamo-373009
+1200,350,19,6,"7443700707","Sin email",2025-07-28 22:17:09.305,2025-07-29 05:48:19.448,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1201,400,NULL,14,"5511504546","Sin email",2025-07-28 22:24:47.026,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+1203,400,NULL,14,"5567592480","Sin email",2025-07-28 22:28:32.883,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+1204,400,NULL,14,"5564263656","Sin email",2025-07-28 22:28:37.605,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+1205,1750,19,6,"6651422191","Sin email",2025-07-28 22:49:13.214,2025-07-29 05:48:32.337,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"Asientos detras de chofer",confirmed,bamo-373009
+1207,450,5,6,"7442077411","Sin email",2025-07-28 23:02:46.36,2025-07-30 05:36:19.893,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1208,450,7,6,"5521315345","Sin email",2025-07-28 23:05:40.059,2025-07-29 02:52:44.257,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1211,350,19,6,"5539757448","Sin email",2025-07-28 23:54:13.149,2025-07-29 05:49:22.16,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"lleva perro",confirmed,bamo-373009
+1214,450,NULL,6,"1234567890","Sin email",2025-07-29 00:15:45.277,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"pago en gasolina",confirmed,bamo-373009
+1215,450,9,6,"5567408265","Sin email",2025-07-29 00:38:10.372,2025-07-29 23:16:10.829,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1218,850,19,6,"5514054646","Sin email",2025-07-29 02:56:40.021,2025-07-29 05:50:42.094,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"Uno es redondo asientos copiloto",confirmed,bamo-373009
+1219,450,19,6,"5576630452","Sin email",2025-07-29 03:13:46.604,2025-07-29 05:49:38.015,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1221,450,11,6,"7443840742","Sin email",2025-07-29 03:53:31.198,2025-07-29 16:02:36.706,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+1222,450,10,10,"5611277116","Sin email",2025-07-29 05:08:41.019,2025-07-29 05:09:19.589,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1224,1050,11,4,"2218763283","Sin email",2025-07-29 14:08:21.24,2025-07-29 15:08:47.344,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1225,450,19,22,"7443458957","Sin email",2025-07-29 14:48:23.731,2025-07-29 16:34:06.641,efectivo,"No especificado","No especificado",No especificado,1,100,efectivo,"Sube en la Giovanna",confirmed,bamo-373009
+1226,450,5,22,"7441725934","Sin email",2025-07-29 14:49:00.729,2025-07-30 05:33:37.832,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Asiento individual de la puerta",confirmed,bamo-373009
+1227,450,10,4,"5574632489","Sin email",2025-07-29 15:22:57.397,2025-07-29 22:47:44.19,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"atras del copiloto alado de la ventana",confirmed,bamo-373009
+1228,450,5,22,"7443329583","Sin email",2025-07-29 15:23:45.944,2025-07-30 05:25:09.526,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1229,1600,10,10,"4381550337","Sin email",2025-07-29 15:54:38.748,2025-07-29 15:58:08.617,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1231,450,10,22,"5560793572","Sin email",2025-07-29 16:36:17.497,2025-07-31 15:52:19.608,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1237,800,10,4,"5637700262","Sin email",2025-07-29 17:59:45.49,2025-07-29 22:38:34.52,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"viaje redondo",confirmed,bamo-373009
+1239,450,10,4,"5547352426","Sin email",2025-07-29 18:54:17.32,2025-07-29 22:37:33.207,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"asiento individual",confirmed,bamo-373009
+1240,4550,13,22,"5628017592","Sin email",2025-07-29 19:09:42.381,2025-08-01 13:26:14.589,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"Hay que ir a su domicilio y pagan $500 extras para gasolina",confirmed,bamo-373009
+1241,900,11,11,"5538032928","Sin email",2025-07-29 19:20:29.794,2025-07-29 19:45:13.087,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1244,450,10,4,"5578342532","Sin email",2025-07-29 20:26:44.742,2025-07-30 15:34:50.401,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1245,900,5,4,"5523771062","Sin email",2025-07-29 20:43:47.677,2025-07-31 05:17:51.133,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"asientos atrás del chofer",confirmed,bamo-373009
+1246,450,10,10,"7205056220","Sin email",2025-07-29 21:40:26.041,2025-07-29 21:41:00.233,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1247,450,5,4,"5621067844","Sin email",2025-07-29 22:54:27.185,2025-07-30 05:49:51.001,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1251,1250,27,6,"7442215231","Sin email",2025-07-30 01:17:42.85,2025-08-01 07:01:12.181,transferencia,"No especificado","No especificado",No especificado,1,600,transferencia,"lleva 1 mascota, asientos detras de chofer y primer individual",confirmed,bamo-373009
+1253,450,28,6,"9221006093","Sin email",2025-07-30 01:23:16.852,2025-07-30 05:21:27.251,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1257,900,10,6,"5515661011","Sin email",2025-07-30 02:22:57.681,2025-07-30 15:54:28.508,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1258,450,NULL,6,"7811002360","Sin email",2025-07-30 02:39:00.34,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1259,450,5,6,"7445297029","Sin email",2025-07-30 02:39:37.017,2025-07-30 05:32:25.562,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1260,400,NULL,6,"5536711508","Sin email",2025-07-30 02:42:29.882,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1261,450,9,6,"7443099749","Sin email",2025-07-30 02:43:13.248,2025-07-30 05:52:11.23,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"copiloto ventana",confirmed,bamo-373009
+1262,450,5,6,"5530542898","Sin email",2025-07-30 02:43:47.982,2025-07-30 06:06:11.917,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual 2",confirmed,bamo-373009
+1263,900,5,6,"7441657622","Sin email",2025-07-30 02:49:03.521,2025-07-30 04:48:19.881,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"MAncuerna",confirmed,bamo-373009
+1265,450,5,6,"7442666784","Sin email",2025-07-30 03:49:12.288,2025-07-30 05:52:08.189,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1266,900,28,6,"7411239912","Sin email",2025-07-30 04:37:22.767,2025-07-30 05:19:19.843,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1267,450,9,16,"5636216823","Sin email",2025-07-30 05:09:08.565,2025-07-30 05:27:27.275,efectivo,"No especificado","No especificado",No especificado,1,380,transferencia,"",confirmed,bamo-373009
+1268,400,NULL,6,"5951136730","Sin email",2025-07-30 14:09:44.055,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1269,450,10,6,"5546479031","Sin email",2025-07-30 14:10:40.675,2025-07-30 15:38:37.588,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"individual",confirmed,bamo-373009
+1270,800,10,6,"7207973417","Sin email",2025-07-30 14:13:47.789,2025-07-30 16:13:37.758,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1271,400,10,6,"5591936625","Sin email",2025-07-30 14:14:50.068,2025-07-30 15:43:40.245,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1272,450,5,22,"7441725934","Sin email",2025-07-30 15:32:41.567,2025-07-31 05:39:24.374,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1274,450,9,6,"6674522714","Sin email",2025-07-30 15:37:52.807,2025-07-30 16:00:55.572,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1275,450,11,6,"7441911659","Sin email",2025-07-30 15:43:32.161,2025-07-30 16:05:05.268,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1277,700,NULL,16,"6381180206","Sin email",2025-07-30 16:29:44.073,No marcado,efectivo,"No especificado","No especificado",No especificado,1,700,efectivo,"",confirmed,bamo-373009
+1278,900,5,22,"7202095072","Sin email",2025-07-30 16:32:49.595,2025-07-30 22:51:25.414,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1279,450,NULL,16,"5513299851","Sin email",2025-07-30 16:37:43.015,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1280,1050,NULL,6,"7442321618","Sin email",2025-07-30 16:47:29.263,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1050,transferencia,"detras de chofer y primer individual",canceledAndRefund,bamo-373009
+1281,1050,NULL,6,"7442321618","Sin email",2025-07-30 16:56:24.582,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1050,transferencia,"detras de chofer y primer individual",confirmed,bamo-373009
+1284,900,13,6,"5591468337","Sin email",2025-07-30 17:51:15.919,2025-08-02 06:11:28.241,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1288,1050,10,6,"7441034383","Sin email",2025-07-30 20:57:51.955,2025-07-31 15:53:38.39,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"2da mancuerna y 2do individual",confirmed,bamo-373009
+1289,3600,19,6,"7443716972","Sin email",2025-07-30 21:01:51.218,2025-07-31 05:53:04.196,efectivo,"No especificado","No especificado",No especificado,1,1800,transferencia,"redondo, bajan en Dos Arroyos",confirmed,bamo-373009
+1293,800,9,6,"7445764080","Sin email",2025-07-30 21:08:08.078,2025-07-30 22:25:35.189,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"mancuerna",confirmed,bamo-373009
+1295,450,5,25,"5561408162","Sin email",2025-07-30 21:31:06.945,2025-07-30 22:54:19.005,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Pagara al subir en efectivo",confirmed,bamo-373009
+1297,900,10,6,"7441657622","Sin email",2025-07-30 22:00:23.365,2025-07-30 23:01:47.41,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"mancuerna",confirmed,bamo-373009
+1302,400,9,6,"5651816366","Sin email",2025-07-30 22:22:19.346,2025-07-30 22:30:54.38,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1305,400,10,6,"7443840742","Sin email",2025-07-30 22:36:03.492,2025-07-31 15:59:23.32,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"copiloto ventana, redondo",confirmed,bamo-373009
+1306,400,NULL,6,"7447626597","Sin email",2025-07-30 22:45:06.065,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1307,450,NULL,16,"7442702425","Sin email",2025-07-30 22:48:49.444,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1308,380,10,6,"5546658890","Sin email",2025-07-30 23:17:05.546,2025-07-30 23:18:03.293,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1309,2250,10,6,"5563317739","Sin email",2025-07-30 23:26:44.005,2025-07-31 15:28:05.801,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"",confirmed,bamo-373009
+1310,450,NULL,6,"5658931813","Sin email",2025-07-30 23:29:07.205,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"3er mancuerna, lleva bebe",confirmed,bamo-373009
+1312,400,19,6,"5539757448","Sin email",2025-07-31 00:13:41.633,2025-07-31 05:49:40.037,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"redondo",confirmed,bamo-373009
+1313,450,5,6,"7201460438","Sin email",2025-07-31 00:15:29.523,2025-07-31 04:54:08.543,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1316,450,NULL,16,"5636216823","Sin email",2025-07-31 02:26:01.367,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"Individual",confirmed,bamo-373009
+1317,450,11,6,"7474905582","Sin email",2025-07-31 02:41:50.583,2025-07-31 15:38:40.731,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1321,450,9,6,"5569381478","Sin email",2025-07-31 04:42:25.519,2025-07-31 05:53:16.181,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1323,450,11,22,"5544438523","Sin email",2025-07-31 05:09:56.702,2025-07-31 16:01:13.216,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1324,450,NULL,16,"5636216823","Sin email",2025-07-31 05:26:28.238,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1329,1350,27,6,"5510166786","Sin email",2025-07-31 06:35:07.799,2025-08-01 07:12:12.893,efectivo,"No especificado","No especificado",No especificado,1,570,transferencia,"",confirmed,bamo-373009
+1332,800,9,4,"8342221399","Sin email",2025-07-31 15:08:08.256,2025-07-31 16:01:12.485,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1340,800,10,22,"7441725934","Sin email",2025-07-31 17:43:44.071,2025-07-31 22:53:51.34,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Viaje redondo",confirmed,bamo-373009
+1342,1200,9,4,"5512631683","Sin email",2025-07-31 17:51:30.885,2025-07-31 23:15:25.599,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"VIAJE REDONDO",confirmed,bamo-373009
+1344,450,5,4,"7444480034","Sin email",2025-07-31 19:37:54.653,2025-08-01 05:24:55.565,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1347,350,10,22,"7442867554","Sin email",2025-07-31 20:00:53.905,2025-07-31 22:53:39.997,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Se hace descuento por recorrerse a las 5",confirmed,bamo-373009
+1354,450,10,4,"4523780702","Sin email",2025-07-31 21:37:33.655,2025-07-31 22:52:44.161,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1356,2250,5,4,"5550509321","Sin email",2025-07-31 22:08:57.19,2025-07-31 23:05:33.92,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1357,900,5,4,"5656761113","Sin email",2025-07-31 22:10:18.88,2025-07-31 22:48:26.388,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1358,1350,5,4,"5542468204","Sin email",2025-07-31 22:19:31.236,2025-07-31 22:25:48.764,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"asientos atras del operador",confirmed,bamo-373009
+1360,700,NULL,16,"5636216823","Sin email",2025-07-31 22:29:16.528,No marcado,efectivo,"No especificado","No especificado",No especificado,1,700,transferencia,"",canceledAndRefund,bamo-373009
+1365,800,NULL,4,"7298343321","Sin email",2025-07-31 22:55:51.81,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"",confirmed,bamo-373009
+1366,350,NULL,16,"9516093626","Sin email",2025-07-31 22:56:33.884,No marcado,efectivo,"No especificado","No especificado",No especificado,1,350,efectivo,"",canceledAndRefund,bamo-373009
+1367,350,NULL,16,"9516093624","Sin email",2025-07-31 22:59:20.496,No marcado,efectivo,"No especificado","No especificado",No especificado,1,350,efectivo,"",confirmed,bamo-373009
+1368,450,10,22,"5548548730","Sin email",2025-07-31 23:03:45.851,2025-08-01 22:48:57.799,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"Individual",confirmed,bamo-373009
+1369,450,NULL,16,"5636216823","Sin email",2025-07-31 23:03:52.742,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+1370,450,NULL,16,"5636216823","Sin email",2025-07-31 23:04:00.364,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+1371,450,NULL,16,"5636216823","Sin email",2025-07-31 23:04:05.289,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+1374,450,NULL,9,"5636216823","Sin email",2025-07-31 23:22:36.782,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",canceledAndRefund,bamo-373009
+1375,450,NULL,16,"5636216823","Sin email",2025-07-31 23:24:58.863,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1380,800,5,4,"7444523807","Sin email",2025-08-01 00:51:07.663,2025-08-01 05:43:47.69,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Mancuerna",confirmed,bamo-373009
+1381,800,11,4,"5546479031","Sin email",2025-08-01 01:11:29.801,2025-08-01 15:21:00.346,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"redondo",confirmed,bamo-373009
+1385,450,5,16,"5636216823","Sin email",2025-08-01 02:21:21.656,2025-08-01 05:40:22.47,transferencia,"No especificado","No especificado",No especificado,1,250,transferencia,"",confirmed,bamo-373009
+1388,900,13,6,"5610701289","Sin email",2025-08-01 02:56:59.644,2025-08-02 06:12:05.729,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1389,450,21,6,"5574568543","Sin email",2025-08-01 02:59:53.26,2025-08-04 06:10:27.056,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1393,450,10,6,"7451364934","Sin email",2025-08-01 05:43:23.087,2025-08-01 22:40:19.872,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1396,450,27,6,"5540241800","Sin email",2025-08-01 06:43:03.749,2025-08-01 07:12:16.788,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1399,800,10,4,"7441022446","Sin email",2025-08-01 14:20:44.894,2025-08-01 16:30:24.481,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1404,450,10,4,"7441984043","Sin email",2025-08-01 14:35:31.994,2025-08-01 16:02:17.505,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1405,450,11,4,"7442940590","Sin email",2025-08-01 14:37:47.361,2025-08-02 16:00:14.981,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1407,450,5,4,"5534416362","Sin email",2025-08-01 14:55:11.434,2025-08-01 22:21:20.192,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1409,450,10,4,"7442366633","Sin email",2025-08-01 15:25:35.646,2025-08-01 16:20:51.248,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1410,1200,9,4,"7444075311","Sin email",2025-08-01 15:32:59.262,2025-08-01 15:38:15.484,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1416,2000,9,4,"5630432139","Sin email",2025-08-01 16:01:05.294,2025-08-01 16:36:15.791,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1417,450,11,22,"7443835010","Sin email",2025-08-01 16:03:32.129,2025-08-02 15:53:21.519,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1418,450,10,10,"7771881097","Sin email",2025-08-01 16:16:44.053,2025-08-01 16:41:15.524,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1419,600,10,4,"7443589422","Sin email",2025-08-01 16:36:39.706,2025-08-01 22:59:56.165,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"segunda mancuerna",confirmed,bamo-373009
+1420,450,NULL,11,"5521117091","Sin email",2025-08-01 16:39:17.219,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1421,1350,21,4,"7442230937","Sin email",2025-08-01 16:53:14.871,2025-08-02 16:08:00.894,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"",confirmed,bamo-373009
+1422,400,13,4,"7443804782","Sin email",2025-08-01 16:56:56.054,2025-08-02 06:10:55.967,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"VIAJE REDONDO",confirmed,bamo-373009
+1425,450,11,22,"7442329912","Sin email",2025-08-01 17:34:17.445,2025-08-01 19:56:51.5,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1426,450,11,4,"5541742092","Sin email",2025-08-01 17:47:40.776,2025-08-01 20:01:48.432,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1428,380,7,4,"6679524540","Sin email",2025-08-01 17:56:36.395,2025-08-01 20:34:30.072,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1430,900,11,4,"7443752278","Sin email",2025-08-01 19:04:35.56,2025-08-01 19:51:31.721,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1432,700,NULL,14,"7441087961","Sin email",2025-08-01 19:34:01.846,No marcado,efectivo,"No especificado","No especificado",No especificado,1,700,efectivo,"",confirmed,bamo-373009
+1436,900,NULL,14,"5559336441","Sin email",2025-08-01 19:53:09.513,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"Pago con transferencia",confirmed,bamo-373009
+1437,450,NULL,16,"5538115554","Sin email",2025-08-01 19:53:16.021,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1438,450,10,22,"7471014304","Sin email",2025-08-01 21:07:04.081,2025-08-01 22:45:54.34,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1440,400,5,4,"5539340717","Sin email",2025-08-01 21:14:17.63,2025-08-01 22:47:00.434,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1441,450,13,4,"5521315345","Sin email",2025-08-01 21:19:33.99,2025-08-02 06:11:46.164,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1442,450,10,4,"5542201208","Sin email",2025-08-01 21:44:00.688,2025-08-01 22:57:16.677,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1443,400,10,4,"5567082863","Sin email",2025-08-01 21:52:46.602,2025-08-01 22:54:52.043,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1444,400,5,4,"5566547933","Sin email",2025-08-01 22:00:26.644,2025-08-01 22:55:07.005,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1445,800,NULL,4,"5518546390","Sin email",2025-08-01 22:10:09.495,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"segunda mancuerna",canceledAndRefund,bamo-373009
+1446,450,10,10,"5648691437","Sin email",2025-08-01 22:17:42.439,2025-08-01 22:58:56.34,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1448,450,10,10,"5582336279","Sin email",2025-08-01 22:18:37.684,2025-08-01 22:58:41.664,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"Viaja con un perro chico, asiento individual",confirmed,bamo-373009
+1449,450,10,4,"2203304618","Sin email",2025-08-01 22:19:38.318,2025-08-01 22:58:04.512,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1450,450,10,4,"7443540056","Sin email",2025-08-01 22:50:39.331,2025-08-01 22:52:13.704,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1451,2250,5,22,"5511779509","Sin email",2025-08-01 22:51:32.633,2025-08-02 03:51:49.77,transferencia,"No especificado","No especificado",No especificado,1,500,transferencia,"Son de 400 por la promoción",confirmed,bamo-373009
+1452,1200,NULL,14,"5619534600","Sin email",2025-08-01 22:51:37.154,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,efectivo,"3ra mancuerna y 2do individual",confirmed,bamo-373009
+1454,400,NULL,14,"7448930654","Sin email",2025-08-01 23:12:09.186,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"Sube en la Diana cazadora",confirmed,bamo-373009
+1455,900,11,22,"3320296644","Sin email",2025-08-01 23:14:36.548,2025-08-02 16:16:33.621,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1456,2250,21,6,"5514639480","Sin email",2025-08-02 00:11:00.367,2025-08-02 15:39:04.502,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"llevan 1 perro y un gato",confirmed,bamo-373009
+1457,900,10,6,"5634583727","Sin email",2025-08-02 00:42:32.65,2025-08-04 15:46:27.435,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"mancuerna",confirmed,bamo-373009
+1458,3040,13,6,"667 952 4540","Sin email",2025-08-02 00:47:11.032,2025-08-02 06:04:49.123,efectivo,"No especificado","No especificado",No especificado,1,1400,transferencia,"todas las mancuernas e individuales",confirmed,bamo-373009
+1459,450,21,6,"7474905582","Sin email",2025-08-02 00:49:06.598,2025-08-02 15:25:18.79,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1461,900,20,6,"5621268344","Sin email",2025-08-02 02:30:33.836,2025-08-02 05:21:19.82,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"2da mancuerna",confirmed,bamo-373009
+1463,450,20,22,"7442251066","Sin email",2025-08-02 02:39:49.415,2025-08-02 05:40:07.903,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1465,1050,20,6,"5651842507","Sin email",2025-08-02 03:25:52.673,2025-08-02 05:31:56.612,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1466,900,20,6,"5633615305","Sin email",2025-08-02 03:26:50.295,2025-08-02 05:30:57.911,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1467,900,20,6,"5541091250","Sin email",2025-08-02 03:27:39.842,2025-08-02 05:31:36.915,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1468,900,20,6,"5521721321","Sin email",2025-08-02 03:28:18.256,2025-08-02 05:39:10.841,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"bajan en parque Industrial Ocotito",confirmed,bamo-373009
+1469,1200,20,6,"5529977279","Sin email",2025-08-02 03:29:38.065,2025-08-02 05:36:52.118,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1470,450,5,6,"7441177747","Sin email",2025-08-02 03:34:27.068,2025-08-02 05:31:17.312,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1471,450,11,6,"7442868756","Sin email",2025-08-02 03:47:30.468,2025-08-02 19:52:17.597,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"copiloto ventana",confirmed,bamo-373009
+1473,450,NULL,16,"5636216823","Sin email",2025-08-02 04:49:05.57,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1474,450,20,6,"1234567890","Sin email",2025-08-02 05:17:21.993,2025-08-02 05:18:51.829,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1479,400,21,6,"9612446688","Sin email",2025-08-02 06:17:20.831,2025-08-02 15:43:20.737,efectivo,"No especificado","No especificado",No especificado,1,50,transferencia,"individual",confirmed,bamo-373009
+1481,450,21,16,"5636216823","Sin email",2025-08-02 06:24:17.13,2025-08-02 15:39:37.655,efectivo,"No especificado","No especificado",No especificado,1,250,transferencia,"",confirmed,bamo-373009
+1486,450,11,6,"5567908194","Sin email",2025-08-02 15:01:55.128,2025-08-02 19:02:55.007,transferencia,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1487,400,5,22,"5560793572","Sin email",2025-08-02 15:03:33.426,2025-08-03 04:55:39.34,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"Viaje redondo pagado",confirmed,bamo-373009
+1490,450,11,6,"7442556598","Sin email",2025-08-02 15:06:51.04,2025-08-02 15:35:20.651,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1496,450,NULL,7,"7472454819","Sin email",2025-08-02 16:19:06.759,No marcado,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"Es el que depositará (JOSÉ PELÓN )",confirmed,bamo-373009
+1497,900,11,6,"7445760566","Sin email",2025-08-02 16:51:24.664,2025-08-02 20:04:24.109,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1502,450,11,22,"5540186378","Sin email",2025-08-02 17:27:40.483,2025-08-03 18:26:38.282,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",canceledAndRefund,bamo-373009
+1503,450,11,22,"5531399067","Sin email",2025-08-02 17:27:44.861,2025-08-03 18:26:36.285,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",canceledAndRefund,bamo-373009
+1504,450,11,11,"7778516221","Sin email",2025-08-02 17:46:04.845,2025-08-02 17:46:54.388,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+1506,450,11,6,"5653606210","Sin email",2025-08-02 17:48:40.293,2025-08-02 19:51:51.141,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1509,450,11,11,"5665220190","Sin email",2025-08-02 18:05:28.12,2025-08-02 19:38:12.881,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+1510,450,21,6,"9192687038","Sin email",2025-08-02 18:19:41.454,2025-08-03 15:21:36.555,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1514,450,NULL,11,"3271211086","Sin email",2025-08-02 19:16:39.269,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1516,1200,NULL,6,"5526730820","Sin email",2025-08-02 20:01:12.776,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"",confirmed,bamo-373009
+1519,450,21,6,"7443263062","Sin email",2025-08-02 20:06:25.986,2025-08-02 23:04:00.432,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1520,450,20,6,"7201460438","Sin email",2025-08-02 20:07:55.441,2025-08-03 05:32:35.741,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1521,1200,NULL,6,"1234667788","Sin email",2025-08-02 20:12:36.066,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"pasajeros jose",confirmed,bamo-373009
+1522,450,NULL,14,"7445015948","Sin email",2025-08-02 20:13:33.198,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"Aborda en la Diana cazadora",confirmed,bamo-373009
+1523,1200,NULL,6,"5531283319","Sin email",2025-08-02 21:04:13.971,No marcado,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"",confirmed,bamo-373009
+1525,200,6,16,"5636216823","Sin email",2025-08-02 21:07:43.785,2025-08-02 23:17:59.594,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"cancelo",confirmed,bamo-373009
+1529,450,5,6,"5529526255","Sin email",2025-08-02 21:16:24.472,2025-08-02 22:01:14.77,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1535,450,5,6,"5524075440","Sin email",2025-08-02 21:51:47.32,2025-08-02 22:33:16.131,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1538,900,21,6,"5513782720","Sin email",2025-08-02 22:27:29.524,2025-08-02 23:13:38.592,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"3er mancuerna",confirmed,bamo-373009
+1540,450,21,6,"1234567890","Sin email",2025-08-02 23:12:47.756,2025-08-02 23:14:15.296,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1542,1350,21,6,"7441035657","Sin email",2025-08-03 00:45:40.547,2025-08-03 19:41:56.998,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"detras de chofer",confirmed,bamo-373009
+1543,450,21,6,"5613672318","Sin email",2025-08-03 00:47:30.879,2025-08-03 16:01:38.012,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1544,450,11,6,"5546619300","Sin email",2025-08-03 00:51:03.954,2025-08-03 22:55:33.346,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1545,450,11,6,"7443114679","Sin email",2025-08-03 00:52:58.809,2025-08-03 22:43:21.584,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1548,400,11,6,"7442366633","Sin email",2025-08-03 02:24:12.834,2025-08-04 05:19:33.57,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"redondo",confirmed,bamo-373009
+1549,450,21,6,"7441954059","Sin email",2025-08-03 02:26:25.321,2025-08-03 16:01:42.765,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1551,850,20,6,"7442832919","Sin email",2025-08-03 03:12:59.738,2025-08-03 05:59:53.78,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1552,1600,20,6,"7441122067","Sin email",2025-08-03 03:44:12.991,2025-08-03 05:12:35.301,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1554,450,5,6,"7446710031","Sin email",2025-08-03 03:47:49.319,2025-08-03 04:55:06.817,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1557,1150,11,6,"7442215231","Sin email",2025-08-03 04:06:32.092,2025-08-03 15:43:26.927,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"1er mancuerna y 1er individual",confirmed,bamo-373009
+1558,900,20,6,"7443355336","Sin email",2025-08-03 04:14:22.054,2025-08-03 06:15:44.465,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1561,400,NULL,6,"5545984257","Sin email",2025-08-03 04:44:02.049,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"lleva bebe",canceledAndRefund,bamo-373009
+1562,400,NULL,6,"5545984257","Sin email",2025-08-03 04:45:46.655,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"lleva Bebe",confirmed,bamo-373009
+1563,450,21,6,"5541742092","Sin email",2025-08-03 05:50:28.794,2025-08-03 15:56:37.578,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1564,800,20,6,"7444014957","Sin email",2025-08-03 06:03:33.225,2025-08-03 18:29:09.126,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1565,450,11,4,"7671029970","Sin email",2025-08-03 14:38:40.137,2025-08-03 15:59:05.816,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1573,450,NULL,16,"5636216823","Sin email",2025-08-03 15:56:39.409,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1574,450,7,4,"1234567899","Sin email",2025-08-03 16:01:06.63,2025-08-03 16:19:53.662,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1575,1350,11,4,"5631178727","Sin email",2025-08-03 16:06:17.915,2025-08-05 15:01:29.432,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"asientos atras del chofer",confirmed,bamo-373009
+1577,450,21,4,"5512253856","Sin email",2025-08-03 16:21:58.921,2025-08-04 06:12:47.613,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1580,450,21,4,"5569381478","Sin email",2025-08-03 16:51:38.364,2025-08-04 06:15:27.942,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1581,350,4,4,"3513131491","Sin email",2025-08-03 16:59:44.5,2025-08-03 17:00:26.923,transferencia,"No especificado","No especificado",No especificado,1,170,transferencia,"",confirmed,bamo-373009
+1582,450,21,4,"7441177747","Sin email",2025-08-03 17:25:41.323,2025-08-03 22:50:53.766,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1583,450,21,4,"5648028083","Sin email",2025-08-03 17:34:41.243,2025-08-03 19:31:33.081,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1584,900,11,4,"4441739025","Sin email",2025-08-03 17:36:56.689,2025-08-04 05:20:15.997,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1585,450,11,4,"7445169937","Sin email",2025-08-03 17:37:51.508,2025-08-04 05:32:15.965,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1586,1350,21,4,"7442279989","Sin email",2025-08-03 18:02:27.083,2025-08-03 18:48:26.174,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1590,400,8,4,"5514759766","Sin email",2025-08-03 18:14:48.25,2025-08-04 07:34:04.409,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento individual",confirmed,bamo-373009
+1591,1350,11,4,"7421224853","Sin email",2025-08-03 18:18:06.178,2025-08-04 05:46:13.141,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1594,450,NULL,4,"7451364934","Sin email",2025-08-03 18:38:06.408,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1596,400,21,4,"5559300220","Sin email",2025-08-03 18:58:55.133,2025-08-03 22:19:49.482,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1601,400,11,4,"5521315345","Sin email",2025-08-03 19:47:56.428,2025-08-04 03:07:31.57,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"viaje redondo",confirmed,bamo-373009
+1602,400,NULL,4,"7442254700","Sin email",2025-08-03 19:51:32.235,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1603,1200,11,4,"7474709825","Sin email",2025-08-03 20:06:13.825,2025-08-03 21:45:33.846,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1604,800,NULL,4,"5529869779","Sin email",2025-08-03 20:13:03.785,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"",confirmed,bamo-373009
+1606,1600,11,4,"5570472779","Sin email",2025-08-03 20:55:17.299,2025-08-04 00:23:44.502,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1608,700,NULL,14,"7471821076","Sin email",2025-08-03 21:05:33.984,No marcado,efectivo,"No especificado","No especificado",No especificado,1,700,efectivo,"Clientas descuento porque van y vienen",confirmed,bamo-373009
+1609,450,11,4,"5571939128","Sin email",2025-08-03 21:08:24.146,2025-08-04 04:03:48.565,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1610,3600,NULL,22,"5628017592","Sin email",2025-08-03 21:17:54.008,No marcado,efectivo,"No especificado","No especificado",No especificado,1,3600,transferencia,"Pagarán $500 extras por traslado a su domicilio",confirmed,bamo-373009
+1614,450,11,14,"7441961196","Sin email",2025-08-03 21:41:26.175,2025-08-04 05:04:21.985,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+1615,350,21,4,"5555092422","Sin email",2025-08-03 21:52:08.96,2025-08-04 06:11:55.824,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1616,350,21,24,"7443719520","Sin email",2025-08-03 22:02:21.191,2025-08-04 06:18:49.21,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1617,350,8,4,"7442868756","Sin email",2025-08-03 22:15:42.622,2025-08-04 07:34:10.781,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"copiloto",confirmed,bamo-373009
+1618,450,NULL,14,"3114164285","Sin email",2025-08-03 22:32:03.776,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1619,700,21,4,"9642113205","Sin email",2025-08-03 22:33:48.699,2025-08-04 06:22:49.335,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1623,450,NULL,14,"5538019589","Sin email",2025-08-03 22:45:33.1,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1625,900,NULL,4,"5530408861","Sin email",2025-08-03 23:01:30.337,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,transferencia,"copiloto y atras del chofer",confirmed,bamo-373009
+1627,450,NULL,14,"7445337450","Sin email",2025-08-03 23:11:43.177,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"Aborda en la diana",confirmed,bamo-373009
+1629,700,NULL,4,"7443703002","Sin email",2025-08-03 23:47:22.506,No marcado,efectivo,"No especificado","No especificado",No especificado,1,700,transferencia,"",confirmed,bamo-373009
+1630,450,11,22,"5536426763","Sin email",2025-08-04 00:01:33.843,2025-08-04 02:09:25.932,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1631,450,11,4,"5638563792","Sin email",2025-08-04 00:41:17.884,2025-08-04 00:42:32.055,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1632,900,11,4,"7442707434","Sin email",2025-08-04 00:59:23.147,2025-08-04 05:56:37.333,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"1 sube en giovanna",confirmed,bamo-373009
+1634,400,NULL,14,"7445342401","Sin email",2025-08-04 02:02:05.479,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+1635,800,11,4,"5527564644","Sin email",2025-08-04 02:11:21.408,2025-08-04 05:13:36.469,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1637,1350,5,11,"5535701671","Sin email",2025-08-04 02:19:43.815,2025-08-04 22:07:21.422,efectivo,"No especificado","No especificado",No especificado,1,700,efectivo,"EN LA PARTE DE ATRAS",confirmed,bamo-373009
+1638,450,11,14,"5665630810","Sin email",2025-08-04 02:26:48.384,2025-08-04 04:31:35.3,transferencia,"No especificado","No especificado",No especificado,1,100,efectivo,"",confirmed,bamo-373009
+1640,3500,20,22,"5573841814","Sin email",2025-08-04 03:12:41.912,2025-08-05 05:29:44.408,efectivo,"No especificado","No especificado",No especificado,1,2000,transferencia,"Promoción lunes $350",confirmed,bamo-373009
+1642,400,11,4,"7441122067","Sin email",2025-08-04 03:45:54.934,2025-08-04 05:39:29.331,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1643,450,11,4,"6122172846","Sin email",2025-08-04 03:53:21.809,2025-08-04 05:37:41.002,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1644,350,21,4,"7451234598","Sin email",2025-08-04 04:02:14.386,2025-08-04 05:40:40.379,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1646,900,NULL,14,"5566951531","Sin email",2025-08-04 04:12:47.142,No marcado,efectivo,"No especificado","No especificado",No especificado,1,900,efectivo,"",confirmed,bamo-373009
+1648,900,5,4,"5610701289","Sin email",2025-08-04 04:30:52.077,2025-08-04 22:52:27.028,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1650,800,7,14,"7471609064","Sin email",2025-08-04 04:55:44.375,2025-08-04 05:47:50.091,efectivo,"No especificado","No especificado",No especificado,1,600,efectivo,"",confirmed,bamo-373009
+1652,450,11,14,"7471609064","Sin email",2025-08-04 05:08:49.581,2025-08-04 06:14:47.025,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+1659,1350,11,4,"5559973620","Sin email",2025-08-04 14:08:27.681,2025-08-04 15:49:46.896,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1661,450,11,4,"5560491405","Sin email",2025-08-04 14:12:34.381,2025-08-04 16:31:43.899,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1662,400,11,4,"9612446688","Sin email",2025-08-04 14:16:34.577,2025-08-04 16:32:08.073,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1663,450,10,22,"9989398072","Sin email",2025-08-04 14:21:34.123,2025-08-04 15:28:32.228,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1664,350,NULL,22,"7442053690","Sin email",2025-08-04 14:22:15.302,No marcado,efectivo,"No especificado","No especificado",No especificado,1,350,transferencia,"",confirmed,bamo-373009
+1665,350,NULL,22,"7446371220","Sin email",2025-08-04 14:29:08.396,No marcado,efectivo,"No especificado","No especificado",No especificado,1,350,transferencia,"",confirmed,bamo-373009
+1666,450,10,10,"8123920704","Sin email",2025-08-04 15:03:50.618,2025-08-04 15:07:09.743,transferencia,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1667,450,10,10,"5519231226","Sin email",2025-08-04 15:10:05.698,2025-08-04 15:10:50.597,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1668,700,10,4,"4441739025","Sin email",2025-08-04 15:15:28.92,2025-08-04 15:52:40.103,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1670,1600,10,4,"5534455301","Sin email",2025-08-04 15:42:18.437,2025-08-04 15:52:06.856,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1671,450,10,10,"5621711544","Sin email",2025-08-04 15:49:27.811,2025-08-04 16:09:49.83,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1672,800,NULL,10,"5519129350","Sin email",2025-08-04 15:59:53.694,No marcado,efectivo,"No especificado","No especificado",No especificado,1,800,transferencia,"",confirmed,bamo-373009
+1673,450,10,10,"3751019459","Sin email",2025-08-04 16:01:25.321,2025-08-04 16:02:24.233,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1677,450,11,16,"5636216823","Sin email",2025-08-04 16:41:35.986,2025-08-04 16:43:55.327,efectivo,"No especificado","No especificado",No especificado,1,250,transferencia,"",confirmed,bamo-373009
+1678,1350,10,4,"5635592691","Sin email",2025-08-04 17:33:28.008,2025-08-04 23:18:59.351,efectivo,"No especificado","No especificado",No especificado,1,700,transferencia,"se paga equipaje extra en total $800",confirmed,bamo-373009
+1680,2700,5,22,"7721338747","Sin email",2025-08-04 17:50:53.923,2025-08-04 21:49:11.064,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1687,450,5,6,"5542201208","Sin email",2025-08-04 22:29:35.084,2025-08-05 05:43:13.759,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1689,450,20,6,"7121801703","Sin email",2025-08-04 22:32:13.371,2025-08-05 05:52:11.963,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1690,350,20,6,"5630022177","Sin email",2025-08-04 22:36:13.042,2025-08-05 05:49:14.841,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1692,450,10,10,"7444083283","Sin email",2025-08-04 22:57:24.206,2025-08-04 22:59:02.952,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1693,450,10,22,"5570592026","Sin email",2025-08-04 23:17:01.933,2025-08-04 23:17:56.151,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1695,900,20,16,"5636216823","Sin email",2025-08-05 00:42:02.774,2025-08-05 05:35:49.428,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"",confirmed,bamo-373009
+1699,1900,13,6,"5549240954","Sin email",2025-08-05 01:02:36.57,2025-08-05 13:42:15.037,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"",confirmed,bamo-373009
+1700,450,10,6,"7441234443","Sin email",2025-08-05 01:03:44.675,2025-08-06 15:53:14.104,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1702,400,5,6,"5651970785","Sin email",2025-08-05 02:23:41.37,2025-08-05 05:48:15.954,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1704,400,20,6,"7447501307","Sin email",2025-08-05 02:25:07.182,2025-08-05 05:33:14.748,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"vr",confirmed,bamo-373009
+1705,450,11,6,"5573584905","Sin email",2025-08-05 02:26:51.602,2025-08-05 15:28:08.215,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"lleva perro",confirmed,bamo-373009
+1707,450,5,6,"7443336366","Sin email",2025-08-05 02:32:40.647,2025-08-05 04:35:42.278,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1708,450,5,6,"7444082689","Sin email",2025-08-05 03:30:22.572,2025-08-05 05:18:58.926,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1710,450,5,6,"7441717129","Sin email",2025-08-05 05:22:56.09,2025-08-05 06:00:51.282,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"asiento copiloto ventana SUBE EN LA DIANA",confirmed,bamo-373009
+1712,800,13,6,"1234567890","Sin email",2025-08-05 13:48:55.292,2025-08-05 13:57:44.475,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1713,400,13,6,"1234567890","Sin email",2025-08-05 13:50:07.172,2025-08-05 13:57:52.902,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1714,900,20,4,"7442679997","Sin email",2025-08-05 14:22:39.467,2025-08-05 18:23:51.963,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1715,450,5,4,"5574568543","Sin email",2025-08-05 14:24:40.743,2025-08-06 05:59:56.211,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1716,900,11,22,"5533862565","Sin email",2025-08-05 14:30:59.393,2025-08-05 15:50:31.927,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1722,450,11,4,"5569112884","Sin email",2025-08-05 14:53:37.807,2025-08-05 16:04:46.388,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1723,450,9,16,"5652069561","Sin email",2025-08-05 15:33:49.654,2025-08-05 16:35:03.336,efectivo,"No especificado","No especificado",No especificado,1,200,efectivo,"",confirmed,bamo-373009
+1731,2250,5,4,"5563317739","Sin email",2025-08-05 16:56:14.022,2025-08-06 15:16:52.387,efectivo,"No especificado","No especificado",No especificado,1,1000,transferencia,"",confirmed,bamo-373009
+1740,450,5,4,"7421167382","Sin email",2025-08-05 20:18:13.204,2025-08-06 15:46:55.495,transferencia,"No especificado","No especificado",No especificado,1,300,transferencia,"",confirmed,bamo-373009
+1741,900,9,16,"5554964216","Sin email",2025-08-05 20:21:09.124,2025-08-05 23:29:45.147,efectivo,"No especificado","No especificado",No especificado,1,400,efectivo,"",confirmed,bamo-373009
+1742,900,21,4,"7446523007","Sin email",2025-08-05 20:22:35.856,2025-08-05 23:00:24.605,transferencia,"No especificado","No especificado",No especificado,1,700,transferencia,"asientos atras del chofer en la ventana",confirmed,bamo-373009
+1746,450,NULL,4,"7441243297","Sin email",2025-08-05 22:07:36.737,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,efectivo,"",confirmed,bamo-373009
+1749,400,NULL,4,"7441243297","Sin email",2025-08-05 22:15:44.384,No marcado,efectivo,"No especificado","No especificado",No especificado,1,400,transferencia,"",confirmed,bamo-373009
+1752,450,13,4,"7445760566","Sin email",2025-08-05 22:19:54.704,2025-08-06 05:40:08.123,efectivo,"No especificado","No especificado",No especificado,1,200,transferencia,"",confirmed,bamo-373009
+1754,450,NULL,4,"1234567891","Sin email",2025-08-05 22:38:25.474,No marcado,efectivo,"No especificado","No especificado",No especificado,1,450,transferencia,"copiloto",canceledAndRefund,bamo-373009
+1755,350,21,4,"7442577778","Sin email",2025-08-05 22:52:14.065,2025-08-05 22:59:17.516,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"atras del operador",confirmed,bamo-373009
+1758,0,9,9,"7472747406","Sin email",2025-08-06 02:03:08.353,2025-08-06 05:34:01.37,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1759,1350,5,6,"7751447903","Sin email",2025-08-06 02:32:39.55,2025-08-06 05:10:54.589,efectivo,"No especificado","No especificado",No especificado,1,600,transferencia,"",confirmed,bamo-373009
+1762,0,13,6,"1234567890","Sin email",2025-08-06 02:41:02.398,2025-08-06 05:40:22.541,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"copiloto ventana",confirmed,bamo-373009
+1769,450,10,24,"7447510474","Sin email",2025-08-06 14:25:59.728,2025-08-06 15:55:29.947,efectivo,"No especificado","No especificado",No especificado,1,100,transferencia,"",confirmed,bamo-373009
+1774,450,5,6,"7442623725","Sin email",2025-08-06 15:04:39.524,2025-08-06 15:46:31.53,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1776,450,10,22,"6676965413","Sin email",2025-08-06 15:36:54.476,2025-08-06 16:14:36.741,efectivo,"No especificado","No especificado",No especificado,1,0,efectivo,"",confirmed,bamo-373009
+1777,1200,6,6,"7474709825","Sin email",2025-08-06 15:38:08.55,2025-08-06 15:49:25.424,efectivo,"No especificado","No especificado",No especificado,1,1200,transferencia,"mancuerna",confirmed,bamo-373009
