@@ -9466,9 +9466,21 @@ function setupPackageRoutes(app: Express) {
         filteredTransactions = transactions.filter(transaction => {
           try {
             const details = transaction.details as any;
-            if (!details || details.type !== 'reservation') return false;
+            if (!details) return false;
             
-            const tripId = details.details?.tripId;
+            // Incluir tanto transacciones de reservas como de paqueterías
+            const transactionType = details.type;
+            if (transactionType !== 'reservation' && transactionType !== 'package') return false;
+            
+            let tripId;
+            
+            // Obtener tripId según el tipo de transacción
+            if (transactionType === 'reservation') {
+              tripId = details.details?.tripId;
+            } else if (transactionType === 'package') {
+              tripId = details.details?.tripId;
+            }
+            
             if (!tripId) return false;
             
             // Extraer ID del viaje principal del tripId (manejar formato "1339_1" -> 1339)
@@ -9479,7 +9491,7 @@ function setupPackageRoutes(app: Express) {
             // Verificar si la transacción corresponde a alguno de los viajes filtrados
             const belongsToFilteredTrip = filteredTrips.some(trip => trip.trips.id === mainTripId);
             
-            console.log(`[GET /operator-timeline] Transacción ${transaction.id} - TripId: ${tripId} (main: ${mainTripId}), ¿Corresponde a viajes filtrados?: ${belongsToFilteredTrip}`);
+            console.log(`[GET /operator-timeline] Transacción ${transaction.id} - Tipo: ${transactionType}, TripId: ${tripId} (main: ${mainTripId}), ¿Corresponde a viajes filtrados?: ${belongsToFilteredTrip}`);
             
             return belongsToFilteredTrip;
           } catch (e) {
