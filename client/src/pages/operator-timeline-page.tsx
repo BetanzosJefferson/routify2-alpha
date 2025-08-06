@@ -19,6 +19,8 @@ interface Transaction {
   paymentMethod: string | null;
   notes: string | null;
   contact: any;
+  origin: string | null;
+  destination: string | null;
   createdAt: string;
 }
 
@@ -349,7 +351,7 @@ export default function OperatorTimelinePage() {
                                           </div>
                                         </div>
                                         
-                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                        <div className="space-y-1 text-xs text-gray-600">
                                           {transaction.passenger && (
                                             <div>
                                               <span className="font-medium">Pasajero:</span> {transaction.passenger}
@@ -360,6 +362,37 @@ export default function OperatorTimelinePage() {
                                               <span className="font-medium">Método:</span> {transaction.paymentMethod}
                                             </div>
                                           )}
+                                          
+                                          {/* Origen y Destino de la reserva */}
+                                          {transaction.origin && (
+                                            <div className="flex items-center gap-1">
+                                              <MapPinIcon className="h-3 w-3 text-green-500" />
+                                              <span className="font-medium">Origen:</span> 
+                                              <span className="truncate">{transaction.origin}</span>
+                                            </div>
+                                          )}
+                                          {transaction.destination && (
+                                            <div className="flex items-center gap-1">
+                                              <MapPinIcon className="h-3 w-3 text-red-500" />
+                                              <span className="font-medium">Destino:</span> 
+                                              <span className="truncate">{transaction.destination}</span>
+                                            </div>
+                                          )}
+                                          
+                                          <div className="text-xs text-gray-500 mt-1">
+                                            <span className="font-medium">Creada:</span> {
+                                              transaction.createdAt ? (() => {
+                                                const date = new Date(transaction.createdAt);
+                                                const dateStr = date.toLocaleDateString('es-MX');
+                                                const timeStr = date.toLocaleTimeString('es-MX', { 
+                                                  hour: '2-digit', 
+                                                  minute: '2-digit', 
+                                                  hour12: true 
+                                                });
+                                                return `${dateStr} a las ${timeStr}`;
+                                              })() : 'N/A'
+                                            }
+                                          </div>
                                         </div>
                                         
                                         {transaction.notes && (

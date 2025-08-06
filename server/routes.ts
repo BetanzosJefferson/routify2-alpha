@@ -9522,17 +9522,22 @@ function setupPackageRoutes(app: Express) {
               email: trip.users.email
             } : null,
             // Transacciones agrupadas para este viaje específico
-            transactions: tripTransactions.map(transaction => ({
-              id: transaction.id,
-              type: (transaction.details as any)?.type || 'unknown',
-              amount: (transaction.details as any)?.details?.monto || 0,
-              reservationId: (transaction.details as any)?.details?.id || null,
-              passenger: (transaction.details as any)?.details?.pasajeros || null,
-              paymentMethod: (transaction.details as any)?.details?.metodoPago || null,
-              notes: (transaction.details as any)?.details?.notas || null,
-              contact: (transaction.details as any)?.details?.contacto || null,
-              createdAt: transaction.createdAt
-            }))
+            transactions: tripTransactions.map(transaction => {
+              const details = (transaction.details as any);
+              return {
+                id: transaction.id,
+                type: details?.type || 'unknown',
+                amount: details?.details?.monto || 0,
+                reservationId: details?.details?.id || null,
+                passenger: details?.details?.pasajeros || null,
+                paymentMethod: details?.details?.metodoPago || null,
+                notes: details?.details?.notas || null,
+                contact: details?.details?.contacto || null,
+                origin: details?.details?.origen || null,
+                destination: details?.details?.destino || null,
+                createdAt: transaction.created_at
+              };
+            })
           };
         }),
         // Mantener lista completa de transacciones para compatibilidad
@@ -9545,7 +9550,7 @@ function setupPackageRoutes(app: Express) {
           paymentMethod: (transaction.details as any)?.details?.metodoPago,
           notes: (transaction.details as any)?.details?.notas,
           reservationId: (transaction.details as any)?.details?.id,
-          createdAt: transaction.createdAt,
+          createdAt: transaction.created_at,
           companyId: transaction.companyId
         }))
       };

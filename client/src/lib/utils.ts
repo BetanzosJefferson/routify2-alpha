@@ -172,6 +172,10 @@ export function formatDate(date: Date | string | null | undefined): string {
         // Extraer la parte de fecha de un string ISO
         const datePart = date.split('T')[0];
         [year, month, day] = datePart.split('-').map(Number);
+      } else if (date.includes(' ')) {
+        // Formato con espacio (como 2025-08-06 08:40:30.040139)
+        const datePart = date.split(' ')[0];
+        [year, month, day] = datePart.split('-').map(Number);
       } else {
         // Formato simple YYYY-MM-DD
         [year, month, day] = date.split('-').map(Number);
