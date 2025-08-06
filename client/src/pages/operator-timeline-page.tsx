@@ -281,7 +281,7 @@ export default function OperatorTimelinePage() {
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-2 text-sm">
                                     <CalendarIcon className="h-4 w-4 text-gray-500" />
-                                    <span>{formatDate(firstSegment.departureDate)}</span>
+                                    <span>{firstSegment.departureDate || 'N/A'}</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-sm">
                                     <ClockIcon className="h-4 w-4 text-gray-500" />
@@ -453,7 +453,16 @@ export default function OperatorTimelinePage() {
                                   <span className="font-medium">Método de pago:</span> {transaction.paymentMethod}
                                 </div>
                                 <div className="text-sm text-gray-600">
-                                  {formatDate(transaction.createdAt)} - {formatTime(transaction.createdAt)}
+                                  {transaction.createdAt ? (() => {
+                                    const date = new Date(transaction.createdAt);
+                                    const dateStr = date.toLocaleDateString('es-MX');
+                                    const timeStr = date.toLocaleTimeString('es-MX', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit', 
+                                      hour12: true 
+                                    });
+                                    return `${dateStr} - ${timeStr}`;
+                                  })() : 'N/A'}
                                 </div>
                               </div>
                             </div>
