@@ -211,7 +211,7 @@ export default function OperatorTimelinePage() {
         {timelineData && (
           <div className="space-y-6">
             {/* Resumen */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="flex items-center justify-between p-6">
                   <div>
@@ -245,6 +245,50 @@ export default function OperatorTimelinePage() {
                   <CalendarIcon className="h-8 w-8 text-purple-500" />
                 </CardContent>
               </Card>
+
+              {/* Nuevo card de métodos de pago */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSignIcon className="h-5 w-5 text-emerald-500" />
+                    <p className="text-sm font-medium text-gray-600">Métodos de pago</p>
+                  </div>
+                  {(() => {
+                    // Calcular totales por método de pago
+                    const allTransactions = timelineData.trips.reduce((acc, trip) => {
+                      return acc.concat(trip.transactions || []);
+                    }, []);
+                    
+                    const efectivoTotal = allTransactions
+                      .filter(t => t.paymentMethod?.toLowerCase() === 'efectivo')
+                      .reduce((sum, t) => sum + (t.amount || 0), 0);
+                    
+                    const transferenciaTotal = allTransactions
+                      .filter(t => t.paymentMethod?.toLowerCase() === 'transferencia')
+                      .reduce((sum, t) => sum + (t.amount || 0), 0);
+                    
+                    const total = allTransactions
+                      .reduce((sum, t) => sum + (t.amount || 0), 0);
+                    
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Efectivo:</span>
+                          <span className="font-medium text-green-600">${efectivoTotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Transferencia:</span>
+                          <span className="font-medium text-blue-600">${transferenciaTotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                          <span className="font-medium text-gray-800">Total:</span>
+                          <span className="font-bold text-gray-800">${total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Lista de viajes */}
@@ -272,9 +316,7 @@ export default function OperatorTimelinePage() {
                             <div className="space-y-2 flex-1">
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline">Viaje #{trip.id}</Badge>
-                                <Badge variant={trip.visibility === "publicado" ? "default" : "secondary"}>
-                                  {trip.visibility}
-                                </Badge>
+                               
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -316,11 +358,7 @@ export default function OperatorTimelinePage() {
                                 </div>
                               </div>
 
-                              {trip.route && (
-                                <div className="text-sm text-gray-600">
-                                  <span className="font-medium">Ruta:</span> {trip.route.name}
-                                </div>
-                              )}
+                         
 
                               {/* Transacciones asociadas a este viaje */}
                               {trip.transactions && trip.transactions.length > 0 && (
