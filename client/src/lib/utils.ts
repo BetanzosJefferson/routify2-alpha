@@ -161,9 +161,6 @@ export function formatDate(date: Date | string | null | undefined): string {
   }
   
   try {
-    // Para depuración: imprimir la fecha antes de procesarla
-    console.log(`[formatDate] Fecha original: ${date instanceof Date ? date.toISOString() : date}`);
-    
     // Extraer componentes de fecha directamente para evitar problemas de zona horaria
     let year: number, month: number, day: number;
     
@@ -189,11 +186,14 @@ export function formatDate(date: Date | string | null | undefined): string {
       throw new Error('Formato de fecha no válido');
     }
     
+    // Verificar que los componentes sean válidos
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      console.error(`[formatDate] Componentes inválidos: ${day}/${month}/${year}`);
+      return 'Fecha inválida';
+    }
+    
     // Formatear manualmente para evitar problemas de zona horaria
     const formattedDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
-    
-    console.log(`[formatDate] Componentes extraídos: ${day}/${month}/${year}`);
-    console.log(`[formatDate] Resultado: ${formattedDate}`);
     
     return formattedDate;
   } catch (error) {
