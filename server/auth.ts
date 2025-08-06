@@ -4,9 +4,9 @@ import { Express, Request, Response, NextFunction } from "express";
 import { db } from "./db";
 import { 
   users, insertUserSchema, insertInvitationSchema, invitations, UserRole,
-  companies, insertCompanySchema, userCompanies, transacciones, trips
+  companies, insertCompanySchema, userCompanies
 } from "@shared/schema";
-import { eq, and, isNull, ne, or, inArray, sql, desc } from "drizzle-orm";
+import { eq, and, isNull, ne, or, inArray } from "drizzle-orm";
 import { add } from "date-fns";
 import { getAuthMiddleware } from "./auth-session";
 
@@ -147,122 +147,6 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
     } catch (error) {
       console.error("Error al obtener usuarios:", error);
       res.status(500).json({ message: "Error al obtener usuarios" });
-    }
-  });
-
-  // Endpoint para obtener lista de operadores (conductores) - Solo admin y dueño
-  app.get("/api/users/operators", authMiddleware, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      
-      console.log(`[GET /api/users/operators] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}, CompanyId: ${user.companyId}, Company: ${user.company}`);
-      
-      // Solo admin y dueño pueden acceder
-      if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN) {
-        return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
-      }
-      
-      // Construir condiciones de filtrado
-      const conditions = [eq(users.role, 'chofer')];
-      
-      // Filtrar por compañía según el rol del usuario
-      if (user.role === UserRole.OWNER) {
-        if (user.companyId) {
-          conditions.push(eq(users.companyId, user.companyId));
-        }
-      } else if (user.role === UserRole.ADMIN) {
-        const userCompany = user.companyId || user.company;
-        if (userCompany) {
-          conditions.push(
-            or(
-              eq(users.companyId, userCompany),
-              eq(users.company, userCompany)
-            )
-          );
-        }
-      }
-      
-      const query = db.select().from(users).where(and(...conditions));
-      
-      const operators = await query;
-      console.log(`[GET /api/users/operators] Encontrados ${operators.length} operadores`);
-      
-      res.json(operators);
-    } catch (error) {
-      console.error("Error al obtener operadores:", error);
-      res.status(500).json({ message: "Error al obtener operadores" });
-    }
-  });
-
-  // Endpoint para obtener línea de tiempo del operador
-  app.get("/api/operator-timeline", authMiddleware, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      const { operatorId, startDate, endDate } = req.query;
-      
-      console.log(`[GET /api/operator-timeline] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-      console.log(`[GET /api/operator-timeline] Parámetros: operatorId=${operatorId}, startDate=${startDate}, endDate=${endDate}`);
-      
-      // Solo admin y dueño pueden acceder
-      if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN) {
-        return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
-      }
-
-      if (!operatorId || !startDate || !endDate) {
-        return res.status(400).json({ message: "Se requieren operatorId, startDate y endDate" });
-      }
-
-      // Convertir fechas
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
-      end.setHours(23, 59, 59, 999); // Incluir todo el día final
-      
-      console.log(`[GET /api/operator-timeline] Buscando desde: ${start.toISOString()} hasta: ${end.toISOString()}`);
-
-      // Buscar transacciones del operador en el rango de fechas
-      const operatorTransactions = await db
-        .select()
-        .from(transacciones)
-        .where(
-          and(
-            eq(transacciones.user_id, parseInt(operatorId as string)),
-            eq(transacciones.companyId, user.companyId),
-            sql`created_at >= ${start.toISOString()}`,
-            sql`created_at <= ${end.toISOString()}`
-          )
-        )
-        .orderBy(desc(transacciones.createdAt));
-
-      console.log(`[GET /api/operator-timeline] Encontradas ${operatorTransactions.length} transacciones`);
-
-      // Buscar viajes del operador en el rango de fechas  
-      // Nota: Los viajes almacenan la fecha en tripData JSON, no en columnas directas
-      const operatorTrips = await db
-        .select()
-        .from(trips)
-        .where(
-          and(
-            eq(trips.driverId, parseInt(operatorId as string)),
-            eq(trips.companyId, user.companyId)
-          )
-        );
-
-      console.log(`[GET /api/operator-timeline] Encontrados ${operatorTrips.length} viajes`);
-
-      // Formatear respuesta
-      const timeline = {
-        transactions: operatorTransactions,
-        trips: operatorTrips,
-        summary: {
-          totalTransactions: operatorTransactions.length,
-          totalTrips: operatorTrips.length
-        }
-      };
-
-      res.json(timeline);
-    } catch (error) {
-      console.error("Error al obtener línea de tiempo del operador:", error);
-      res.status(500).json({ message: "Error al obtener línea de tiempo del operador" });
     }
   });
   

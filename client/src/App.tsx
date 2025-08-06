@@ -29,7 +29,6 @@ import CashBoxPage from "@/pages/cash-box";
 import CutoffHistoryPage from "@/pages/cutoff-history";
 import CutoffConfirmationPage from "@/pages/cutoff-confirmation-page";
 import { PassengerTransferPage } from "@/pages/passenger-transfer-page";
-import { OperatorTimelinePage } from "@/pages/operator-timeline-page";
 
 import TripLogPageRoute from "@/pages/trip-log-page";
 import UsersPageRoute from "@/pages/users-page";
@@ -62,7 +61,6 @@ function Router() {
       <ProtectedRoute path="/cutoff-confirmation" component={CutoffConfirmationPage} />
       <ProtectedRoute path="/edit-trip/:id" component={EditTripPage} />
       <ProtectedRoute path="/passenger-transfer" component={PassengerTransferPage} />
-      <ProtectedRoute path="/operator-timeline" component={OperatorTimelinePage} />
 
       <ProtectedRoute path="/trip-log" component={TripLogPageRoute} />
       <ProtectedRoute path="/users" component={UsersPageRoute} />
