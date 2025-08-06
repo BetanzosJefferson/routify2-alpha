@@ -459,26 +459,31 @@ export function ReservationDetailsSidebar({
     setLoadingPackageActions(prev => ({ ...prev, [packageId]: 'payment' }));
     
     try {
-      const response = await apiRequest(
-        "PATCH",
-        `/api/packages/${packageId}`,
-        { 
-          isPaid: true,
-          paidBy: user?.id
-        }
-      );
+      // Usar el mismo endpoint que la página pública para asegurar que se cree la transacción
+      const response = await fetch(`/api/public/packages/${packageId}/mark-paid`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          isPaid: true
+        })
+      });
       
       if (response.ok) {
         // Invalidar queries para refrescar los datos inmediatamente
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['/api/packages'] }),
           queryClient.invalidateQueries({ queryKey: [`/api/packages/trip`] }),
-          queryClient.invalidateQueries({ queryKey: ["packages-by-trip"] })
+          queryClient.invalidateQueries({ queryKey: ["packages-by-trip"] }),
+          // También invalidar transacciones para que aparezcan en la línea de tiempo
+          queryClient.invalidateQueries({ queryKey: ['/api/transactions'] }),
+          queryClient.invalidateQueries({ queryKey: ['/api/operator-timeline'] })
         ]);
         
         toast({
           title: "Paquete marcado como pagado",
-          description: "El paquete ha sido marcado como pagado correctamente.",
+          description: "El paquete ha sido marcado como pagado y se ha creado la transacción correspondiente.",
         });
       } else {
         const errorData = await response.json().catch(() => ({}));
