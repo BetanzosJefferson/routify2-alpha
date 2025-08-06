@@ -9401,26 +9401,26 @@ function setupPackageRoutes(app: Express) {
       console.log(`[GET /api/operator-timeline] Filtrando viajes del ${startDateStr} al ${endDateStr}`);
       
       // Obtener viajes usando consulta SQL directa para filtrar JSON
-      let tripsQuery = `
-        SELECT * FROM trips 
-        WHERE driver_id = $1
-        AND (
-          trip_data::text LIKE '%"departureDate":"${startDateStr}"%'
-      `;
+      // Crear condiciones para buscar en el array JSON usando operador @>
+      const dateConditions = [];
       
-      // Agregar fechas adicionales si el rango es más de un día
+      // Agregar fechas del rango
       const startDateObj = new Date(startDateStr);
       const endDateObj = new Date(endDateStr);
       const daysDiff = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24));
       
-      for (let i = 1; i <= daysDiff; i++) {
+      for (let i = 0; i <= daysDiff; i++) {
         const currentDate = new Date(startDateObj);
         currentDate.setDate(startDateObj.getDate() + i);
         const dateStr = currentDate.toISOString().split('T')[0];
-        tripsQuery += ` OR trip_data::text LIKE '%"departureDate":"${dateStr}"%'`;
+        dateConditions.push(`trip_data::jsonb @> '[{"departureDate": "${dateStr}"}]'`);
       }
       
-      tripsQuery += ')';
+      let tripsQuery = `
+        SELECT * FROM trips 
+        WHERE driver_id = $1
+        AND (${dateConditions.join(' OR ')})
+      `;
       
       // Agregar filtro de compañía si no es superadmin
       if (user.role !== UserRole.SUPER_ADMIN && userCompany) {
@@ -9429,7 +9429,7 @@ function setupPackageRoutes(app: Express) {
       
       tripsQuery += ' ORDER BY id DESC';
       
-      console.log(`[GET /api/operator-timeline] Query de viajes: ${tripsQuery}`);
+      console.log(`[GET /api/operator-timeline] Query de viajes corregido: ${tripsQuery}`);
       
       const tripsResult = await db.execute(sql.raw(tripsQuery, [operatorIdNum]));
       const trips = tripsResult.rows;
@@ -9515,15 +9515,30 @@ function setupPackageRoutes(app: Express) {
         }
       }
       
-      // Crear estructura de respuesta con viajes y sus transacciones
+      // IMPORTANTE: Procesar correctamente los datos de trip_data de PostgreSQL
       const tripWithTransactions = trips.map(trip => {
-        const tripData = Array.isArray(trip.tripData) ? trip.tripData : [trip.tripData];
+        // El campo trip_data viene de PostgreSQL como un array de segmentos
+        let tripData;
+        if (typeof trip.trip_data === 'string') {
+          tripData = JSON.parse(trip.trip_data);
+        } else {
+          tripData = trip.trip_data;
+        }
+        
+        // Convertir a array si no lo es
+        if (!Array.isArray(tripData)) {
+          tripData = [tripData];
+        }
+        
         const mainTrip = tripData.find(t => t.isMainTrip) || tripData[0];
         const tripId = mainTrip?.tripId;
         const relatedTransactions = tripId ? tripTransactionMap.get(tripId) || [] : [];
         
         return {
-          ...trip,
+          id: trip.id,
+          driverId: trip.driver_id,
+          companyId: trip.company_id,
+          tripData,
           transactions: relatedTransactions
         };
       });
@@ -9531,11 +9546,13 @@ function setupPackageRoutes(app: Express) {
       // Contar solo los viajes que tienen transacciones
       const tripsWithTransactions = tripWithTransactions.filter(trip => trip.transactions.length > 0);
       
-      console.log(`[GET /api/operator-timeline] Summary - Viajes con transacciones: ${tripsWithTransactions.length}, Total transacciones: ${transactions.length}, Efectivo: $${totalEfectivo}, Transferencia: $${totalTransferencia}`);
+      console.log(`[GET /api/operator-timeline] ANTES - Total viajes query: ${trips.length}`);
+      console.log(`[GET /api/operator-timeline] DESPUÉS - Viajes con transacciones: ${tripsWithTransactions.length}`);
+      console.log(`[GET /api/operator-timeline] Transacciones: ${transactions.length}, Efectivo: $${totalEfectivo}, Transferencia: $${totalTransferencia}`);
       
       res.json({
         transactions,
-        trips: tripWithTransactions,
+        trips: tripsWithTransactions,
         summary: {
           totalTrips: tripsWithTransactions.length,
           totalTransactions: transactions.length,
