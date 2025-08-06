@@ -398,7 +398,20 @@ export default function OperatorTimelinePage() {
                                 </div>
                               </div>
 
-                         
+                              {/* Resumen financiero del viaje */}
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-sm text-gray-700">Ingresos del viaje</span>
+                                  <span className="text-lg font-bold text-green-600">
+                                    ${trip.transactions?.reduce((sum, t) => sum + (t.amount || 0), 0).toLocaleString() || '0'} MXN
+                                  </span>
+                                </div>
+                                {trip.transactions && trip.transactions.length > 0 && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {trip.transactions.length} transacción{trip.transactions.length > 1 ? 'es' : ''}
+                                  </div>
+                                )}
+                              </div>
 
                               {/* Transacciones asociadas a este viaje */}
                               {trip.transactions && trip.transactions.length > 0 && (
