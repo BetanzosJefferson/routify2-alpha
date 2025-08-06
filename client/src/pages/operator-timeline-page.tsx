@@ -350,7 +350,7 @@ export default function OperatorTimelinePage() {
                       return (
                         <div 
                           key={trip.id} 
-                          className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                          className="border-2 border-blue-300 rounded-lg p-4 hover:bg-gray-50 transition-colors shadow-sm"
                         >
                           <div className="flex items-start justify-between">
                             <div className="space-y-2 flex-1">
