@@ -325,17 +325,17 @@ export function OperatorTimeline() {
                     </div>
                     {/* Total efectivo */}
                     <div className="text-center">
-                      <div className="text-xl font-bold text-green-600">${timelineData.summary?.totalEfectivo.toLocaleString() || 0}</div>
+                      <div className="text-xl font-bold text-green-600">${(timelineData.summary?.totalEfectivo || 0).toLocaleString()}</div>
                       <div className="text-xs text-gray-500">efectivo</div>
                     </div>
                     {/* Total transferencia */}
                     <div className="text-center">
-                      <div className="text-xl font-bold text-orange-600">${timelineData.summary?.totalTransferencia.toLocaleString() || 0}</div>
+                      <div className="text-xl font-bold text-orange-600">${(timelineData.summary?.totalTransferencia || 0).toLocaleString()}</div>
                       <div className="text-xs text-gray-500">transferencia</div>
                     </div>
                     {/* Total general */}
                     <div className="text-center">
-                      <div className="text-xl font-bold text-gray-800">${timelineData.summary?.totalGeneral.toLocaleString() || 0}</div>
+                      <div className="text-xl font-bold text-gray-800">${(timelineData.summary?.totalGeneral || 0).toLocaleString()}</div>
                       <div className="text-xs text-gray-500">total general</div>
                     </div>
                   </div>
