@@ -382,17 +382,22 @@ export default function OperatorTimelinePage() {
                                           <div className="text-xs text-gray-500 mt-1">
                                             <span className="font-medium">Creada:</span> {
                                               transaction.createdAt ? (() => {
-                                                const date = new Date(transaction.createdAt);
-                                                const dateStr = date.toLocaleDateString('es-MX', {
+                                                // Asegurar que la fecha se trate como UTC
+                                                const dateStr = transaction.createdAt.toString();
+                                                const utcDate = dateStr.includes('Z') ? 
+                                                  new Date(dateStr) : 
+                                                  new Date(dateStr + 'Z');
+                                                
+                                                const formattedDate = utcDate.toLocaleDateString('es-MX', {
                                                   timeZone: 'America/Mexico_City'
                                                 });
-                                                const timeStr = date.toLocaleTimeString('es-MX', { 
+                                                const formattedTime = utcDate.toLocaleTimeString('es-MX', { 
                                                   hour: '2-digit', 
                                                   minute: '2-digit', 
                                                   hour12: true,
                                                   timeZone: 'America/Mexico_City'
                                                 });
-                                                return `${dateStr} a las ${timeStr}`;
+                                                return `${formattedDate} a las ${formattedTime}`;
                                               })() : 'N/A'
                                             }
                                           </div>
@@ -457,17 +462,22 @@ export default function OperatorTimelinePage() {
                                 </div>
                                 <div className="text-sm text-gray-600">
                                   {transaction.createdAt ? (() => {
-                                    const date = new Date(transaction.createdAt);
-                                    const dateStr = date.toLocaleDateString('es-MX', {
+                                    // Asegurar que la fecha se trate como UTC
+                                    const dateStr = transaction.createdAt.toString();
+                                    const utcDate = dateStr.includes('Z') ? 
+                                      new Date(dateStr) : 
+                                      new Date(dateStr + 'Z');
+                                    
+                                    const formattedDate = utcDate.toLocaleDateString('es-MX', {
                                       timeZone: 'America/Mexico_City'
                                     });
-                                    const timeStr = date.toLocaleTimeString('es-MX', { 
+                                    const formattedTime = utcDate.toLocaleTimeString('es-MX', { 
                                       hour: '2-digit', 
                                       minute: '2-digit', 
                                       hour12: true,
                                       timeZone: 'America/Mexico_City'
                                     });
-                                    return `${dateStr} - ${timeStr}`;
+                                    return `${formattedDate} - ${formattedTime}`;
                                   })() : 'N/A'}
                                 </div>
                               </div>
