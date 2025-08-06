@@ -9415,7 +9415,7 @@ function setupPackageRoutes(app: Express) {
         });
       }
 
-      // Filtrar por fechas usando JSON
+      // Filtrar por fechas usando comparación correcta
       const filteredTrips = tripsWithDetails.filter(trip => {
         try {
           const tripData = trip.trips.tripData as any[];
@@ -9424,9 +9424,14 @@ function setupPackageRoutes(app: Express) {
           const departureDate = tripData[0]?.departureDate;
           if (!departureDate) return false;
           
+          // Usar comparación de strings directa para fechas en formato YYYY-MM-DD 
+          // Esto evita problemas de zona horaria ya que todas las fechas están en el mismo formato
           console.log(`[GET /operator-timeline] Viaje ${trip.trips.id} - Fecha: ${departureDate}, Rango: ${startDate} - ${endDate}`);
           
-          return departureDate >= startDate && departureDate <= endDate;
+          const isInRange = departureDate >= startDate && departureDate <= endDate;
+          console.log(`[GET /operator-timeline] ¿En rango?: ${isInRange}`);
+          
+          return isInRange;
         } catch (e) {
           console.log(`[GET /operator-timeline] Error filtrando viaje ${trip.trips.id}:`, e);
           return false;
