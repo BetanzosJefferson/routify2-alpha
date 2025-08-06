@@ -9433,37 +9433,73 @@ function setupPackageRoutes(app: Express) {
       
       console.log(`[GET /api/operator-timeline] Encontradas ${transactions.length} transacciones`);
       
-      // Formatear datos para el frontend
-      const formattedTrips = trips.map(trip => ({
-        id: trip.id,
-        origin: typeof trip.tripData === 'string' 
-          ? JSON.parse(trip.tripData)[0]?.origin || 'Origen no disponible'
-          : trip.tripData[0]?.origin || 'Origen no disponible',
-        destination: typeof trip.tripData === 'string'
-          ? JSON.parse(trip.tripData)[JSON.parse(trip.tripData).length - 1]?.destination || 'Destino no disponible'
-          : trip.tripData[trip.tripData.length - 1]?.destination || 'Destino no disponible',
-        departureDate: trip.departureDate,
-        departureTime: typeof trip.tripData === 'string'
-          ? JSON.parse(trip.tripData)[0]?.departureTime || 'Hora no disponible'
-          : trip.tripData[0]?.departureTime || 'Hora no disponible',
-        driverId: trip.driverId,
-        companyId: trip.companyId
-      }));
+      // Calcular totales de transacciones
+      let totalEfectivo = 0;
+      let totalTransferencia = 0;
       
-      const formattedTransactions = transactions.map(transaction => ({
-        id: transaction.id,
-        amount: transaction.amount,
-        type: transaction.source || 'general',
-        description: transaction.description || 'Sin descripción',
-        createdAt: transaction.createdAt,
-        createdBy: transaction.user_id,
-        tripId: transaction.trip_record_id?.toString() || 'Sin viaje asociado'
-      }));
+      for (const transaction of transactions) {
+        const details = transaction.details;
+        if (details && typeof details === 'object' && details.details) {
+          const monto = parseFloat(details.details.monto) || 0;
+          const metodoPago = details.details.metodoPago || '';
+          
+          if (metodoPago.toLowerCase() === 'efectivo') {
+            totalEfectivo += monto;
+          } else if (metodoPago.toLowerCase() === 'transferencia') {
+            totalTransferencia += monto;
+          }
+        }
+      }
+      
+      console.log(`[GET /api/operator-timeline] Totales - Efectivo: $${totalEfectivo}, Transferencia: $${totalTransferencia}`);
+      
+      // Procesar transacciones por viaje
+      const tripTransactionMap = new Map();
+      
+      // Agrupar transacciones por tripId
+      for (const transaction of transactions) {
+        const details = transaction.details;
+        let tripId = null;
+        
+        if (details && typeof details === 'object') {
+          if (details.type === 'reservation' && details.details) {
+            tripId = details.details.tripId;
+          } else if (details.type === 'package' && details.details) {
+            tripId = details.details.tripId;
+          }
+        }
+        
+        if (tripId) {
+          if (!tripTransactionMap.has(tripId)) {
+            tripTransactionMap.set(tripId, []);
+          }
+          tripTransactionMap.get(tripId).push(transaction);
+        }
+      }
+      
+      // Crear estructura de respuesta con viajes y sus transacciones
+      const tripWithTransactions = trips.map(trip => {
+        const tripData = Array.isArray(trip.tripData) ? trip.tripData : [trip.tripData];
+        const mainTrip = tripData.find(t => t.isMainTrip) || tripData[0];
+        const tripId = mainTrip?.tripId;
+        const relatedTransactions = tripId ? tripTransactionMap.get(tripId) || [] : [];
+        
+        return {
+          ...trip,
+          transactions: relatedTransactions
+        };
+      });
       
       res.json({
-        trips: formattedTrips,
-        transactions: formattedTransactions,
-        totalCount: formattedTrips.length + formattedTransactions.length
+        transactions,
+        trips: tripWithTransactions,
+        summary: {
+          totalTrips: trips.length,
+          totalTransactions: transactions.length,
+          totalEfectivo,
+          totalTransferencia,
+          totalGeneral: totalEfectivo + totalTransferencia
+        }
       });
       
     } catch (error) {

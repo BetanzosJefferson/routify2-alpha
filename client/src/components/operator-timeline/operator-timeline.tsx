@@ -37,10 +37,18 @@ interface Operator {
   email: string;
 }
 
+interface Summary {
+  totalTrips: number;
+  totalTransactions: number;
+  totalEfectivo: number;
+  totalTransferencia: number;
+  totalGeneral: number;
+}
+
 interface TimelineData {
   trips: Trip[];
   transactions: Transaction[];
-  totalCount: number;
+  summary: Summary;
 }
 
 export function OperatorTimeline() {
@@ -304,9 +312,32 @@ export function OperatorTimeline() {
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">{timelineData.transactions.length}</div>
-                    <div className="text-sm text-gray-500">transacciones encontradas</div>
+                  <div className="flex items-center gap-6">
+                    {/* Contador de viajes */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-blue-600">{timelineData.summary?.totalTrips || 0}</div>
+                      <div className="text-xs text-gray-500">viajes</div>
+                    </div>
+                    {/* Contador de transacciones */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-purple-600">{timelineData.summary?.totalTransactions || 0}</div>
+                      <div className="text-xs text-gray-500">transacciones</div>
+                    </div>
+                    {/* Total efectivo */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-600">${timelineData.summary?.totalEfectivo.toLocaleString() || 0}</div>
+                      <div className="text-xs text-gray-500">efectivo</div>
+                    </div>
+                    {/* Total transferencia */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-orange-600">${timelineData.summary?.totalTransferencia.toLocaleString() || 0}</div>
+                      <div className="text-xs text-gray-500">transferencia</div>
+                    </div>
+                    {/* Total general */}
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-800">${timelineData.summary?.totalGeneral.toLocaleString() || 0}</div>
+                      <div className="text-xs text-gray-500">total general</div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
