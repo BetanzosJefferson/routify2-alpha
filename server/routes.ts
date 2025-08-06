@@ -9375,13 +9375,16 @@ function setupPackageRoutes(app: Express) {
       
       console.log(`[GET /api/operator-timeline] Usuario: ${user.firstName} ${user.lastName}, Operador: ${operatorId}, Rango: ${startDate} - ${endDate}`);
       
-      // Convertir fechas
-      const start = new Date(startDate as string);
-      start.setHours(0, 0, 0, 0); // Asegurar que comience al inicio del día
+      // Convertir fechas considerando zona horaria
+      // El frontend envía fechas en formato YYYY-MM-DD, necesitamos convertir a UTC correctamente
+      const startDateStr = startDate as string;
+      const endDateStr = endDate as string;
       
-      const end = new Date(endDate as string);
-      end.setHours(23, 59, 59, 999); // Incluir todo el día final
+      // Crear fechas en UTC para el inicio y fin del día
+      const start = new Date(`${startDateStr}T00:00:00.000Z`);
+      const end = new Date(`${endDateStr}T23:59:59.999Z`);
       
+      console.log(`[GET /api/operator-timeline] Fechas recibidas: ${startDateStr} a ${endDateStr}`);
       console.log(`[GET /api/operator-timeline] Buscando desde: ${start.toISOString()} hasta: ${end.toISOString()}`);
       
       // Obtener compañía del usuario para filtrado
@@ -9419,6 +9422,8 @@ function setupPackageRoutes(app: Express) {
       if (user.role !== UserRole.SUPER_ADMIN && userCompany) {
         transactionConditions.push(eq(schema.transacciones.companyId, userCompany));
       }
+      
+      console.log(`[GET /api/operator-timeline] Condiciones de búsqueda de transacciones: usuario ${operatorIdNum}, desde ${start.toISOString()}, hasta ${end.toISOString()}`);
       
       const transactions = await db
         .select()
