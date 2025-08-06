@@ -9439,14 +9439,20 @@ function setupPackageRoutes(app: Express) {
       
       for (const transaction of transactions) {
         const details = transaction.details;
+        console.log(`[GET /api/operator-timeline] Procesando transacción ${transaction.id}:`, JSON.stringify(details));
+        
         if (details && typeof details === 'object' && details.details) {
           const monto = parseFloat(details.details.monto) || 0;
           const metodoPago = details.details.metodoPago || '';
           
+          console.log(`[GET /api/operator-timeline] Transacción ${transaction.id} - Monto: ${monto}, Método: ${metodoPago}`);
+          
           if (metodoPago.toLowerCase() === 'efectivo') {
             totalEfectivo += monto;
+            console.log(`[GET /api/operator-timeline] Sumando ${monto} a efectivo. Total efectivo: ${totalEfectivo}`);
           } else if (metodoPago.toLowerCase() === 'transferencia') {
             totalTransferencia += monto;
+            console.log(`[GET /api/operator-timeline] Sumando ${monto} a transferencia. Total transferencia: ${totalTransferencia}`);
           }
         }
       }
@@ -9490,11 +9496,16 @@ function setupPackageRoutes(app: Express) {
         };
       });
       
+      // Contar solo los viajes que tienen transacciones
+      const tripsWithTransactions = tripWithTransactions.filter(trip => trip.transactions.length > 0);
+      
+      console.log(`[GET /api/operator-timeline] Summary - Viajes con transacciones: ${tripsWithTransactions.length}, Total transacciones: ${transactions.length}, Efectivo: $${totalEfectivo}, Transferencia: $${totalTransferencia}`);
+      
       res.json({
         transactions,
         trips: tripWithTransactions,
         summary: {
-          totalTrips: trips.length,
+          totalTrips: tripsWithTransactions.length,
           totalTransactions: transactions.length,
           totalEfectivo,
           totalTransferencia,
