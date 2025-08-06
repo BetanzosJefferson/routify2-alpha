@@ -383,11 +383,14 @@ export default function OperatorTimelinePage() {
                                             <span className="font-medium">Creada:</span> {
                                               transaction.createdAt ? (() => {
                                                 const date = new Date(transaction.createdAt);
-                                                const dateStr = date.toLocaleDateString('es-MX');
+                                                const dateStr = date.toLocaleDateString('es-MX', {
+                                                  timeZone: 'America/Mexico_City'
+                                                });
                                                 const timeStr = date.toLocaleTimeString('es-MX', { 
                                                   hour: '2-digit', 
                                                   minute: '2-digit', 
-                                                  hour12: true 
+                                                  hour12: true,
+                                                  timeZone: 'America/Mexico_City'
                                                 });
                                                 return `${dateStr} a las ${timeStr}`;
                                               })() : 'N/A'
@@ -455,11 +458,14 @@ export default function OperatorTimelinePage() {
                                 <div className="text-sm text-gray-600">
                                   {transaction.createdAt ? (() => {
                                     const date = new Date(transaction.createdAt);
-                                    const dateStr = date.toLocaleDateString('es-MX');
+                                    const dateStr = date.toLocaleDateString('es-MX', {
+                                      timeZone: 'America/Mexico_City'
+                                    });
                                     const timeStr = date.toLocaleTimeString('es-MX', { 
                                       hour: '2-digit', 
                                       minute: '2-digit', 
-                                      hour12: true 
+                                      hour12: true,
+                                      timeZone: 'America/Mexico_City'
                                     });
                                     return `${dateStr} - ${timeStr}`;
                                   })() : 'N/A'}
