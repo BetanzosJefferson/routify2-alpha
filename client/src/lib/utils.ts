@@ -165,18 +165,26 @@ export function formatDate(date: Date | string | null | undefined): string {
     let year: number, month: number, day: number;
     
     if (typeof date === 'string') {
+      let datePart: string;
+      
       if (date.includes('T')) {
         // Extraer la parte de fecha de un string ISO
-        const datePart = date.split('T')[0];
-        [year, month, day] = datePart.split('-').map(Number);
+        datePart = date.split('T')[0];
       } else if (date.includes(' ')) {
         // Formato con espacio (como 2025-08-06 08:40:30.040139)
-        const datePart = date.split(' ')[0];
-        [year, month, day] = datePart.split('-').map(Number);
+        datePart = date.split(' ')[0];
       } else {
         // Formato simple YYYY-MM-DD
-        [year, month, day] = date.split('-').map(Number);
+        datePart = date;
       }
+      
+      // Dividir la fecha y asignar valores con validación
+      const parts = datePart.split('-');
+      if (parts.length !== 3) {
+        throw new Error(`Formato de fecha inválido: ${date}`);
+      }
+      
+      [year, month, day] = parts.map(Number);
     } else if (date instanceof Date) {
       // Para objetos Date, usar getUTCFullYear, getUTCMonth, getUTCDate para evitar desfases
       year = date.getUTCFullYear();
@@ -187,13 +195,14 @@ export function formatDate(date: Date | string | null | undefined): string {
     }
     
     // Verificar que los componentes sean válidos
-    if (isNaN(year) || isNaN(month) || isNaN(day)) {
-      console.error(`[formatDate] Componentes inválidos: ${day}/${month}/${year}`);
+    if (year === undefined || month === undefined || day === undefined || 
+        isNaN(year) || isNaN(month) || isNaN(day)) {
+      console.error(`[formatDate] Componentes inválidos: day=${day}, month=${month}, year=${year}`);
       return 'Fecha inválida';
     }
     
     // Formatear manualmente para evitar problemas de zona horaria
-    const formattedDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+    const formattedDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year.toString()}`;
     
     return formattedDate;
   } catch (error) {
