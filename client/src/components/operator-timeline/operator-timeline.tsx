@@ -133,29 +133,30 @@ export function OperatorTimeline() {
     setShowResults(false);
   };
 
-  // Agrupar transacciones por viaje
-  const groupedData = React.useMemo(() => {
-    if (!timelineData) return [];
+  // Procesar datos para mostrar
+  const processedData = React.useMemo(() => {
+    if (!timelineData) return { transactionsWithTrips: [], standAloneTransactions: [] };
 
-    const tripMap = new Map();
+    const transactionsWithTrips = [];
+    const standAloneTransactions = [];
     
-    // Crear mapa de viajes
-    timelineData.trips.forEach(trip => {
-      tripMap.set(trip.id.toString(), {
-        trip,
-        transactions: []
-      });
-    });
-
-    // Agregar transacciones a sus viajes correspondientes
+    // Procesar transacciones
     timelineData.transactions.forEach(transaction => {
-      const tripData = tripMap.get(transaction.tripId);
-      if (tripData) {
-        tripData.transactions.push(transaction);
+      const tripId = transaction.details?.details?.tripId;
+      if (tripId) {
+        // Buscar el viaje correspondiente
+        const trip = timelineData.trips.find(t => t.id === tripId);
+        if (trip) {
+          transactionsWithTrips.push({ transaction, trip });
+        } else {
+          standAloneTransactions.push(transaction);
+        }
+      } else {
+        standAloneTransactions.push(transaction);
       }
     });
 
-    return Array.from(tripMap.values()).filter(item => item.transactions.length > 0);
+    return { transactionsWithTrips, standAloneTransactions };
   }, [timelineData]);
 
   const formatPrice = (amount: number) => {
@@ -304,8 +305,8 @@ export function OperatorTimeline() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">{groupedData.length}</div>
-                    <div className="text-sm text-gray-500">viajes con transacciones</div>
+                    <div className="text-2xl font-bold">{timelineData.transactions.length}</div>
+                    <div className="text-sm text-gray-500">transacciones encontradas</div>
                   </div>
                 </div>
               </CardContent>
@@ -322,24 +323,25 @@ export function OperatorTimeline() {
                 </div>
               </CardContent>
             </Card>
-          ) : groupedData.length > 0 ? (
+          ) : timelineData?.transactions.length > 0 ? (
             <div className="space-y-4">
-              {groupedData.map((item, index) => (
-                <Card key={item.trip.id} className="border-l-4 border-l-blue-500">
+              {/* Transacciones asociadas a viajes */}
+              {processedData.transactionsWithTrips.map((item, index) => (
+                <Card key={`trip-${item.transaction.id}`} className="border-l-4 border-l-blue-500">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-5 w-5 text-blue-500" />
-                        <span>Viaje #{item.trip.id}</span>
+                        <span>Viaje #{item.transaction.details.details.tripId}</span>
                       </div>
                       <div className="text-sm text-gray-500">
-                        {format(parseISO(item.trip.departureDate), "dd/MM/yyyy", { locale: es })} - {item.trip.departureTime}
+                        {format(parseISO(item.transaction.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
                       </div>
                     </CardTitle>
                     <div className="text-sm text-gray-600">
                       <div className="flex items-center gap-4">
-                        <span><strong>Origen:</strong> {item.trip.origin}</span>
-                        <span><strong>Destino:</strong> {item.trip.destination}</span>
+                        <span><strong>Origen:</strong> {item.transaction.details.details.origen}</span>
+                        <span><strong>Destino:</strong> {item.transaction.details.details.destino}</span>
                       </div>
                     </div>
                   </CardHeader>
@@ -347,29 +349,62 @@ export function OperatorTimeline() {
                     <div className="space-y-3">
                       <h4 className="font-medium flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-green-500" />
-                        Transacciones ({item.transactions.length})
+                        Transacción #{item.transaction.id}
                       </h4>
-                      <div className="space-y-2">
-                        {item.transactions.map((transaction) => (
-                          <div key={transaction.id} className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{transaction.description}</div>
-                                <div className="text-sm text-gray-500">
-                                  {format(parseISO(transaction.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-bold text-green-600">
-                                  {formatPrice(transaction.amount)}
-                                </div>
-                                <div className="text-xs text-gray-500 capitalize">
-                                  {transaction.type}
-                                </div>
-                              </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{item.transaction.details.details.notas}</div>
+                            <div className="text-sm text-gray-500">
+                              Reservación #{item.transaction.details.details.id} - {item.transaction.details.details.pasajeros}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Método: {item.transaction.details.details.metodoPago}
                             </div>
                           </div>
-                        ))}
+                          <div className="text-right">
+                            <div className="font-bold text-green-600">
+                              {formatPrice(item.transaction.details.details.monto)}
+                            </div>
+                            <div className="text-xs text-gray-500 capitalize">
+                              {item.transaction.details.type}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {/* Transacciones sin viaje asociado */}
+              {processedData.standAloneTransactions.map((transaction) => (
+                <Card key={`standalone-${transaction.id}`} className="border-l-4 border-l-orange-500">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-orange-500" />
+                        <span>Transacción #{transaction.id}</span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {format(parseISO(transaction.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{transaction.details?.details?.notas || 'Sin descripción'}</div>
+                          <div className="text-sm text-gray-500">
+                            Tipo: {transaction.details?.type || 'No especificado'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-green-600">
+                            {formatPrice(transaction.details?.details?.monto || 0)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
