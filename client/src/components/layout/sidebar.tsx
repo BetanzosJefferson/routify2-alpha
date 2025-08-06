@@ -24,7 +24,8 @@ import {
   ReceiptIcon,
   Wallet,
   BarChart3,
-  CheckCircle
+  CheckCircle,
+  TimelineIcon
 } from "lucide-react";
 
 interface SidebarProps {
@@ -380,6 +381,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 onClick={() => setLocation("/transaction-history")}
               >
                 Historial de transacciones
+              </NavItem>
+            </div>
+          )}
+
+          {/* Línea de tiempo operador */}
+          {canAccess("operator-timeline") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<ClockIcon className="h-5 w-5" />} 
+                active={location === "/operator-timeline"}
+                onClick={() => setLocation("/operator-timeline")}
+              >
+                Línea de tiempo operador
               </NavItem>
             </div>
           )}

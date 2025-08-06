@@ -9348,4 +9348,103 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // Endpoint para línea de tiempo del operador
+  app.get("/api/operator-timeline", async (req: Request, res: Response) => {
+    try {
+      const { operatorId, startDate, endDate } = req.query;
+
+      if (!operatorId || !startDate || !endDate) {
+        return res.status(400).json({ 
+          error: "Se requieren operatorId, startDate y endDate" 
+        });
+      }
+
+      console.log(`[GET /operator-timeline] Consultando viajes para operador ${operatorId} desde ${startDate} hasta ${endDate}`);
+
+      // Consultar viajes asignados al operador
+      const trips = await db
+        .select()
+        .from(schema.trips)
+        .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
+        .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
+        .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
+        .where(eq(schema.trips.driverId, parseInt(operatorId as string)))
+        .orderBy(schema.trips.id);
+
+      // Filtrar por fechas usando JSON
+      const filteredTrips = trips.filter(trip => {
+        const tripData = trip.trips.tripData as any[];
+        if (!tripData || tripData.length === 0) return false;
+        
+        const departureDate = tripData[0]?.departureDate;
+        if (!departureDate) return false;
+        
+        return departureDate >= startDate && departureDate <= endDate;
+      });
+
+      // Consultar transacciones del operador en el mismo rango de fechas
+      const transactions = await db
+        .select()
+        .from(schema.transactions)
+        .where(
+          and(
+            eq(schema.transactions.userId, parseInt(operatorId as string)),
+            gte(schema.transactions.createdAt, new Date(startDate as string)),
+            lte(schema.transactions.createdAt, new Date(endDate as string))
+          )
+        )
+        .orderBy(schema.transactions.createdAt);
+
+      // Formatear datos para el frontend
+      const timelineData = {
+        trips: filteredTrips.map(trip => ({
+          id: trip.trips.id,
+          tripData: trip.trips.tripData,
+          capacity: trip.trips.capacity,
+          visibility: trip.trips.visibility,
+          companyId: trip.trips.companyId,
+          route: trip.routes ? {
+            id: trip.routes.id,
+            name: trip.routes.name,
+            origin: trip.routes.origin,
+            destination: trip.routes.destination,
+            stops: trip.routes.stops
+          } : null,
+          vehicle: trip.vehicles ? {
+            id: trip.vehicles.id,
+            plates: trip.vehicles.plateNumber,
+            brand: trip.vehicles.brand,
+            model: trip.vehicles.model,
+            capacity: trip.vehicles.capacity,
+            hasAC: trip.vehicles.hasAC,
+            hasRecliningSeats: trip.vehicles.hasRecliningSeats,
+            services: trip.vehicles.services
+          } : null,
+          driver: trip.users ? {
+            id: trip.users.id,
+            firstName: trip.users.firstName,
+            lastName: trip.users.lastName,
+            email: trip.users.email
+          } : null
+        })),
+        transactions: transactions.map(transaction => ({
+          id: transaction.id,
+          details: transaction.details,
+          user_id: transaction.userId,
+          cutoff_id: transaction.cutoffId,
+          createdAt: transaction.createdAt,
+          updatedAt: transaction.updatedAt,
+          companyId: transaction.companyId
+        }))
+      };
+
+      console.log(`[GET /operator-timeline] Encontrados ${timelineData.trips.length} viajes y ${timelineData.transactions.length} transacciones`);
+      
+      res.json(timelineData);
+    } catch (error) {
+      console.error('[GET /operator-timeline] Error:', error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
 }
