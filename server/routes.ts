@@ -9386,15 +9386,15 @@ function setupPackageRoutes(app: Express) {
       // Consultar transacciones del operador en el mismo rango de fechas
       const transactions = await db
         .select()
-        .from(schema.transactions)
+        .from(schema.transacciones)
         .where(
           and(
-            eq(schema.transactions.userId, parseInt(operatorId as string)),
-            gte(schema.transactions.createdAt, new Date(startDate as string)),
-            lte(schema.transactions.createdAt, new Date(endDate as string))
+            eq(schema.transacciones.userId, parseInt(operatorId as string)),
+            gte(schema.transacciones.createdAt, new Date(startDate as string)),
+            lte(schema.transacciones.createdAt, new Date(endDate as string))
           )
         )
-        .orderBy(schema.transactions.createdAt);
+        .orderBy(schema.transacciones.createdAt);
 
       // Formatear datos para el frontend
       const timelineData = {
