@@ -303,7 +303,13 @@ export default function OperatorTimelinePage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {timelineData.trips.map((trip) => {
+                    {timelineData.trips
+                      .sort((a, b) => {
+                        const dateA = a.tripData[0]?.departureDate || '';
+                        const dateB = b.tripData[0]?.departureDate || '';
+                        return new Date(dateA).getTime() - new Date(dateB).getTime();
+                      })
+                      .map((trip) => {
                       const firstSegment = trip.tripData[0];
                       if (!firstSegment) return null;
 
