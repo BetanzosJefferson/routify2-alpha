@@ -432,8 +432,15 @@ export default function OperatorTimelinePage() {
                                               Trans #{transaction.id}
                                             </Badge>
                                             {transaction.reservationId && (
-                                              <Badge variant="default" className="text-xs">
-                                                Reserva #{transaction.reservationId}
+                                              <Badge 
+                                                variant="default" 
+                                                className={`text-xs ${
+                                                  transaction.type === 'package' 
+                                                    ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                                }`}
+                                              >
+                                                {transaction.type === 'package' ? 'Paquetería' : 'Reserva'} #{transaction.reservationId}
                                               </Badge>
                                             )}
                                           </div>
