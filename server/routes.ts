@@ -9374,18 +9374,15 @@ function setupPackageRoutes(app: Express) {
       }
       
       console.log(`[GET /api/operator-timeline] Usuario: ${user.firstName} ${user.lastName}, Operador: ${operatorId}, Rango: ${startDate} - ${endDate}`);
-      console.log(`[GET /api/operator-timeline] CÓDIGO CORREGIDO EJECUTÁNDOSE - Nueva lógica de fechas`);
       
-      // Convertir fechas considerando zona horaria México (UTC-6)
+      // Convertir fechas considerando zona horaria
+      // El frontend envía fechas en formato YYYY-MM-DD, necesitamos convertir a UTC correctamente
       const startDateStr = startDate as string;
       const endDateStr = endDate as string;
       
-      // Para capturar transacciones que pueden estar en UTC pero corresponden al día local,
-      // expandimos el rango para incluir 6 horas del día siguiente
-      const start = new Date(`${startDateStr}T06:00:00.000Z`); // 00:00 México = 06:00 UTC
-      const end = new Date(`${endDateStr}T06:00:00.000Z`); // Final del día México
-      end.setDate(end.getDate() + 1); // Siguiente día a las 06:00 UTC = medianoche México
-      end.setMilliseconds(-1); // 05:59:59.999Z
+      // Crear fechas en UTC para el inicio y fin del día
+      const start = new Date(`${startDateStr}T00:00:00.000Z`);
+      const end = new Date(`${endDateStr}T23:59:59.999Z`);
       
       console.log(`[GET /api/operator-timeline] Fechas recibidas: ${startDateStr} a ${endDateStr}`);
       console.log(`[GET /api/operator-timeline] Buscando desde: ${start.toISOString()} hasta: ${end.toISOString()}`);
