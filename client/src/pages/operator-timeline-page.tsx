@@ -6,9 +6,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, ClockIcon, MapPinIcon, UsersIcon, TruckIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, MapPinIcon, UsersIcon, TruckIcon, DollarSignIcon } from "lucide-react";
 import { DefaultLayout } from "@/components/layout/default-layout";
 import { formatDate, formatTime } from "@/lib/utils";
+
+interface Transaction {
+  id: number;
+  type: string;
+  amount: number;
+  reservationId: number | null;
+  passenger: string | null;
+  paymentMethod: string | null;
+  notes: string | null;
+  contact: any;
+  createdAt: string;
+}
 
 interface OperatorTimelineData {
   trips: Array<{
@@ -40,14 +52,18 @@ interface OperatorTimelineData {
       lastName: string;
       email: string;
     } | null;
+    transactions: Transaction[]; // Transacciones agrupadas en cada viaje
   }>;
   transactions: Array<{
     id: number;
-    details: any;
-    user_id: number;
-    cutoff_id: number | null;
+    tripId: number;
+    type: string;
+    amount: number;
+    passenger: string;
+    paymentMethod: string;
+    notes: string;
+    reservationId: number;
     createdAt: string;
-    updatedAt: string;
     companyId: string;
   }>;
 }
@@ -208,9 +224,11 @@ export default function OperatorTimelinePage() {
                 <CardContent className="flex items-center justify-between p-6">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Transacciones</p>
-                    <p className="text-2xl font-bold">{timelineData.transactions.length}</p>
+                    <p className="text-2xl font-bold">
+                      {timelineData.trips.reduce((total, trip) => total + (trip.transactions?.length || 0), 0)}
+                    </p>
                   </div>
-                  <ClockIcon className="h-8 w-8 text-green-500" />
+                  <DollarSignIcon className="h-8 w-8 text-green-500" />
                 </CardContent>
               </Card>
 
@@ -301,16 +319,62 @@ export default function OperatorTimelinePage() {
                                   <span className="font-medium">Ruta:</span> {trip.route.name}
                                 </div>
                               )}
+
+                              {/* Transacciones asociadas a este viaje */}
+                              {trip.transactions && trip.transactions.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <DollarSignIcon className="h-4 w-4 text-green-500" />
+                                    <span className="font-medium text-sm">Actividad financiera ({trip.transactions.length})</span>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {trip.transactions.map((transaction) => (
+                                      <div 
+                                        key={transaction.id}
+                                        className="bg-green-50 border border-green-200 rounded p-3 text-sm"
+                                      >
+                                        <div className="flex items-start justify-between mb-2">
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="text-xs">
+                                              Trans #{transaction.id}
+                                            </Badge>
+                                            {transaction.reservationId && (
+                                              <Badge variant="default" className="text-xs">
+                                                Reserva #{transaction.reservationId}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          <div className="font-semibold text-green-600">
+                                            ${transaction.amount.toLocaleString()} MXN
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                          {transaction.passenger && (
+                                            <div>
+                                              <span className="font-medium">Pasajero:</span> {transaction.passenger}
+                                            </div>
+                                          )}
+                                          {transaction.paymentMethod && (
+                                            <div>
+                                              <span className="font-medium">Método:</span> {transaction.paymentMethod}
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        {transaction.notes && (
+                                          <div className="text-xs text-gray-500 mt-1 bg-white p-1.5 rounded border">
+                                            {transaction.notes}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-green-600">
-                                ${firstSegment.price?.toLocaleString() || 0} MXN
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {firstSegment.availableSeats || 0} asientos disponibles
-                              </div>
-                            </div>
+                          
                           </div>
                         </div>
                       );
@@ -327,28 +391,46 @@ export default function OperatorTimelinePage() {
                   <CardTitle>Actividad de transacciones</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {timelineData.transactions.map((transaction) => (
                       <div 
                         key={transaction.id} 
-                        className="border-l-4 border-blue-500 pl-4 py-2"
+                        className="border rounded-lg p-4 bg-green-50 border-green-200"
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium">
-                              Transacción #{transaction.id}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(transaction.createdAt)} - {formatTime(transaction.createdAt)}
-                            </p>
-                          </div>
-                          {transaction.details && (
-                            <div className="text-sm">
-                              {transaction.details.type === "reservation" && (
-                                <Badge variant="outline">Reservación</Badge>
-                              )}
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">Transacción #{transaction.id}</Badge>
+                              <Badge variant="default">Reservación #{transaction.reservationId}</Badge>
+                              <Badge variant="secondary">Viaje #{transaction.tripId}</Badge>
                             </div>
-                          )}
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <div className="text-sm">
+                                  <span className="font-medium">Pasajero:</span> {transaction.passenger}
+                                </div>
+                                <div className="text-sm">
+                                  <span className="font-medium">Monto:</span> ${transaction.amount.toLocaleString()} MXN
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <div className="text-sm">
+                                  <span className="font-medium">Método de pago:</span> {transaction.paymentMethod}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {formatDate(transaction.createdAt)} - {formatTime(transaction.createdAt)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {transaction.notes && (
+                              <div className="text-xs text-gray-600 bg-white p-2 rounded border">
+                                <span className="font-medium">Notas:</span> {transaction.notes}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

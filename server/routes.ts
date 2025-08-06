@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { eq, inArray, isNull, isNotNull, desc, gte, lte, or, like, and } from "drizzle-orm";
+import { eq, inArray, isNull, isNotNull, desc, gte, lte, or, like, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { WebSocketServer, WebSocket } from 'ws';
@@ -9438,43 +9438,116 @@ function setupPackageRoutes(app: Express) {
         }
       });
 
-      // Transacciones deshabilitadas temporalmente
-      const transactions = [];
+      // Consultar transacciones asociadas al operador
+      console.log(`[GET /operator-timeline] Consultando transacciones para operador ${operatorId}`);
+      let filteredTransactions = [];
+      
+      try {
+        // Use SQL template literal that's proven to work
+        const userIdParam = parseInt(operatorId as string);
+        const transactionsResult = await db.execute(sql`
+          SELECT id, details, user_id, created_at, company_id
+          FROM transactions 
+          WHERE user_id = ${userIdParam}
+          ORDER BY created_at DESC
+        `);
+        
+        const transactions = transactionsResult.rows;
+        console.log(`[GET /operator-timeline] Encontradas ${transactions.length} transacciones totales`);
+        
+        // Filtrar transacciones que correspondan a viajes en el rango de fechas
+        filteredTransactions = transactions.filter(transaction => {
+          try {
+            const details = transaction.details as any;
+            if (!details || details.type !== 'reservation') return false;
+            
+            const tripId = details.details?.tripId;
+            if (!tripId) return false;
+            
+            // Verificar si la transacción corresponde a alguno de los viajes filtrados
+            const belongsToFilteredTrip = filteredTrips.some(trip => trip.trips.id === tripId);
+            
+            console.log(`[GET /operator-timeline] Transacción ${transaction.id} - TripId: ${tripId}, ¿Corresponde a viajes filtrados?: ${belongsToFilteredTrip}`);
+            
+            return belongsToFilteredTrip;
+          } catch (e) {
+            console.log(`[GET /operator-timeline] Error filtrando transacción ${transaction.id}:`, e);
+            return false;
+          }
+        });
+        
+        console.log(`[GET /operator-timeline] ${filteredTransactions.length} transacciones corresponden a viajes en el rango de fechas`);
+      } catch (error) {
+        console.error(`[GET /operator-timeline] Error consultando transacciones:`, error);
+        filteredTransactions = [];
+      }
 
-      // Formatear datos para el frontend
+      // Formatear datos para el frontend con transacciones agrupadas por viaje
       const timelineData = {
-        trips: filteredTrips.map(trip => ({
-          id: trip.trips.id,
-          tripData: trip.trips.tripData,
-          capacity: trip.trips.capacity,
-          visibility: trip.trips.visibility,
-          companyId: trip.trips.companyId,
-          route: trip.routes ? {
-            id: trip.routes.id,
-            name: trip.routes.name,
-            origin: trip.routes.origin,
-            destination: trip.routes.destination,
-            stops: trip.routes.stops
-          } : null,
-          vehicle: trip.vehicles ? {
-            id: trip.vehicles.id,
-            plates: trip.vehicles.plates,
-            brand: trip.vehicles.brand,
-            model: trip.vehicles.model,
-            capacity: trip.vehicles.capacity,
-            hasAC: trip.vehicles.hasAC,
-            hasRecliningSeats: trip.vehicles.hasRecliningSeats,
-            services: trip.vehicles.services,
-            companyId: trip.vehicles.companyId
-          } : null,
-          driver: trip.users ? {
-            id: trip.users.id,
-            firstName: trip.users.firstName,
-            lastName: trip.users.lastName,
-            email: trip.users.email
-          } : null
-        })),
-        transactions: [] // Transacciones deshabilitadas temporalmente
+        trips: filteredTrips.map(trip => {
+          // Encontrar transacciones asociadas a este viaje específico
+          const tripTransactions = filteredTransactions.filter(transaction => {
+            const transactionTripId = (transaction.details as any)?.details?.tripId;
+            return transactionTripId && parseInt(transactionTripId) === trip.trips.id;
+          });
+          
+          return {
+            id: trip.trips.id,
+            tripData: trip.trips.tripData,
+            capacity: trip.trips.capacity,
+            visibility: trip.trips.visibility,
+            companyId: trip.trips.companyId,
+            route: trip.routes ? {
+              id: trip.routes.id,
+              name: trip.routes.name,
+              origin: trip.routes.origin,
+              destination: trip.routes.destination,
+              stops: trip.routes.stops
+            } : null,
+            vehicle: trip.vehicles ? {
+              id: trip.vehicles.id,
+              plates: trip.vehicles.plates,
+              brand: trip.vehicles.brand,
+              model: trip.vehicles.model,
+              capacity: trip.vehicles.capacity,
+              hasAC: trip.vehicles.hasAC,
+              hasRecliningSeats: trip.vehicles.hasRecliningSeats,
+              services: trip.vehicles.services,
+              companyId: trip.vehicles.companyId
+            } : null,
+            driver: trip.users ? {
+              id: trip.users.id,
+              firstName: trip.users.firstName,
+              lastName: trip.users.lastName,
+              email: trip.users.email
+            } : null,
+            // Transacciones agrupadas para este viaje específico
+            transactions: tripTransactions.map(transaction => ({
+              id: transaction.id,
+              type: (transaction.details as any)?.type || 'unknown',
+              amount: (transaction.details as any)?.details?.monto || 0,
+              reservationId: (transaction.details as any)?.details?.id || null,
+              passenger: (transaction.details as any)?.details?.pasajeros || null,
+              paymentMethod: (transaction.details as any)?.details?.metodoPago || null,
+              notes: (transaction.details as any)?.details?.notas || null,
+              contact: (transaction.details as any)?.details?.contacto || null,
+              createdAt: transaction.createdAt
+            }))
+          };
+        }),
+        // Mantener lista completa de transacciones para compatibilidad
+        transactions: filteredTransactions.map(transaction => ({
+          id: transaction.id,
+          tripId: (transaction.details as any)?.details?.tripId,
+          type: (transaction.details as any)?.type,
+          amount: (transaction.details as any)?.details?.monto,
+          passenger: (transaction.details as any)?.details?.pasajeros,
+          paymentMethod: (transaction.details as any)?.details?.metodoPago,
+          notes: (transaction.details as any)?.details?.notas,
+          reservationId: (transaction.details as any)?.details?.id,
+          createdAt: transaction.createdAt,
+          companyId: transaction.companyId
+        }))
       };
 
       console.log(`[GET /operator-timeline] Encontrados ${timelineData.trips.length} viajes y ${timelineData.transactions.length} transacciones`);
