@@ -335,7 +335,16 @@ export function OperatorTimeline() {
                         <span>Viaje #{item.transaction.details.details.tripId}</span>
                       </div>
                       <div className="text-sm text-gray-500">
-                        {format(parseISO(item.transaction.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                        {(() => {
+                          const createdDate = parseISO(item.transaction.createdAt);
+                          // Si la transacción se creó después de medianoche pero antes de las 6 AM,
+                          // probablemente corresponde al día anterior operacionalmente
+                          const operationalDate = createdDate.getHours() < 6 ? 
+                            new Date(createdDate.getTime() - 24 * 60 * 60 * 1000) : 
+                            createdDate;
+                          return format(operationalDate, "dd/MM/yyyy", { locale: es }) + " " + 
+                                 format(createdDate, "HH:mm", { locale: es });
+                        })()}
                       </div>
                     </CardTitle>
                     <div className="text-sm text-gray-600">
@@ -387,7 +396,16 @@ export function OperatorTimeline() {
                         <span>Transacción #{transaction.id}</span>
                       </div>
                       <div className="text-sm text-gray-500">
-                        {format(parseISO(transaction.createdAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                        {(() => {
+                          const createdDate = parseISO(transaction.createdAt);
+                          // Si la transacción se creó después de medianoche pero antes de las 6 AM,
+                          // probablemente corresponde al día anterior operacionalmente
+                          const operationalDate = createdDate.getHours() < 6 ? 
+                            new Date(createdDate.getTime() - 24 * 60 * 60 * 1000) : 
+                            createdDate;
+                          return format(operationalDate, "dd/MM/yyyy", { locale: es }) + " " + 
+                                 format(createdDate, "HH:mm", { locale: es });
+                        })()}
                       </div>
                     </CardTitle>
                   </CardHeader>
