@@ -59,12 +59,16 @@ export default function OperatorTimelinePage() {
 
   // Consultar operadores (usuarios con rol chofer)
   const { data: operators, isLoading: operatorsLoading } = useQuery({
-    queryKey: ["/api/users"],
-    select: (users: any[]) => {
-      console.log("[OperatorTimeline] Todos los usuarios:", users);
-      const drivers = users.filter(user => user.role === "chofer");
-      console.log("[OperatorTimeline] Operadores:", drivers);
-      return drivers;
+    queryKey: ["/api/operators"],
+    queryFn: async () => {
+      console.log("[OperatorTimeline] Consultando operadores...");
+      const response = await fetch('/api/operators');
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log("[OperatorTimeline] Operadores recibidos:", data);
+      return data;
     }
   });
 

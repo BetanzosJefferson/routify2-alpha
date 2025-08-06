@@ -9447,4 +9447,26 @@ function setupPackageRoutes(app: Express) {
       res.status(500).json({ error: "Error interno del servidor" });
     }
   });
+
+  // Endpoint para obtener lista de operadores (conductores)
+  app.get("/api/operators", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      console.log('[GET /operators] Consultando operadores disponibles');
+
+      // Obtener todos los usuarios con rol 'chofer' 
+      const operators = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.role, "chofer"))
+        .orderBy(schema.users.firstName, schema.users.lastName);
+
+      console.log(`[GET /operators] Encontrados ${operators.length} operadores`);
+      console.log('[GET /operators] Operadores:', operators);
+      
+      res.json(operators);
+    } catch (error) {
+      console.error('[GET /operators] Error:', error);
+      res.status(500).json({ error: "Error interno del servidor" });
+    }
+  });
 }
