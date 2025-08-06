@@ -193,6 +193,80 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
       res.status(500).json({ message: "Error al obtener operadores" });
     }
   });
+
+  // Endpoint para obtener línea de tiempo del operador
+  app.get("/api/operator-timeline", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const { operatorId, startDate, endDate } = req.query;
+      
+      console.log(`[GET /api/operator-timeline] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      console.log(`[GET /api/operator-timeline] Parámetros: operatorId=${operatorId}, startDate=${startDate}, endDate=${endDate}`);
+      
+      // Solo admin y dueño pueden acceder
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.OWNER && user.role !== UserRole.SUPER_ADMIN) {
+        return res.status(403).json({ message: "No tienes permisos para acceder a esta función" });
+      }
+
+      if (!operatorId || !startDate || !endDate) {
+        return res.status(400).json({ message: "Se requieren operatorId, startDate y endDate" });
+      }
+
+      // Convertir fechas
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999); // Incluir todo el día final
+      
+      console.log(`[GET /api/operator-timeline] Buscando desde: ${start.toISOString()} hasta: ${end.toISOString()}`);
+
+      // Buscar transacciones del operador en el rango de fechas
+      const operatorTransactions = await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.userId, parseInt(operatorId as string)),
+            eq(transactions.companyId, user.companyId),
+            sql`created_at >= ${start.toISOString()}`,
+            sql`created_at <= ${end.toISOString()}`
+          )
+        )
+        .orderBy(desc(transactions.createdAt));
+
+      console.log(`[GET /api/operator-timeline] Encontradas ${operatorTransactions.length} transacciones`);
+
+      // Buscar viajes del operador en el rango de fechas
+      const operatorTrips = await db
+        .select()
+        .from(trips)
+        .where(
+          and(
+            eq(trips.driverId, parseInt(operatorId as string)),
+            eq(trips.companyId, user.companyId),
+            sql`departure_date >= ${start.toISOString().split('T')[0]}`,
+            sql`departure_date <= ${end.toISOString().split('T')[0]}`
+          )
+        )
+        .orderBy(desc(trips.departureDate));
+
+      console.log(`[GET /api/operator-timeline] Encontrados ${operatorTrips.length} viajes`);
+
+      // Formatear respuesta
+      const timeline = {
+        transactions: operatorTransactions,
+        trips: operatorTrips,
+        summary: {
+          totalTransactions: operatorTransactions.length,
+          totalTrips: operatorTrips.length
+        }
+      };
+
+      res.json(timeline);
+    } catch (error) {
+      console.error("Error al obtener línea de tiempo del operador:", error);
+      res.status(500).json({ message: "Error al obtener línea de tiempo del operador" });
+    }
+  });
   
   // Endpoint para eliminar un usuario - SOLO SUPERADMIN
   app.delete("/api/users/:id", authMiddleware, async (req: Request, res: Response) => {

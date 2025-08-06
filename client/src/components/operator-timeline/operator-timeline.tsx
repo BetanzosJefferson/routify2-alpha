@@ -86,7 +86,11 @@ export function OperatorTimeline() {
   const { data: timelineData, isLoading, refetch } = useQuery<TimelineData>({
     queryKey: ['/api/operator-timeline', selectedOperator, startDate, endDate],
     queryFn: async () => {
+      console.log('[OperatorTimeline] Ejecutando consulta de timeline...');
+      console.log('[OperatorTimeline] Parámetros:', { selectedOperator, startDate, endDate });
+      
       if (!selectedOperator || !startDate || !endDate) {
+        console.error('[OperatorTimeline] Faltan parámetros requeridos');
         throw new Error('Faltan parámetros requeridos');
       }
       
@@ -96,12 +100,21 @@ export function OperatorTimeline() {
         endDate: endDate.toISOString().split('T')[0]
       });
       
+      console.log('[OperatorTimeline] URL:', `/api/operator-timeline?${params}`);
+      
       const response = await fetch(`/api/operator-timeline?${params}`);
+      console.log('[OperatorTimeline] Timeline response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Error al obtener datos de línea de tiempo');
+        console.error('[OperatorTimeline] Error en timeline:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('[OperatorTimeline] Timeline error text:', errorText);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
-      return response.json();
+      const data = await response.json();
+      console.log('[OperatorTimeline] Timeline data recibida:', data);
+      return data;
     },
     enabled: false, // Solo se ejecuta manualmente
   });
