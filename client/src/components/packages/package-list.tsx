@@ -811,6 +811,29 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                   </p>
                 </div>
               )}
+
+              {/* Información de pagos y entregas */}
+              {((pkg.isPaid && (pkg.paidByFirstName || pkg.paidByLastName)) || 
+                (pkg.deliveryStatus === "entregado" && (pkg.deliveredByFirstName || pkg.deliveredByLastName))) && (
+                <div className="pt-2 border-t space-y-1">
+                  {pkg.isPaid && (pkg.paidByFirstName || pkg.paidByLastName) && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Marcado como pagado por</p>
+                      <p className="text-sm font-medium text-green-600">
+                        {pkg.paidByFirstName} {pkg.paidByLastName}
+                      </p>
+                    </div>
+                  )}
+                  {pkg.deliveryStatus === "entregado" && (pkg.deliveredByFirstName || pkg.deliveredByLastName) && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Marcado como entregado por</p>
+                      <p className="text-sm font-medium text-green-600">
+                        {pkg.deliveredByFirstName} {pkg.deliveredByLastName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Estados y Asientos */}
               <div className="flex justify-between items-center pt-2 border-t">

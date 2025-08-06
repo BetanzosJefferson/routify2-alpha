@@ -423,10 +423,22 @@ export default function PackageDetailPage() {
                 {packageData.deliveryStatus === 'entregado' ? 'Entregado' : 'Pendiente'}
               </Badge>
             </div>
-            {packageData.registeredBy && (
+            {(packageData.creatorFirstName || packageData.creatorLastName) && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Registrado por:</span>
-                <span className="text-sm">{packageData.registeredBy}</span>
+                <span className="text-sm">{packageData.creatorFirstName} {packageData.creatorLastName}</span>
+              </div>
+            )}
+            {packageData.isPaid && (packageData.paidByFirstName || packageData.paidByLastName) && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Marcado como pagado por:</span>
+                <span className="text-sm font-medium text-green-600">{packageData.paidByFirstName} {packageData.paidByLastName}</span>
+              </div>
+            )}
+            {packageData.deliveryStatus === 'entregado' && (packageData.deliveredByFirstName || packageData.deliveredByLastName) && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Marcado como entregado por:</span>
+                <span className="text-sm font-medium text-green-600">{packageData.deliveredByFirstName} {packageData.deliveredByLastName}</span>
               </div>
             )}
           </div>

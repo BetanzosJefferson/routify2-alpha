@@ -3776,16 +3776,20 @@ export class DatabaseStorage implements IStorage {
         console.log(`DB Storage: [OPTIMIZED] Filtrados ${filteredPackages.length} de ${rawPackages.length} paquetes para conductor ${currentUserId}`);
       }
 
-      // Obtener información de usuarios creadores para todos los paquetes
-      const userIds = [...new Set(filteredPackages.map(pkg => pkg.createdBy).filter(Boolean))];
+      // Obtener información de usuarios (creadores, paid_by, delivered_by) para todos los paquetes
+      const creatorIds = [...new Set(filteredPackages.map(pkg => pkg.createdBy).filter(Boolean))];
+      const paidByIds = [...new Set(filteredPackages.map(pkg => pkg.paidBy).filter(Boolean))];
+      const deliveredByIds = [...new Set(filteredPackages.map(pkg => pkg.deliveredBy).filter(Boolean))];
+      const allUserIds = [...new Set([...creatorIds, ...paidByIds, ...deliveredByIds])];
+      
       const usersMap = new Map();
       
-      if (userIds.length > 0) {
-        console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${userIds.length} usuarios creadores`);
+      if (allUserIds.length > 0) {
+        console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${allUserIds.length} usuarios (creadores, paid_by, delivered_by)`);
         const users = await this.db
           .select()
           .from(schema.users)
-          .where(inArray(schema.users.id, userIds));
+          .where(inArray(schema.users.id, allUserIds));
         
         users.forEach(user => {
           usersMap.set(user.id, user);
@@ -3808,6 +3812,10 @@ export class DatabaseStorage implements IStorage {
 
         // Obtener información del usuario creador
         const creator = usersMap.get(pkg.createdBy);
+        
+        // Obtener información de usuarios que marcaron como pagado y entregado
+        const paidByUser = usersMap.get(pkg.paidBy);
+        const deliveredByUser = usersMap.get(pkg.deliveredBy);
 
         // Obtener información del conductor de manera simplificada
         let operatorInfo = {
@@ -3870,6 +3878,14 @@ export class DatabaseStorage implements IStorage {
           creatorFirstName: creator?.firstName || null,
           creatorLastName: creator?.lastName || null,
           creatorEmail: creator?.email || null,
+          // Información del usuario que marcó como pagado
+          paidByFirstName: paidByUser?.firstName || null,
+          paidByLastName: paidByUser?.lastName || null,
+          paidByEmail: paidByUser?.email || null,
+          // Información del usuario que marcó como entregado
+          deliveredByFirstName: deliveredByUser?.firstName || null,
+          deliveredByLastName: deliveredByUser?.lastName || null,
+          deliveredByEmail: deliveredByUser?.email || null,
           // Información del conductor/operador asignado
           ...operatorInfo,
           // Mantener tripDetails original para compatibilidad
@@ -3921,6 +3937,23 @@ export class DatabaseStorage implements IStorage {
 
       const packageData = packageResult.rows[0] as any;
       console.log(`DB Storage: [OPTIMIZED] Paquete ${id} encontrado`);
+
+      // Obtener información de usuarios relacionados (creador, paid_by, delivered_by)
+      const userIds = [packageData.created_by, packageData.paid_by, packageData.delivered_by].filter(Boolean);
+      const usersMap = new Map();
+      
+      if (userIds.length > 0) {
+        console.log(`DB Storage: [OPTIMIZED] Obteniendo información de ${userIds.length} usuarios relacionados`);
+        const users = await this.db
+          .select()
+          .from(schema.users)
+          .where(inArray(schema.users.id, userIds));
+        
+        users.forEach(user => {
+          usersMap.set(user.id, user);
+        });
+        console.log(`DB Storage: [OPTIMIZED] Obtenida información de ${users.length} usuarios`);
+      }
 
       // Ahora obtenemos información del trip si existe
       let trip: TripWithRouteInfo | undefined;
@@ -3975,6 +4008,11 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Obtener información de usuarios
+      const creator = usersMap.get(packageData.created_by);
+      const paidByUser = usersMap.get(packageData.paid_by);
+      const deliveredByUser = usersMap.get(packageData.delivered_by);
+
       // Construir objeto package con información del trip (convertir snake_case a camelCase)
       const result = {
         id: packageData.id,
@@ -4004,6 +4042,16 @@ export class DatabaseStorage implements IStorage {
         // CRÍTICO: Mapear campos de estado que el frontend espera en camelCase
         isPaid: packageData.is_paid,
         deliveryStatus: packageData.delivery_status,
+        // Información de usuarios relacionados
+        creatorFirstName: creator?.firstName || null,
+        creatorLastName: creator?.lastName || null,
+        creatorEmail: creator?.email || null,
+        paidByFirstName: paidByUser?.firstName || null,
+        paidByLastName: paidByUser?.lastName || null,
+        paidByEmail: paidByUser?.email || null,
+        deliveredByFirstName: deliveredByUser?.firstName || null,
+        deliveredByLastName: deliveredByUser?.lastName || null,
+        deliveredByEmail: deliveredByUser?.email || null,
         trip: trip
       };
 
