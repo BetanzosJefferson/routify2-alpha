@@ -156,57 +156,51 @@ export function isSameLocalDay(dateA: Date | string, dateB: Date | string): bool
  */
 export function formatDate(date: Date | string | null | undefined): string {
   // Si la fecha es null o undefined, devolver un valor por defecto
-  if (date === null || date === undefined) {
+  if (!date) {
     return 'N/A';
   }
   
   try {
-    // Extraer componentes de fecha directamente para evitar problemas de zona horaria
-    let year: number, month: number, day: number;
+    let dateStr = '';
     
-    if (typeof date === 'string') {
-      let datePart: string;
-      
+    // Convertir a string si es Date
+    if (date instanceof Date) {
+      dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    } else if (typeof date === 'string') {
+      // Extraer solo la parte de fecha
       if (date.includes('T')) {
-        // Extraer la parte de fecha de un string ISO
-        datePart = date.split('T')[0];
+        dateStr = date.split('T')[0];
       } else if (date.includes(' ')) {
-        // Formato con espacio (como 2025-08-06 08:40:30.040139)
-        datePart = date.split(' ')[0];
+        dateStr = date.split(' ')[0];
       } else {
-        // Formato simple YYYY-MM-DD
-        datePart = date;
+        dateStr = date;
       }
-      
-      // Dividir la fecha y asignar valores con validación
-      const parts = datePart.split('-');
-      if (parts.length !== 3) {
-        throw new Error(`Formato de fecha inválido: ${date}`);
-      }
-      
-      [year, month, day] = parts.map(Number);
-    } else if (date instanceof Date) {
-      // Para objetos Date, usar getUTCFullYear, getUTCMonth, getUTCDate para evitar desfases
-      year = date.getUTCFullYear();
-      month = date.getUTCMonth() + 1;
-      day = date.getUTCDate();
     } else {
-      throw new Error('Formato de fecha no válido');
-    }
-    
-    // Verificar que los componentes sean válidos
-    if (year === undefined || month === undefined || day === undefined || 
-        isNaN(year) || isNaN(month) || isNaN(day)) {
-      console.error(`[formatDate] Componentes inválidos: day=${day}, month=${month}, year=${year}`);
       return 'Fecha inválida';
     }
     
-    // Formatear manualmente para evitar problemas de zona horaria
-    const formattedDate = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year.toString()}`;
+    // Verificar formato YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateStr)) {
+      return 'Fecha inválida';
+    }
     
-    return formattedDate;
+    // Extraer componentes
+    const [yearStr, monthStr, dayStr] = dateStr.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    const day = parseInt(dayStr, 10);
+    
+    // Validar rangos
+    if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
+      return 'Fecha inválida';
+    }
+    
+    // Formatear como DD/MM/YYYY
+    return `${dayStr}/${monthStr}/${yearStr}`;
+    
   } catch (error) {
-    console.error(`[formatDate] Error al formatear fecha:`, error);
+    console.error('[formatDate] Error:', error);
     return 'Fecha inválida';
   }
 }
