@@ -9377,8 +9377,12 @@ function setupPackageRoutes(app: Express) {
       
       // Convertir fechas
       const start = new Date(startDate as string);
+      start.setHours(0, 0, 0, 0); // Asegurar que comience al inicio del día
+      
       const end = new Date(endDate as string);
       end.setHours(23, 59, 59, 999); // Incluir todo el día final
+      
+      console.log(`[GET /api/operator-timeline] Buscando desde: ${start.toISOString()} hasta: ${end.toISOString()}`);
       
       // Obtener compañía del usuario para filtrado
       const userCompany = user.companyId || user.company;
