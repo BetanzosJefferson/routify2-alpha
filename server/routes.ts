@@ -9464,10 +9464,15 @@ function setupPackageRoutes(app: Express) {
             const tripId = details.details?.tripId;
             if (!tripId) return false;
             
-            // Verificar si la transacción corresponde a alguno de los viajes filtrados
-            const belongsToFilteredTrip = filteredTrips.some(trip => trip.trips.id === tripId);
+            // Extraer ID del viaje principal del tripId (manejar formato "1339_1" -> 1339)
+            const mainTripId = typeof tripId === 'string' && tripId.includes('_') 
+              ? parseInt(tripId.split('_')[0]) 
+              : parseInt(tripId);
             
-            console.log(`[GET /operator-timeline] Transacción ${transaction.id} - TripId: ${tripId}, ¿Corresponde a viajes filtrados?: ${belongsToFilteredTrip}`);
+            // Verificar si la transacción corresponde a alguno de los viajes filtrados
+            const belongsToFilteredTrip = filteredTrips.some(trip => trip.trips.id === mainTripId);
+            
+            console.log(`[GET /operator-timeline] Transacción ${transaction.id} - TripId: ${tripId} (main: ${mainTripId}), ¿Corresponde a viajes filtrados?: ${belongsToFilteredTrip}`);
             
             return belongsToFilteredTrip;
           } catch (e) {
@@ -9488,7 +9493,14 @@ function setupPackageRoutes(app: Express) {
           // Encontrar transacciones asociadas a este viaje específico
           const tripTransactions = filteredTransactions.filter(transaction => {
             const transactionTripId = (transaction.details as any)?.details?.tripId;
-            return transactionTripId && parseInt(transactionTripId) === trip.trips.id;
+            if (!transactionTripId) return false;
+            
+            // Extraer ID del viaje principal del tripId (manejar formato "1339_1" -> 1339)
+            const mainTripId = typeof transactionTripId === 'string' && transactionTripId.includes('_') 
+              ? parseInt(transactionTripId.split('_')[0]) 
+              : parseInt(transactionTripId);
+              
+            return mainTripId === trip.trips.id;
           });
           
           return {
