@@ -635,6 +635,19 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                     {trip.companyName && (
                       <span className="text-xs text-gray-600 mb-1">
                         {trip.companyName}
+                        {/* Mostrar operador solo en modo transferencia */}
+                        {isTransferMode && (() => {
+                          const driver = (trip as any).driver || (trip as any).assignedDriver;
+                          if (driver && (driver.firstName || driver.name)) {
+                            const driverName = driver.firstName 
+                              ? `${driver.firstName} ${driver.lastName || ''}`.trim()
+                              : driver.name;
+                            return (
+                              <span className="text-gray-500"> · Operador: {driverName}</span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </span>
                     )}
                     <div className="text-sm font-medium">

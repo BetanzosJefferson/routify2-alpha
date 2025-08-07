@@ -447,6 +447,7 @@ export function PassengerTransfer({ onClose }: PassengerTransferProps) {
               customButtonText="Mover aquí"
               onTripSelect={handleTripSelect}
               defaultFilters={searchFilters}
+              isTransferMode={true}
             />
             
             {selectedTrip && (
