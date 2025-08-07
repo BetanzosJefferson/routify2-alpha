@@ -74,6 +74,12 @@ class TripCache {
     console.log(`[TripCache] Guardado en cache: ${key} (${data.length} viajes)`);
   }
 
+  // Limpiar todo el caché
+  clear(): void {
+    this.cache.clear();
+    console.log(`[TripCache] Cache completamente limpiado`);
+  }
+
   // Invalidar caché relacionado con una búsqueda específica
   invalidate(params?: Record<string, any>): void {
     if (params) {
@@ -81,8 +87,7 @@ class TripCache {
       this.cache.delete(key);
       console.log(`[TripCache] Invalidado cache específico: ${key}`);
     } else {
-      this.cache.clear();
-      console.log(`[TripCache] Cache completamente limpiado`);
+      this.clear();
     }
   }
 
