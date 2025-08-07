@@ -6,7 +6,8 @@ TransRoute is a comprehensive transportation management system designed to strea
 
 ## Recent Updates (Aug 2025)
 
-- **Fixed critical production bug**: Corrected reservation filtering for transferred passengers to sub-trips (format "recordId_segmentIndex")
+- **FIXED: Critical sub-trip transfer bug**: Corrected recordId assignment when transferring reservations to sub-trips (format "tripId_segmentIndex")
+- **Enhanced reservation filtering**: Updated query logic to find reservations transferred to sub-trips correctly
 - **Enhanced passenger transfer**: Added operator name display in transfer mode while maintaining privacy in general trip lists  
 - **Improved system integrity**: Resolved cache issues and strengthened trip-reservation relationships
 

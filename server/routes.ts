@@ -3439,10 +3439,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const seatsToTransfer = currentTripDetails.seats || 1;
 
       // Actualizar la reservación con el nuevo viaje
+      // Para sub-viajes, recordId debe ser solo el ID principal, tripId mantiene el formato completo
+      let recordIdForDetails = newTripIdStr;
+      if (newTripIdStr.includes('_')) {
+        // Para sub-viajes: recordId = ID principal, tripId = formato completo
+        recordIdForDetails = newTripIdStr.split('_')[0];
+        console.log(`[POST /reservations/transfer] Sub-viaje: recordId=${recordIdForDetails}, tripId=${newTripIdStr}`);
+      }
+      
       const newTripDetails = {
         ...currentTripDetails,
-        recordId: newTripIdStr,
-        tripId: newTripIdStr,
+        recordId: recordIdForDetails, // ID principal para consultas
+        tripId: newTripIdStr,         // Formato completo para identificar el segmento
         origin: origin || currentTripDetails.origin,
         destination: destination || currentTripDetails.destination
       };
