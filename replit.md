@@ -4,6 +4,12 @@
 
 TransRoute is a comprehensive transportation management system designed to streamline operations for multi-company transportation businesses. It provides robust features for managing routes, scheduling trips, handling reservations, and tracking finances, all within a secure, role-based access control environment. The system aims to optimize transportation logistics, enhance customer experience, and provide clear financial oversight.
 
+## Recent Updates (Aug 2025)
+
+- **Fixed critical production bug**: Corrected reservation filtering for transferred passengers to sub-trips (format "recordId_segmentIndex")
+- **Enhanced passenger transfer**: Added operator name display in transfer mode while maintaining privacy in general trip lists  
+- **Improved system integrity**: Resolved cache issues and strengthened trip-reservation relationships
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

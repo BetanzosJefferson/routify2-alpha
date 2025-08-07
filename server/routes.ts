@@ -2929,6 +2929,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Apply additional filtering if needed
         let filteredReservations = reservations;
         
+        // Filter by tripId if provided (support both main trips and sub-trips)
+        if (tripId) {
+          console.log(`[GET /reservations] Filtering by tripId: ${tripId}`);
+          
+          filteredReservations = filteredReservations.filter(reservation => {
+            const tripDetails = reservation.tripDetails;
+            if (!tripDetails || typeof tripDetails !== 'object') {
+              return false;
+            }
+            
+            // Para sub-viajes, el tripId puede estar en formato "recordId_segmentIndex"
+            if (tripDetails.tripId) {
+              // Comparar directamente el tripId
+              if (tripDetails.tripId === tripId.toString()) {
+                return true;
+              }
+              
+              // Si es un sub-viaje, extraer el recordId principal
+              if (typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+                const [recordId] = tripDetails.tripId.split('_');
+                if (parseInt(recordId) === tripId) {
+                  return true;
+                }
+              }
+            }
+            
+            // También verificar el recordId si coincide con el tripId
+            if (tripDetails.recordId) {
+              const recordIdStr = tripDetails.recordId.toString();
+              const recordIdBase = recordIdStr.includes('_') ? recordIdStr.split('_')[0] : recordIdStr;
+              if (parseInt(recordIdBase) === tripId) {
+                return true;
+              }
+            }
+            
+            return false;
+          });
+          
+          console.log(`[GET /reservations] Filtered to ${filteredReservations.length} reservations for tripId ${tripId}`);
+        }
+        
         // Filter by date if provided (group by recordId and use parent trip date)
         if (dateFilter) {
           console.log(`[GET /reservations] Filtering by date with recordId grouping: ${dateFilter}`);
