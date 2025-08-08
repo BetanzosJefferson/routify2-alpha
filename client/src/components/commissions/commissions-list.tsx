@@ -15,6 +15,7 @@ import {
   PercentIcon, 
   DollarSign,
   Calendar,
+  Clock,
   User,
   MapPin,
   Download,
@@ -466,6 +467,23 @@ function CommissionItems({
 
           {/* Información principal - optimizada para móvil */}
           <div className="space-y-3">
+            {/* Información del pasajero principal */}
+            <div>
+              <div className="text-gray-500 text-xs mb-1">Pasajero principal</div>
+              <div className="flex items-center gap-2">
+                <User className="h-3 w-3" />
+                <span className="font-medium text-sm">
+                  {commission.passengers && commission.passengers.length > 0 
+                    ? `${commission.passengers[0].firstName} ${commission.passengers[0].lastName}`
+                    : 'Sin información del pasajero'
+                  }
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {commission.passengers?.length || 0} pasajero{commission.passengers?.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+            </div>
+            
             <div>
               <div className="text-gray-500 text-xs mb-1">Ruta</div>
               <div className="font-medium text-sm">{commission.trip?.route?.name}</div>
@@ -489,6 +507,12 @@ function CommissionItems({
                     {commission.trip?.departureDate ? formatDate(commission.trip.departureDate) : 'No especificada'}
                   </span>
                 </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-xs">
+                    {commission.trip?.departureTime || 'Hora no especificada'}
+                  </span>
+                </div>
                 <div className="text-xs">
                   <strong>Comisión:</strong> {formatCurrency(
                     (commission.totalAmount || 0) * (commission.createdByUser?.commissionPercentage || 0) / 100
@@ -500,17 +524,36 @@ function CommissionItems({
 
           {/* Información adicional y acciones - optimizada para móvil */}
           <div className="mt-3 pt-3 border-t space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
                 <span>
                   <strong>Pasajeros:</strong> {commission.passengers?.length || 0}
                 </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <DollarSign className="h-3 w-3" />
                 <span>
                   <strong>Total:</strong> {formatCurrency(commission.totalAmount || 0)}
                 </span>
               </div>
-              <div className="text-xs text-gray-500">
-                Reservación #{commission.id}
+              <div className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                <span className="text-gray-500">
+                  Reservación #{commission.id}
+                </span>
+              </div>
+            </div>
+            
+            {/* Información del comisionista */}
+            <div className="text-xs bg-gray-50 p-2 rounded">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">
+                  <strong>Comisionista:</strong> {commission.createdByUser?.firstName} {commission.createdByUser?.lastName}
+                </span>
+                <span className="text-blue-600 font-medium">
+                  {commission.createdByUser?.commissionPercentage || 0}%
+                </span>
               </div>
             </div>
             

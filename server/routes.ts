@@ -5341,7 +5341,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (specificTrip) {
                 specificOrigin = specificTrip.origin || specificOrigin;
                 specificDestination = specificTrip.destination || specificDestination;
-                console.log(`[GET /commissions/reservations] Usando datos específicos: ${specificOrigin} → ${specificDestination}`);
+                // Agregar información de hora de salida y fecha
+                reservation.trip.departureTime = specificTrip.departureTime;
+                reservation.trip.departureDate = specificTrip.departureDate;
+                console.log(`[GET /commissions/reservations] Usando datos específicos: ${specificOrigin} → ${specificDestination}, hora: ${specificTrip.departureTime}`);
               }
             }
           } catch (error) {
@@ -5356,6 +5359,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Sobrescribir datos de trip con información específica
           trip: {
             ...reservation.trip,
+            departureTime: reservation.trip?.departureTime, // Incluir hora de salida
+            departureDate: reservation.trip?.departureDate, // Incluir fecha de salida
             route: {
               ...reservation.trip?.route,
               origin: specificOrigin,
