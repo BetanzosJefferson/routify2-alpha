@@ -181,9 +181,9 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
 
   // Calcular total de comisiones seleccionadas
   const calculateSelectedTotal = () => {
-    if (!commissionsData || selectedReservations.size === 0) return 0;
+    if (!validCommissions || selectedReservations.size === 0) return 0;
     
-    const selectedCommissions = commissionsData.filter((comm: any) => 
+    const selectedCommissions = validCommissions.filter((comm: any) => 
       selectedReservations.has(comm.id)
     );
     
@@ -203,12 +203,33 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     }, 0);
   };
 
-  // Filtrar comisiones según el estado
-  const pendingCommissions = commissionsData?.filter((comm: any) => {
+  // Filtrar comisiones válidas: solo reservaciones confirmadas y pagadas
+  const validCommissions = commissionsData?.filter((comm: any) => {
+    // Excluir reservaciones canceladas
+    if (comm.status === "canceled") {
+      return false;
+    }
+    
+    // Excluir reservaciones con pago cancelado (reembolso)
+    if (comm.paymentStatus === "cancelado") {
+      return false;
+    }
+    
+    // Excluir reservaciones pendientes de cobro
+    if (comm.paymentStatus === "pendiente") {
+      return false;
+    }
+    
+    // Solo incluir reservaciones con pago confirmado
+    return comm.paymentStatus === "pagado";
+  }) || [];
+
+  // Filtrar comisiones según el estado de comisión (pagada o pendiente)
+  const pendingCommissions = validCommissions.filter((comm: any) => {
     console.log(`[DEBUG] Comisión ${comm.id}: commissionPaid=${comm.commissionPaid}, typeof=${typeof comm.commissionPaid}`);
     return !comm.commissionPaid;
-  }) || [];
-  const paidCommissions = commissionsData?.filter((comm: any) => comm.commissionPaid) || [];
+  });
+  const paidCommissions = validCommissions.filter((comm: any) => comm.commissionPaid);
 
   if (isLoading) {
     return (
@@ -363,6 +384,11 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               <div className="text-center py-8 text-gray-500">
                 <PercentIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No hay comisiones pendientes</p>
+                {validCommissions.length === 0 && (
+                  <p className="text-sm mt-2">
+                    Solo se muestran reservaciones confirmadas y pagadas
+                  </p>
+                )}
               </div>
             ) : (
               <CommissionItems 
@@ -381,6 +407,11 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               <div className="text-center py-8 text-gray-500">
                 <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No hay comisiones pagadas</p>
+                {validCommissions.length === 0 && (
+                  <p className="text-sm mt-2">
+                    Solo se muestran reservaciones confirmadas y pagadas
+                  </p>
+                )}
               </div>
             ) : (
               <CommissionItems 
@@ -504,11 +535,11 @@ function CommissionItems({
               >
                 {commission.commissionPaid ? (
                   <>
-                    <CheckCircle className="mr-1 h-3 w-3" /> Pagada
+                    <CheckCircle className="mr-1 h-3 w-3" /> Comisión pagada
                   </>
                 ) : (
                   <>
-                    <AlertCircle className="mr-1 h-3 w-3" /> Pendiente
+                    <AlertCircle className="mr-1 h-3 w-3" /> Comisión pendiente
                   </>
                 )}
               </Badge>
