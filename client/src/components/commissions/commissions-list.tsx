@@ -22,7 +22,11 @@ import {
   CalendarDays,
   Eye,
   Users,
-  CheckSquare
+  CheckSquare,
+  XCircle,
+  CheckCircle2,
+  HelpCircle,
+  RefreshCcw
 } from "lucide-react";
 import { cn, formatPrice, generateReservationId, getCurrentLocalDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -257,7 +261,7 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
                     Total seleccionado: {formatCurrency(calculateSelectedTotal())}
                   </span>
                   <Button
-                    onClick={() => markAsPaidMutation.mutate([...selectedReservations])}
+                    onClick={() => markAsPaidMutation.mutate(Array.from(selectedReservations))}
                     disabled={markAsPaidMutation.isPending}
                   >
                     <DollarSign className="h-4 w-4 mr-2" />
@@ -416,6 +420,50 @@ function CommissionItems({
   const { user } = useAuth();
   const { downloadTicket60mm } = useCommissionTicketGenerator();
   
+  // Función para obtener el badge de estado de la reservación
+  const getReservationStatusBadge = (commission: any) => {
+    const status = commission.status;
+    const paymentStatus = commission.paymentStatus;
+    
+    if (status === "canceled") {
+      return (
+        <Badge variant="destructive" className="text-xs">
+          <XCircle className="mr-1 h-3 w-3" />
+          Cancelada
+        </Badge>
+      );
+    }
+    
+    if (paymentStatus === "cancelado") {
+      return (
+        <Badge variant="destructive" className="text-xs">
+          <RefreshCcw className="mr-1 h-3 w-3" />
+          Con Reembolso
+        </Badge>
+      );
+    }
+    
+    if (paymentStatus === "pagado") {
+      return (
+        <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
+          <CheckCircle2 className="mr-1 h-3 w-3" />
+          Pagado
+        </Badge>
+      );
+    }
+    
+    if (paymentStatus === "pendiente") {
+      return (
+        <Badge variant="outline" className="text-orange-600 border-orange-300 text-xs">
+          <HelpCircle className="mr-1 h-3 w-3" />
+          Pendiente Cobro
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
+  
   // Función para generar boleto 60mm
   return (
     <div className="space-y-4">
@@ -445,31 +493,34 @@ function CommissionItems({
               </div>
             </div>
             
-            <Badge 
-              variant={commission.commissionPaid ? "default" : "outline"}
-              className={cn(
-                commission.commissionPaid 
-                  ? "bg-green-100 text-green-800 hover:bg-green-200" 
-                  : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-              )}
-            >
-              {commission.commissionPaid ? (
-                <>
-                  <CheckCircle className="mr-1 h-3 w-3" /> Pagada
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="mr-1 h-3 w-3" /> Pendiente
-                </>
-              )}
-            </Badge>
+            <div className="flex flex-col gap-2">
+              <Badge 
+                variant={commission.commissionPaid ? "default" : "outline"}
+                className={cn(
+                  commission.commissionPaid 
+                    ? "bg-green-100 text-green-800 hover:bg-green-200" 
+                    : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                )}
+              >
+                {commission.commissionPaid ? (
+                  <>
+                    <CheckCircle className="mr-1 h-3 w-3" /> Pagada
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="mr-1 h-3 w-3" /> Pendiente
+                  </>
+                )}
+              </Badge>
+              {getReservationStatusBadge(commission)}
+            </div>
           </div>
 
           {/* Información principal - optimizada para móvil */}
           <div className="space-y-3">
             {/* Información del pasajero principal */}
             <div>
-              <div className="text-gray-500 text-xs mb-1">Pasajero principal</div>
+              <div className="text-gray-500 text-xs mb-1">Nombre</div>
               <div className="flex items-center gap-2">
                 <User className="h-3 w-3" />
                 <span className="font-medium text-sm">
@@ -483,12 +534,7 @@ function CommissionItems({
                 </Badge>
               </div>
             </div>
-            
-            <div>
-              <div className="text-gray-500 text-xs mb-1">Ruta</div>
-              <div className="font-medium text-sm">{commission.trip?.route?.name}</div>
-            </div>
-            
+        
             <div>
               <div className="text-gray-500 text-xs mb-1">Trayecto</div>
               <div className="flex items-start gap-1">
@@ -525,12 +571,7 @@ function CommissionItems({
           {/* Información adicional y acciones - optimizada para móvil */}
           <div className="mt-3 pt-3 border-t space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span>
-                  <strong>Pasajeros:</strong> {commission.passengers?.length || 0}
-                </span>
-              </div>
+             
               <div className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />
                 <span>
@@ -551,9 +592,7 @@ function CommissionItems({
                 <span className="text-gray-600">
                   <strong>Comisionista:</strong> {commission.createdByUser?.firstName} {commission.createdByUser?.lastName}
                 </span>
-                <span className="text-blue-600 font-medium">
-                  {commission.createdByUser?.commissionPercentage || 0}%
-                </span>
+              
               </div>
             </div>
             

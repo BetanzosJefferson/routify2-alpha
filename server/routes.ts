@@ -5373,8 +5373,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Preservar explícitamente el commissionPercentage si existe
             commissionPercentage: reservation.createdByUser?.commissionPercentage
           },
-          // CRÍTICO: Preservar explícitamente el campo commissionPaid
-          commissionPaid: reservation.commissionPaid
+          // CRÍTICO: Preservar explícitamente todos los campos de estado
+          commissionPaid: reservation.commissionPaid,
+          status: reservation.status, // Estado de la reservación (confirmed, canceled)
+          paymentStatus: reservation.paymentStatus // Estado del pago (pendiente, pagado, cancelado)
         };
         
         console.log(`[GET /commissions/reservations] Reservación ${reservation.id}: commissionPaid=${reservation.commissionPaid}, DB raw:`, {
