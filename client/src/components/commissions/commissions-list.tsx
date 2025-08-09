@@ -181,9 +181,9 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
 
   // Calcular total de comisiones seleccionadas
   const calculateSelectedTotal = () => {
-    if (!validCommissions || selectedReservations.size === 0) return 0;
+    if (!sortedValidCommissions || selectedReservations.size === 0) return 0;
     
-    const selectedCommissions = validCommissions.filter((comm: any) => 
+    const selectedCommissions = sortedValidCommissions.filter((comm: any) => 
       selectedReservations.has(comm.id)
     );
     
@@ -224,12 +224,19 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
     return comm.paymentStatus === "pagado";
   }) || [];
 
+  // Ordenar comisiones por fecha (de menor a mayor)
+  const sortedValidCommissions = validCommissions.sort((a: any, b: any) => {
+    const dateA = new Date(a.departureTime || a.createdAt);
+    const dateB = new Date(b.departureTime || b.createdAt);
+    return dateA.getTime() - dateB.getTime();
+  });
+
   // Filtrar comisiones según el estado de comisión (pagada o pendiente)
-  const pendingCommissions = validCommissions.filter((comm: any) => {
+  const pendingCommissions = sortedValidCommissions.filter((comm: any) => {
     console.log(`[DEBUG] Comisión ${comm.id}: commissionPaid=${comm.commissionPaid}, typeof=${typeof comm.commissionPaid}`);
     return !comm.commissionPaid;
   });
-  const paidCommissions = validCommissions.filter((comm: any) => comm.commissionPaid);
+  const paidCommissions = sortedValidCommissions.filter((comm: any) => comm.commissionPaid);
 
   if (isLoading) {
     return (
@@ -384,7 +391,7 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               <div className="text-center py-8 text-gray-500">
                 <PercentIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No hay comisiones pendientes</p>
-                {validCommissions.length === 0 && (
+                {sortedValidCommissions.length === 0 && (
                   <p className="text-sm mt-2">
                     Solo se muestran reservaciones confirmadas y pagadas
                   </p>
@@ -407,7 +414,7 @@ export function CommissionsList({ readOnly = false, queryKeySuffix = "" }: Commi
               <div className="text-center py-8 text-gray-500">
                 <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No hay comisiones pagadas</p>
-                {validCommissions.length === 0 && (
+                {sortedValidCommissions.length === 0 && (
                   <p className="text-sm mt-2">
                     Solo se muestran reservaciones confirmadas y pagadas
                   </p>
@@ -478,7 +485,7 @@ function CommissionItems({
       return (
         <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
           <CheckCircle2 className="mr-1 h-3 w-3" />
-          Pagado
+          Pasajero pagado
         </Badge>
       );
     }
