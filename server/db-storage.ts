@@ -25,6 +25,85 @@ import { normalizeToStartOfDay } from "./utils";
 
 export class DatabaseStorage implements IStorage {
   private db = db;
+  
+  // Cache en memoria para datos frecuentemente consultados
+  private cache = new Map<string, { data: any; expiry: number }>();
+  private readonly CACHE_TTL = 300000; // 5 minutos en ms
+  
+  // Límites de batching para prevenir consultas IN muy grandes
+  private readonly MAX_BATCH_SIZE = 100;
+  private readonly OPTIMAL_BATCH_SIZE = 25;
+
+  /**
+   * Función de cache genérica para datos frecuentemente consultados
+   */
+  private getCachedData<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (!cached || Date.now() > cached.expiry) {
+      this.cache.delete(key);
+      return null;
+    }
+    return cached.data as T;
+  }
+
+  private setCachedData<T>(key: string, data: T): void {
+    // Limpieza periódica del cache (cada 100 operaciones)
+    if (this.cache.size > 1000) {
+      this.cleanExpiredCache();
+    }
+    
+    this.cache.set(key, {
+      data,
+      expiry: Date.now() + this.CACHE_TTL
+    });
+  }
+
+  private cleanExpiredCache(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+    
+    for (const [key, value] of this.cache.entries()) {
+      if (now > value.expiry) {
+        this.cache.delete(key);
+        cleanedCount++;
+      }
+    }
+    
+    if (cleanedCount > 0) {
+      console.log(`[CACHE] Limpiados ${cleanedCount} elementos expirados del cache. Tamaño actual: ${this.cache.size}`);
+    }
+  }
+
+  /**
+   * Batch loading optimizado para consultas IN grandes
+   */
+  private async batchLoad<T, K>(
+    ids: K[],
+    loadFn: (batchIds: K[]) => Promise<T[]>,
+    maxBatchSize = this.OPTIMAL_BATCH_SIZE
+  ): Promise<T[]> {
+    if (ids.length === 0) return [];
+    
+    const results: T[] = [];
+    const batches: K[][] = [];
+    
+    // Dividir en lotes óptimos
+    for (let i = 0; i < ids.length; i += maxBatchSize) {
+      batches.push(ids.slice(i, i + maxBatchSize));
+    }
+    
+    // Ejecutar lotes en paralelo (máximo 3 concurrentes para no sobrecargar la BD)
+    const concurrencyLimit = Math.min(batches.length, 3);
+    for (let i = 0; i < batches.length; i += concurrencyLimit) {
+      const concurrentBatches = batches.slice(i, i + concurrencyLimit);
+      const batchResults = await Promise.all(
+        concurrentBatches.map(batch => loadFn(batch))
+      );
+      results.push(...batchResults.flat());
+    }
+    
+    return results;
+  }
 
   async getRoutes(companyId?: string): Promise<Route[]> {
     console.log(companyId ? `DB Storage: Consultando rutas para la compañía: ${companyId}` : "DB Storage: Consultando todas las rutas");
@@ -279,8 +358,68 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getTrip(id: number): Promise<Trip | undefined> {
+    // Verificar cache primero
+    const cacheKey = `trip:${id}`;
+    const cached = this.getCachedData<Trip>(cacheKey);
+    if (cached) return cached;
+    
     const [trip] = await db.select().from(schema.trips).where(eq(schema.trips.id, id));
+    
+    // Cachear el resultado si existe
+    if (trip) {
+      this.setCachedData(cacheKey, trip);
+    }
+    
     return trip;
+  }
+
+  /**
+   * Función optimizada para obtener trips por compañía con cache
+   */
+  async getTripsByCompany(companyId: string): Promise<Trip[]> {
+    const cacheKey = `trips:company:${companyId}`;
+    const cached = this.getCachedData<Trip[]>(cacheKey);
+    if (cached) {
+      console.log(`[OPTIMIZED] Cache hit para trips de compañía ${companyId}: ${cached.length} trips`);
+      return cached;
+    }
+
+    console.log(`[OPTIMIZED] Consultando trips por compañía: ${companyId}`);
+    const trips = await db
+      .select()
+      .from(schema.trips)
+      .where(eq(schema.trips.companyId, companyId));
+
+    console.log(`[OPTIMIZED] Trips encontrados para compañía ${companyId}: ${trips.length}`);
+    this.setCachedData(cacheKey, trips);
+    return trips;
+  }
+
+  /**
+   * Función optimizada para obtener trips por compañía y visibilidad con cache
+   */
+  async getTripsByCompanyAndVisibility(companyId: string, visibility: string): Promise<Trip[]> {
+    const cacheKey = `trips:company:${companyId}:visibility:${visibility}`;
+    const cached = this.getCachedData<Trip[]>(cacheKey);
+    if (cached) {
+      console.log(`[OPTIMIZED] Cache hit para trips de compañía ${companyId} con visibilidad ${visibility}: ${cached.length} trips`);
+      return cached;
+    }
+
+    console.log(`[OPTIMIZED] Consultando trips por compañía: ${companyId} y visibilidad: ${visibility}`);
+    const trips = await db
+      .select()
+      .from(schema.trips)
+      .where(
+        and(
+          eq(schema.trips.companyId, companyId),
+          eq(schema.trips.visibility, visibility)
+        )
+      );
+
+    console.log(`[OPTIMIZED] Trips encontrados para compañía ${companyId} y visibilidad ${visibility}: ${trips.length}`);
+    this.setCachedData(cacheKey, trips);
+    return trips;
   }
   
   async getTripWithRouteInfo(id: number): Promise<TripWithRouteInfo | undefined> {
@@ -1594,16 +1733,25 @@ export class DatabaseStorage implements IStorage {
         }
       });
       
-      // Consultas batch para datos relacionados
+      // OPTIMIZACIÓN CRÍTICA: Usar batch loading optimizado para evitar consultas IN grandes
+      console.log(`[OPTIMIZED] Cargando datos relacionados: ${tripIds.size} trips, ${createdByIds.size} users, ${reservationIds.size} passengers`);
+      
       const [trips, creators, allPassengers] = await Promise.all([
         tripIds.size > 0 
-          ? db.select().from(schema.trips).where(inArray(schema.trips.id, Array.from(tripIds)))
+          ? this.batchLoad(Array.from(tripIds), async (batchIds: number[]) => {
+              return db.select().from(schema.trips).where(inArray(schema.trips.id, batchIds));
+            }, this.OPTIMAL_BATCH_SIZE)
           : Promise.resolve([]),
+        
+        // Usar la función optimizada de usuarios que incluye cache
         createdByIds.size > 0
-          ? db.select().from(schema.users).where(inArray(schema.users.id, Array.from(createdByIds)))
+          ? this.getUsersByIds(Array.from(createdByIds))
           : Promise.resolve([]),
+        
         reservationIds.size > 0
-          ? db.select().from(schema.passengers).where(inArray(schema.passengers.reservationId, Array.from(reservationIds)))
+          ? this.batchLoad(Array.from(reservationIds), async (batchIds: number[]) => {
+              return db.select().from(schema.passengers).where(inArray(schema.passengers.reservationId, batchIds));
+            }, this.OPTIMAL_BATCH_SIZE)
           : Promise.resolve([])
       ]);
       
@@ -1618,16 +1766,37 @@ export class DatabaseStorage implements IStorage {
         if (trip.driverId) driverIds.add(trip.driverId);
       });
       
-      // Segunda ronda de consultas para datos relacionados
+      // OPTIMIZACIÓN: Batch loading para segunda ronda con cache para routes y vehicles
       const [routes, vehicles, drivers] = await Promise.all([
         routeIds.size > 0 
-          ? db.select().from(schema.routes).where(inArray(schema.routes.id, Array.from(routeIds)))
+          ? this.batchLoad(Array.from(routeIds), async (batchIds: number[]) => {
+              // Verificar cache para routes
+              const cacheKey = `routes:${batchIds.sort().join(',')}`;
+              let cached = this.getCachedData<any[]>(cacheKey);
+              if (cached) return cached;
+              
+              const routes = await db.select().from(schema.routes).where(inArray(schema.routes.id, batchIds));
+              this.setCachedData(cacheKey, routes);
+              return routes;
+            }, this.OPTIMAL_BATCH_SIZE)
           : Promise.resolve([]),
+          
         vehicleIds.size > 0
-          ? db.select().from(schema.vehicles).where(inArray(schema.vehicles.id, Array.from(vehicleIds)))
+          ? this.batchLoad(Array.from(vehicleIds), async (batchIds: number[]) => {
+              // Verificar cache para vehicles
+              const cacheKey = `vehicles:${batchIds.sort().join(',')}`;
+              let cached = this.getCachedData<any[]>(cacheKey);
+              if (cached) return cached;
+              
+              const vehicles = await db.select().from(schema.vehicles).where(inArray(schema.vehicles.id, batchIds));
+              this.setCachedData(cacheKey, vehicles);
+              return vehicles;
+            }, this.OPTIMAL_BATCH_SIZE)
           : Promise.resolve([]),
+          
+        // Usar función optimizada de usuarios para drivers
         driverIds.size > 0
-          ? db.select().from(schema.users).where(inArray(schema.users.id, Array.from(driverIds)))
+          ? this.getUsersByIds(Array.from(driverIds))
           : Promise.resolve([])
       ]);
       
@@ -2591,24 +2760,72 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersByIds(ids: number[]): Promise<schema.User[]> {
-    console.log(`DB Storage: Consultando usuarios por IDs: ${ids.join(', ')}`);
+    if (ids.length === 0) return [];
+    
+    console.log(`[OPTIMIZED] DB Storage: Consultando usuarios por IDs (${ids.length} usuarios)`);
     
     try {
-      const users = await db
-        .select()
-        .from(schema.users)
-        .where(inArray(schema.users.id, ids));
+      // Verificar cache primero para usuarios individuales
+      const cachedUsers: schema.User[] = [];
+      const uncachedIds: number[] = [];
       
-      console.log(`DB Storage: Usuarios encontrados para IDs [${ids.join(', ')}]: ${users.length}`);
-      return users;
+      ids.forEach(id => {
+        const cacheKey = `user:${id}`;
+        const cached = this.getCachedData<schema.User>(cacheKey);
+        if (cached) {
+          cachedUsers.push(cached);
+        } else {
+          uncachedIds.push(id);
+        }
+      });
+      
+      if (cachedUsers.length > 0) {
+        console.log(`[OPTIMIZED] Cache hit: ${cachedUsers.length}/${ids.length} usuarios en cache`);
+      }
+      
+      // Solo consultar los no cacheados usando batch loading optimizado
+      let dbUsers: schema.User[] = [];
+      if (uncachedIds.length > 0) {
+        dbUsers = await this.batchLoad(
+          uncachedIds,
+          async (batchIds: number[]) => {
+            console.log(`[OPTIMIZED] Consultando batch de ${batchIds.length} usuarios: [${batchIds.join(', ')}]`);
+            const users = await db
+              .select()
+              .from(schema.users)
+              .where(inArray(schema.users.id, batchIds));
+            
+            // Cachear usuarios obtenidos
+            users.forEach(user => {
+              this.setCachedData(`user:${user.id}`, user);
+            });
+            
+            return users;
+          },
+          this.OPTIMAL_BATCH_SIZE
+        );
+      }
+      
+      const allUsers = [...cachedUsers, ...dbUsers];
+      console.log(`[OPTIMIZED] Total usuarios obtenidos: ${allUsers.length} (${cachedUsers.length} cache + ${dbUsers.length} DB)`);
+      
+      return allUsers;
     } catch (error) {
-      console.error(`DB Storage: Error al obtener usuarios por IDs [${ids.join(', ')}]:`, error);
+      console.error(`DB Storage: Error al obtener usuarios por IDs optimizado:`, error);
       throw error;
     }
   }
 
   async getUsersByCompany(companyId: string): Promise<schema.User[]> {
-    console.log(`DB Storage: Consultando usuarios por compañía: ${companyId}`);
+    // Verificar cache primero
+    const cacheKey = `users:company:${companyId}`;
+    const cached = this.getCachedData<schema.User[]>(cacheKey);
+    if (cached) {
+      console.log(`[OPTIMIZED] Cache hit para usuarios de compañía ${companyId}: ${cached.length} usuarios`);
+      return cached;
+    }
+
+    console.log(`[OPTIMIZED] DB Storage: Consultando usuarios por compañía: ${companyId}`);
     
     try {
       const users = await db
@@ -2616,7 +2833,14 @@ export class DatabaseStorage implements IStorage {
         .from(schema.users)
         .where(eq(schema.users.companyId, companyId));
       
-      console.log(`DB Storage: Usuarios encontrados para compañía ${companyId}: ${users.length}`);
+      console.log(`[OPTIMIZED] DB Storage: Usuarios encontrados para compañía ${companyId}: ${users.length}`);
+      
+      // Cachear resultado y usuarios individuales
+      this.setCachedData(cacheKey, users);
+      users.forEach(user => {
+        this.setCachedData(`user:${user.id}`, user);
+      });
+      
       return users;
     } catch (error) {
       console.error(`DB Storage: Error al obtener usuarios por compañía ${companyId}:`, error);
