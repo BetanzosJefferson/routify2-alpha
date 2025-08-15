@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatDate, formatCurrency, formatDateToLocal } from "@/lib/utils";
+import { formatDate, formatCurrency, formatDateToLocal, getCurrentLocalDate } from "@/lib/utils";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { hasRoleAccess } from "@/lib/role-based-permissions";
@@ -85,11 +85,11 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
   const [packageToDetail, setPackageToDetail] = useState<any | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
   
-  // Estados para filtros
+  // Estados para filtros - INICIALIZAR con fecha actual por defecto
   const [filters, setFilters] = useState({
     origin: "",
     destination: "",
-    date: "",
+    date: getCurrentLocalDate(), // ✅ Por defecto mostrar solo paquetes del día actual
     company: "",
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -208,12 +208,12 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
     });
   }, [packagesQuery.data, filters]);
 
-  // Función para limpiar filtros
+  // Función para limpiar filtros - mantener fecha actual como predeterminada
   const clearFilters = () => {
     setFilters({
       origin: "",
       destination: "",
-      date: "",
+      date: getCurrentLocalDate(), // ✅ Al limpiar, volver a mostrar solo el día actual
       company: "",
     });
   };
@@ -478,7 +478,12 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
               Paquetes ({packagesQuery.data.length})
             </h2>
             <p className="text-sm text-muted-foreground">
-              {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''} aplicado{activeFiltersCount > 1 ? 's' : ''}
+              {filters.date === getCurrentLocalDate() ? 
+                `Filtrando paquetes de hoy (${formatDateToLocal(getCurrentLocalDate())})` :
+                filters.date ? 
+                  `Filtrando paquetes del ${formatDateToLocal(filters.date)}` :
+                  `${activeFiltersCount} filtro${activeFiltersCount > 1 ? 's' : ''} aplicado${activeFiltersCount > 1 ? 's' : ''}`
+              }
             </p>
           </div>
           <div className="flex gap-2">
@@ -595,11 +600,14 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
           <h2 className="text-xl font-bold">
             Paquetes ({filteredPackages.length})
           </h2>
-          {activeFiltersCount > 0 && (
-            <p className="text-sm text-muted-foreground">
-              {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''} aplicado{activeFiltersCount > 1 ? 's' : ''}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            {filters.date === getCurrentLocalDate() ? 
+              `Mostrando paquetes de hoy (${formatDateToLocal(getCurrentLocalDate())})` :
+              filters.date ? 
+                `Mostrando paquetes del ${formatDateToLocal(filters.date)}` :
+                `${activeFiltersCount} filtro${activeFiltersCount > 1 ? 's' : ''} aplicado${activeFiltersCount > 1 ? 's' : ''}`
+            }
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
