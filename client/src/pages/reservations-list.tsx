@@ -78,17 +78,11 @@ function ReservationsListContent() {
     setCurrentPage(1);
   };
 
-  // Actualizar fecha de búsqueda automáticamente cuando cambia la fecha seleccionada
-  const handleDateChange = async (newDate: string) => {
+  // Actualizar fecha seleccionada SIN hacer búsqueda automática
+  const handleDateChange = (newDate: string) => {
     setSelectedDate(newDate);
-    
-    // Invalidar cache para la nueva fecha
-    await queryClient.invalidateQueries({
-      queryKey: ["/api/reservations", { date: newDate }]
-    });
-    
-    setSearchDate(newDate); // Actualizar automáticamente
-    setCurrentPage(1);
+    // NO hacer búsqueda automática - solo actualizar la fecha seleccionada
+    // La búsqueda se hará cuando el usuario haga clic en "Buscar" o presione Enter
   };
   
   // Búsqueda con Enter
@@ -378,19 +372,24 @@ function ReservationsListContent() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => {
-                  console.log(`[Reservaciones] Cambiando fecha de ${selectedDate} a ${e.target.value}`);
+                  console.log(`[Reservaciones] Fecha seleccionada: ${e.target.value} (sin búsqueda automática)`);
                   handleDateChange(e.target.value);
                 }}
                 onKeyPress={handleKeyPress}
                 className="w-full md:w-32 text-sm"
+                placeholder="Seleccionar fecha"
               />
               <Button
                 onClick={handleSearch}
                 size="sm"
-                className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
+                className={`whitespace-nowrap ${
+                  selectedDate !== searchDate 
+                    ? "bg-orange-600 hover:bg-orange-700 animate-pulse" 
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
                 disabled={isLoading}
               >
-                {isLoading ? "Buscando..." : "Buscar"}
+                {isLoading ? "Buscando..." : selectedDate !== searchDate ? "Buscar fecha" : "Buscar"}
               </Button>
              
             
