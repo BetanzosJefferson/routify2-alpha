@@ -355,42 +355,23 @@ export default function OperatorTimelinePage() {
                 </CardContent>
               </Card>
 
-              {/* Card de balance general */}
+              {/* Card de periodo */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3">
-                    <DollarSignIcon className="h-5 w-5 text-gray-500" />
-                    <p className="text-sm font-medium text-gray-600">Balance</p>
+                    <CalendarIcon className="h-5 w-5 text-gray-500" />
+                    <p className="text-sm font-medium text-gray-600">Periodo</p>
                   </div>
-                  {(() => {
-                    const allTransactions: Transaction[] = timelineData.trips.reduce((acc: Transaction[], trip) => {
-                      return acc.concat(trip.transactions || []);
-                    }, []);
-                    
-                    const totalIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-                    
-                    const allExpenses = timelineData.trips.reduce((acc: TripExpense[], trip) => {
-                      return acc.concat(trip.expenses || []);
-                    }, []);
-                    
-                    const totalExpenses = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-                    const balance = totalIncome - totalExpenses;
-                    
-                    return (
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-600">Periodo:</span>
-                          <span className="font-medium text-xs">{formatDate(startDate)} - {formatDate(endDate)}</span>
-                        </div>
-                        <div className={`flex justify-between text-sm pt-1 border-t border-gray-200`}>
-                          <span className="font-medium text-gray-800">Neto:</span>
-                          <span className={`font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                            ${balance.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Desde:</span>
+                      <span className="font-medium">{formatDate(startDate)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Hasta:</span>
+                      <span className="font-medium">{formatDate(endDate)}</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -545,39 +526,24 @@ export default function OperatorTimelinePage() {
                                   </div>
                                 )}
 
-                                {/* Gastos del viaje */}
+                                {/* Gastos del viaje - Lista individual */}
                                 {trip.expenses && trip.expenses.length > 0 && (
                                   <div className="bg-red-50 border border-red-200 rounded p-2 mb-2">
-                                    <div className="text-xs text-gray-600 mb-1">
+                                    <div className="text-xs text-gray-600 mb-2">
                                       Gastos ({trip.expenses.length} registr{trip.expenses.length > 1 ? 'os' : 'o'})
                                     </div>
-                                    <div className="font-bold text-red-700">
-                                      $${trip.expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()} MXN
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      {trip.expenses.map(e => e.type).join(', ')}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Balance neto */}
-                                {(trip.budget || (trip.expenses && trip.expenses.length > 0)) && (
-                                  <div className="bg-gray-100 border border-gray-300 rounded p-2 mt-2">
-                                    <div className="text-xs text-gray-600 mb-1">Balance neto</div>
-                                    <div className={`font-bold ${
-                                      (() => {
-                                        const ingresos = trip.transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-                                        const gastos = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
-                                        const balance = ingresos - gastos;
-                                        return balance >= 0 ? 'text-green-700' : 'text-red-700';
-                                      })()
-                                    }`}>
-                                      ${(() => {
-                                        const ingresos = trip.transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-                                        const gastos = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
-                                        const balance = ingresos - gastos;
-                                        return balance.toLocaleString();
-                                      })()} MXN
+                                    <div className="space-y-1">
+                                      {trip.expenses.map((expense, index) => (
+                                        <div key={expense.id} className="flex justify-between items-center text-xs bg-white rounded p-1.5 border border-red-100">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium text-red-700 capitalize">{expense.type}</span>
+                                            {expense.description && (
+                                              <span className="text-gray-500">- {expense.description}</span>
+                                            )}
+                                          </div>
+                                          <span className="font-bold text-red-700">${expense.amount.toLocaleString()}</span>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 )}
