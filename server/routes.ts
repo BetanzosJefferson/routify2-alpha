@@ -9671,6 +9671,10 @@ function setupPackageRoutes(app: Express) {
                 contact: details?.details?.contacto || null,
                 origin: details?.details?.origen || null,
                 destination: details?.details?.destino || null,
+                // Datos específicos para paqueterías
+                remitente: details?.details?.remitente || null,
+                destinatario: details?.details?.destinatario || null,
+                descripcion: details?.details?.descripcion || null,
                 createdAt: transaction.created_at
               };
             }),

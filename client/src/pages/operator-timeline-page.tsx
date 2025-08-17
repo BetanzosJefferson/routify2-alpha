@@ -592,31 +592,82 @@ export default function OperatorTimelinePage() {
                                         </div>
                                         
                                         <div className="space-y-1 text-xs text-gray-600">
-                                          {transaction.passenger && (
-                                            <div>
-                                              <span className="font-medium">Pasajero:</span> {transaction.passenger}
-                                            </div>
-                                          )}
-                                          {transaction.paymentMethod && (
-                                            <div>
-                                              <span className="font-medium">Método:</span> {transaction.paymentMethod}
-                                            </div>
-                                          )}
-                                          
-                                          {/* Origen y Destino de la reserva */}
-                                          {transaction.origin && (
-                                            <div className="flex items-center gap-1">
-                                              <MapPinIcon className="h-3 w-3 text-green-500" />
-                                              <span className="font-medium">Origen:</span> 
-                                              <span className="truncate">{transaction.origin}</span>
-                                            </div>
-                                          )}
-                                          {transaction.destination && (
-                                            <div className="flex items-center gap-1">
-                                              <MapPinIcon className="h-3 w-3 text-red-500" />
-                                              <span className="font-medium">Destino:</span> 
-                                              <span className="truncate">{transaction.destination}</span>
-                                            </div>
+                                          {/* Mostrar información específica para paqueterías */}
+                                          {transaction.type === 'package' ? (
+                                            <>
+                                              {/* Información de envío */}
+                                              {transaction.origin && (
+                                                <div className="flex items-center gap-1">
+                                                  <MapPinIcon className="h-3 w-3 text-green-500" />
+                                                  <span className="font-medium">Origen:</span> 
+                                                  <span className="truncate">{transaction.origin}</span>
+                                                </div>
+                                              )}
+                                              {transaction.destination && (
+                                                <div className="flex items-center gap-1">
+                                                  <MapPinIcon className="h-3 w-3 text-red-500" />
+                                                  <span className="font-medium">Destino:</span> 
+                                                  <span className="truncate">{transaction.destination}</span>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Remitente y Destinatario */}
+                                              <div className="grid grid-cols-2 gap-2 mt-2 p-2 bg-orange-50 rounded border border-orange-100">
+                                                <div>
+                                                  <span className="font-medium text-orange-700">Remitente:</span>
+                                                  <div className="text-xs text-gray-700 mt-0.5">{(transaction as any).remitente || 'No especificado'}</div>
+                                                </div>
+                                                <div>
+                                                  <span className="font-medium text-orange-700">Destinatario:</span>
+                                                  <div className="text-xs text-gray-700 mt-0.5">{(transaction as any).destinatario || 'No especificado'}</div>
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Descripción del paquete */}
+                                              {(transaction as any).descripcion && (
+                                                <div className="mt-2 p-2 bg-gray-50 rounded border">
+                                                  <span className="font-medium">Descripción:</span>
+                                                  <div className="text-xs text-gray-700 mt-0.5">{(transaction as any).descripcion}</div>
+                                                </div>
+                                              )}
+                                              
+                                              {/* Método de pago */}
+                                              {transaction.paymentMethod && (
+                                                <div>
+                                                  <span className="font-medium">Método de pago:</span> {transaction.paymentMethod}
+                                                </div>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <>
+                                              {/* Información para reservas normales */}
+                                              {transaction.passenger && (
+                                                <div>
+                                                  <span className="font-medium">Pasajero:</span> {transaction.passenger}
+                                                </div>
+                                              )}
+                                              {transaction.paymentMethod && (
+                                                <div>
+                                                  <span className="font-medium">Método:</span> {transaction.paymentMethod}
+                                                </div>
+                                              )}
+                                              
+                                              {/* Origen y Destino de la reserva */}
+                                              {transaction.origin && (
+                                                <div className="flex items-center gap-1">
+                                                  <MapPinIcon className="h-3 w-3 text-green-500" />
+                                                  <span className="font-medium">Origen:</span> 
+                                                  <span className="truncate">{transaction.origin}</span>
+                                                </div>
+                                              )}
+                                              {transaction.destination && (
+                                                <div className="flex items-center gap-1">
+                                                  <MapPinIcon className="h-3 w-3 text-red-500" />
+                                                  <span className="font-medium">Destino:</span> 
+                                                  <span className="truncate">{transaction.destination}</span>
+                                                </div>
+                                              )}
+                                            </>
                                           )}
                                           
                                           <div className="text-xs text-gray-500 mt-1">
