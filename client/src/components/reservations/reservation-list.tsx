@@ -197,6 +197,18 @@ export function ReservationList() {
 
   // Mostrar todas las reservaciones sin filtrar por estado
   const allReservations = reservations || [];
+  
+  // ✅ DEBUG: Verificar datos recibidos del backend
+  useEffect(() => {
+    if (allReservations.length > 0) {
+      console.log(`[ReservationList] 🔍 DATOS RECIBIDOS PARA FECHA ${dateFilter}:`);
+      allReservations.forEach((res, index) => {
+        console.log(`  ${index + 1}. ID: ${res.id}, Viaje: ${res.trip.departureDate}, Creada: ${res.createdAt}`);
+      });
+    } else {
+      console.log(`[ReservationList] ❌ NO HAY RESERVACIONES para fecha ${dateFilter}`);
+    }
+  }, [allReservations, dateFilter]);
 
   // Function to handle sorting
   const getSortedReservations = (reservations: ReservationWithDetails[]) => {
