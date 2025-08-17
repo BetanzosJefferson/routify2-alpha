@@ -8,6 +8,7 @@ type UseReservationsOptions = {
   includeRelated?: boolean;
   date?: string; // Formato YYYY-MM-DD
   archived?: boolean; // Para obtener reservaciones archivadas
+  parentTripFilter?: boolean; // Para usar filtro por viaje padre (incluye sub-viajes)
 };
 
 /**
@@ -15,13 +16,13 @@ type UseReservationsOptions = {
  */
 export function useReservations(options: UseReservationsOptions = {}) {
   const { user } = useAuth();
-  const { tripId, includeRelated = false, enabled = true, date, archived = false } = options;
+  const { tripId, includeRelated = false, enabled = true, date, archived = false, parentTripFilter = false } = options;
   
   // Solo usar filtro de fecha si se proporciona explícitamente
   const dateFilter = date;
   
   return useQuery<ReservationWithDetails[]>({
-    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived }],
+    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived, parentTripFilter }],
     enabled: !!user && enabled,
     staleTime: 0, // Datos siempre frescos para actualizaciones en tiempo real
     refetchInterval: 30000, // Actualizar cada 30 segundos automáticamente
@@ -46,6 +47,11 @@ export function useReservations(options: UseReservationsOptions = {}) {
         // Agregar filtro de fecha solo si se especifica
         if (dateFilter) {
           params.append("date", dateFilter);
+        }
+        
+        // Agregar filtro por viaje padre si se especifica
+        if (parentTripFilter) {
+          params.append("parentTripFilter", "true");
         }
         
         // Añadir los parámetros a la URL solo si hay parámetros

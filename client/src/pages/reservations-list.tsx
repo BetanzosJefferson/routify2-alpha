@@ -51,7 +51,8 @@ function ReservationsListContent() {
   } = useReservations({
     // ✅ OPTIMIZACIÓN: Filtrar por fecha actual por defecto para mejorar performance
     date: searchDate, // Usar searchDate que por defecto es la fecha actual
-    enabled: true
+    enabled: true,
+    parentTripFilter: true // 🎯 FILTRO POR VIAJE PADRE: Incluir sub-viajes del mismo día padre
   });
 
   // Manejo silencioso de errores - solo log sin modal

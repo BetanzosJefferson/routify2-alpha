@@ -2874,10 +2874,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations] Filtrando por viaje ID: ${tripId}`);
       }
       
+      // Verificar tipo de filtrado de fecha
+      let useParentTripFilter = false;
+      if (req.query.parentTripFilter === 'true') {
+        useParentTripFilter = true;
+        console.log(`[GET /reservations] 🎯 MODO VIAJE PADRE: Usará fecha del viaje padre`);
+      }
+
       // OPTIMIZACIÓN CRÍTICA: Por defecto filtrar por fecha actual para mejorar performance
       if (req.query.date) {
         dateFilter = req.query.date as string;
-        console.log(`[GET /reservations] Filtrando por fecha especificada: ${dateFilter}`);
+        console.log(`[GET /reservations] Filtrando por fecha especificada: ${dateFilter} (modo: ${useParentTripFilter ? 'viaje padre' : 'individual'})`);
       } else if (!tripId) {
         // Solo aplicar filtro de fecha actual cuando NO se filtre por viaje específico
         // Esto mejora significativamente la performance al cargar solo reservaciones del día actual
@@ -2974,25 +2981,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[GET /reservations] Filtered to ${filteredReservations.length} reservations for tripId ${tripId}`);
         }
         
-        // Filter by date if provided (filter by individual trip departure date)
+        // Filter by date if provided
         if (dateFilter) {
-          console.log(`[GET /reservations] ✅ FILTRADO INDIVIDUAL: Filtrando por fecha de viaje individual: ${dateFilter}`);
-          
           const targetDate = new Date(dateFilter);
-          filteredReservations = reservations.filter(reservation => {
-            if (reservation.trip && reservation.trip.departureDate) {
-              const tripDate = new Date(reservation.trip.departureDate);
-              const matchesDate = tripDate.toDateString() === targetDate.toDateString();
-              
-              console.log(`[GET /reservations] Reservación ${reservation.id}: viaje ${reservation.trip.departureDate} ${matchesDate ? '✅ INCLUIR' : '❌ EXCLUIR'}`);
-              return matchesDate;
-            } else {
-              console.log(`[GET /reservations] ⚠️ Reservación ${reservation.id} sin fecha de viaje válida`);
-              return false;
-            }
-          });
           
-          console.log(`[GET /reservations] ✅ RESULTADO INDIVIDUAL: ${filteredReservations.length} reservaciones para fecha ${dateFilter}`);
+          if (useParentTripFilter) {
+            // MODO VIAJE PADRE: Agrupar por recordId y usar fecha del viaje padre
+            console.log(`[GET /reservations] 🎯 FILTRADO VIAJE PADRE: Filtrando por fecha de viaje padre: ${dateFilter}`);
+            
+            const recordIdGroups = new Map<string, { reservations: any[], parentTripDate: string | null }>();
+            
+            // Primer paso: agrupar por recordId y obtener fecha del viaje padre
+            for (const reservation of reservations) {
+              const tripDetails = reservation.tripDetails;
+              if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
+                let recordId = tripDetails.recordId.toString();
+                if (recordId.includes('_')) {
+                  recordId = recordId.split('_')[0];
+                }
+                
+                if (!recordIdGroups.has(recordId)) {
+                  const parentTripId = parseInt(recordId);
+                  let parentTripDate: string | null = null;
+                  
+                  try {
+                    const parentTrip = await storage.getTrip(parentTripId);
+                    if (parentTrip && parentTrip.tripData && parentTrip.tripData.length > 0) {
+                      parentTripDate = parentTrip.tripData[0].departureDate;
+                    } else {
+                      parentTripDate = reservation.trip?.departureDate || null;
+                    }
+                  } catch (error) {
+                    parentTripDate = reservation.trip?.departureDate || null;
+                  }
+                  
+                  recordIdGroups.set(recordId, {
+                    reservations: [],
+                    parentTripDate: parentTripDate
+                  });
+                }
+                
+                const group = recordIdGroups.get(recordId)!;
+                group.reservations.push(reservation);
+              }
+            }
+            
+            // Segundo paso: filtrar grupos por fecha del viaje padre
+            filteredReservations = [];
+            recordIdGroups.forEach((group, recordId) => {
+              if (group.parentTripDate) {
+                const parentDate = new Date(group.parentTripDate);
+                const matchesDate = parentDate.toDateString() === targetDate.toDateString();
+                
+                if (matchesDate) {
+                  console.log(`[GET /reservations] ✅ INCLUIR GRUPO recordId ${recordId} con fecha padre ${group.parentTripDate} (${group.reservations.length} reservaciones)`);
+                  filteredReservations.push(...group.reservations);
+                } else {
+                  console.log(`[GET /reservations] ❌ EXCLUIR GRUPO recordId ${recordId} - fecha padre ${group.parentTripDate} no coincide con ${dateFilter}`);
+                }
+              }
+            });
+            
+            console.log(`[GET /reservations] 🎯 RESULTADO VIAJE PADRE: ${filteredReservations.length} reservaciones para fecha ${dateFilter}`);
+          } else {
+            // MODO INDIVIDUAL: Filtrar por fecha individual de cada reservación
+            console.log(`[GET /reservations] ✅ FILTRADO INDIVIDUAL: Filtrando por fecha de viaje individual: ${dateFilter}`);
+            
+            filteredReservations = reservations.filter(reservation => {
+              if (reservation.trip && reservation.trip.departureDate) {
+                const tripDate = new Date(reservation.trip.departureDate);
+                const matchesDate = tripDate.toDateString() === targetDate.toDateString();
+                
+                console.log(`[GET /reservations] Reservación ${reservation.id}: viaje ${reservation.trip.departureDate} ${matchesDate ? '✅ INCLUIR' : '❌ EXCLUIR'}`);
+                return matchesDate;
+              } else {
+                console.log(`[GET /reservations] ⚠️ Reservación ${reservation.id} sin fecha de viaje válida`);
+                return false;
+              }
+            });
+            
+            console.log(`[GET /reservations] ✅ RESULTADO INDIVIDUAL: ${filteredReservations.length} reservaciones para fecha ${dateFilter}`);
+          }
         } else {
           // Without date filter: return ALL reservations to let frontend handle filtering
           console.log(`[GET /reservations] Returning ALL reservations for frontend filtering`);
