@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
-import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay } from "@/lib/utils";
+import { formatDate, formatPrice, formatTime, formatDateForInput, normalizeToStartOfDay, isSameLocalDay, getCurrentLocalDate } from "@/lib/utils";
 import { Search, Calendar, Users, CreditCard, Building2, User, ChevronDown, ChevronUp, Truck, UserCheck, Filter, MapPin, Clock } from "lucide-react";
 
 import { ReservationWithDetails } from "@shared/schema";
@@ -27,36 +27,13 @@ function ReservationsListContent() {
   
   // Verificar si el usuario es chofer
   const isDriver = user?.role === 'chofer';
-  // Obtener la fecha actual - permitir que el usuario configure la fecha correcta
-  const getCurrentDate = withErrorHandling(() => {
-    const now = new Date();
-    
-    // Método 1: Fecha del sistema local
-    const systemDate = new Date();
-    
-    // Método 2: Fecha en zona horaria de México
-    const mexicoDate = new Date(now.toLocaleString("en-US", {timeZone: "America/Mexico_City"}));
-    
-    // Método 3: Fecha simple del día actual (sin conversión de zona horaria)
-    const simpleDate = new Date();
-    simpleDate.setHours(12, 0, 0, 0); // Fijar a mediodía para evitar problemas de zona horaria
-    
-    console.log(`[Reservaciones] ========== DIAGNÓSTICO COMPLETO DE FECHA ==========`);
-    console.log(`[Reservaciones] Fecha sistema UTC: ${now.toISOString()}`);
-    console.log(`[Reservaciones] Fecha sistema local: ${systemDate.toLocaleDateString()}`);
-    console.log(`[Reservaciones] Fecha México: ${mexicoDate.toISOString()}`);
-    console.log(`[Reservaciones] Fecha simple: ${simpleDate.toLocaleDateString()}`);
-    console.log(`[Reservaciones] Formato para input (sistema): ${formatDateForInput(systemDate)}`);
-    console.log(`[Reservaciones] Formato para input (México): ${formatDateForInput(mexicoDate)}`);
-    console.log(`[Reservaciones] Formato para input (simple): ${formatDateForInput(simpleDate)}`);
-    console.log(`[Reservaciones] ======================================================`);
-    
-    // Usar la fecha del sistema local por defecto
-    return systemDate;
-  }, "getCurrentDate");
 
-  const [selectedDate, setSelectedDate] = useState(formatDateForInput(getCurrentDate()));
-  const [searchDate, setSearchDate] = useState(formatDateForInput(getCurrentDate())); // Usar fecha actual por defecto
+  // Usar la función global getCurrentLocalDate() para consistencia
+  const currentDate = getCurrentLocalDate();
+  const [selectedDate, setSelectedDate] = useState(currentDate);
+  const [searchDate, setSearchDate] = useState(currentDate); // Usar fecha actual por defecto
+  
+  console.log(`[Reservaciones] 🔧 INICIALIZACIÓN: currentDate=${currentDate}, selectedDate=${selectedDate}, searchDate=${searchDate}`);
   
   // Agregar opción para que el usuario pueda especificar la fecha actual manualmente
   const [manualDateMode, setManualDateMode] = useState(false);
@@ -72,8 +49,9 @@ function ReservationsListContent() {
     isLoading, 
     error 
   } = useReservations({
-    // No filtrar por fecha en el backend - traer todas las reservaciones
-    // El filtrado se hará en el frontend después de agrupar por viaje padre
+    // ✅ OPTIMIZACIÓN: Filtrar por fecha actual por defecto para mejorar performance
+    date: searchDate, // Usar searchDate que por defecto es la fecha actual
+    enabled: true
   });
 
   // Manejo silencioso de errores - solo log sin modal
@@ -90,19 +68,25 @@ function ReservationsListContent() {
   const handleSearch = async () => {
     console.log(`[Reservaciones] Iniciando búsqueda para fecha: ${selectedDate}`);
     
-    // Invalidar cache de reservaciones para forzar nueva consulta
+    // Invalidar cache específico para la nueva fecha
     await queryClient.invalidateQueries({
-      queryKey: ["/api/reservations"]
+      queryKey: ["/api/reservations", { date: selectedDate }]
     });
     
-    // Solo aplicar filtro de fecha si se especifica una fecha
+    // Aplicar filtro de fecha
     setSearchDate(selectedDate);
     setCurrentPage(1);
   };
 
   // Actualizar fecha de búsqueda automáticamente cuando cambia la fecha seleccionada
-  const handleDateChange = (newDate: string) => {
+  const handleDateChange = async (newDate: string) => {
     setSelectedDate(newDate);
+    
+    // Invalidar cache para la nueva fecha
+    await queryClient.invalidateQueries({
+      queryKey: ["/api/reservations", { date: newDate }]
+    });
+    
     setSearchDate(newDate); // Actualizar automáticamente
     setCurrentPage(1);
   };

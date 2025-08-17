@@ -53,6 +53,7 @@ export function useReservations(options: UseReservationsOptions = {}) {
           url += `?${params.toString()}`;
         }
         
+        console.log(`[useReservations] 🔧 DEBUG: dateFilter="${dateFilter}", original date="${date}"`);
         console.log(`[useReservations] Obteniendo reservaciones${dateFilter ? ` para fecha ${dateFilter}` : ' (todas)'}: ${url}`);
         
         const response = await fetch(url);

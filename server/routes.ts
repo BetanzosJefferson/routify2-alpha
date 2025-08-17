@@ -2874,13 +2874,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations] Filtrando por viaje ID: ${tripId}`);
       }
       
-      // OPTIMIZACIÓN: Filtrar por fecha específica si se proporciona
+      // OPTIMIZACIÓN CRÍTICA: Por defecto filtrar por fecha actual para mejorar performance
       if (req.query.date) {
         dateFilter = req.query.date as string;
         console.log(`[GET /reservations] Filtrando por fecha especificada: ${dateFilter}`);
+      } else if (!tripId) {
+        // Solo aplicar filtro de fecha actual cuando NO se filtre por viaje específico
+        // Esto mejora significativamente la performance al cargar solo reservaciones del día actual
+        dateFilter = getCurrentLocalDate();
+        console.log(`[GET /reservations] 🚀 OPTIMIZACIÓN: Filtrando por fecha actual por defecto: ${dateFilter}`);
       } else {
-        // Sin filtro por defecto - esto permite incluir reservaciones de viajes que cruzan medianoche
-        console.log(`[GET /reservations] Sin filtro de fecha - incluir reservaciones de viajes que cruzan medianoche`);
+        console.log(`[GET /reservations] Sin filtro de fecha para viaje específico ${tripId}`);
       }
       
       // Determinar filtros de seguridad según el rol
