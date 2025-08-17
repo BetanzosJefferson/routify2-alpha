@@ -24,6 +24,23 @@ interface Transaction {
   createdAt: string;
 }
 
+interface TripBudget {
+  id: number;
+  tripId: number;
+  amount: number;
+  createdAt: string;
+}
+
+interface TripExpense {
+  id: number;
+  tripId: number;
+  type: string;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+  createdBy: string | null;
+}
+
 interface OperatorTimelineData {
   trips: Array<{
     id: number;
@@ -55,6 +72,8 @@ interface OperatorTimelineData {
       email: string;
     } | null;
     transactions: Transaction[]; // Transacciones agrupadas en cada viaje
+    budget: TripBudget | null; // Presupuesto del viaje
+    expenses: TripExpense[]; // Gastos del viaje
   }>;
   transactions: Array<{
     id: number;
@@ -154,7 +173,7 @@ export default function OperatorTimelinePage() {
                     {operatorsLoading ? (
                       <SelectItem value="loading" disabled>Cargando...</SelectItem>
                     ) : operators && operators.length > 0 ? (
-                      operators.map((operator) => (
+                      operators.map((operator: any) => (
                         <SelectItem key={operator.id} value={operator.id.toString()}>
                           {operator.firstName} {operator.lastName}
                         </SelectItem>
@@ -210,8 +229,8 @@ export default function OperatorTimelinePage() {
 
         {timelineData && (
           <div className="space-y-6">
-            {/* Resumen */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* Resumen financiero expandido */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
               <Card>
                 <CardContent className="flex items-center justify-between p-6">
                   <div>
@@ -234,55 +253,140 @@ export default function OperatorTimelinePage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="flex items-center justify-between p-6">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Periodo</p>
-                    <p className="text-sm font-bold">
-                      {formatDate(startDate)} - {formatDate(endDate)}
-                    </p>
-                  </div>
-                  <CalendarIcon className="h-8 w-8 text-purple-500" />
-                </CardContent>
-              </Card>
-
-              {/* Nuevo card de métodos de pago */}
+              {/* Card de ingresos por método de pago */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSignIcon className="h-5 w-5 text-emerald-500" />
-                    <p className="text-sm font-medium text-gray-600">Métodos de pago</p>
+                    <p className="text-sm font-medium text-gray-600">Ingresos</p>
                   </div>
                   {(() => {
                     // Calcular totales por método de pago
-                    const allTransactions = timelineData.trips.reduce((acc, trip) => {
+                    const allTransactions: Transaction[] = timelineData.trips.reduce((acc: Transaction[], trip) => {
                       return acc.concat(trip.transactions || []);
                     }, []);
                     
                     const efectivoTotal = allTransactions
-                      .filter(t => t.paymentMethod?.toLowerCase() === 'efectivo')
+                      .filter((t: Transaction) => t.paymentMethod?.toLowerCase() === 'efectivo')
                       .reduce((sum, t) => sum + (t.amount || 0), 0);
                     
                     const transferenciaTotal = allTransactions
-                      .filter(t => t.paymentMethod?.toLowerCase() === 'transferencia')
+                      .filter((t: Transaction) => t.paymentMethod?.toLowerCase() === 'transferencia')
                       .reduce((sum, t) => sum + (t.amount || 0), 0);
                     
                     const total = allTransactions
                       .reduce((sum, t) => sum + (t.amount || 0), 0);
                     
                     return (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
                           <span className="text-gray-600">Efectivo:</span>
                           <span className="font-medium text-green-600">${efectivoTotal.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-xs">
                           <span className="text-gray-600">Transferencia:</span>
                           <span className="font-medium text-blue-600">${transferenciaTotal.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                        <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
                           <span className="font-medium text-gray-800">Total:</span>
-                          <span className="font-bold text-gray-800">${total.toLocaleString()}</span>
+                          <span className="font-bold text-emerald-700">${total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Card de presupuestos */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSignIcon className="h-5 w-5 text-purple-500" />
+                    <p className="text-sm font-medium text-gray-600">Presupuestos</p>
+                  </div>
+                  {(() => {
+                    const tripsWithBudget = timelineData.trips.filter(trip => trip.budget);
+                    const totalBudget = timelineData.trips.reduce((sum, trip) => 
+                      sum + (trip.budget?.amount || 0), 0);
+                    
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Viajes con presupuesto:</span>
+                          <span className="font-medium">{tripsWithBudget.length}</span>
+                        </div>
+                        <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
+                          <span className="font-medium text-gray-800">Total:</span>
+                          <span className="font-bold text-purple-700">${totalBudget.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Card de gastos */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSignIcon className="h-5 w-5 text-red-500" />
+                    <p className="text-sm font-medium text-gray-600">Gastos</p>
+                  </div>
+                  {(() => {
+                    const allExpenses = timelineData.trips.reduce((acc: TripExpense[], trip) => {
+                      return acc.concat(trip.expenses || []);
+                    }, []);
+                    
+                    const totalExpenses = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                    
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Total registros:</span>
+                          <span className="font-medium">{allExpenses.length}</span>
+                        </div>
+                        <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
+                          <span className="font-medium text-gray-800">Total:</span>
+                          <span className="font-bold text-red-700">${totalExpenses.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Card de balance general */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DollarSignIcon className="h-5 w-5 text-gray-500" />
+                    <p className="text-sm font-medium text-gray-600">Balance</p>
+                  </div>
+                  {(() => {
+                    const allTransactions: Transaction[] = timelineData.trips.reduce((acc: Transaction[], trip) => {
+                      return acc.concat(trip.transactions || []);
+                    }, []);
+                    
+                    const totalIncome = allTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+                    
+                    const allExpenses = timelineData.trips.reduce((acc: TripExpense[], trip) => {
+                      return acc.concat(trip.expenses || []);
+                    }, []);
+                    
+                    const totalExpenses = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                    const balance = totalIncome - totalExpenses;
+                    
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Periodo:</span>
+                          <span className="font-medium text-xs">{formatDate(startDate)} - {formatDate(endDate)}</span>
+                        </div>
+                        <div className={`flex justify-between text-sm pt-1 border-t border-gray-200`}>
+                          <span className="font-medium text-gray-800">Neto:</span>
+                          <span className={`font-bold ${balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                            ${balance.toLocaleString()}
+                          </span>
                         </div>
                       </div>
                     );
@@ -398,16 +502,88 @@ export default function OperatorTimelinePage() {
                                 </div>
                               </div>
 
-                              {/* Resumen financiero del viaje */}
+                              {/* Resumen financiero detallado del viaje */}
                               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium text-sm text-gray-700">Ingresos del viaje</span>
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="font-medium text-sm text-gray-700">Resumen financiero</span>
                                   <span className="text-lg font-bold text-green-600">
                                     ${trip.transactions?.reduce((sum, t) => sum + (t.amount || 0), 0).toLocaleString() || '0'} MXN
                                   </span>
                                 </div>
+
+                                {/* Desglose de ingresos por método de pago */}
                                 {trip.transactions && trip.transactions.length > 0 && (
-                                  <div className="text-xs text-gray-500 mt-1">
+                                  <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <div className="bg-green-50 border border-green-200 rounded p-2">
+                                      <div className="text-xs text-gray-600 mb-1">Efectivo</div>
+                                      <div className="font-bold text-green-700">
+                                        ${trip.transactions
+                                          .filter((t: Transaction) => t.paymentMethod?.toLowerCase() === 'efectivo')
+                                          .reduce((sum, t) => sum + (t.amount || 0), 0)
+                                          .toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                                      <div className="text-xs text-gray-600 mb-1">Transferencia</div>
+                                      <div className="font-bold text-blue-700">
+                                        ${trip.transactions
+                                          .filter((t: Transaction) => t.paymentMethod?.toLowerCase() === 'transferencia')
+                                          .reduce((sum, t) => sum + (t.amount || 0), 0)
+                                          .toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Presupuesto del viaje */}
+                                {trip.budget && (
+                                  <div className="bg-purple-50 border border-purple-200 rounded p-2 mb-2">
+                                    <div className="text-xs text-gray-600 mb-1">Presupuesto asignado</div>
+                                    <div className="font-bold text-purple-700">
+                                      ${trip.budget.amount.toLocaleString()} MXN
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Gastos del viaje */}
+                                {trip.expenses && trip.expenses.length > 0 && (
+                                  <div className="bg-red-50 border border-red-200 rounded p-2 mb-2">
+                                    <div className="text-xs text-gray-600 mb-1">
+                                      Gastos ({trip.expenses.length} registr{trip.expenses.length > 1 ? 'os' : 'o'})
+                                    </div>
+                                    <div className="font-bold text-red-700">
+                                      $${trip.expenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()} MXN
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      {trip.expenses.map(e => e.type).join(', ')}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Balance neto */}
+                                {(trip.budget || (trip.expenses && trip.expenses.length > 0)) && (
+                                  <div className="bg-gray-100 border border-gray-300 rounded p-2 mt-2">
+                                    <div className="text-xs text-gray-600 mb-1">Balance neto</div>
+                                    <div className={`font-bold ${
+                                      (() => {
+                                        const ingresos = trip.transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+                                        const gastos = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+                                        const balance = ingresos - gastos;
+                                        return balance >= 0 ? 'text-green-700' : 'text-red-700';
+                                      })()
+                                    }`}>
+                                      ${(() => {
+                                        const ingresos = trip.transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+                                        const gastos = trip.expenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
+                                        const balance = ingresos - gastos;
+                                        return balance.toLocaleString();
+                                      })()} MXN
+                                    </div>
+                                  </div>
+                                )}
+
+                                {trip.transactions && trip.transactions.length > 0 && (
+                                  <div className="text-xs text-gray-500 mt-2">
                                     {trip.transactions.length} transacción{trip.transactions.length > 1 ? 'es' : ''}
                                   </div>
                                 )}

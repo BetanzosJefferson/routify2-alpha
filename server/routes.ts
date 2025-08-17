@@ -9483,12 +9483,40 @@ function setupPackageRoutes(app: Express) {
             .limit(1);
           vehicle = vehicleResult[0] || null;
         }
+
+        // Obtener presupuesto del viaje
+        let budget = null;
+        try {
+          const budgetResult = await db
+            .select()
+            .from(schema.tripBudgets)
+            .where(eq(schema.tripBudgets.tripId, trip.id))
+            .limit(1);
+          budget = budgetResult[0] || null;
+        } catch (error) {
+          console.log(`[GET /operator-timeline] Error obteniendo presupuesto para viaje ${trip.id}:`, error);
+        }
+
+        // Obtener gastos del viaje
+        let expenses = [];
+        try {
+          const expensesResult = await db
+            .select()
+            .from(schema.tripExpenses)
+            .where(eq(schema.tripExpenses.tripId, trip.id))
+            .orderBy(schema.tripExpenses.createdAt);
+          expenses = expensesResult || [];
+        } catch (error) {
+          console.log(`[GET /operator-timeline] Error obteniendo gastos para viaje ${trip.id}:`, error);
+        }
         
         tripsWithDetails.push({
           trips: trip,
           users: driver,
           routes: route,
-          vehicles: vehicle
+          vehicles: vehicle,
+          budget: budget,
+          expenses: expenses
         });
       }
 
@@ -9645,7 +9673,24 @@ function setupPackageRoutes(app: Express) {
                 destination: details?.details?.destino || null,
                 createdAt: transaction.created_at
               };
-            })
+            }),
+            // Presupuesto del viaje
+            budget: trip.budget ? {
+              id: trip.budget.id,
+              tripId: trip.budget.tripId,
+              amount: trip.budget.amount,
+              createdAt: trip.budget.createdAt
+            } : null,
+            // Gastos del viaje
+            expenses: trip.expenses ? trip.expenses.map(expense => ({
+              id: expense.id,
+              tripId: expense.tripId,
+              type: expense.type,
+              amount: expense.amount,
+              description: expense.description,
+              createdAt: expense.createdAt,
+              createdBy: expense.createdBy
+            })) : []
           };
         }),
         // Mantener lista completa de transacciones para compatibilidad
