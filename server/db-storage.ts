@@ -1634,9 +1634,16 @@ export class DatabaseStorage implements IStorage {
 
   async getReservations(filters?: { 
     companyId?: string; 
+    companyIds?: string[];
     currentUserId?: number; 
     userRole?: string; 
-    createdBy?: number; 
+    createdBy?: number;
+    // OPTIMIZACIÓN P0: Nuevos parámetros para performance
+    limit?: number;
+    offset?: number;
+    dateFilter?: string; 
+    search?: string;
+    tripId?: number;
   }): Promise<ReservationWithDetails[]> {
     console.log("[OPTIMIZED] DB Storage: Consultando reservaciones con método optimizado");
     
@@ -1675,21 +1682,69 @@ export class DatabaseStorage implements IStorage {
       })
         .from(schema.reservations)
       
-      // Aplicar filtros
+      // OPTIMIZACIÓN P0: Aplicar filtros inteligentes
       const conditions = [];
       
+      // Filtro de compañía (simple o múltiple)
       if (filters?.companyId) {
         console.log(`[OPTIMIZED] Filtrando reservaciones por compañía: ${filters.companyId}`);
         conditions.push(eq(schema.reservations.companyId, filters.companyId));
+      } else if (filters?.companyIds && filters.companyIds.length > 0) {
+        console.log(`[OPTIMIZED] Filtrando reservaciones por múltiples compañías: ${filters.companyIds.join(', ')}`);
+        conditions.push(inArray(schema.reservations.companyId, filters.companyIds));
       }
       
+      // Filtro por creator
       if (filters?.createdBy) {
         console.log(`[OPTIMIZED] Filtrando reservaciones por creador: ${filters.createdBy}`);
         conditions.push(eq(schema.reservations.createdBy, filters.createdBy));
       }
       
+      // OPTIMIZACIÓN P0: Filtro por fecha (crítico para performance)
+      if (filters?.dateFilter) {
+        console.log(`[OPTIMIZED] Aplicando filtro de fecha: ${filters.dateFilter}`);
+        // Filtrar por fecha de creación - más eficiente que filtrar por tripDetails
+        const filterDate = new Date(filters.dateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 8); // +7 días más margen para viajes que cruzan días
+        
+        conditions.push(
+          and(
+            gte(schema.reservations.createdAt, filterDate),
+            lt(schema.reservations.createdAt, nextDay)
+          )
+        );
+      }
+      
+      // OPTIMIZACIÓN P0: Filtro por búsqueda (server-side search)
+      if (filters?.search && filters.search.trim().length >= 2) {
+        const searchTerm = `%${filters.search.toLowerCase()}%`;
+        console.log(`[OPTIMIZED] Aplicando búsqueda server-side: "${filters.search}"`);
+        
+        conditions.push(
+          or(
+            like(schema.reservations.phone, searchTerm),
+            like(sql`LOWER(${schema.reservations.email})`, searchTerm),
+            like(sql`CAST(${schema.reservations.id} AS TEXT)`, searchTerm)
+          )
+        );
+      }
+      
+      // Aplicar condiciones
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
+      }
+      
+      // OPTIMIZACIÓN P0: Aplicar ordenamiento eficiente
+      query = query.orderBy(desc(schema.reservations.createdAt));
+      
+      // OPTIMIZACIÓN P0: Aplicar paginación
+      if (filters?.limit) {
+        console.log(`[OPTIMIZED] Aplicando paginación: limit=${filters.limit}, offset=${filters.offset || 0}`);
+        query = query.limit(filters.limit);
+        if (filters.offset) {
+          query = query.offset(filters.offset);
+        }
       }
       
       console.log("[OPTIMIZED] Ejecutando consulta principal");

@@ -8,6 +8,10 @@ type UseReservationsOptions = {
   includeRelated?: boolean;
   date?: string; // Formato YYYY-MM-DD
   archived?: boolean; // Para obtener reservaciones archivadas
+  // OPTIMIZACIÓN P0: Nuevos parámetros de performance
+  limit?: number;
+  offset?: number;
+  search?: string;
 };
 
 /**
@@ -17,22 +21,34 @@ export function useReservations(options: UseReservationsOptions = {}) {
   const { user } = useAuth();
   const { tripId, includeRelated = false, enabled = true, date, archived = false } = options;
   
-  // Solo usar filtro de fecha si se proporciona explícitamente
-  const dateFilter = date;
+  // OPTIMIZACIÓN P0: Configuración de performance optimizada
+  const limit = options.limit || 50; // Límite por defecto
+  const offset = options.offset || 0;
+  const search = options.search;
+  
+  // Por defecto filtrar por últimos 7 días para evitar cargar todas las reservaciones
+  const dateFilter = date || (tripId ? undefined : getCurrentDateForFilter());
+  
+  function getCurrentDateForFilter() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return sevenDaysAgo.toISOString().split('T')[0];
+  }
   
   return useQuery<ReservationWithDetails[]>({
-    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived }],
+    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived, limit, offset, search }],
     enabled: !!user && enabled,
-    staleTime: 0, // Datos siempre frescos para actualizaciones en tiempo real
-    refetchInterval: 30000, // Actualizar cada 30 segundos automáticamente
-    refetchOnWindowFocus: true, // Actualizar cuando el usuario regrese a la ventana
-    refetchOnMount: true, // Siempre actualizar al montar el componente
+    // OPTIMIZACIÓN P1: Cache más inteligente
+    staleTime: tripId ? 10000 : 60000, // 10s para viajes específicos, 1min para listados generales
+    refetchInterval: tripId ? 15000 : 120000, // Refetch menos agresivo: 15s para viajes, 2min para listados
+    refetchOnWindowFocus: true, 
+    refetchOnMount: false, // No refetch automático al montar - usar cache si está disponible
     queryFn: async () => {
       try {
         // Construir la URL base
         let url = archived ? "/api/reservations/archived" : "/api/reservations";
         
-        // Añadir parámetros según sea necesario
+        // OPTIMIZACIÓN P0: Parámetros optimizados
         const params = new URLSearchParams();
         
         if (tripId) {
@@ -43,9 +59,18 @@ export function useReservations(options: UseReservationsOptions = {}) {
           params.append("includeRelated", "true");
         }
         
-        // Agregar filtro de fecha solo si se especifica
+        // OPTIMIZACIÓN P0: Agregar paginación
+        params.append("limit", limit.toString());
+        params.append("offset", offset.toString());
+        
+        // Agregar filtro de fecha (por defecto últimos 7 días)
         if (dateFilter) {
           params.append("date", dateFilter);
+        }
+        
+        // OPTIMIZACIÓN P0: Agregar búsqueda server-side
+        if (search && search.trim().length >= 2) {
+          params.append("search", search.trim());
         }
         
         // Añadir los parámetros a la URL solo si hay parámetros

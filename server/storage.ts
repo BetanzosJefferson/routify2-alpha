@@ -136,9 +136,16 @@ export interface IStorage {
   // Reservation methods
   getReservations(filters?: { 
     companyId?: string; 
+    companyIds?: string[];
     currentUserId?: number; 
     userRole?: string; 
-    createdBy?: number; 
+    createdBy?: number;
+    // OPTIMIZACIÓN P0: Nuevos parámetros para performance
+    limit?: number;
+    offset?: number;
+    dateFilter?: string; 
+    search?: string;
+    tripId?: number;
   }): Promise<ReservationWithDetails[]>;
   getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
   getReservation(id: number): Promise<Reservation | undefined>;
