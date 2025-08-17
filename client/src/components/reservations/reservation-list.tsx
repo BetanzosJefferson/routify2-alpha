@@ -172,16 +172,16 @@ export function ReservationList() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
-  // Utilizar el nuevo hook especializado para cargar reservaciones
+  // Utilizar el nuevo hook especializado para cargar reservaciones con filtro de fecha
   const {
     data: reservations,
     isLoading,
     error: reservationsError,
     refetch: refetchReservations
   } = useReservations({
-    // No filtrar por fecha en el backend - traer todas las reservaciones
-    // El filtrado se hará en el frontend después de agrupar por viaje padre
-    archived: false // Ya no usamos funcionalidad de archivadas
+    // ✅ OPTIMIZACIÓN: Filtrar por fecha actual por defecto para mejorar performance
+    date: dateFilter, // Usar dateFilter que por defecto es la fecha actual
+    archived: false
   });
 
   // Actualizar estados de UI basados en el estado de carga
@@ -256,24 +256,9 @@ export function ReservationList() {
       );
     }
 
-    // Aplicar filtro de fecha específica
-    let matchesDate = true;
-    if (selectedDate) {
-      // CORRECTED: Access reservation.trip.departureDate directly
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
-      const filterDate = normalizeToStartOfDay(new Date(selectedDate));
-      matchesDate = isSameLocalDay(tripDate, filterDate);
-    }
-
-    // Aplicar filtro de fecha usando nuestras utilidades de normalización
-    let matchesDateFilter = true;
-    if (dateFilter) {
-      // Usar isSameLocalDay para comparar las fechas
-      // CORRECTED: Access reservation.trip.departureDate directly
-      const tripDate = normalizeToStartOfDay(reservation.trip.departureDate || reservation.createdAt);
-      const filterDate = normalizeToStartOfDay(dateFilter);
-      matchesDateFilter = isSameLocalDay(tripDate, filterDate);
-    }
+    // ✅ OPTIMIZACIÓN: El filtro de fecha ahora se aplica en el backend
+    // Ya no necesitamos filtrar por fecha en el frontend porque el hook useReservations
+    // ya está enviando el parámetro date al backend y el filtrado se hace a nivel SQL
 
     // Aplicar filtro de "Reservaciones creadas por mi"
     let matchesCreatedByMe = true;
@@ -281,7 +266,7 @@ export function ReservationList() {
       matchesCreatedByMe = reservation.createdBy === user.id;
     }
 
-    return matchesSearch && matchesDate && matchesDateFilter && matchesCreatedByMe;
+    return matchesSearch && matchesCreatedByMe;
   }));
 
   // Functions for handling checkbox selections
@@ -846,7 +831,7 @@ export function ReservationList() {
                   type="date"
                   value={dateFilter}
                   onChange={(e) => {
-                    console.log(`[ReservationList] Cambiando fecha de ${dateFilter} a ${e.target.value}`);
+                    console.log(`[ReservationList] Fecha seleccionada: ${e.target.value} (sin búsqueda automática)`);
                     setDateFilter(e.target.value);
                   }}
                   className="w-32 text-sm"
