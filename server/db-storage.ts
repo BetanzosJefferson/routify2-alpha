@@ -1634,16 +1634,9 @@ export class DatabaseStorage implements IStorage {
 
   async getReservations(filters?: { 
     companyId?: string; 
-    companyIds?: string[];
     currentUserId?: number; 
     userRole?: string; 
-    createdBy?: number;
-    // OPTIMIZACIÓN P0: Nuevos parámetros para performance
-    limit?: number;
-    offset?: number;
-    dateFilter?: string; 
-    search?: string;
-    tripId?: number;
+    createdBy?: number; 
   }): Promise<ReservationWithDetails[]> {
     console.log("[OPTIMIZED] DB Storage: Consultando reservaciones con método optimizado");
     
@@ -1682,68 +1675,21 @@ export class DatabaseStorage implements IStorage {
       })
         .from(schema.reservations)
       
-      // OPTIMIZACIÓN P0: Aplicar filtros inteligentes
+      // Aplicar filtros
       const conditions = [];
       
-      // Filtro de compañía (simple o múltiple)
       if (filters?.companyId) {
         console.log(`[OPTIMIZED] Filtrando reservaciones por compañía: ${filters.companyId}`);
         conditions.push(eq(schema.reservations.companyId, filters.companyId));
-      } else if (filters?.companyIds && filters.companyIds.length > 0) {
-        console.log(`[OPTIMIZED] Filtrando reservaciones por múltiples compañías: ${filters.companyIds.join(', ')}`);
-        conditions.push(inArray(schema.reservations.companyId, filters.companyIds));
       }
       
-      // Filtro por creator
       if (filters?.createdBy) {
         console.log(`[OPTIMIZED] Filtrando reservaciones por creador: ${filters.createdBy}`);
         conditions.push(eq(schema.reservations.createdBy, filters.createdBy));
       }
       
-      // OPTIMIZACIÓN P0: Filtro por fecha usando tripDetails JSON
-      if (filters?.dateFilter) {
-        console.log(`[OPTIMIZED] Aplicando filtro de fecha por viaje: ${filters.dateFilter}`);
-        // Filtrar por fecha del viaje usando tripDetails JSON - más preciso
-        const filterDate = filters.dateFilter;
-        
-        // Usar búsqueda JSON para filtrar por fecha de viaje en tripDetails
-        conditions.push(
-          or(
-            sql`${schema.reservations.tripDetails}->>'departureDate' = ${filterDate}`,
-            sql`${schema.reservations.tripDetails}->>'date' = ${filterDate}`
-          )
-        );
-      }
-      
-      // OPTIMIZACIÓN P0: Filtro por búsqueda (server-side search)
-      if (filters?.search && filters.search.trim().length >= 2) {
-        const searchTerm = `%${filters.search.toLowerCase()}%`;
-        console.log(`[OPTIMIZED] Aplicando búsqueda server-side: "${filters.search}"`);
-        
-        conditions.push(
-          or(
-            like(schema.reservations.phone, searchTerm),
-            like(sql`LOWER(${schema.reservations.email})`, searchTerm),
-            like(sql`CAST(${schema.reservations.id} AS TEXT)`, searchTerm)
-          )
-        );
-      }
-      
-      // Aplicar condiciones
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
-      }
-      
-      // OPTIMIZACIÓN P0: Aplicar ordenamiento eficiente
-      query = query.orderBy(desc(schema.reservations.createdAt));
-      
-      // OPTIMIZACIÓN P0: Aplicar paginación
-      if (filters?.limit) {
-        console.log(`[OPTIMIZED] Aplicando paginación: limit=${filters.limit}, offset=${filters.offset || 0}`);
-        query = query.limit(filters.limit);
-        if (filters.offset) {
-          query = query.offset(filters.offset);
-        }
       }
       
       console.log("[OPTIMIZED] Ejecutando consulta principal");
