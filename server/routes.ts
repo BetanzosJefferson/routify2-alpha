@@ -2974,77 +2974,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[GET /reservations] Filtered to ${filteredReservations.length} reservations for tripId ${tripId}`);
         }
         
-        // Filter by date if provided (group by recordId and use parent trip date)
+        // Filter by date if provided (filter by individual trip departure date)
         if (dateFilter) {
-          console.log(`[GET /reservations] Filtering by date with recordId grouping: ${dateFilter}`);
+          console.log(`[GET /reservations] ✅ FILTRADO INDIVIDUAL: Filtrando por fecha de viaje individual: ${dateFilter}`);
           
-          // Agrupar reservaciones por recordId y determinar fecha del viaje padre
-          const recordIdGroups = new Map<string, { reservations: any[], parentTripDate: string | null }>();
-          
-          // Primer paso: agrupar por recordId y obtener fecha del viaje padre
-          for (const reservation of reservations) {
-            const tripDetails = reservation.tripDetails;
-            if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
-              // IMPORTANTE: Usar solo el recordId base, sin sufijos como _122
-              let recordId = tripDetails.recordId.toString();
-              // Si el recordId contiene un guión bajo, tomar solo la parte antes del guión
-              if (recordId.includes('_')) {
-                recordId = recordId.split('_')[0];
-                console.log(`[GET /reservations] Normalizando recordId de ${tripDetails.recordId} a ${recordId}`);
-              }
-              
-              if (!recordIdGroups.has(recordId)) {
-                // Buscar el viaje padre en la base de datos al crear el grupo
-                const parentTripId = parseInt(recordId);
-                let parentTripDate: string | null = null;
-                
-                try {
-                  const parentTrip = await storage.getTrip(parentTripId);
-                  if (parentTrip && parentTrip.tripData && parentTrip.tripData.length > 0) {
-                    parentTripDate = parentTrip.tripData[0].departureDate;
-                    console.log(`[GET /reservations] Fecha del viaje padre para recordId ${recordId}: ${parentTripDate}`);
-                  } else {
-                    // Fallback: usar la fecha de la primera reservación
-                    parentTripDate = reservation.trip?.departureDate || null;
-                    console.log(`[GET /reservations] Usando fecha fallback para recordId ${recordId}: ${parentTripDate}`);
-                  }
-                } catch (error) {
-                  console.error(`[GET /reservations] Error obteniendo viaje padre ${recordId}:`, error);
-                  parentTripDate = reservation.trip?.departureDate || null;
-                }
-                
-                recordIdGroups.set(recordId, {
-                  reservations: [],
-                  parentTripDate: parentTripDate
-                });
-              }
-              
-              const group = recordIdGroups.get(recordId)!;
-              group.reservations.push(reservation);
-            }
-          }
-          
-          // Segundo paso: filtrar grupos por fecha del viaje padre
           const targetDate = new Date(dateFilter);
-          filteredReservations = [];
-          
-          recordIdGroups.forEach((group, recordId) => {
-            if (group.parentTripDate) {
-              const parentDate = new Date(group.parentTripDate);
-              const matchesDate = parentDate.toDateString() === targetDate.toDateString();
+          filteredReservations = reservations.filter(reservation => {
+            if (reservation.trip && reservation.trip.departureDate) {
+              const tripDate = new Date(reservation.trip.departureDate);
+              const matchesDate = tripDate.toDateString() === targetDate.toDateString();
               
-              if (matchesDate) {
-                console.log(`[GET /reservations] ✅ Incluir grupo recordId ${recordId} con fecha padre ${group.parentTripDate} (${group.reservations.length} reservaciones)`);
-                filteredReservations.push(...group.reservations);
-              } else {
-                console.log(`[GET /reservations] ❌ Excluir grupo recordId ${recordId} - fecha padre ${group.parentTripDate} no coincide con ${dateFilter}`);
-              }
+              console.log(`[GET /reservations] Reservación ${reservation.id}: viaje ${reservation.trip.departureDate} ${matchesDate ? '✅ INCLUIR' : '❌ EXCLUIR'}`);
+              return matchesDate;
             } else {
-              console.log(`[GET /reservations] ⚠️ Grupo recordId ${recordId} sin fecha padre válida`);
+              console.log(`[GET /reservations] ⚠️ Reservación ${reservation.id} sin fecha de viaje válida`);
+              return false;
             }
           });
           
-          console.log(`[GET /reservations] Resultado: ${filteredReservations.length} reservaciones total para fecha ${dateFilter}`);
+          console.log(`[GET /reservations] ✅ RESULTADO INDIVIDUAL: ${filteredReservations.length} reservaciones para fecha ${dateFilter}`);
         } else {
           // Without date filter: return ALL reservations to let frontend handle filtering
           console.log(`[GET /reservations] Returning ALL reservations for frontend filtering`);
