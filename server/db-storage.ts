@@ -1700,18 +1700,17 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(schema.reservations.createdBy, filters.createdBy));
       }
       
-      // OPTIMIZACIÓN P0: Filtro por fecha (crítico para performance)
+      // OPTIMIZACIÓN P0: Filtro por fecha usando tripDetails JSON
       if (filters?.dateFilter) {
-        console.log(`[OPTIMIZED] Aplicando filtro de fecha: ${filters.dateFilter}`);
-        // Filtrar por fecha de creación - más eficiente que filtrar por tripDetails
-        const filterDate = new Date(filters.dateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 8); // +7 días más margen para viajes que cruzan días
+        console.log(`[OPTIMIZED] Aplicando filtro de fecha por viaje: ${filters.dateFilter}`);
+        // Filtrar por fecha del viaje usando tripDetails JSON - más preciso
+        const filterDate = filters.dateFilter;
         
+        // Usar búsqueda JSON para filtrar por fecha de viaje en tripDetails
         conditions.push(
-          and(
-            gte(schema.reservations.createdAt, filterDate),
-            lt(schema.reservations.createdAt, nextDay)
+          or(
+            sql`${schema.reservations.tripDetails}->>'departureDate' = ${filterDate}`,
+            sql`${schema.reservations.tripDetails}->>'date' = ${filterDate}`
           )
         );
       }

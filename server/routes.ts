@@ -2880,19 +2880,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations] Filtrando por viaje ID: ${tripId}`);
       }
       
-      // OPTIMIZACIÓN P0: Filtro de fecha por defecto = HOY para producción
+      // OPTIMIZACIÓN P0: Filtro de fecha por defecto = HOY
       if (req.query.date) {
         dateFilter = req.query.date as string;
         console.log(`[GET /reservations] Filtrando por fecha especificada: ${dateFilter}`);
       } else if (!tripId) {
-        // CRÍTICO: Por defecto, solo mostrar reservaciones de los últimos 7 días
-        // Esto previene cargar miles de reservaciones históricas
+        // CRÍTICO: Por defecto mostrar reservaciones del día actual
         const today = new Date();
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(today.getDate() - 7);
-        
-        dateFilter = sevenDaysAgo.toISOString().split('T')[0];
-        console.log(`[GET /reservations] OPTIMIZACIÓN: Aplicando filtro por defecto - últimos 7 días desde: ${dateFilter}`);
+        dateFilter = today.toISOString().split('T')[0];
+        console.log(`[GET /reservations] OPTIMIZACIÓN: Aplicando filtro por defecto - día actual: ${dateFilter}`);
       }
       
       console.log(`[GET /reservations] OPTIMIZACIÓN: limit=${limit}, offset=${offset}, search="${search || 'none'}"`);
@@ -2989,77 +2985,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`[GET /reservations] Filtrado frontend: ${filteredReservations.length} reservaciones para tripId ${tripId}`);
         }
         
-        // Filter by date if provided (group by recordId and use parent trip date)
+        // OPTIMIZACIÓN P0: El filtro de fecha ya se aplicó en el backend usando tripDetails JSON
+        // Ya no necesitamos filtrado adicional complicado en frontend
+        console.log(`[GET /reservations] Filtro de fecha aplicado en backend: ${filteredReservations.length} reservaciones encontradas`);
+        
         if (dateFilter) {
-          console.log(`[GET /reservations] Filtering by date with recordId grouping: ${dateFilter}`);
-          
-          // Agrupar reservaciones por recordId y determinar fecha del viaje padre
-          const recordIdGroups = new Map<string, { reservations: any[], parentTripDate: string | null }>();
-          
-          // Primer paso: agrupar por recordId y obtener fecha del viaje padre
-          for (const reservation of reservations) {
-            const tripDetails = reservation.tripDetails;
-            if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
-              // IMPORTANTE: Usar solo el recordId base, sin sufijos como _122
-              let recordId = tripDetails.recordId.toString();
-              // Si el recordId contiene un guión bajo, tomar solo la parte antes del guión
-              if (recordId.includes('_')) {
-                recordId = recordId.split('_')[0];
-                console.log(`[GET /reservations] Normalizando recordId de ${tripDetails.recordId} a ${recordId}`);
-              }
-              
-              if (!recordIdGroups.has(recordId)) {
-                // Buscar el viaje padre en la base de datos al crear el grupo
-                const parentTripId = parseInt(recordId);
-                let parentTripDate: string | null = null;
-                
-                try {
-                  const parentTrip = await storage.getTrip(parentTripId);
-                  if (parentTrip && parentTrip.tripData && parentTrip.tripData.length > 0) {
-                    parentTripDate = parentTrip.tripData[0].departureDate;
-                    console.log(`[GET /reservations] Fecha del viaje padre para recordId ${recordId}: ${parentTripDate}`);
-                  } else {
-                    // Fallback: usar la fecha de la primera reservación
-                    parentTripDate = reservation.trip?.departureDate || null;
-                    console.log(`[GET /reservations] Usando fecha fallback para recordId ${recordId}: ${parentTripDate}`);
-                  }
-                } catch (error) {
-                  console.error(`[GET /reservations] Error obteniendo viaje padre ${recordId}:`, error);
-                  parentTripDate = reservation.trip?.departureDate || null;
-                }
-                
-                recordIdGroups.set(recordId, {
-                  reservations: [],
-                  parentTripDate: parentTripDate
-                });
-              }
-              
-              const group = recordIdGroups.get(recordId)!;
-              group.reservations.push(reservation);
-            }
-          }
-          
-          // Segundo paso: filtrar grupos por fecha del viaje padre
-          const targetDate = new Date(dateFilter);
-          filteredReservations = [];
-          
-          recordIdGroups.forEach((group, recordId) => {
-            if (group.parentTripDate) {
-              const parentDate = new Date(group.parentTripDate);
-              const matchesDate = parentDate.toDateString() === targetDate.toDateString();
-              
-              if (matchesDate) {
-                console.log(`[GET /reservations] ✅ Incluir grupo recordId ${recordId} con fecha padre ${group.parentTripDate} (${group.reservations.length} reservaciones)`);
-                filteredReservations.push(...group.reservations);
-              } else {
-                console.log(`[GET /reservations] ❌ Excluir grupo recordId ${recordId} - fecha padre ${group.parentTripDate} no coincide con ${dateFilter}`);
-              }
-            } else {
-              console.log(`[GET /reservations] ⚠️ Grupo recordId ${recordId} sin fecha padre válida`);
-            }
-          });
-          
-          console.log(`[GET /reservations] Resultado: ${filteredReservations.length} reservaciones total para fecha ${dateFilter}`);
+          console.log(`[GET /reservations] Reservaciones para fecha ${dateFilter}: ${filteredReservations.length}`);
         } else {
           // Without date filter: return ALL reservations to let frontend handle filtering
           console.log(`[GET /reservations] Returning ALL reservations for frontend filtering`);

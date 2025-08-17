@@ -26,13 +26,12 @@ export function useReservations(options: UseReservationsOptions = {}) {
   const offset = options.offset || 0;
   const search = options.search;
   
-  // Por defecto filtrar por últimos 7 días para evitar cargar todas las reservaciones
+  // Por defecto filtrar por día actual para evitar cargar todas las reservaciones
   const dateFilter = date || (tripId ? undefined : getCurrentDateForFilter());
   
   function getCurrentDateForFilter() {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return sevenDaysAgo.toISOString().split('T')[0];
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   }
   
   return useQuery<ReservationWithDetails[]>({
