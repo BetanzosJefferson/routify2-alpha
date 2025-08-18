@@ -16,7 +16,14 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
     queryFn: async () => {
       console.log(`[useReservationsByTrip] Fetching reservations for trip:`, { recordId, tripInfo });
       
-      const response = await fetch('/api/reservations');
+      // Usar parentTripFilter para obtener todas las reservas del día del viaje padre
+      const searchParams = new URLSearchParams();
+      if (tripInfo?.departureDate) {
+        searchParams.append('date', tripInfo.departureDate);
+        searchParams.append('parentTripFilter', 'true');
+      }
+      
+      const response = await fetch(`/api/reservations?${searchParams.toString()}`);
       if (!response.ok) {
         throw new Error(`Error fetching reservations: ${response.status}`);
       }
@@ -24,13 +31,20 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
       const allReservations = await response.json();
       console.log(`[useReservationsByTrip] Total reservations received:`, allReservations.length);
       
-      // Filtrar reservaciones que coincidan con el viaje
-      const matchingReservations = allReservations.filter((reservation: ReservationWithDetails) => {
-        return matchReservationToTrip(reservation, recordId, tripInfo);
-      });
-      
-      console.log(`[useReservationsByTrip] Matching reservations found:`, matchingReservations.length);
-      return matchingReservations;
+      // Si estamos usando filtro por fecha, devolver TODAS las reservas del día
+      // Si no, filtrar por viaje específico
+      if (tripInfo?.departureDate && searchParams.has('parentTripFilter')) {
+        console.log(`[useReservationsByTrip] Returning ALL reservations for date:`, allReservations.length);
+        return allReservations;
+      } else {
+        // Filtrar reservaciones que coincidan con el viaje específico
+        const matchingReservations = allReservations.filter((reservation: ReservationWithDetails) => {
+          return matchReservationToTrip(reservation, recordId, tripInfo);
+        });
+        
+        console.log(`[useReservationsByTrip] Matching reservations found:`, matchingReservations.length);
+        return matchingReservations;
+      }
     },
     enabled: enabled && !!(recordId || tripInfo),
     staleTime: 0, // Datos siempre frescos para actualizaciones en tiempo real
