@@ -31,20 +31,13 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
       const allReservations = await response.json();
       console.log(`[useReservationsByTrip] Total reservations received:`, allReservations.length);
       
-      // Si estamos usando filtro por fecha, devolver TODAS las reservas del día
-      // Si no, filtrar por viaje específico
-      if (tripInfo?.departureDate && searchParams.has('parentTripFilter')) {
-        console.log(`[useReservationsByTrip] Returning ALL reservations for date:`, allReservations.length);
-        return allReservations;
-      } else {
-        // Filtrar reservaciones que coincidan con el viaje específico
-        const matchingReservations = allReservations.filter((reservation: ReservationWithDetails) => {
-          return matchReservationToTrip(reservation, recordId, tripInfo);
-        });
-        
-        console.log(`[useReservationsByTrip] Matching reservations found:`, matchingReservations.length);
-        return matchingReservations;
-      }
+      // Filtrar reservaciones que coincidan con el viaje específico
+      const matchingReservations = allReservations.filter((reservation: ReservationWithDetails) => {
+        return matchReservationToTrip(reservation, recordId, tripInfo);
+      });
+      
+      console.log(`[useReservationsByTrip] Matching reservations found:`, matchingReservations.length);
+      return matchingReservations;
     },
     enabled: enabled && !!(recordId || tripInfo),
     staleTime: 0, // Datos siempre frescos para actualizaciones en tiempo real
@@ -58,45 +51,37 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
 function matchReservationToTrip(reservation: ReservationWithDetails, recordId?: string, tripInfo?: any): boolean {
   const reservationTripDetails = reservation.tripDetails;
   
-  if (!reservationTripDetails) {
+  if (!reservationTripDetails || !recordId) {
     return false;
   }
   
-  // 1. Coincidencia exacta por recordId
-  if (recordId && reservationTripDetails.recordId?.toString() === recordId.toString()) {
-    console.log(`[matchReservationToTrip] Reservation ${reservation.id} matches by recordId:`, recordId);
-    return true;
+  // SOLO coincidencia EXACTA por recordId - no permitir coincidencias amplias
+  const reservationRecordId = reservationTripDetails.recordId?.toString();
+  const targetRecordId = recordId.toString();
+  
+  // Normalizar recordIds - extraer la parte base sin sufijos
+  let normalizedReservationId = reservationRecordId;
+  let normalizedTargetId = targetRecordId;
+  
+  if (normalizedReservationId?.includes('_')) {
+    normalizedReservationId = normalizedReservationId.split('_')[0];
   }
   
-  // 2. Coincidencia por tripId completo (incluyendo segmento si existe)
-  if (recordId && reservationTripDetails.tripId) {
-    const reservationTripId = reservationTripDetails.tripId.toString();
-    const currentTripId = recordId.toString();
-    
-    // Comparación exacta del tripId completo
-    if (reservationTripId === currentTripId) {
-      console.log(`[matchReservationToTrip] Reservation ${reservation.id} matches by exact tripId:`, reservationTripId);
-      return true;
-    }
-    
-    // Si la reservación tiene un tripId base y el viaje actual también, compararlos
-    const reservationBaseId = reservationTripId.split('_')[0];
-    const currentBaseId = currentTripId.split('_')[0];
-    
-    // Solo coincidir por base ID si ambos tienen el mismo ID base
-    if (reservationBaseId === currentBaseId) {
-      const reservationSegment = reservationTripId.includes('_') ? reservationTripId.split('_')[1] : null;
-      const currentSegment = currentTripId.includes('_') ? currentTripId.split('_')[1] : null;
-      
-      // Coincidir si:
-      // 1. Los segmentos son exactamente iguales, O
-      // 2. El viaje actual no tiene segmento (es el viaje principal) y la reservación sí tiene segmento
-      if (reservationSegment === currentSegment || (currentSegment === null && reservationSegment !== null)) {
-        console.log(`[matchReservationToTrip] Reservation ${reservation.id} matches by base tripId:`, reservationBaseId, 'reservationSegment:', reservationSegment, 'currentSegment:', currentSegment);
-        return true;
-      }
-    }
+  if (normalizedTargetId.includes('_')) {
+    normalizedTargetId = normalizedTargetId.split('_')[0];
   }
   
-  return false;
+  // Coincidencia EXACTA del recordId base
+  const matches = normalizedReservationId === normalizedTargetId;
+  
+  if (matches) {
+    console.log(`[matchReservationToTrip] Reservation ${reservation.id} matches by recordId:`, { 
+      reservationRecordId, 
+      targetRecordId, 
+      normalizedReservationId, 
+      normalizedTargetId 
+    });
+  }
+  
+  return matches;
 }
