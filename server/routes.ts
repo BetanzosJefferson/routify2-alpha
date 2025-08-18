@@ -2992,7 +2992,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const recordIdGroups = new Map<string, { reservations: any[], parentTripDate: string | null }>();
             
             // Primer paso: agrupar por recordId y obtener fecha del viaje padre
-            for (const reservation of reservations) {
+            for (const reservation of filteredReservations) {
               const tripDetails = reservation.tripDetails;
               if (tripDetails && typeof tripDetails === 'object' && tripDetails.recordId) {
                 let recordId = tripDetails.recordId.toString();
