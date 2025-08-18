@@ -219,32 +219,11 @@ function ReservationsListContent() {
     return groups;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
 
-  // Filtrar grupos por fecha del viaje padre si se especifica una fecha de búsqueda
-  const filteredGroupedReservations = Object.entries(groupedReservations).reduce((filtered, [groupKey, group]) => {
-    // Si no hay fecha de búsqueda, incluir todos los grupos
-    if (!searchDate) {
-      filtered[groupKey] = group;
-      return filtered;
-    }
-    
-    // Verificar si la fecha del viaje padre coincide con la fecha de búsqueda
-    const parentTripDate = group.parentTripDate || group.tripInfo?.departureDate;
-    const matches = parentTripDate && isSameLocalDay(parentTripDate, searchDate);
-    
-    console.log(`[FILTER_DEBUG] Grupo ${groupKey}:`, {
-      parentTripDate,
-      searchDate,
-      matches,
-      reservationsCount: group.reservations.length,
-      tripInfo: group.tripInfo
-    });
-    
-    if (matches) {
-      filtered[groupKey] = group;
-    }
-    
-    return filtered;
-  }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
+  // CRÍTICO: NO filtrar por fecha en el frontend porque el backend ya maneja el parentTripFilter
+  // El backend con parentTripFilter=true ya envía solo las reservas del día correcto
+  const filteredGroupedReservations = groupedReservations;
+  
+  console.log(`[FILTER_DEBUG] Total grupos (sin filtrado redundante): ${Object.keys(filteredGroupedReservations).length}`);
 
   // Aplicar filtros adicionales de ruta y hora
   const finalFilteredReservations = Object.entries(filteredGroupedReservations).reduce((filtered, [groupKey, group]) => {
