@@ -7003,7 +7003,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Extraer companyId del usuario para aislamiento de datos
-      const userCompanyId = user.companyId || user.company;
+      let userCompanyId = user.companyId || user.company;
+      
+      // SOLUCIÓN PARA USUARIOS TAQUILLA: Si el usuario es Taquilla y no tiene companyId,
+      // extraer la companyId del viaje seleccionado
+      if (user.role === UserRole.TICKET_OFFICE && !userCompanyId) {
+        try {
+          // Extraer tripId desde tripDetails en el request body
+          const tripDetails = req.body.tripDetails;
+          if (tripDetails && tripDetails.tripId) {
+            const tripIdString = tripDetails.tripId.toString();
+            const recordId = parseInt(tripIdString.split('_')[0]); // Extraer ID base del viaje
+            
+            if (!isNaN(recordId)) {
+              console.log(`[POST /packages] Usuario Taquilla sin companyId, buscando empresa del viaje ${recordId}`);
+              
+              // Obtener la empresa del viaje seleccionado
+              const tripCompanyData = await db
+                .select({ companyId: schema.trips.companyId })
+                .from(schema.trips)
+                .where(eq(schema.trips.id, recordId))
+                .limit(1);
+              
+              if (tripCompanyData && tripCompanyData.length > 0 && tripCompanyData[0].companyId) {
+                const tripCompanyId = tripCompanyData[0].companyId;
+                
+                // Verificar que el usuario Taquilla tiene permisos para esta empresa
+                const userCompanyAssociation = await db
+                  .select()
+                  .from(schema.userCompanies)
+                  .where(
+                    and(
+                      eq(schema.userCompanies.userId, user.id),
+                      eq(schema.userCompanies.companyId, tripCompanyId)
+                    )
+                  )
+                  .limit(1);
+                
+                if (userCompanyAssociation && userCompanyAssociation.length > 0) {
+                  userCompanyId = tripCompanyId;
+                  console.log(`[POST /packages] Usuario Taquilla autorizado para empresa ${tripCompanyId}, usando como companyId del paquete`);
+                } else {
+                  console.log(`[POST /packages] ERROR: Usuario Taquilla no tiene permisos para empresa ${tripCompanyId}`);
+                  return res.status(403).json({ 
+                    message: "No tienes permisos para crear paqueterías para la empresa de este viaje" 
+                  });
+                }
+              } else {
+                console.log(`[POST /packages] ERROR: No se pudo obtener la empresa del viaje ${recordId}`);
+                return res.status(400).json({ 
+                  message: "No se pudo determinar la empresa del viaje seleccionado" 
+                });
+              }
+            } else {
+              console.log(`[POST /packages] ERROR: ID de viaje inválido en tripDetails: ${tripIdString}`);
+              return res.status(400).json({ 
+                message: "ID de viaje inválido en los detalles del viaje" 
+              });
+            }
+          } else {
+            console.log(`[POST /packages] ERROR: tripDetails no encontrado o tripId faltante`);
+            return res.status(400).json({ 
+              message: "Información del viaje requerida para usuarios Taquilla" 
+            });
+          }
+        } catch (error) {
+          console.error(`[POST /packages] Error al obtener empresa del viaje para usuario Taquilla:`, error);
+          return res.status(500).json({ 
+            message: "Error al verificar permisos de empresa para el viaje" 
+          });
+        }
+      }
+      
+      // Verificar que tenemos una companyId válida antes de continuar
+      if (!userCompanyId) {
+        console.log(`[POST /packages] ERROR: Usuario ${user.id} no tiene companyId definida`);
+        return res.status(400).json({ 
+          message: "Usuario sin empresa asignada. Contacte al administrador." 
+        });
+      }
+      
+      console.log(`[POST /packages] CompanyId final asignada: ${userCompanyId}`);
       
       // Preparar datos para crear la paquetería
       const packageData = {
