@@ -8624,7 +8624,7 @@ function setupPackageRoutes(app: Express) {
   });
 
   // Ruta para obtener transacciones del usuario actual que no están en un corte
-  app.get(apiRouter("/transactions/current"), isAuthenticated, async (req: Request, res: Response) => {
+  app.get(apiRouter("/transactions/current"), async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       
@@ -8649,7 +8649,7 @@ function setupPackageRoutes(app: Express) {
   });
   
   // Ruta para obtener el historial de cortes de caja del usuario actual
-  app.get(apiRouter("/transactions/cutoff-history"), isAuthenticated, async (req: Request, res: Response) => {
+  app.get(apiRouter("/transactions/cutoff-history"), async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       
@@ -8702,7 +8702,7 @@ function setupPackageRoutes(app: Express) {
   });
 
   // Endpoint para obtener transacciones de otros usuarios de la misma compañía
-  app.get(apiRouter("/transactions/user-cash-boxes"), isAuthenticated, async (req: Request, res: Response) => {
+  app.get(apiRouter("/transactions/user-cash-boxes"), async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       
@@ -8731,7 +8731,7 @@ function setupPackageRoutes(app: Express) {
   });
 
   // Ruta para crear un nuevo corte de caja
-  app.post(apiRouter("/box/cutoff"), isAuthenticated, async (req: Request, res: Response) => {
+  app.post(apiRouter("/box/cutoff"), async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
       const { companyFilter } = req.body || {};

@@ -463,9 +463,9 @@ const TransactionBox: React.FC = () => {
         <CardContent>
           {/* Filtro por empresa (solo para usuarios taquilla) */}
           {user?.role === "taquilla" && companies && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+            <div className="mb-6">
               <div className="flex items-center gap-4">
-                <label htmlFor="company-filter" className="text-sm font-medium text-gray-700">
+                <label htmlFor="company-filter" className="text-sm font-medium">
                   Filtrar por empresa:
                 </label>
                 <Select value={selectedCompany} onValueChange={setSelectedCompany}>
@@ -475,7 +475,7 @@ const TransactionBox: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="all">Todas las empresas</SelectItem>
                     {companies.map((company: any) => (
-                      <SelectItem key={company.identifier} value={company.identifier}>
+                      <SelectItem key={company.id} value={company.id}>
                         {company.name}
                       </SelectItem>
                     ))}
@@ -516,7 +516,34 @@ const TransactionBox: React.FC = () => {
             </div>
           </div>
 
-
+          {/* Filtro por empresa (solo para usuarios taquilla) */}
+          {user?.role === "taquilla" && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+              <div className="flex items-center gap-4">
+                <label htmlFor="company-filter" className="text-sm font-medium text-gray-700">
+                  Filtrar por empresa:
+                </label>
+                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Selecciona una empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las empresas</SelectItem>
+                    {/* Obtener empresas únicas de TODAS las transacciones sin filtrar */}
+                    {Array.from(
+                      new Set([
+                        ...(data || []).filter(t => t.companyId).map(t => t.companyId)
+                      ])
+                    ).map((companyId) => (
+                      <SelectItem key={companyId} value={companyId}>
+                        {companyId}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           {/* Sección de Reservaciones */}
           <div className="mb-8">
