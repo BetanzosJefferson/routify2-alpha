@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Filter, Calendar, User, Receipt, Package } from 'lucide-react';
+import { Loader2, Filter, Calendar, User, Receipt, Package, CheckCircle, AlertCircle } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/utils';
 import DefaultLayout from '@/components/layout/default-layout';
 
@@ -15,6 +15,9 @@ interface TransactionHistoryItem {
   createdAt: string;
   cutoffId: number | null;
   cutoffStatus: 'pending' | 'completed';
+  cutoffVerified?: boolean; // Indica si el corte ha sido verificado (check: true/false)
+  cutoffVerifiedBy?: string; // Nombre del usuario que verificó el corte
+  cutoffVerifiedAt?: string; // Fecha de verificación del corte
   createdBy: {
     id: number;
     name: string;
@@ -30,16 +33,18 @@ export default function TransactionHistoryPage() {
   const [endDate, setEndDate] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [selectedCutoffId, setSelectedCutoffId] = useState<string>('all');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
   // Obtener historial de transacciones
   const { data: transactionHistory, isLoading, refetch } = useQuery<TransactionHistoryItem[]>({
-    queryKey: ['/api/transaction-history', { startDate, endDate, userId: selectedUserId, cutoffId: selectedCutoffId }],
+    queryKey: ['/api/transaction-history', { startDate, endDate, userId: selectedUserId, cutoffId: selectedCutoffId, paymentMethod: selectedPaymentMethod }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       if (selectedUserId && selectedUserId !== 'all') params.append('userId', selectedUserId);
+      if (selectedPaymentMethod && selectedPaymentMethod !== 'all') params.append('paymentMethod', selectedPaymentMethod);
       if (selectedCutoffId && selectedCutoffId !== 'all') {
         if (selectedCutoffId === 'pending') {
           params.append('cutoffId', '0');
@@ -100,8 +105,8 @@ export default function TransactionHistoryPage() {
 
   // Detectar cambios en filtros
   useEffect(() => {
-    setIsFiltersChanged(startDate !== '' || endDate !== '' || selectedUserId !== 'all' || selectedCutoffId !== 'all');
-  }, [startDate, endDate, selectedUserId, selectedCutoffId]);
+    setIsFiltersChanged(startDate !== '' || endDate !== '' || selectedUserId !== 'all' || selectedCutoffId !== 'all' || selectedPaymentMethod !== 'all');
+  }, [startDate, endDate, selectedUserId, selectedCutoffId, selectedPaymentMethod]);
 
   // Resetear filtro de corte cuando cambia el usuario
   useEffect(() => {
@@ -113,6 +118,7 @@ export default function TransactionHistoryPage() {
     setEndDate('2025-07-30');
     setSelectedUserId('all');
     setSelectedCutoffId('all');
+    setSelectedPaymentMethod('all');
     // Refetch to reset the data
     refetch();
   };
@@ -141,6 +147,54 @@ export default function TransactionHistoryPage() {
     );
   };
 
+  const getCutoffVerificationBadge = (transaction: TransactionHistoryItem) => {
+    if (!transaction.cutoffId) return null;
+    
+    if (transaction.cutoffVerified) {
+      return (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1 text-green-600">
+            <CheckCircle className="w-3 h-3" />
+            <span className="text-xs font-medium">Verificado</span>
+          </div>
+          {transaction.cutoffVerifiedBy && (
+            <span className="text-xs text-gray-500">
+              Por: {transaction.cutoffVerifiedBy}
+            </span>
+          )}
+          {transaction.cutoffVerifiedAt && (
+            <span className="text-xs text-gray-500">
+              {formatDateForDisplay(transaction.cutoffVerifiedAt)}
+            </span>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center gap-1 text-orange-600">
+          <AlertCircle className="w-3 h-3" />
+          <span className="text-xs">Sin verificar</span>
+        </div>
+      );
+    }
+  };
+
+  const getPaymentMethodBadge = (method: string) => {
+    const colors = {
+      efectivo: 'bg-green-100 text-green-800',
+      transferencia: 'bg-blue-100 text-blue-800',
+      tarjeta: 'bg-purple-100 text-purple-800'
+    };
+    
+    return (
+      <Badge variant="outline" className={colors[method as keyof typeof colors] || 'bg-gray-100 text-gray-800'}>
+        {method === 'efectivo' ? 'Efectivo' : 
+         method === 'transferencia' ? 'Transferencia' : 
+         method === 'tarjeta' ? 'Tarjeta' : method}
+      </Badge>
+    );
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -157,8 +211,13 @@ export default function TransactionHistoryPage() {
     if (!transactionHistory) return { efectivo: 0, transferencia: 0, tarjeta: 0, total: 0 };
     
     const stats = transactionHistory.reduce((acc, transaction) => {
-      // Extraer método de pago del campo correcto
-      const method = transaction.details?.details?.metodoPago || 'efectivo';
+      // Extraer método de pago de múltiples ubicaciones posibles
+      const method = 
+        transaction.details?.paymentMethod || 
+        transaction.details?.details?.paymentMethod || 
+        transaction.details?.details?.advancePaymentMethod ||
+        transaction.details?.details?.metodoPago || 
+        'efectivo';
       const amount = transaction.amount || 0;
       
       if (method === 'efectivo') {
@@ -195,7 +254,7 @@ export default function TransactionHistoryPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Fecha inicio */}
             <div>
               <label className="block text-sm font-medium mb-2">Fecha inicio</label>
@@ -232,6 +291,22 @@ export default function TransactionHistoryPage() {
                       {user.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Método de pago */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Método de pago</label>
+              <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los métodos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los métodos</SelectItem>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -325,15 +400,27 @@ export default function TransactionHistoryPage() {
                       {getTransactionTypeIcon(transaction.type)}
                       <span className="font-medium">Transacción ID</span>
                       <span className="text-sm text-muted-foreground">#{transaction.id}</span>
+                      {getPaymentMethodBadge(
+                        transaction.details?.paymentMethod || 
+                        transaction.details?.details?.paymentMethod || 
+                        transaction.details?.details?.advancePaymentMethod ||
+                        transaction.details?.details?.metodoPago || 
+                        'efectivo'
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`font-bold ${transaction.details?.details?.metodoPago === 'transferencia' ? 'text-blue-600' : 'text-green-600'}`}>
+                      <span className={`font-bold ${
+                        (transaction.details?.paymentMethod || 
+                         transaction.details?.details?.paymentMethod || 
+                         transaction.details?.details?.advancePaymentMethod ||
+                         transaction.details?.details?.metodoPago) === 'transferencia' ? 'text-blue-600' : 'text-green-600'
+                      }`}>
                         {formatCurrency(transaction.amount)}
                       </span>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3" />
                       <span>{transaction.createdBy.name}</span>
@@ -344,10 +431,16 @@ export default function TransactionHistoryPage() {
                     </div>
                     <div>
                       {transaction.cutoffId ? (
-                        <span>Corte #{transaction.cutoffId}</span>
+                        <div className="flex items-center gap-2">
+                          <span>Corte #{transaction.cutoffId}</span>
+                          {getCutoffVerificationBadge(transaction)}
+                        </div>
                       ) : (
                         <span className="text-yellow-600">Sin corte</span>
                       )}
+                    </div>
+                    <div>
+                      {getTransactionTypeLabel(transaction.type)}
                     </div>
                   </div>
                 </div>

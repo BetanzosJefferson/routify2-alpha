@@ -392,7 +392,7 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              <span>{trip.departureTime} - {trip.arrivalTime}</span>
+                              <span className="font-medium text-lg">{trip.departureTime} - {trip.arrivalTime}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Users className="h-4 w-4" />

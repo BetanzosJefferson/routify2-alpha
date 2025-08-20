@@ -4805,12 +4805,16 @@ export class DatabaseStorage implements IStorage {
     endDate?: string;
     userId?: number;
     cutoffId?: number;
+    paymentMethod?: string;
   }): Promise<{
     id: number;
     details: any;
     createdAt: string;
     cutoffId: number | null;
     cutoffStatus: 'pending' | 'completed';
+    cutoffVerified?: boolean;
+    cutoffVerifiedBy?: string;
+    cutoffVerifiedAt?: string;
     createdBy: {
       id: number;
       name: string;
@@ -4850,6 +4854,20 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Filtro por método de pago
+      if (params.paymentMethod) {
+        baseConditions.push(
+          sql`(
+            (${schema.transacciones.details}->>'paymentMethod' = ${params.paymentMethod}) OR
+            (${schema.transacciones.details}->'details'->>'paymentMethod' = ${params.paymentMethod}) OR
+            (${schema.transacciones.details}->'details'->>'advancePaymentMethod' = ${params.paymentMethod})
+          )`
+        );
+      }
+
+      // Crear alias para el usuario verificador
+      const verifierUsers = alias(schema.users, 'verifier_users');
+      
       const result = await db
         .select({
           id: schema.transacciones.id,
@@ -4858,9 +4876,15 @@ export class DatabaseStorage implements IStorage {
           cutoffId: schema.transacciones.cutoff_id,
           userId: schema.transacciones.user_id,
           userName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`,
+          // Información de verificación de corte
+          cutoffCheck: schema.boxCutoff.check,
+          cutoffVerifiedBy: sql<string>`CONCAT(${verifierUsers.firstName}, ' ', ${verifierUsers.lastName})`,
+          cutoffVerifiedAt: schema.boxCutoff.check_at,
         })
         .from(schema.transacciones)
         .innerJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
+        .leftJoin(schema.boxCutoff, eq(schema.transacciones.cutoff_id, schema.boxCutoff.id))
+        .leftJoin(verifierUsers, eq(schema.boxCutoff.check_by, verifierUsers.id))
         .where(and(...baseConditions))
         .orderBy(desc(schema.transacciones.createdAt));
 
@@ -4895,6 +4919,9 @@ export class DatabaseStorage implements IStorage {
           createdAt: row.createdAt.toISOString(),
           cutoffId: row.cutoffId,
           cutoffStatus: row.cutoffId ? 'completed' : 'pending' as 'pending' | 'completed',
+          cutoffVerified: row.cutoffCheck || false,
+          cutoffVerifiedBy: row.cutoffVerifiedBy || undefined,
+          cutoffVerifiedAt: row.cutoffVerifiedAt ? row.cutoffVerifiedAt.toISOString() : undefined,
           createdBy: {
             id: row.userId,
             name: row.userName
