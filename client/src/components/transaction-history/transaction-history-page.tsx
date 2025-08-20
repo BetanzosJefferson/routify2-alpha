@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Filter, Calendar, User, Receipt, Package, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Filter, Calendar, User, Receipt, Package, CheckCircle, AlertCircle, MapPin, Clock, Users, FileText } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/utils';
 import DefaultLayout from '@/components/layout/default-layout';
 
@@ -193,6 +193,156 @@ export default function TransactionHistoryPage() {
          method === 'tarjeta' ? 'Tarjeta' : method}
       </Badge>
     );
+  };
+
+  const renderTransactionDetails = (transaction: TransactionHistoryItem) => {
+    const details = transaction.details?.details || transaction.details;
+    
+    if (transaction.type === 'reservation') {
+      return (
+        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 mb-2">
+            <Receipt className="w-4 h-4 text-blue-600" />
+            <span className="font-medium text-blue-800">Detalles de la Reservación</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">ID Reservación:</span>
+              <span>#{details?.id}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Users className="w-3 h-3 text-gray-500" />
+              <span className="font-medium text-gray-600">Pasajero:</span>
+              <span>{details?.pasajeros}</span>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+              <div>
+                <span className="font-medium text-gray-600">Origen:</span>
+                <div className="text-gray-700">{details?.origen}</div>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+              <div>
+                <span className="font-medium text-gray-600">Destino:</span>
+                <div className="text-gray-700">{details?.destino}</div>
+              </div>
+            </div>
+            
+            {details?.tripId && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-600">ID Viaje:</span>
+                <span>{details.tripId}</span>
+              </div>
+            )}
+            
+            {details?.contacto?.telefono && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-600">Teléfono:</span>
+                <span>{details.contacto.telefono}</span>
+              </div>
+            )}
+          </div>
+          
+          {details?.notas && (
+            <div className="mt-3 pt-3 border-t border-blue-200">
+              <div className="flex items-start gap-2">
+                <FileText className="w-3 h-3 text-gray-500 mt-0.5" />
+                <div>
+                  <span className="font-medium text-gray-600">Notas:</span>
+                  <div className="text-gray-700">{details.notas}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    } else if (transaction.type === 'package') {
+      return (
+        <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-4 h-4 text-orange-600" />
+            <span className="font-medium text-orange-800">Detalles de la Paquetería</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">ID Paquete:</span>
+              <span>#{details?.id}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">Remitente:</span>
+              <span>{details?.remitente}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">Destinatario:</span>
+              <span>{details?.destinatario}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">Asientos:</span>
+              <span>{details?.asientos || 0}</span>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+              <div>
+                <span className="font-medium text-gray-600">Origen:</span>
+                <div className="text-gray-700">{details?.origen}</div>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+              <div>
+                <span className="font-medium text-gray-600">Destino:</span>
+                <div className="text-gray-700">{details?.destino}</div>
+              </div>
+            </div>
+            
+            {details?.tripId && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-600">ID Viaje:</span>
+                <span>{details.tripId}</span>
+              </div>
+            )}
+          </div>
+          
+          {details?.descripcion && (
+            <div className="mt-3 pt-3 border-t border-orange-200">
+              <div className="flex items-start gap-2">
+                <FileText className="w-3 h-3 text-gray-500 mt-0.5" />
+                <div>
+                  <span className="font-medium text-gray-600">Descripción:</span>
+                  <div className="text-gray-700">{details.descripcion}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {details?.notas && (
+            <div className="mt-3 pt-3 border-t border-orange-200">
+              <div className="flex items-start gap-2">
+                <FileText className="w-3 h-3 text-gray-500 mt-0.5" />
+                <div>
+                  <span className="font-medium text-gray-600">Notas:</span>
+                  <div className="text-gray-700">{details.notas}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   const formatCurrency = (amount: number) => {
@@ -443,6 +593,9 @@ export default function TransactionHistoryPage() {
                       {getTransactionTypeLabel(transaction.type)}
                     </div>
                   </div>
+                  
+                  {/* Detalles expandidos de la transacción */}
+                  {renderTransactionDetails(transaction)}
                 </div>
               ))}
             </div>
