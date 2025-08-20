@@ -19,7 +19,7 @@ import {
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import { db } from "./db";
-import { eq, and, gte, lte, lt, like, or, sql, isNotNull, isNull, inArray, ne, desc } from "drizzle-orm";
+import { eq, and, gte, lte, lt, like, or, sql, isNotNull, isNull, inArray, ne, desc, asc } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { normalizeToStartOfDay } from "./utils";
 
@@ -4830,12 +4830,14 @@ export class DatabaseStorage implements IStorage {
         eq(schema.transacciones.companyId, params.companyId)
       ];
 
-      // Filtros de fecha
+      // Filtros de fecha con zona horaria de Ciudad de México (UTC-6)
       if (params.startDate) {
-        baseConditions.push(sql`DATE(${schema.transacciones.createdAt}) >= ${params.startDate}`);
+        // Convertir fecha a zona horaria de Ciudad de México y obtener el inicio del día
+        baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') >= ${params.startDate}`);
       }
       if (params.endDate) {
-        baseConditions.push(sql`DATE(${schema.transacciones.createdAt}) <= ${params.endDate}`);
+        // Convertir fecha a zona horaria de Ciudad de México y obtener el final del día
+        baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') <= ${params.endDate}`);
       }
 
       // Filtro por usuario
@@ -4887,7 +4889,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.boxCutoff, eq(schema.transacciones.cutoff_id, schema.boxCutoff.id))
         .leftJoin(verifierUsers, eq(schema.boxCutoff.check_by, verifierUsers.id))
         .where(and(...baseConditions))
-        .orderBy(desc(schema.transacciones.createdAt));
+        .orderBy(asc(schema.transacciones.createdAt));
 
       console.log(`DB Storage: Encontradas ${result.length} transacciones para compañía ${params.companyId}`);
       
