@@ -4860,7 +4860,8 @@ export class DatabaseStorage implements IStorage {
           sql`(
             (${schema.transacciones.details}->>'paymentMethod' = ${params.paymentMethod}) OR
             (${schema.transacciones.details}->'details'->>'paymentMethod' = ${params.paymentMethod}) OR
-            (${schema.transacciones.details}->'details'->>'advancePaymentMethod' = ${params.paymentMethod})
+            (${schema.transacciones.details}->'details'->>'advancePaymentMethod' = ${params.paymentMethod}) OR
+            (${schema.transacciones.details}->'details'->>'metodoPago' = ${params.paymentMethod})
           )`
         );
       }
@@ -4903,13 +4904,13 @@ export class DatabaseStorage implements IStorage {
             // Para paquetes, buscar el monto en diferentes ubicaciones posibles
             amount = details.monto || details.details?.monto || details.details?.price || details.price || 0;
             // Buscar método de pago en paquetes
-            paymentMethod = details.paymentMethod || details.details?.paymentMethod || 'efectivo';
+            paymentMethod = details.paymentMethod || details.details?.paymentMethod || details.details?.metodoPago || 'efectivo';
           } else if (details.type === 'reservation') {
             type = 'reservation';
             // Para reservaciones, buscar el monto en diferentes ubicaciones posibles
             amount = details.monto || details.details?.monto || details.details?.advance || details.details?.advanceAmount || details.advance || details.advanceAmount || 0;
             // Buscar método de pago en reservaciones
-            paymentMethod = details.paymentMethod || details.details?.paymentMethod || details.details?.advancePaymentMethod || 'efectivo';
+            paymentMethod = details.paymentMethod || details.details?.paymentMethod || details.details?.advancePaymentMethod || details.details?.metodoPago || 'efectivo';
           }
         }
 
