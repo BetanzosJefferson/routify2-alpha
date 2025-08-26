@@ -196,7 +196,11 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
   // Cargar datos del paquete existente si se está editando
   useEffect(() => {
     async function fetchPackageData() {
-      if (!packageId) return;
+      if (!packageId) {
+        // Si no hay packageId, limpiar los tripDetails originales para evitar interferencias
+        setOriginalTripDetails(null);
+        return;
+      }
       
       setIsLoading(true);
       try {
@@ -234,11 +238,16 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
           console.log(`[PackageForm] Configurando actualTripId con: ${packageTripId}`);
           setActualTripId(packageTripId); // Actualizar el estado con el tripId del paquete
           
-          // Si tenemos tripDetails, usarlos directamente
+          // Si tenemos tripDetails, guardarlos como originales Y usarlos para el UI
           if (packageData.tripDetails) {
-            console.log(`[PackageForm] Usando tripDetails directamente:`, packageData.tripDetails);
+            console.log(`[PackageForm] Guardando tripDetails originales:`, packageData.tripDetails);
+            
+            // IMPORTANTE: Guardar los tripDetails originales para preservarlos al guardar
+            setOriginalTripDetails(packageData.tripDetails);
+            
+            // También establecer el tripInfo para el UI (con valores más conservadores)
             setTripInfo({
-              availableSeats: 10, // Valor por defecto para edición
+              availableSeats: 10, // Valor por defecto para edición (no afecta los tripDetails guardados)
               origin: packageData.tripDetails.origin || "",
               destination: packageData.tripDetails.destination || "",
               departureDate: packageData.tripDetails.departureDate || "",
@@ -298,6 +307,9 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
     }
   }, [isPaid, defaultPaymentMethod, form]);
   
+  // Estado para guardar los tripDetails originales cuando se edita un paquete
+  const [originalTripDetails, setOriginalTripDetails] = useState<any>(null);
+
   // Mutación para guardar el paquete
   const saveMutation = useMutation({
     mutationFn: async (data: PackageFormValues) => {
@@ -306,32 +318,43 @@ export function PackageForm({ tripId, packageId, onSuccess, onCancel }: PackageF
         throw new Error("No se ha seleccionado un viaje para la paquetería");
       }
 
-      // Convertir actualTripId a string si es un objeto
-      const tripIdString = typeof actualTripId === 'object' && actualTripId !== null && 'id' in actualTripId 
-        ? String((actualTripId as any).id) 
-        : String(actualTripId);
+      let tripDetails;
 
-      // Extraer información del tripId (formato: "baseId_segmentIndex" como "28_1")
-      const tripIdParts = tripIdString.split('_');
-      const recordId = parseInt(tripIdParts[0]); // ID base del viaje (28)
-      const segmentIndex = tripIdParts.length > 1 ? parseInt(tripIdParts[1]) : 0; // Índice del segmento (1)
+      // Si estamos editando un paquete existente Y tenemos tripDetails originales, preservarlos
+      if (packageId && originalTripDetails) {
+        console.log("[PackageForm] Editando paquete existente - preservando tripDetails originales:", originalTripDetails);
+        tripDetails = originalTripDetails; // Usar los tripDetails originales sin modificar
+      } else {
+        // Si es un paquete nuevo, construir tripDetails desde cero
+        console.log("[PackageForm] Creando paquete nuevo - construyendo tripDetails desde tripInfo");
+        
+        // Convertir actualTripId a string si es un objeto
+        const tripIdString = typeof actualTripId === 'object' && actualTripId !== null && 'id' in actualTripId 
+          ? String((actualTripId as any).id) 
+          : String(actualTripId);
 
-      // Construir tripDetails solo con información relevante
-      const tripDetails = {
-        tripId: tripIdString, // ID completo con segmento (ej: "28_1")
-        origin: tripInfo?.origin || "", // Origen del segmento
-        destination: tripInfo?.destination || "", // Destino del segmento
-        departureDate: tripInfo?.departureDate || "",
-        departureTime: tripInfo?.departureTime || "",
-        arrivalTime: tripInfo?.arrivalTime || ""
-      };
+        // Extraer información del tripId (formato: "baseId_segmentIndex" como "28_1")
+        const tripIdParts = tripIdString.split('_');
+        const recordId = parseInt(tripIdParts[0]); // ID base del viaje (28)
+        const segmentIndex = tripIdParts.length > 1 ? parseInt(tripIdParts[1]) : 0; // Índice del segmento (1)
 
-      console.log("TripDetails construido:", tripDetails);
+        // Construir tripDetails solo con información relevante
+        tripDetails = {
+          tripId: tripIdString, // ID completo con segmento (ej: "28_1")
+          origin: tripInfo?.origin || "", // Origen del segmento
+          destination: tripInfo?.destination || "", // Destino del segmento
+          departureDate: tripInfo?.departureDate || "",
+          departureTime: tripInfo?.departureTime || "",
+          arrivalTime: tripInfo?.arrivalTime || ""
+        };
+      }
+
+      console.log("TripDetails final para enviar:", tripDetails);
       console.log("TripInfo disponible:", tripInfo);
 
       const packageData = {
         ...data,
-        tripDetails: tripDetails, // Usar tripDetails en lugar de tripId
+        tripDetails: tripDetails, // Usar tripDetails preservados o construidos
       };
       
       // Si tenemos ID de paquete, estamos actualizando, de lo contrario creando nuevo
