@@ -9803,6 +9803,137 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // Endpoint para editar transacción
+  app.put(apiRouter("/transactions/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[PUT /transactions/:id] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para editar transacciones (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden editar transacciones" 
+        });
+      }
+      
+      const transactionId = parseInt(req.params.id);
+      const { monto, metodoPago, notas } = req.body;
+      
+      // Validar que los datos requeridos estén presentes
+      if (!monto || !metodoPago) {
+        return res.status(400).json({ 
+          error: "Datos incompletos",
+          details: "Se requiere monto y método de pago" 
+        });
+      }
+      
+      console.log(`[PUT /transactions/:id] Editando transacción: ${transactionId}`);
+      
+      // Obtener la transacción actual para verificar permisos
+      const transactions = await storage.getTransacciones({ usuario_id: undefined });
+      const currentTransaction = transactions.find(t => t.id === transactionId);
+      if (!currentTransaction) {
+        return res.status(404).json({ error: "Transacción no encontrada" });
+      }
+      
+      // Verificar que la transacción pertenece a la compañía del usuario
+      const userCompany = user.companyId || user.company;
+      if (currentTransaction.companyId && currentTransaction.companyId !== userCompany) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "No tiene permiso para editar transacciones de otra compañía" 
+        });
+      }
+      
+      // Actualizar la transacción
+      const updatedTransaction = await storage.updateTransaccion(transactionId, {
+        details: {
+          ...currentTransaction.details,
+          details: {
+            ...currentTransaction.details.details,
+            monto: parseFloat(monto),
+            metodoPago,
+            notas: notas || ''
+          }
+        }
+      }, user.id);
+      
+      console.log(`[PUT /transactions/:id] Transacción actualizada: ${transactionId}`);
+      
+      res.json(updatedTransaction);
+    } catch (error: any) {
+      console.error("[PUT /transactions/:id] Error:", error);
+      res.status(500).json({ 
+        error: "Error al actualizar transacción",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para eliminar transacción
+  app.delete(apiRouter("/transactions/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[DELETE /transactions/:id] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para eliminar transacciones (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden eliminar transacciones" 
+        });
+      }
+      
+      const transactionId = parseInt(req.params.id);
+      
+      console.log(`[DELETE /transactions/:id] Eliminando transacción: ${transactionId}`);
+      
+      // Obtener la transacción actual para verificar permisos
+      const transactions = await storage.getTransacciones({ usuario_id: undefined });
+      const currentTransaction = transactions.find(t => t.id === transactionId);
+      if (!currentTransaction) {
+        return res.status(404).json({ error: "Transacción no encontrada" });
+      }
+      
+      // Verificar que la transacción pertenece a la compañía del usuario
+      const userCompany = user.companyId || user.company;
+      if (currentTransaction.companyId && currentTransaction.companyId !== userCompany) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "No tiene permiso para eliminar transacciones de otra compañía" 
+        });
+      }
+      
+      // Eliminar la transacción
+      const success = await storage.deleteTransaccion(transactionId);
+      
+      if (!success) {
+        return res.status(500).json({ error: "No se pudo eliminar la transacción" });
+      }
+      
+      console.log(`[DELETE /transactions/:id] Transacción eliminada: ${transactionId}`);
+      
+      res.status(204).end();
+    } catch (error: any) {
+      console.error("[DELETE /transactions/:id] Error:", error);
+      res.status(500).json({ 
+        error: "Error al eliminar transacción",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para obtener lista de operadores (conductores)
   app.get("/api/operators", isAuthenticated, async (req: Request, res: Response) => {
     try {
