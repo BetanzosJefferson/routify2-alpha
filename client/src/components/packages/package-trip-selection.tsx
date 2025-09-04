@@ -8,11 +8,152 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Calendar, Clock, MapPin, Users, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
-import { formatDateForInput, formatDateToLocal, formatDate } from "@/lib/utils";
+import { formatDateForInput, formatDateToLocal, formatDate, formatPrice } from "@/lib/utils";
 import { TripWithRouteInfo } from "@shared/schema";
 import { LocationAdapter } from "@/components/ui/location-adapter";
 import { LocationOption } from "@/components/ui/location-selector";
-import { extractLocationsFromTrips } from "@/lib/trip-utils";
+import { extractLocationsFromTrips, formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
+
+// Función para calcular la duración entre horas, considerando indicadores de día siguiente
+function calculateDuration(departureTime: string, arrivalTime: string): string {
+  if (!departureTime || !arrivalTime) return "1h";
+
+  // Primero, limpiar los posibles indicadores de día para extraer solo el tiempo
+  const cleanDepartureTime = departureTime.replace(/\s*\+\d+d$/, '');
+  const cleanArrivalTime = arrivalTime.replace(/\s*\+\d+d$/, '');
+
+  // Extraer el número de días adicionales, si existe
+  const departureExtraDays = departureTime.match(/\+(\d+)d$/) ?
+    parseInt(departureTime.match(/\+(\d+)d$/)![1], 10) : 0;
+  const arrivalExtraDays = arrivalTime.match(/\+(\d+)d$/) ?
+    parseInt(arrivalTime.match(/\+(\d+)d$/)![1], 10) : 0;
+
+  // Convertir a formato 24 horas para cálculos
+  const parseTime = (time: string) => {
+    let [hourMin, period] = time.split(' ');
+    let [hours, minutes] = hourMin.split(':').map(Number);
+
+    // Convertir a formato 24 horas
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    return { hours, minutes };
+  };
+
+  const departure = parseTime(cleanDepartureTime);
+  const arrival = parseTime(cleanArrivalTime);
+
+  // Calcular diferencia en minutos, considerando días adicionales
+  let totalMinutesDeparture = (departure.hours * 60 + departure.minutes) + (departureExtraDays * 24 * 60);
+  let totalMinutesArrival = (arrival.hours * 60 + arrival.minutes) + (arrivalExtraDays * 24 * 60);
+
+  // Si no hay indicadores de día explícitos y la llegada parece ser antes que la salida,
+  // asumimos que cruza medianoche
+  if (arrivalExtraDays === 0 && departureExtraDays === 0 && totalMinutesArrival < totalMinutesDeparture) {
+    totalMinutesArrival += 24 * 60; // Agregar 24 horas en minutos
+  }
+
+  const diffMinutes = totalMinutesArrival - totalMinutesDeparture;
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+
+  // Formatear el resultado
+  if (hours === 0) {
+    return `${minutes}m`;
+  } else if (minutes === 0) {
+    return `${hours}h`;
+  } else {
+    return `${hours}h ${minutes}m`;
+  }
+}
+
+// Función para determinar si un viaje ya pasó su hora de salida
+function isTripExpired(trip: any): boolean {
+  const departureDate = trip.departureDate;
+  const departureTime = trip.departureTime;
+  
+  if (!departureDate || !departureTime) return false;
+  
+  // Obtener fecha y hora actual en timezone de México (UTC-6)
+  const now = new Date();
+  const mexicoOffset = -6 * 60; // UTC-6 en minutos
+  const localOffset = now.getTimezoneOffset(); // minutos respecto a UTC
+  const mexicoTime = new Date(now.getTime() + (localOffset + mexicoOffset) * 60000);
+  
+  const currentDate = mexicoTime.toISOString().split('T')[0]; // YYYY-MM-DD
+  const currentHour = mexicoTime.getHours();
+  const currentMinute = mexicoTime.getMinutes();
+  const currentTimeMinutes = currentHour * 60 + currentMinute;
+  
+  // Si la fecha de salida es posterior a hoy, el viaje no ha expirado
+  if (departureDate > currentDate) {
+    return false;
+  }
+  
+  // Si la fecha de salida es anterior a hoy, el viaje ya expiró
+  if (departureDate < currentDate) {
+    return true;
+  }
+  
+  // Si es el mismo día, comparar horas
+  // Convertir hora de salida a minutos
+  const cleanTime = departureTime.replace(/\s*\+\d+d$/, ''); // Remover indicadores de día
+  const [hourMin, period] = cleanTime.split(' ');
+  let [hours, minutes] = hourMin.split(':').map(Number);
+  
+  // Convertir a formato 24 horas
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  
+  const departureMinutes = hours * 60 + minutes;
+  
+  // Si es el mismo día y la hora ya pasó, está expirado
+  return departureMinutes <= currentTimeMinutes;
+}
+
+// Función para estandarizar formato de hora a 12 horas
+function standardizeTimeFormat(time: string): string {
+  if (!time) return '';
+  
+  // Limpiar indicadores de día adicionales
+  const cleanTime = time.replace(/\s*\+\d+d$/, '');
+  
+  // Si ya está en formato 12 horas correcto, verificar si es válido
+  if (cleanTime.includes('AM') || cleanTime.includes('PM')) {
+    const [hourMin, period] = cleanTime.split(' ');
+    const [hours, minutes] = hourMin.split(':').map(Number);
+    
+    // Verificar si es un formato válido de 12 horas
+    if (hours >= 1 && hours <= 12) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+    
+    // Si no es válido (como 23:50 PM), convertirlo
+    if (hours === 0) {
+      return `12:${minutes.toString().padStart(2, '0')} AM`;
+    } else if (hours < 12) {
+      return `${hours}:${minutes.toString().padStart(2, '0')} AM`;
+    } else if (hours === 12) {
+      return `12:${minutes.toString().padStart(2, '0')} PM`;
+    } else {
+      return `${hours - 12}:${minutes.toString().padStart(2, '0')} PM`;
+    }
+  }
+  
+  // Convertir de 24 horas a 12 horas
+  const [hourMin] = cleanTime.split(' ');
+  const [hours, minutes] = hourMin.split(':').map(Number);
+  
+  if (hours === 0) {
+    return `12:${minutes.toString().padStart(2, '0')} AM`;
+  } else if (hours < 12) {
+    return `${hours}:${minutes.toString().padStart(2, '0')} AM`;
+  } else if (hours === 12) {
+    return `12:${minutes.toString().padStart(2, '0')} PM`;
+  } else {
+    return `${hours - 12}:${minutes.toString().padStart(2, '0')} PM`;
+  }
+}
 
 interface SearchParams {
   origin?: string;
@@ -368,57 +509,121 @@ export function PackageTripSelection({ onTripSelect, onBack }: PackageTripSelect
               <h3 className="text-lg font-semibold">
                 {trips.length} viaje{trips.length !== 1 ? 's' : ''} disponible{trips.length !== 1 ? 's' : ''}
               </h3>
-              <div className="grid gap-4">
-                {trips.map((trip) => (
-                  <Card key={trip.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-center">
-                        <div className="space-y-3 flex-1">
-                          {/* Ruta del viaje */}
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-green-600" />
-                            <span className="font-medium text-lg">{trip.origin}</span>
-                            <span className="text-muted-foreground text-lg">→</span>
-                            <MapPin className="h-4 w-4 text-red-600" />
-                            <span className="font-medium text-lg">{trip.destination}</span>
-                           
+              <div className="grid grid-cols-1 gap-4">
+                {trips.map((trip) => {
+                  const isExpired = isTripExpired(trip as any);
+                  return (
+                  <div key={trip.id} className={`border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white ${
+                    isExpired ? 'opacity-60 saturate-0' : ''
+                  }`}>
+                    <div className="border-b border-gray-100 p-3 flex justify-between items-center">
+                      <div className="flex items-center">
+                        <div className="mr-3 h-8 w-8 flex-shrink-0">
+                          {trip.companyLogo ? (
+                            <img
+                              src={trip.companyLogo}
+                              alt={trip.companyName || "Logo de transportista"}
+                              className="h-full w-full object-cover rounded-full"
+                              onError={(e) => {
+                                const target = e.currentTarget as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-gray-100 rounded-full flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          {trip.companyName && (
+                            <span className={`text-xs mb-1 ${isExpired ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {trip.companyName}
+                            </span>
+                          )}
+                          <div className={`text-sm font-medium ${isExpired ? 'text-gray-400' : ''}`}>
+                            <span>Directo · {(trip as any).availableSeats || 0} asientos disponibles</span>
                           </div>
+                        </div>
+                      </div>
+                      <div className={`text-base font-medium ${isExpired ? 'text-gray-400' : ''}`}>
+                        {formatPrice((trip as any).price || 0)}
+                        <span className={`text-xs ml-1 ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>MXN</span>
+                      </div>
+                    </div>
 
-                          {/* Fecha y horarios */}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{formatDate(trip.departureDate)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              <span className="font-medium text-lg">{trip.departureTime} - {trip.arrivalTime}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{trip.availableSeats} asientos disponibles</span>
-                            </div>
+                    <div className="p-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex flex-col">
+                          <div className={`text-lg font-bold ${isExpired ? 'text-gray-400' : ''}`}>
+                            {standardizeTimeFormat((trip as any).departureTime)}
                           </div>
-
-                          {/* Información adicional del viaje */}
-                          <div className="text-xs text-muted-foreground">
-                            {trip.capacity && `Capacidad total: ${trip.capacity} pasajeros`}
-                            {trip.vehicleId && ` • Vehículo: ${trip.vehicleId}`}
-                            {trip.driverId && ` • Conductor: ${trip.driverId}`}
+                         
+                          <div className={`text-sm mt-1 ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {(trip as any).origin || trip.route?.origin || 'Origen no disponible'}
                           </div>
                         </div>
 
-                        {/* Botón de selección */}
-                        <Button 
+                        <div className="flex flex-col items-center justify-center">
+                          <div className={`text-xs mb-1 ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {calculateDuration((trip as any).departureTime, (trip as any).arrivalTime)}
+                          </div>
+                          <div className="relative w-full flex items-center justify-center">
+                            <div className="border-t border-gray-300 w-full"></div>
+                            <div className="absolute">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12h14"></path>
+                                <path d="M12 5l7 7-7 7"></path>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end">
+                          <div className={`text-lg font-bold ${isExpired ? 'text-gray-400' : ''}`}>
+                            {standardizeTimeFormat((trip as any).arrivalTime)}
+                          </div>
+                          <div className={`text-sm mt-1 text-right ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {(trip as any).destination || trip.route?.destination || 'Destino no disponible'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mostrar mensaje descriptivo para viajes que cruzan la medianoche */}
+                      {(extractDayIndicator((trip as any).departureTime) > 0 || extractDayIndicator((trip as any).arrivalTime) > 0) ? (
+                        <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                          </svg>
+                          {formatTripTime((trip as any).departureTime, true, 'descriptive', (trip as any).departureDate)}
+                        </div>
+                      ) : null}
+
+                      <div className="mt-4 flex items-center justify-between">
+                        {(trip as any).vehicle?.name && (
+                          <div className="text-sm">
+                            <span className="capitalize">{(trip as any).vehicle.name}</span>
+                          </div>
+                        )}
+
+                        <Button
+                          variant={isExpired ? "secondary" : "default"}
+                          size="sm"
                           onClick={() => handleTripSelect(trip)}
-                          className="ml-4"
+                          disabled={((trip as any).availableSeats || 0) <= 0}
+                          className={isExpired ? 'opacity-70' : ''}
                         >
-                          Seleccionar
+                          {isExpired ? "Viaje terminado" : "Seleccionar"}
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  </div>
+                  );
+                })}
               </div>
             </div>
           )}

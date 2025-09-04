@@ -802,7 +802,7 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                     disabled={((trip as any).availableSeats || 0) <= 0}
                     className={isExpired ? 'opacity-70' : ''}
                   >
-                    {isExpired ? "Viaje terminado" : (customButtonText || "Reservar")}
+                    {isExpired ? "Reservar" : (customButtonText || "Reservar")}
                   </Button>
                 </div>
 
