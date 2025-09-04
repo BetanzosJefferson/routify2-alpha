@@ -9851,6 +9851,9 @@ function setupPackageRoutes(app: Express) {
         });
       }
       
+      // Guardar el cutoff_id para recalcular totales después
+      const cutoffId = currentTransaction.cutoff_id;
+      
       // Actualizar la transacción
       const updatedTransaction = await storage.updateTransaccion(transactionId, {
         details: {
@@ -9865,6 +9868,12 @@ function setupPackageRoutes(app: Express) {
       }, user.id);
       
       console.log(`[PUT /transactions/:id] Transacción actualizada: ${transactionId}`);
+      
+      // Recalcular totales del corte si la transacción pertenece a un corte
+      if (cutoffId) {
+        await recalculateCutoffTotals(cutoffId);
+        console.log(`[PUT /transactions/:id] Totales recalculados para corte ${cutoffId}`);
+      }
       
       res.json(updatedTransaction);
     } catch (error: any) {
@@ -9915,6 +9924,9 @@ function setupPackageRoutes(app: Express) {
         });
       }
       
+      // Guardar el cutoff_id para recalcular totales después
+      const cutoffId = currentTransaction.cutoff_id;
+      
       // Eliminar la transacción
       const success = await storage.deleteTransaccion(transactionId);
       
@@ -9923,6 +9935,12 @@ function setupPackageRoutes(app: Express) {
       }
       
       console.log(`[DELETE /transactions/:id] Transacción eliminada: ${transactionId}`);
+      
+      // Recalcular totales del corte si la transacción pertenecía a un corte
+      if (cutoffId) {
+        await recalculateCutoffTotals(cutoffId);
+        console.log(`[DELETE /transactions/:id] Totales recalculados para corte ${cutoffId}`);
+      }
       
       res.status(204).end();
     } catch (error: any) {
@@ -9933,6 +9951,49 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // Función auxiliar para recalcular totales de corte
+  async function recalculateCutoffTotals(cutoffId: number): Promise<void> {
+    try {
+      console.log(`[recalculateCutoffTotals] Recalculando totales para corte ${cutoffId}`);
+      
+      // Obtener todas las transacciones del corte
+      const transactions = await storage.getBoxCutoffTransactions(cutoffId);
+      
+      // Calcular nuevos totales
+      let totalIngresos = 0;
+      let totalEfectivo = 0;
+      let totalTransferencias = 0;
+      
+      transactions.forEach(transaction => {
+        const details = transaction.details?.details || {};
+        const amount = details.monto || 0;
+        totalIngresos += amount;
+        
+        if (details.metodoPago === "efectivo") {
+          totalEfectivo += amount;
+        } else if (details.metodoPago === "transferencia") {
+          totalTransferencias += amount;
+        }
+      });
+      
+      console.log(`[recalculateCutoffTotals] Nuevos totales - Ingresos: ${totalIngresos}, Efectivo: ${totalEfectivo}, Transferencias: ${totalTransferencias}`);
+      
+      // Actualizar el corte con los nuevos totales
+      await db.update(schema.boxCutoff)
+        .set({
+          total_ingresos: totalIngresos,
+          total_efectivo: totalEfectivo,
+          total_transferencias: totalTransferencias
+        })
+        .where(eq(schema.boxCutoff.id, cutoffId));
+        
+      console.log(`[recalculateCutoffTotals] Totales actualizados para corte ${cutoffId}`);
+    } catch (error) {
+      console.error(`[recalculateCutoffTotals] Error recalculando totales para corte ${cutoffId}:`, error);
+      throw error;
+    }
+  }
 
   // Endpoint para obtener lista de operadores (conductores)
   app.get("/api/operators", isAuthenticated, async (req: Request, res: Response) => {
