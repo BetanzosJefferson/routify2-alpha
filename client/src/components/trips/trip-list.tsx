@@ -799,8 +799,8 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                     variant={isExpired ? "secondary" : "default"}
                     size="sm"
                     onClick={() => handleReserve(trip, (trip as any))}
-                    disabled={((trip as any).availableSeats || 0) <= 0 || isExpired}
-                    className={isExpired ? 'opacity-50 cursor-not-allowed' : ''}
+                    disabled={((trip as any).availableSeats || 0) <= 0}
+                    className={isExpired ? 'opacity-70' : ''}
                   >
                     {isExpired ? "Viaje terminado" : (customButtonText || "Reservar")}
                   </Button>
