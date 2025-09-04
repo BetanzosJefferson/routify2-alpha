@@ -882,7 +882,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                       <DropdownMenuItem asChild>
                         <Link href={`/package/${pkg.id}`} target="_blank">
                           <Share2 className="mr-2 h-4 w-4" />
-                          Ver ficha pública
+                          Ver paqueteria para marcar como pagado y entregado
                         </Link>
                       </DropdownMenuItem>
 
@@ -925,28 +925,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                           )}
                         </DialogContent>
                       </Dialog>
-                      
-                      {canInteractWithPackage(pkg) && pkg.deliveryStatus !== "entregado" && (
-                        <DropdownMenuItem
-                          onClick={() => {
-                            markAsDeliveredMutation.mutate(pkg.id);
-                          }}
-                          disabled={markAsDeliveredMutation.isPending}
-                        >
-                          <Check className="mr-2 h-4 w-4" />
-                          Marcar como Entregado
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {canDelete && (
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => setPackageToDelete(pkg.id)}
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Eliminar
-                        </DropdownMenuItem>
-                      )}
+                    
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

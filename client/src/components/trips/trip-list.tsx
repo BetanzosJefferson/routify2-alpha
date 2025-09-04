@@ -131,6 +131,50 @@ function filterTripsByTime(trips: TripWithRouteInfo[]): TripWithRouteInfo[] {
   });
 }
 
+// Función para determinar si un viaje ya pasó su hora de salida
+function isTripExpired(trip: any): boolean {
+  const departureDate = trip.departureDate;
+  const departureTime = trip.departureTime;
+  
+  if (!departureDate || !departureTime) return false;
+  
+  // Obtener fecha y hora actual en timezone de México (UTC-6)
+  const now = new Date();
+  const mexicoOffset = -6 * 60; // UTC-6 en minutos
+  const localOffset = now.getTimezoneOffset(); // minutos respecto a UTC
+  const mexicoTime = new Date(now.getTime() + (localOffset + mexicoOffset) * 60000);
+  
+  const currentDate = mexicoTime.toISOString().split('T')[0]; // YYYY-MM-DD
+  const currentHour = mexicoTime.getHours();
+  const currentMinute = mexicoTime.getMinutes();
+  const currentTimeMinutes = currentHour * 60 + currentMinute;
+  
+  // Si la fecha de salida es posterior a hoy, el viaje no ha expirado
+  if (departureDate > currentDate) {
+    return false;
+  }
+  
+  // Si la fecha de salida es anterior a hoy, el viaje ya expiró
+  if (departureDate < currentDate) {
+    return true;
+  }
+  
+  // Si es el mismo día, comparar horas
+  // Convertir hora de salida a minutos
+  const cleanTime = departureTime.replace(/\s*\+\d+d$/, ''); // Remover indicadores de día
+  const [hourMin, period] = cleanTime.split(' ');
+  let [hours, minutes] = hourMin.split(':').map(Number);
+  
+  // Convertir a formato 24 horas
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  
+  const departureMinutes = hours * 60 + minutes;
+  
+  // Si es el mismo día y la hora ya pasó, está expirado
+  return departureMinutes <= currentTimeMinutes;
+}
+
 // Función para estandarizar formato de hora a 12 horas
 function standardizeTimeFormat(time: string): string {
   if (!time) return '';
@@ -608,8 +652,12 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
         </div>
       ) : sortedAndFilteredTrips && sortedAndFilteredTrips.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-          {sortedAndFilteredTrips.map((trip) => (
-            <div key={trip.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white">
+          {sortedAndFilteredTrips.map((trip) => {
+            const isExpired = isTripExpired(trip as any);
+            return (
+            <div key={trip.id} className={`border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white ${
+              isExpired ? 'opacity-60 saturate-0' : ''
+            }`}>
               <div className="border-b border-gray-100 p-3 flex justify-between items-center">
                 <div className="flex items-center">
                   <div className="mr-3 h-8 w-8 flex-shrink-0">
@@ -633,7 +681,7 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                   </div>
                   <div className="flex flex-col">
                     {trip.companyName && (
-                      <span className="text-xs text-gray-600 mb-1">
+                      <span className={`text-xs mb-1 ${isExpired ? 'text-gray-400' : 'text-gray-600'}`}>
                         {trip.companyName}
                         {/* Mostrar operador solo en modo transferencia */}
                         {isTransferMode && (() => {
@@ -643,14 +691,14 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                               ? `${driver.firstName} ${driver.lastName || ''}`.trim()
                               : driver.name;
                             return (
-                              <span className="text-gray-500"> · Operador: {driverName}</span>
+                              <span className={`${isExpired ? 'text-gray-300' : 'text-gray-500'}`}> · Operador: {driverName}</span>
                             );
                           }
                           return null;
                         })()}
                       </span>
                     )}
-                    <div className="text-sm font-medium">
+                    <div className={`text-sm font-medium ${isExpired ? 'text-gray-400' : ''}`}>
                       <span>Directo · {(trip as any).availableSeats || 0} asientos disponibles</span>
                       {/* Leyenda para sub-viajes que pertenecen a viajes padre de días anteriores */}
                       {(() => {
@@ -680,16 +728,16 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                     </div>
                   </div>
                 </div>
-                <div className="text-base font-medium">
+                <div className={`text-base font-medium ${isExpired ? 'text-gray-400' : ''}`}>
                   {formatPrice((trip as any).price || 0)}
-                  <span className="text-xs text-gray-500 ml-1">MXN</span>
+                  <span className={`text-xs ml-1 ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>MXN</span>
                 </div>
               </div>
 
               <div className="p-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex flex-col">
-                    <div className="text-lg font-bold">
+                    <div className={`text-lg font-bold ${isExpired ? 'text-gray-400' : ''}`}>
                       {(() => {
                         const originalTime = (trip as any).departureTime;
                         const convertedTime = standardizeTimeFormat(originalTime);
@@ -698,13 +746,13 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                       })()}
                     </div>
                    
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className={`text-sm mt-1 ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>
                       {(trip as any).origin || trip.route?.origin || 'Origen no disponible'}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-center justify-center">
-                    <div className="text-xs text-gray-500 mb-1">
+                    <div className={`text-xs mb-1 ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>
                       {calculateDuration((trip as any).departureTime, (trip as any).arrivalTime)}
                     </div>
                     <div className="relative w-full flex items-center justify-center">
@@ -719,10 +767,10 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                   </div>
 
                   <div className="flex flex-col items-end">
-                    <div className="text-lg font-bold">
+                    <div className={`text-lg font-bold ${isExpired ? 'text-gray-400' : ''}`}>
                       {standardizeTimeFormat((trip as any).arrivalTime)}
                     </div>
-                    <div className="text-sm text-gray-500 mt-1 text-right">
+                    <div className={`text-sm mt-1 text-right ${isExpired ? 'text-gray-300' : 'text-gray-500'}`}>
                       {(trip as any).destination || trip.route?.destination || 'Destino no disponible'}
                     </div>
                   </div>
@@ -748,12 +796,13 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                   )}
 
                   <Button
-                    variant="default"
+                    variant={isExpired ? "secondary" : "default"}
                     size="sm"
                     onClick={() => handleReserve(trip, (trip as any))}
-                    disabled={((trip as any).availableSeats || 0) <= 0}
+                    disabled={((trip as any).availableSeats || 0) <= 0 || isExpired}
+                    className={isExpired ? 'opacity-50 cursor-not-allowed' : ''}
                   >
-                    {customButtonText || "Reservar"}
+                    {isExpired ? "Viaje terminado" : (customButtonText || "Reservar")}
                   </Button>
                 </div>
 
@@ -766,7 +815,8 @@ export function TripList({ customButtonText, onTripSelect, defaultFilters, isTra
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <Card>
