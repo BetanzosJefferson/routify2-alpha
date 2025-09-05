@@ -171,8 +171,24 @@ function isTripExpired(trip: any): boolean {
   
   const departureMinutes = hours * 60 + minutes;
   
-  // Si es el mismo día y la hora ya pasó, está expirado
-  return departureMinutes <= currentTimeMinutes;
+  // CORRECCIÓN: Manejar viajes nocturnos que cruzan medianoche
+  // Si el viaje es nocturno (después de las 8 PM) y la hora actual es antes de las 6 AM del día siguiente,
+  // el viaje aún no ha expirado
+  const isNightTrip = hours >= 20; // 8 PM o más tarde
+  const isEarlyMorning = currentHour < 6; // Antes de las 6 AM
+  
+  if (isNightTrip && !isEarlyMorning) {
+    // Viaje nocturno y no estamos en la madrugada del día siguiente
+    // Solo expira si ya pasó la hora de salida en el mismo día
+    return departureMinutes <= currentTimeMinutes;
+  } else if (isNightTrip && isEarlyMorning) {
+    // Viaje nocturno y estamos en la madrugada del día siguiente
+    // El viaje ya expiró porque era del día anterior
+    return true;
+  } else {
+    // Viaje diurno normal
+    return departureMinutes <= currentTimeMinutes;
+  }
 }
 
 // Función para estandarizar formato de hora a 12 horas
