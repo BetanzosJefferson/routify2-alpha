@@ -138,15 +138,11 @@ function isTripExpired(trip: any): boolean {
   
   if (!departureDate || !departureTime) return false;
   
-  // Obtener fecha y hora actual en timezone de México (UTC-6)
+  // Usar el mismo enfoque que getCurrentLocalDate() - sin conversiones de timezone
   const now = new Date();
-  const mexicoOffset = -6 * 60; // UTC-6 en minutos
-  const localOffset = now.getTimezoneOffset(); // minutos respecto a UTC
-  const mexicoTime = new Date(now.getTime() + (localOffset + mexicoOffset) * 60000);
-  
-  const currentDate = mexicoTime.toISOString().split('T')[0]; // YYYY-MM-DD
-  const currentHour = mexicoTime.getHours();
-  const currentMinute = mexicoTime.getMinutes();
+  const currentDate = formatDateToLocal(now); // YYYY-MM-DD usando función global
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
   const currentTimeMinutes = currentHour * 60 + currentMinute;
   
   // Si la fecha de salida es posterior a hoy, el viaje no ha expirado
@@ -171,24 +167,19 @@ function isTripExpired(trip: any): boolean {
   
   const departureMinutes = hours * 60 + minutes;
   
-  // CORRECCIÓN: Manejar viajes nocturnos que cruzan medianoche
-  // Si el viaje es nocturno (después de las 8 PM) y la hora actual es antes de las 6 AM del día siguiente,
-  // el viaje aún no ha expirado
-  const isNightTrip = hours >= 20; // 8 PM o más tarde
-  const isEarlyMorning = currentHour < 6; // Antes de las 6 AM
+  // DEBUG: Log para entender el problema de viajes nocturnos
+  console.log(`[isTripExpired] Viaje ${trip.id}: ${departureTime} en ${departureDate}`);
+  console.log(`[isTripExpired] Fecha actual: ${currentDate}, Hora actual: ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
+  console.log(`[isTripExpired] Hora salida: ${hours}:${minutes.toString().padStart(2, '0')} (${departureMinutes} min)`);
+  console.log(`[isTripExpired] Hora actual en minutos: ${currentTimeMinutes}`);
   
-  if (isNightTrip && !isEarlyMorning) {
-    // Viaje nocturno y no estamos en la madrugada del día siguiente
-    // Solo expira si ya pasó la hora de salida en el mismo día
-    return departureMinutes <= currentTimeMinutes;
-  } else if (isNightTrip && isEarlyMorning) {
-    // Viaje nocturno y estamos en la madrugada del día siguiente
-    // El viaje ya expiró porque era del día anterior
-    return true;
-  } else {
-    // Viaje diurno normal
-    return departureMinutes <= currentTimeMinutes;
-  }
+  // SIMPLIFICADO: Para viajes del mismo día, simplemente comparar si la hora ya pasó
+  // Sin lógica especial para viajes nocturnos - dejar que funcione naturalmente
+  const isExpired = departureMinutes <= currentTimeMinutes;
+  
+  console.log(`[isTripExpired] ¿Expirado? ${isExpired}`);
+  
+  return isExpired;
 }
 
 // Función para estandarizar formato de hora a 12 horas
