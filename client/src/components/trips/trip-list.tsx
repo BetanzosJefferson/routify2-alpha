@@ -167,19 +167,8 @@ function isTripExpired(trip: any): boolean {
   
   const departureMinutes = hours * 60 + minutes;
   
-  // DEBUG: Log para entender el problema de viajes nocturnos
-  console.log(`[isTripExpired] Viaje ${trip.id}: ${departureTime} en ${departureDate}`);
-  console.log(`[isTripExpired] Fecha actual: ${currentDate}, Hora actual: ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
-  console.log(`[isTripExpired] Hora salida: ${hours}:${minutes.toString().padStart(2, '0')} (${departureMinutes} min)`);
-  console.log(`[isTripExpired] Hora actual en minutos: ${currentTimeMinutes}`);
-  
-  // SIMPLIFICADO: Para viajes del mismo día, simplemente comparar si la hora ya pasó
-  // Sin lógica especial para viajes nocturnos - dejar que funcione naturalmente
-  const isExpired = departureMinutes <= currentTimeMinutes;
-  
-  console.log(`[isTripExpired] ¿Expirado? ${isExpired}`);
-  
-  return isExpired;
+  // Para viajes del mismo día, simplemente comparar si la hora ya pasó
+  return departureMinutes <= currentTimeMinutes;
 }
 
 // Función para estandarizar formato de hora a 12 horas

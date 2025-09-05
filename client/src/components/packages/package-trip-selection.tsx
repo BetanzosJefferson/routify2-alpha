@@ -74,15 +74,11 @@ function isTripExpired(trip: any): boolean {
   
   if (!departureDate || !departureTime) return false;
   
-  // Obtener fecha y hora actual en timezone de México (UTC-6)
+  // Usar el mismo enfoque que getCurrentLocalDate() - sin conversiones de timezone
   const now = new Date();
-  const mexicoOffset = -6 * 60; // UTC-6 en minutos
-  const localOffset = now.getTimezoneOffset(); // minutos respecto a UTC
-  const mexicoTime = new Date(now.getTime() + (localOffset + mexicoOffset) * 60000);
-  
-  const currentDate = mexicoTime.toISOString().split('T')[0]; // YYYY-MM-DD
-  const currentHour = mexicoTime.getHours();
-  const currentMinute = mexicoTime.getMinutes();
+  const currentDate = formatDateToLocal(now); // YYYY-MM-DD usando función global
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
   const currentTimeMinutes = currentHour * 60 + currentMinute;
   
   // Si la fecha de salida es posterior a hoy, el viaje no ha expirado
