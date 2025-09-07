@@ -25,7 +25,8 @@ import {
   Wallet,
   BarChart3,
   CheckCircle,
-  TimelineIcon
+  TimelineIcon,
+  ShieldCheck
 } from "lucide-react";
 
 interface SidebarProps {
@@ -226,6 +227,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 onClick={() => setLocation("/passenger-transfer")}
               >
                 Mover Pasajeros
+              </NavItem>
+            </div>
+          )}
+
+          {/* Confirmación de pasajeros en sistema - Solo para roles con permisos */}
+          {canAccess("passengers") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<ShieldCheck className="h-5 w-5" />} 
+                active={location === "/passenger-verification"}
+                onClick={() => setLocation("/passenger-verification")}
+              >
+                Confirmación de pasajeros en sistema
               </NavItem>
             </div>
           )}
