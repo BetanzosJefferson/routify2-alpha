@@ -35,13 +35,16 @@ interface TripSummary {
 export default function TripSummaryPage() {
   const { user } = useAuth();
   const [dateFrom, setDateFrom] = useState(() => {
-    const today = new Date();
-    today.setDate(today.getDate() - 7); // Una semana atrás por defecto
-    return formatDateForInput(today);
+    // Usar el sistema de fechas global de México
+    const mexicoDateString = new Date().toLocaleDateString("sv-SE", {timeZone: "America/Mexico_City"});
+    const mexicoDate = new Date(mexicoDateString + 'T12:00:00');
+    mexicoDate.setDate(mexicoDate.getDate() - 7); // Una semana atrás por defecto
+    return formatDateForInput(mexicoDate);
   });
   const [dateTo, setDateTo] = useState(() => {
-    const today = new Date();
-    return formatDateForInput(today);
+    // Usar el sistema de fechas global de México
+    const mexicoDateString = new Date().toLocaleDateString("sv-SE", {timeZone: "America/Mexico_City"});
+    return mexicoDateString; // Ya está en formato YYYY-MM-DD
   });
   const [hasSearched, setHasSearched] = useState(false);
 
