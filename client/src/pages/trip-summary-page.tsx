@@ -72,44 +72,28 @@ export default function TripSummaryPage() {
   const { data: tripSummaries, isLoading, refetch } = useQuery({
     queryKey: ['/api/trip-summary', dateFrom, dateTo],
     queryFn: async () => {
-      console.log(`[TripSummary] queryFn ejecutándose - hasSearched: ${hasSearched}`);
-      
-      if (!hasSearched) {
-        console.log(`[TripSummary] No se ha iniciado búsqueda aún, devolviendo array vacío`);
-        return [];
-      }
+      if (!hasSearched) return [];
       
       const params = new URLSearchParams();
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
       
-      console.log(`[TripSummary] Realizando fetch a: /api/trip-summary?${params.toString()}`);
-      
       const response = await fetch(`/api/trip-summary?${params}`);
       if (!response.ok) {
-        console.error(`[TripSummary] Error en respuesta: ${response.status} ${response.statusText}`);
         throw new Error('Error al obtener resumen de viajes');
       }
-      
-      const data = await response.json();
-      console.log(`[TripSummary] Datos recibidos:`, data);
-      return data;
+      return response.json();
     },
     enabled: hasSearched
   });
 
   const handleSearch = () => {
-    console.log(`[TripSummary] Iniciando búsqueda con fechas: ${dateFrom} a ${dateTo}`);
-    
     if (!dateFrom || !dateTo) {
-      console.log(`[TripSummary] Error: Fechas faltantes - dateFrom: ${dateFrom}, dateTo: ${dateTo}`);
       return;
     }
     if (new Date(dateFrom) > new Date(dateTo)) {
-      console.log(`[TripSummary] Error: Fecha desde es mayor que fecha hasta`);
       return;
     }
-    console.log(`[TripSummary] Estableciendo hasSearched=true y ejecutando refetch`);
     setHasSearched(true);
     refetch();
   };
