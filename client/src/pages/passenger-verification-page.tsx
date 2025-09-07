@@ -15,7 +15,7 @@ export default function PassengerVerificationPageRoute() {
   }
 
   // Verificar permisos de acceso (similar a otras secciones administrativas)
-  if (!hasAccessToSection(user.role, "passengers", user)) {
+  if (!hasAccessToSection(user.role, "passenger-verification", user)) {
     return <div>No tienes permisos para acceder a esta sección</div>;
   }
 

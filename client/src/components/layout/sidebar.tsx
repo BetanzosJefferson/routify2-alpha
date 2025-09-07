@@ -232,7 +232,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           )}
 
           {/* Confirmación de pasajeros en sistema - Solo para roles con permisos */}
-          {canAccess("passengers") && (
+          {canAccess("passenger-verification") && (
             <div className="space-y-1">
               <NavItem 
                 icon={<ShieldCheck className="h-5 w-5" />} 

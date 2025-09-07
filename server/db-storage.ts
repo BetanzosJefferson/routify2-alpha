@@ -5109,4 +5109,201 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  /**
+   * Obtiene reservaciones con transacciones asociadas filtradas por rango de fechas de creación
+   */
+  async getReservationsWithTransactionsByDateRange(
+    startDate: string, 
+    endDate: string, 
+    companyId?: string
+  ): Promise<any[]> {
+    try {
+      console.log(`[DB] Buscando reservaciones creadas entre ${startDate} y ${endDate}`);
+      
+      // Convertir fechas a formato correcto
+      const startDateTime = new Date(startDate + 'T00:00:00.000Z');
+      const endDateTime = new Date(endDate + 'T23:59:59.999Z');
+      
+      console.log(`[DB] Rango de fechas convertido: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
+
+      // Query principal para obtener reservaciones en el rango de fechas
+      let query = db
+        .select({
+          // Campos de reservación
+          id: schema.reservations.id,
+          companyId: schema.reservations.companyId,
+          status: schema.reservations.status,
+          totalAmount: schema.reservations.totalAmount,
+          paymentMethod: schema.reservations.paymentMethod,
+          paymentStatus: schema.reservations.paymentStatus,
+          seatNumbers: schema.reservations.seatNumbers,
+          checkInTime: schema.reservations.checkInTime,
+          boardingStatus: schema.reservations.boardingStatus,
+          createdAt: schema.reservations.createdAt,
+          tripDetails: schema.reservations.tripDetails,
+          createdBy: schema.reservations.createdBy,
+          checkedBy: schema.reservations.checkedBy,
+          paidBy: schema.reservations.paidBy,
+          
+          // Información del usuario creador
+          creatorId: schema.users.id,
+          creatorFirstName: schema.users.firstName,
+          creatorLastName: schema.users.lastName,
+          creatorEmail: schema.users.email,
+          
+          // Información del usuario que checó
+          checkerId: alias(schema.users, 'checker_users').id,
+          checkerFirstName: alias(schema.users, 'checker_users').firstName,
+          checkerLastName: alias(schema.users, 'checker_users').lastName,
+          
+          // Información del usuario que marcó como pagado
+          paidById: alias(schema.users, 'paid_by_users').id,
+          paidByFirstName: alias(schema.users, 'paid_by_users').firstName,
+          paidByLastName: alias(schema.users, 'paid_by_users').lastName,
+        })
+        .from(schema.reservations)
+        .leftJoin(schema.users, eq(schema.reservations.createdBy, schema.users.id))
+        .leftJoin(
+          alias(schema.users, 'checker_users'), 
+          eq(schema.reservations.checkedBy, alias(schema.users, 'checker_users').id)
+        )
+        .leftJoin(
+          alias(schema.users, 'paid_by_users'),
+          eq(schema.reservations.paidBy, alias(schema.users, 'paid_by_users').id)
+        )
+        .where(
+          and(
+            gte(schema.reservations.createdAt, startDateTime),
+            lte(schema.reservations.createdAt, endDateTime),
+            companyId ? eq(schema.reservations.companyId, companyId) : undefined
+          )
+        )
+        .orderBy(desc(schema.reservations.createdAt));
+
+      const reservations = await query;
+      console.log(`[DB] Encontradas ${reservations.length} reservaciones`);
+
+      if (reservations.length === 0) {
+        return [];
+      }
+
+      // Crear alias para las tablas de usuarios en las consultas de transacciones
+      const checkerUsers = alias(schema.users, 'checker_users');
+      const paidByUsers = alias(schema.users, 'paid_by_users');
+
+      // Obtener transacciones asociadas a estas reservaciones
+      const reservationIds = reservations.map(r => r.id);
+      console.log(`[DB] Buscando transacciones para ${reservationIds.length} reservaciones`);
+
+      const transactionsQuery = db
+        .select({
+          id: schema.transacciones.id,
+          details: schema.transacciones.details,
+          createdAt: schema.transacciones.createdAt,
+          userId: schema.transacciones.user_id,
+          creatorId: schema.users.id,
+          creatorFirstName: schema.users.firstName,
+          creatorLastName: schema.users.lastName,
+        })
+        .from(schema.transacciones)
+        .leftJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
+        .where(
+          and(
+            eq(sql`${schema.transacciones.details}->>'type'`, 'reservation'),
+            sql`(${schema.transacciones.details}->'details'->>'id')::integer = ANY(${reservationIds})`
+          )
+        )
+        .orderBy(desc(schema.transacciones.createdAt));
+
+      const transactions = await transactionsQuery;
+      console.log(`[DB] Encontradas ${transactions.length} transacciones asociadas`);
+
+      // Agrupar transacciones por reservación
+      const transactionsByReservation = new Map();
+      transactions.forEach(transaction => {
+        const details = transaction.details as any;
+        if (details && details.details && details.details.id) {
+          const reservationId = parseInt(details.details.id);
+          if (!transactionsByReservation.has(reservationId)) {
+            transactionsByReservation.set(reservationId, []);
+          }
+          transactionsByReservation.get(reservationId).push({
+            id: transaction.id,
+            details: transaction.details,
+            createdAt: transaction.createdAt?.toISOString(),
+            user_id: transaction.userId,
+            creator: transaction.creatorId ? {
+              id: transaction.creatorId,
+              firstName: transaction.creatorFirstName,
+              lastName: transaction.creatorLastName,
+            } : null
+          });
+        }
+      });
+
+      // Combinar datos
+      const result = reservations.map(reservation => {
+        // Extraer información del tripDetails JSON
+        const tripDetails = reservation.tripDetails as any;
+        let passengerName = 'N/A';
+        let origin = 'N/A';
+        let destination = 'N/A';
+        let departureTime = 'N/A';
+        let date = 'N/A';
+
+        if (tripDetails) {
+          passengerName = tripDetails.passengerName || tripDetails.passenger?.name || 'N/A';
+          origin = tripDetails.origin || 'N/A';
+          destination = tripDetails.destination || 'N/A';
+          departureTime = tripDetails.departureTime || 'N/A';
+          date = tripDetails.date || 'N/A';
+        }
+
+        return {
+          id: reservation.id,
+          companyId: reservation.companyId,
+          status: reservation.status,
+          totalAmount: reservation.totalAmount,
+          paymentMethod: reservation.paymentMethod,
+          paymentStatus: reservation.paymentStatus,
+          seatNumbers: reservation.seatNumbers,
+          checkInTime: reservation.checkInTime,
+          boardingStatus: reservation.boardingStatus,
+          createdAt: reservation.createdAt?.toISOString(),
+          tripDetails: {
+            date,
+            origin,
+            destination,
+            departureTime,
+            passengerName
+          },
+          creator: reservation.creatorId ? {
+            id: reservation.creatorId,
+            firstName: reservation.creatorFirstName,
+            lastName: reservation.creatorLastName,
+            email: reservation.creatorEmail,
+          } : null,
+          checker: reservation.checkerId ? {
+            id: reservation.checkerId,
+            firstName: reservation.checkerFirstName,
+            lastName: reservation.checkerLastName,
+          } : null,
+          paidBy: reservation.paidById ? {
+            id: reservation.paidById,
+            firstName: reservation.paidByFirstName,
+            lastName: reservation.paidByLastName,
+          } : null,
+          transactions: transactionsByReservation.get(reservation.id) || []
+        };
+      });
+
+      console.log(`[DB] Procesamiento completado. Devolviendo ${result.length} reservaciones con transacciones`);
+      return result;
+
+    } catch (error) {
+      console.error(`[DB] Error en getReservationsWithTransactionsByDateRange:`, error);
+      throw error;
+    }
+  }
 }
