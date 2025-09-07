@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar, Clock, MapPin, Users, Search, Loader2, FileText, Car } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDateForInput, formatDateToLocal, formatPrice } from "@/lib/utils";
-import { MainLayout } from "@/components/layout/main-layout";
+import DefaultLayout from "@/components/layout/default-layout";
 import { UserRole } from "@shared/schema";
 
 interface TripSummary {
@@ -48,7 +48,7 @@ export default function TripSummaryPage() {
   // Verificar que solo el rol dueño tenga acceso
   if (!user || user.role !== UserRole.OWNER) {
     return (
-      <MainLayout>
+      <DefaultLayout>
         <div className="flex items-center justify-center min-h-screen">
           <Card className="max-w-md">
             <CardContent className="pt-6">
@@ -62,7 +62,7 @@ export default function TripSummaryPage() {
             </CardContent>
           </Card>
         </div>
-      </MainLayout>
+      </DefaultLayout>
     );
   }
 
@@ -115,7 +115,7 @@ export default function TripSummaryPage() {
   };
 
   return (
-    <MainLayout>
+    <DefaultLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -361,6 +361,6 @@ export default function TripSummaryPage() {
           </Card>
         )}
       </div>
-    </MainLayout>
+    </DefaultLayout>
   );
 }
