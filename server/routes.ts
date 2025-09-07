@@ -2850,6 +2850,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para verificación de pasajeros - consultar reservaciones con transacciones por rango de fechas
+  app.get(apiRouter("/reservations/verification"), async (req: Request, res: Response) => {
+    try {
+      const { user } = req.session;
+      
+      if (!user) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
+
+      console.log(`[GET /reservations/verification] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+
+      const { startDate, endDate } = req.query;
+
+      // Validar parámetros requeridos
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          error: "Faltan parámetros requeridos: startDate y endDate" 
+        });
+      }
+
+      // Validar formato de fechas (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(startDate as string) || !dateRegex.test(endDate as string)) {
+        return res.status(400).json({ 
+          error: "Formato de fecha inválido. Use YYYY-MM-DD" 
+        });
+      }
+
+      console.log(`[GET /reservations/verification] Rango de fechas: ${startDate} - ${endDate}`);
+
+      // Determinar restricción de compañía basado en el rol del usuario
+      let companyId: string | undefined;
+      
+      if (user.role === 'superadmin') {
+        // Super admin puede ver todas las reservaciones
+        companyId = undefined;
+        console.log(`[GET /reservations/verification] Super admin - acceso a todas las compañías`);
+      } else {
+        // Usuarios normales solo ven su compañía
+        companyId = user.companyId;
+        console.log(`[GET /reservations/verification] Usuario normal - acceso a compañía: ${companyId}`);
+      }
+
+      const startTime = Date.now();
+      
+      // Llamar al método optimizado del storage
+      const reservationsWithTransactions = await storage.getReservationsWithTransactionsByDateRange(
+        startDate as string,
+        endDate as string,
+        companyId
+      );
+
+      const queryTime = Date.now() - startTime;
+      
+      console.log(`[GET /reservations/verification] ✅ Obtenidas ${reservationsWithTransactions.length} reservaciones en ${queryTime}ms`);
+
+      return res.json(reservationsWithTransactions);
+
+    } catch (error) {
+      console.error("[GET /reservations/verification] Error:", error);
+      return res.status(500).json({ 
+        error: "Error interno del servidor al consultar verificación de pasajeros" 
+      });
+    }
+  });
+
   // RESERVATIONS ENDPOINTS
   app.get(apiRouter("/reservations"), async (req: Request, res: Response) => {
     try {
