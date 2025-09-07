@@ -5127,87 +5127,54 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`[DB] Rango de fechas convertido: ${startDateTime.toISOString()} - ${endDateTime.toISOString()}`);
 
-      // Query principal para obtener reservaciones en el rango de fechas
-      let query = db
-        .select({
-          // Campos de reservación
-          id: schema.reservations.id,
-          companyId: schema.reservations.companyId,
-          status: schema.reservations.status,
-          totalAmount: schema.reservations.totalAmount,
-          paymentMethod: schema.reservations.paymentMethod,
-          paymentStatus: schema.reservations.paymentStatus,
-          seatNumbers: schema.reservations.seatNumbers,
-          checkInTime: schema.reservations.checkInTime,
-          boardingStatus: schema.reservations.boardingStatus,
-          createdAt: schema.reservations.createdAt,
-          tripDetails: schema.reservations.tripDetails,
-          createdBy: schema.reservations.createdBy,
-          checkedBy: schema.reservations.checkedBy,
-          paidBy: schema.reservations.paidBy,
-          
-          // Información del usuario creador
-          creatorId: schema.users.id,
-          creatorFirstName: schema.users.firstName,
-          creatorLastName: schema.users.lastName,
-          creatorEmail: schema.users.email,
-          
-          // Información del usuario que checó
-          checkerId: alias(schema.users, 'checker_users').id,
-          checkerFirstName: alias(schema.users, 'checker_users').firstName,
-          checkerLastName: alias(schema.users, 'checker_users').lastName,
-          
-          // Información del usuario que marcó como pagado
-          paidById: alias(schema.users, 'paid_by_users').id,
-          paidByFirstName: alias(schema.users, 'paid_by_users').firstName,
-          paidByLastName: alias(schema.users, 'paid_by_users').lastName,
-        })
+      // Consulta simplificada para obtener reservaciones básicas
+      let whereConditions = [
+        gte(schema.reservations.createdAt, startDateTime),
+        lte(schema.reservations.createdAt, endDateTime)
+      ];
+
+      if (companyId) {
+        whereConditions.push(eq(schema.reservations.companyId, companyId));
+      }
+
+      const reservations = await db
+        .select()
         .from(schema.reservations)
-        .leftJoin(schema.users, eq(schema.reservations.createdBy, schema.users.id))
-        .leftJoin(
-          alias(schema.users, 'checker_users'), 
-          eq(schema.reservations.checkedBy, alias(schema.users, 'checker_users').id)
-        )
-        .leftJoin(
-          alias(schema.users, 'paid_by_users'),
-          eq(schema.reservations.paidBy, alias(schema.users, 'paid_by_users').id)
-        )
-        .where(
-          and(
-            gte(schema.reservations.createdAt, startDateTime),
-            lte(schema.reservations.createdAt, endDateTime),
-            companyId ? eq(schema.reservations.companyId, companyId) : undefined
-          )
-        )
+        .where(and(...whereConditions))
         .orderBy(desc(schema.reservations.createdAt));
 
-      const reservations = await query;
-      console.log(`[DB] Encontradas ${reservations.length} reservaciones`);
+      console.log(`[DB] Encontradas ${reservations.length} reservaciones básicas`);
 
       if (reservations.length === 0) {
         return [];
       }
 
-      // Crear alias para las tablas de usuarios en las consultas de transacciones
-      const checkerUsers = alias(schema.users, 'checker_users');
-      const paidByUsers = alias(schema.users, 'paid_by_users');
+      // Obtener información de usuarios relacionados (creadores)
+      const userIds = [...new Set([
+        ...reservations.map(r => r.createdBy).filter(Boolean),
+        ...reservations.map(r => r.checkedBy).filter(Boolean),
+        ...reservations.map(r => r.paidBy).filter(Boolean)
+      ])];
+
+      const users = await db
+        .select()
+        .from(schema.users)
+        .where(inArray(schema.users.id, userIds));
+
+      const usersMap = new Map(users.map(user => [user.id, user]));
 
       // Obtener transacciones asociadas a estas reservaciones
       const reservationIds = reservations.map(r => r.id);
       console.log(`[DB] Buscando transacciones para ${reservationIds.length} reservaciones`);
 
-      const transactionsQuery = db
+      const transactions = await db
         .select({
           id: schema.transacciones.id,
           details: schema.transacciones.details,
           createdAt: schema.transacciones.createdAt,
           userId: schema.transacciones.user_id,
-          creatorId: schema.users.id,
-          creatorFirstName: schema.users.firstName,
-          creatorLastName: schema.users.lastName,
         })
         .from(schema.transacciones)
-        .leftJoin(schema.users, eq(schema.transacciones.user_id, schema.users.id))
         .where(
           and(
             eq(sql`${schema.transacciones.details}->>'type'`, 'reservation'),
@@ -5216,7 +5183,6 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(schema.transacciones.createdAt));
 
-      const transactions = await transactionsQuery;
       console.log(`[DB] Encontradas ${transactions.length} transacciones asociadas`);
 
       // Agrupar transacciones por reservación
@@ -5228,15 +5194,17 @@ export class DatabaseStorage implements IStorage {
           if (!transactionsByReservation.has(reservationId)) {
             transactionsByReservation.set(reservationId, []);
           }
+          
+          const creator = usersMap.get(transaction.userId);
           transactionsByReservation.get(reservationId).push({
             id: transaction.id,
             details: transaction.details,
             createdAt: transaction.createdAt?.toISOString(),
             user_id: transaction.userId,
-            creator: transaction.creatorId ? {
-              id: transaction.creatorId,
-              firstName: transaction.creatorFirstName,
-              lastName: transaction.creatorLastName,
+            creator: creator ? {
+              id: creator.id,
+              firstName: creator.firstName,
+              lastName: creator.lastName,
             } : null
           });
         }
@@ -5260,6 +5228,10 @@ export class DatabaseStorage implements IStorage {
           date = tripDetails.date || 'N/A';
         }
 
+        const creator = usersMap.get(reservation.createdBy);
+        const checker = usersMap.get(reservation.checkedBy);
+        const paidBy = usersMap.get(reservation.paidBy);
+
         return {
           id: reservation.id,
           companyId: reservation.companyId,
@@ -5278,21 +5250,21 @@ export class DatabaseStorage implements IStorage {
             departureTime,
             passengerName
           },
-          creator: reservation.creatorId ? {
-            id: reservation.creatorId,
-            firstName: reservation.creatorFirstName,
-            lastName: reservation.creatorLastName,
-            email: reservation.creatorEmail,
+          creator: creator ? {
+            id: creator.id,
+            firstName: creator.firstName,
+            lastName: creator.lastName,
+            email: creator.email,
           } : null,
-          checker: reservation.checkerId ? {
-            id: reservation.checkerId,
-            firstName: reservation.checkerFirstName,
-            lastName: reservation.checkerLastName,
+          checker: checker ? {
+            id: checker.id,
+            firstName: checker.firstName,
+            lastName: checker.lastName,
           } : null,
-          paidBy: reservation.paidById ? {
-            id: reservation.paidById,
-            firstName: reservation.paidByFirstName,
-            lastName: reservation.paidByLastName,
+          paidBy: paidBy ? {
+            id: paidBy.id,
+            firstName: paidBy.firstName,
+            lastName: paidBy.lastName,
           } : null,
           transactions: transactionsByReservation.get(reservation.id) || []
         };
