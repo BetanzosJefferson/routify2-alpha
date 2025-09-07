@@ -686,6 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[GET /trip-summary] Usuario: ${user.firstName} ${user.lastName} (${user.role})`);
       
       const { dateFrom, dateTo } = req.query;
+      console.log(`[GET /trip-summary] DEBUG: Fechas recibidas - dateFrom: ${dateFrom}, dateTo: ${dateTo}`);
       
       if (!dateFrom || !dateTo) {
         return res.status(400).json({ 
@@ -724,6 +725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`[GET /trip-summary] Rango de fechas generado:`, dateRange);
+      console.log(`[GET /trip-summary] DEBUG: Formato de fechas en rango - primer elemento: ${dateRange[0]}, último elemento: ${dateRange[dateRange.length - 1]}`);
       
       // Buscar viajes usando el método optimizado
       const searchParams = {
@@ -738,17 +740,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trips = await storage.searchTripsOptimized(searchParams);
       console.log(`[GET /trip-summary] Encontrados ${trips.length} viajes`);
       
+      // DEBUG: Mostrar información detallada de los viajes encontrados
+      if (trips.length > 0) {
+        console.log(`[GET /trip-summary] DEBUG: Primeros 3 viajes encontrados:`, trips.slice(0, 3).map(t => ({
+          id: t.id,
+          tripData: t.tripData?.slice(0, 1), // Solo el primer segmento
+          visibility: t.visibility,
+          companyId: t.companyId
+        })));
+      }
+      
       // Filtrar solo viajes padre (no sub-viajes)
       const parentTrips = trips.filter(trip => {
         // Un viaje padre es aquel que tiene tripData como array y es el viaje principal
         if (!trip.tripData || !Array.isArray(trip.tripData) || trip.tripData.length === 0) {
+          console.log(`[GET /trip-summary] DEBUG: Descartando viaje ${trip.id} - sin tripData válido`);
           return false;
         }
         
         // Verificar que sea un viaje principal (no sub-trip)
         // Los viajes principales tienen isMainTrip en true en el primer segmento
         const firstSegment = trip.tripData[0];
-        return firstSegment && firstSegment.isMainTrip === true;
+        const isMainTrip = firstSegment && (firstSegment.isMainTrip === true || firstSegment.isMainTrip === undefined);
+        
+        console.log(`[GET /trip-summary] DEBUG: Viaje ${trip.id} - isMainTrip: ${isMainTrip}, firstSegment isMainTrip:`, firstSegment?.isMainTrip);
+        
+        // Por ahora, aceptar todos los viajes para debug
+        return true;
       });
       
       console.log(`[GET /trip-summary] Filtrados ${parentTrips.length} viajes padre`);
