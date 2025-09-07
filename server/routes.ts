@@ -2851,9 +2851,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint para verificación de pasajeros - consultar reservaciones con transacciones por rango de fechas
-  app.get(apiRouter("/reservations/verification"), async (req: Request, res: Response) => {
+  app.get(apiRouter("/reservations/verification"), isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { user } = req.session;
+      const { user } = req as any;
       
       if (!user) {
         return res.status(401).json({ error: "Usuario no autenticado" });
