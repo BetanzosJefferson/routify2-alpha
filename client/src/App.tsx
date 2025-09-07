@@ -43,6 +43,7 @@ import { ReservationsListPage } from "@/pages/reservations-list";
 import { TemplatesPage } from "@/pages/templates-page";
 import TransactionHistoryPageRoute from "@/pages/transaction-history-page";
 import OperatorTimelinePageRoute from "@/pages/operator-timeline-page";
+import PassengerVerificationPageRoute from "@/pages/passenger-verification-page";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
       <ProtectedRoute path="/cash-box" component={CashBoxPage} />
       <ProtectedRoute path="/cutoff-history" component={CutoffHistoryPage} />
       <ProtectedRoute path="/cutoff-confirmation" component={CutoffConfirmationPage} />
+      <ProtectedRoute path="/passenger-verification" component={PassengerVerificationPageRoute} />
       <ProtectedRoute path="/edit-trip/:id" component={EditTripPage} />
       <ProtectedRoute path="/passenger-transfer" component={PassengerTransferPage} />
 
