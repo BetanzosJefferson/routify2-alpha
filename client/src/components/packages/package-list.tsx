@@ -98,7 +98,7 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
   const canCreateEdit = user ? hasRoleAccess(user.role, [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, UserRole.CHECKER, UserRole.TICKET_OFFICE]) : false;
   
   // Determinar si el usuario puede eliminar paquetes
-  const canDelete = user ? hasRoleAccess(user.role, [UserRole.OWNER, UserRole.ADMIN]) : false;
+  const canDelete = user ? hasRoleAccess(user.role, [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER]) : false;
   
   // Función para verificar si el usuario taquilla puede interactuar con un paquete específico
   const canInteractWithPackage = (packageItem: any) => {
@@ -925,6 +925,16 @@ export function PackageList({ onAddPackage, onEditPackage }: PackageListProps) {
                           )}
                         </DialogContent>
                       </Dialog>
+
+                      {canDelete && canInteractWithPackage(pkg) && (
+                        <DropdownMenuItem 
+                          onClick={() => setPackageToDelete(pkg.id)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      )}
                     
                     </DropdownMenuContent>
                   </DropdownMenu>
