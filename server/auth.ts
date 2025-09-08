@@ -276,7 +276,7 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
         });
       }
       
-      // Nueva lógica para DUEÑO - puede invitar roles específicos, incluyendo Administrador y Comisionista
+      // Nueva lógica para DUEÑO - puede invitar roles específicos, incluyendo Administrador, Comisionista y Contabilidad
       if (user.role === UserRole.OWNER) {
         const rolesPermitidos = [
           UserRole.OWNER,
@@ -284,12 +284,13 @@ export function setupAuthRoutes(app: Express, customIsAuthenticated?: any) {
           UserRole.CALL_CENTER, 
           UserRole.CHECKER, 
           UserRole.DRIVER,
-          UserRole.COMMISSIONER
+          UserRole.COMMISSIONER,
+          UserRole.ACCOUNTING
         ];
         
         if (!rolesPermitidos.includes(role)) {
           return res.status(403).json({ 
-            message: "Como Dueño, solo puede invitar a usuarios con roles: Dueño, Administrador, Call Center, Checador, Chofer o Comisionista" 
+            message: "Como Dueño, solo puede invitar a usuarios con roles: Dueño, Administrador, Call Center, Checador, Chofer, Comisionista o Contabilidad" 
           });
         }
       } 
