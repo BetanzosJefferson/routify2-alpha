@@ -556,7 +556,7 @@ export default function TripList({ onEditTrip, title = "Publicación de Viajes" 
                       const stopsCount = trip.numStops || 0;
                       
                       return (
-                        <div key={trip.id} className="border rounded-lg overflow-hidden bg-card mb-4">
+                        <div className="border rounded-lg overflow-hidden bg-card mb-4">
                           <div className="flex flex-col lg:flex-row">
                             <div className="p-4 lg:p-6 flex-1">
                               <div className="flex justify-between items-start">

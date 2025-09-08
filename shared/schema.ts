@@ -14,7 +14,6 @@ export const UserRole = {
   OWNER: "dueño",
   DEVELOPER: "desarrollador",
   COMMISSIONER: "comisionista",
-  ACCOUNTING: "contabilidad",
 } as const;
 
 export type UserRoleType = typeof UserRole[keyof typeof UserRole];

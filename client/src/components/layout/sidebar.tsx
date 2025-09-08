@@ -25,8 +25,7 @@ import {
   Wallet,
   BarChart3,
   CheckCircle,
-  TimelineIcon,
-  BarChart2
+  TimelineIcon
 } from "lucide-react";
 
 interface SidebarProps {
@@ -395,19 +394,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 onClick={() => setLocation("/operator-timeline")}
               >
                 Línea de tiempo operador
-              </NavItem>
-            </div>
-          )}
-
-          {/* Resumen por viaje */}
-          {canAccess("trip-summary") && (
-            <div className="space-y-1">
-              <NavItem 
-                icon={<BarChart2 className="h-5 w-5" />} 
-                active={location === "/trip-summary"}
-                onClick={() => setLocation("/trip-summary")}
-              >
-                Resumen por viaje
               </NavItem>
             </div>
           )}
