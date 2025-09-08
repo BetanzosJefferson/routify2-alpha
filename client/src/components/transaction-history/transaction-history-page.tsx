@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Filter, Calendar, User, Receipt, Package, CheckCircle, AlertCircle, MapPin, Clock, Users, FileText } from 'lucide-react';
-import { formatDateForDisplay } from '@/lib/utils';
+import { formatDateForDisplay, getCurrentLocalDate } from '@/lib/utils';
 import DefaultLayout from '@/components/layout/default-layout';
 
 interface TransactionHistoryItem {
@@ -29,8 +29,8 @@ interface TransactionHistoryItem {
 
 
 export default function TransactionHistoryPage() {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(getCurrentLocalDate());
+  const [endDate, setEndDate] = useState(getCurrentLocalDate());
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [selectedCutoffId, setSelectedCutoffId] = useState<string>('all');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
@@ -114,8 +114,9 @@ export default function TransactionHistoryPage() {
   }, [selectedUserId]);
 
   const handleClearFilters = () => {
-    setStartDate('2025-07-09');
-    setEndDate('2025-07-30');
+    const currentDate = getCurrentLocalDate();
+    setStartDate(currentDate);
+    setEndDate(currentDate);
     setSelectedUserId('all');
     setSelectedCutoffId('all');
     setSelectedPaymentMethod('all');
