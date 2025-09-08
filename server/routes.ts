@@ -670,6 +670,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ruta para obtener resumen de viajes por rango de fechas (solo para dueños)
+  app.get(apiRouter("/trip-summary"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      // Verificar que solo el rol dueño tenga acceso
+      if (user.role !== UserRole.OWNER) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Esta funcionalidad solo está disponible para usuarios con rol de dueño" 
+        });
+      }
+      
+      console.log(`[GET /trip-summary] Usuario: ${user.firstName} ${user.lastName} (${user.role})`);
+      
+      const { dateFrom, dateTo } = req.query;
+      if (!dateFrom || !dateTo) {
+        return res.status(400).json({ 
+          error: "Parámetros requeridos", 
+          details: "Se requieren los parámetros dateFrom y dateTo" 
+        });
+      }
+      
+      // Validar que las fechas sean válidas
+      const fromDate = new Date(dateFrom as string);
+      const toDate = new Date(dateTo as string);
+      
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        return res.status(400).json({ 
+          error: "Fechas inválidas", 
+          details: "Las fechas proporcionadas no son válidas" 
+        });
+      }
+      
+      if (fromDate > toDate) {
+        return res.status(400).json({ 
+          error: "Rango de fechas inválido", 
+          details: "La fecha de inicio debe ser anterior o igual a la fecha de fin" 
+        });
+      }
+      
+      console.log(`[GET /trip-summary] Buscando viajes desde ${dateFrom} hasta ${dateTo}`);
+      
+      // Generar array de fechas en el rango
+      const dateRange = [];
+      const currentDate = new Date(fromDate);
+      
+      while (currentDate <= toDate) {
+        dateRange.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      console.log(`[GET /trip-summary] Rango de fechas generado:`, dateRange);
+      
+      // Buscar viajes usando el método optimizado
+      const searchParams = {
+        dateRange: [dateRange[0], dateRange[dateRange.length - 1]], // Solo fecha inicio y fin
+        companyId: user.companyId || user.company,
+        includeAllVisibilities: true, // Incluir todos los estados
+        optimizedResponse: false // Necesitamos información completa
+      };
+      
+      console.log(`[GET /trip-summary] Parámetros de búsqueda:`, searchParams);
+      
+      const trips = await storage.searchTripsOptimized(searchParams);
+      console.log(`[GET /trip-summary] Encontrados ${trips.length} viajes`);
+      
+      // Filtrar solo viajes padre (no sub-viajes)
+      const parentTrips = trips.filter(trip => {
+        // Un viaje padre es aquel que tiene tripData como array y es el viaje principal
+        if (!trip.tripData || !Array.isArray(trip.tripData) || trip.tripData.length === 0) {
+          return false;
+        }
+        
+        // Verificar que sea un viaje principal (no sub-trip)
+        // Los viajes principales tienen isMainTrip en true en el primer segmento
+        const firstSegment = trip.tripData[0];
+        return firstSegment && (firstSegment.isMainTrip === true || firstSegment.isMainTrip === undefined);
+      });
+      
+      console.log(`[GET /trip-summary] Filtrados ${parentTrips.length} viajes padre`);
+      
+      // Para cada viaje padre, obtener sus reservaciones
+      const tripSummaries = await Promise.all(
+        parentTrips.map(async (trip) => {
+          try {
+            // Obtener reservaciones para este viaje
+            const reservationsWithDetails = await storage.getReservations(user.companyId || user.company, trip.id);
+            
+            // Extraer solo los datos de reservación necesarios
+            const reservations = reservationsWithDetails.map(res => ({
+              id: res.id,
+              passengerName: res.passengers?.[0]?.name || res.tripDetails?.passengerName || '',
+              passengerLastName: res.passengers?.[0]?.lastName || res.tripDetails?.passengerLastName || '',
+              passengerPhone: res.phone || res.tripDetails?.passengerPhone || '',
+              seatsQuantity: res.tripDetails?.seatsQuantity || 1,
+              totalPrice: res.totalAmount || 0,
+              isPaid: res.paymentStatus === 'paid' || res.paymentStatus === 'completed',
+              paymentMethod: res.paymentMethod,
+              createdAt: res.createdAt
+            }));
+            
+            // Obtener información del primer segmento (viaje principal)
+            const mainSegment = trip.tripData[0];
+            
+            return {
+              id: trip.id,
+              departureDate: mainSegment.departureDate,
+              departureTime: mainSegment.departureTime,
+              arrivalTime: mainSegment.arrivalTime,
+              origin: mainSegment.origin,
+              destination: mainSegment.destination,
+              capacity: trip.capacity,
+              reservationCount: reservations.length,
+              reservations: reservations
+            };
+          } catch (error) {
+            console.error(`[GET /trip-summary] Error obteniendo reservaciones para viaje ${trip.id}:`, error);
+            return {
+              id: trip.id,
+              departureDate: trip.tripData[0]?.departureDate || '',
+              departureTime: trip.tripData[0]?.departureTime || '',
+              arrivalTime: trip.tripData[0]?.arrivalTime || '',
+              origin: trip.tripData[0]?.origin || '',
+              destination: trip.tripData[0]?.destination || '',
+              capacity: trip.capacity,
+              reservationCount: 0,
+              reservations: []
+            };
+          }
+        })
+      );
+      
+      console.log(`[GET /trip-summary] Devolviendo resumen de ${tripSummaries.length} viajes`);
+      res.json(tripSummaries);
+      
+    } catch (error: any) {
+      console.error("[GET /trip-summary] Error:", error);
+      res.status(500).json({ 
+        error: "Error interno del servidor", 
+        details: error.message 
+      });
+    }
+  });
+
   // Ruta optimizada para obtener reservaciones (TESTING STEP 3)
   app.get(apiRouter("/reservations-optimized"), async (req: Request, res: Response) => {
     try {
@@ -2847,72 +2992,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`[TEST] Error:`, error);
       res.status(500).json({ error: "Error en extracción de datos" });
-    }
-  });
-
-  // Endpoint para verificación de pasajeros - consultar reservaciones con transacciones por rango de fechas
-  app.get(apiRouter("/reservations/verification"), isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      
-      if (!user) {
-        return res.status(401).json({ error: "Usuario no autenticado" });
-      }
-
-      console.log(`[GET /reservations/verification] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-
-      const { startDate, endDate } = req.query;
-
-      // Validar parámetros requeridos
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          error: "Faltan parámetros requeridos: startDate y endDate" 
-        });
-      }
-
-      // Validar formato de fechas (YYYY-MM-DD)
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      if (!dateRegex.test(startDate as string) || !dateRegex.test(endDate as string)) {
-        return res.status(400).json({ 
-          error: "Formato de fecha inválido. Use YYYY-MM-DD" 
-        });
-      }
-
-      console.log(`[GET /reservations/verification] Rango de fechas: ${startDate} - ${endDate}`);
-
-      // Determinar restricción de compañía basado en el rol del usuario
-      let companyId: string | undefined;
-      
-      if (user.role === 'superadmin') {
-        // Super admin puede ver todas las reservaciones
-        companyId = undefined;
-        console.log(`[GET /reservations/verification] Super admin - acceso a todas las compañías`);
-      } else {
-        // Usuarios normales solo ven su compañía
-        companyId = user.companyId;
-        console.log(`[GET /reservations/verification] Usuario normal - acceso a compañía: ${companyId}`);
-      }
-
-      const startTime = Date.now();
-      
-      // Llamar al método optimizado del storage
-      const reservationsWithTransactions = await storage.getReservationsWithTransactionsByDateRange(
-        startDate as string,
-        endDate as string,
-        companyId
-      );
-
-      const queryTime = Date.now() - startTime;
-      
-      console.log(`[GET /reservations/verification] ✅ Obtenidas ${reservationsWithTransactions.length} reservaciones en ${queryTime}ms`);
-
-      return res.json(reservationsWithTransactions);
-
-    } catch (error) {
-      console.error("[GET /reservations/verification] Error:", error);
-      return res.status(500).json({ 
-        error: "Error interno del servidor al consultar verificación de pasajeros" 
-      });
     }
   });
 

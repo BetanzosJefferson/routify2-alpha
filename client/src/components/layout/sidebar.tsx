@@ -26,7 +26,7 @@ import {
   BarChart3,
   CheckCircle,
   TimelineIcon,
-  ShieldCheck
+  BarChart2
 } from "lucide-react";
 
 interface SidebarProps {
@@ -230,19 +230,6 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               </NavItem>
             </div>
           )}
-
-          {/* Confirmación de pasajeros en sistema - Solo para roles con permisos */}
-          {canAccess("passenger-verification") && (
-            <div className="space-y-1">
-              <NavItem 
-                icon={<ShieldCheck className="h-5 w-5" />} 
-                active={location === "/passenger-verification"}
-                onClick={() => setLocation("/passenger-verification")}
-              >
-                Confirmación de pasajeros en sistema
-              </NavItem>
-            </div>
-          )}
           
 
 
@@ -408,6 +395,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 onClick={() => setLocation("/operator-timeline")}
               >
                 Línea de tiempo operador
+              </NavItem>
+            </div>
+          )}
+
+          {/* Resumen por viaje */}
+          {canAccess("trip-summary") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<BarChart2 className="h-5 w-5" />} 
+                active={location === "/trip-summary"}
+                onClick={() => setLocation("/trip-summary")}
+              >
+                Resumen por viaje
               </NavItem>
             </div>
           )}
