@@ -714,7 +714,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
       .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
     
-    const results = whereClause ? await query.where(whereClause) : await query;
+    // Añadir ordenamiento por fecha de salida para evitar errores de orderSelectedFields
+    const queryWithOrder = whereClause ? query.where(whereClause) : query;
+    const results = await queryWithOrder.orderBy(sql`COALESCE((${schema.trips.tripData}->0->>'departureDate')::date, CURRENT_DATE)`);
     
     console.log(`[searchTripsOptimized] ✅ Consulta optimizada completada. Encontrados ${results.length} resultados`);
     console.log(`[searchTripsOptimized] ✅ Total consultas a DB: 1 (vs 5+ en versión anterior)`);
