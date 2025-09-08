@@ -29,9 +29,7 @@ export const ALL_SECTIONS: Section[] = [
   { id: "cash-box", name: "Caja", description: "Gestión de transacciones en caja" },
   { id: "cutoff-history", name: "Historial de Cortes", description: "Historial de cortes de caja realizados" },
   { id: "cutoff-confirmation", name: "Confirmar Cortes", description: "Confirmar y validar cortes de caja realizados" },
-  /* Temporalmente deshabilitado
-  { id: "passenger-transfer", name: "Transferencia de pasajeros", description: "Gestión de transferencias de pasajeros entre viajes" },
-  */
+  { id: "passenger-transfer", name: "Mover pasajeros", description: "Gestión de transferencias de pasajeros entre viajes" },
   { id: "settings", name: "Configuración", description: "Ajustes generales del sistema" },
   { id: "user-cash-boxes", name: "Cajas de usuarios", description: "Gestión de cajas individuales de usuarios" },
   { id: "statistics", name: "Estadísticas", description: "Análisis y métricas de la empresa" },
@@ -140,6 +138,22 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "cash-register",
     "cash-box",
     "cutoff-history"
+  ],
+  // Permisos para el nuevo rol CONTABILIDAD
+  [UserRole.ACCOUNTING]: [
+    "reservations",
+    "reservations-list",
+    "passenger-transfer",
+    "packages",
+    "cash-box",
+    "cutoff-history",
+    "cutoff-confirmation",
+    "user-cash-boxes",
+    "commissions",
+    "coupons",
+    "statistics",
+    "transaction-history",
+    "operator-timeline"
   ]
 };
 
