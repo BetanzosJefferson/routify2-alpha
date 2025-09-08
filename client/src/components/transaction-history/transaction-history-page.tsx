@@ -75,8 +75,10 @@ export default function TransactionHistoryPage() {
     queryKey: ['/api/transaction-history', 'all-cutoffs'],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append('startDate', '2025-07-01');
-      params.append('endDate', '2025-12-31');
+      // Usar un rango más razonable basado en el año actual para obtener los cortes únicos
+      const currentYear = new Date().getFullYear();
+      params.append('startDate', `${currentYear}-01-01`);
+      params.append('endDate', `${currentYear}-12-31`);
       
       const response = await fetch(`/api/transaction-history?${params}`);
       if (!response.ok) throw new Error('Error al obtener historial de transacciones');
@@ -91,10 +93,10 @@ export default function TransactionHistoryPage() {
     
     // Si hay un usuario seleccionado, filtrar solo sus cortes
     const transactionsToProcess = selectedUserId !== 'all' 
-      ? allTransactionHistory.filter(t => t.createdBy.id.toString() === selectedUserId)
+      ? allTransactionHistory.filter((t: TransactionHistoryItem) => t.createdBy.id.toString() === selectedUserId)
       : allTransactionHistory;
     
-    transactionsToProcess.forEach(transaction => {
+    transactionsToProcess.forEach((transaction: TransactionHistoryItem) => {
       if (transaction.cutoffId) {
         cutoffs.add(transaction.cutoffId);
       }
@@ -103,9 +105,11 @@ export default function TransactionHistoryPage() {
     return Array.from(cutoffs).sort((a, b) => b - a);
   }, [allTransactionHistory, selectedUserId]);
 
-  // Detectar cambios en filtros
+  // Detectar cambios en filtros - ahora compara con la fecha actual por defecto
   useEffect(() => {
-    setIsFiltersChanged(startDate !== '' || endDate !== '' || selectedUserId !== 'all' || selectedCutoffId !== 'all' || selectedPaymentMethod !== 'all');
+    const currentDate = getCurrentLocalDate();
+    const hasDateFilters = startDate !== currentDate || endDate !== currentDate;
+    setIsFiltersChanged(hasDateFilters || selectedUserId !== 'all' || selectedCutoffId !== 'all' || selectedPaymentMethod !== 'all');
   }, [startDate, endDate, selectedUserId, selectedCutoffId, selectedPaymentMethod]);
 
   // Resetear filtro de corte cuando cambia el usuario
