@@ -37,7 +37,8 @@ export const ALL_SECTIONS: Section[] = [
   { id: "statistics", name: "Estadísticas", description: "Análisis y métricas de la empresa" },
   { id: "transaction-history", name: "Historial de Transacciones", description: "Historial completo de transacciones de la empresa" },
   { id: "operator-timeline", name: "Línea de tiempo operador", description: "Seguimiento de actividades y viajes asignados a operadores" },
-  { id: "expenses", name: "Gastos de la Empresa", description: "Gestión de gastos fijos, variables, sueldos y rentas" }
+  { id: "expenses", name: "Gastos de la Empresa", description: "Gestión de gastos fijos, variables, sueldos y rentas" },
+  { id: "period-balance", name: "Balance por Periodo", description: "Análisis de ingresos vs gastos en rangos específicos de fecha y hora" }
 ];
 
 // Mapa de permisos por rol
@@ -67,7 +68,8 @@ export const ROLE_SECTION_PERMISSIONS: Record<string, string[]> = {
     "statistics",
     "transaction-history",
     "operator-timeline",
-    "expenses"
+    "expenses",
+    "period-balance"
   ],
   [UserRole.ADMIN]: [
     "routes",

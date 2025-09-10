@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ interface PeriodBalanceData {
 }
 
 export default function PeriodBalancePage() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const [startDateTime, setStartDateTime] = useState('');
   const [endDateTime, setEndDateTime] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);

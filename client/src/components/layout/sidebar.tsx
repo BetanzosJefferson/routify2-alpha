@@ -25,8 +25,8 @@ import {
   Wallet,
   BarChart3,
   CheckCircle,
-  TimelineIcon,
-  DollarSign
+  DollarSign,
+  BarChart2
 } from "lucide-react";
 
 interface SidebarProps {
@@ -408,6 +408,19 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 onClick={() => setLocation("/expenses")}
               >
                 Gastos de la Empresa
+              </NavItem>
+            </div>
+          )}
+
+          {/* Balance por Periodo */}
+          {canAccess("period-balance") && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={<BarChart2 className="h-5 w-5" />} 
+                active={location === "/period-balance"}
+                onClick={() => setLocation("/period-balance")}
+              >
+                Balance por Periodo
               </NavItem>
             </div>
           )}
