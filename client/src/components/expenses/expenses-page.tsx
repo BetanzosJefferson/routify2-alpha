@@ -87,7 +87,7 @@ export function ExpensesPage() {
     queryKey: ['/api/expenses'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/expenses');
-      return response;
+      return response.json();
     }
   });
 
