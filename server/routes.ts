@@ -10530,21 +10530,22 @@ function setupPackageRoutes(app: Express) {
       
       console.log(`[GET /period-balance] Total viajes obtenidos: ${trips.length}`);
       
-      // Corregir filtrado: getTrips() ya devuelve una estructura procesada
+      // Corregir filtrado: getTrips() devuelve trip.tripData con la información
       const tripsInPeriod = trips.filter(trip => {
-        // getTrips() devuelve objetos con departureTime y arrivalTime ya procesados
-        if (!trip.departureTime) return false;
-        
-        // Extraer fecha del departureTime (formato: "2025-09-10")
-        let tripDate;
-        if (typeof trip.departureTime === 'string') {
-          // Si departureTime incluye fecha, extraerla
-          tripDate = new Date(trip.departureTime.split('T')[0] || trip.departureTime);
-        } else {
-          // Si no, usar la fecha actual (fallback)
+        // La información está en trip.tripData (jsonb)
+        if (!trip.tripData || !Array.isArray(trip.tripData) || trip.tripData.length === 0) {
+          console.log(`[GET /period-balance] Viaje ${trip.id}: Sin tripData válido`);
           return false;
         }
         
+        // Buscar el segmento principal del viaje
+        const mainTrip = trip.tripData.find((segment: any) => segment.isMainTrip);
+        if (!mainTrip || !mainTrip.departureDate) {
+          console.log(`[GET /period-balance] Viaje ${trip.id}: Sin segmento principal o departureDate`);
+          return false;
+        }
+        
+        const tripDate = new Date(mainTrip.departureDate);
         console.log(`[GET /period-balance] Viaje ${trip.id}: fecha=${tripDate.toISOString().split('T')[0]}, rango=${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}`);
         
         // Comparar solo las fechas (sin tiempo)
@@ -10552,7 +10553,10 @@ function setupPackageRoutes(app: Express) {
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
         
-        return tripDateStr >= startDateStr && tripDateStr <= endDateStr;
+        const isInRange = tripDateStr >= startDateStr && tripDateStr <= endDateStr;
+        console.log(`[GET /period-balance] Viaje ${trip.id}: ${isInRange ? 'INCLUIDO' : 'EXCLUIDO'}`);
+        
+        return isInRange;
       });
 
       // Obtener información detallada de cada viaje incluyendo operador y gastos
