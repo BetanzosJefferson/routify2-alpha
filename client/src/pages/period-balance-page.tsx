@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CalendarDays, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { CalendarDays, DollarSign, TrendingUp, TrendingDown, Receipt, User, Calendar, MapPin, Clock, Car, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { DefaultLayout } from '@/components/layout/default-layout';
 
@@ -16,9 +16,26 @@ interface PeriodBalanceData {
   transactionCount: number;
   expenseBreakdown: Array<{
     category: string;
+    concept: string;
     amount: number;
     proportionalAmount: number;
   }>;
+  transactions: Array<{
+    id: number;
+    details: any;
+    createdAt: string;
+    createdBy: {
+      id: number;
+      name: string;
+    };
+    amount: number;
+  }>;
+  tripsCount: number;
+  trips: Array<{
+    id: number;
+    tripData: any[];
+  }>;
+  tripExpenses: any[];
 }
 
 function PeriodBalancePageContent() {
@@ -248,6 +265,7 @@ function PeriodBalancePageContent() {
                     <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
                       <div>
                         <p className="font-medium capitalize">{expense.category}</p>
+                        <p className="text-sm font-medium text-gray-700">{expense.concept}</p>
                         <p className="text-sm text-muted-foreground">
                           Total: {formatCurrency(expense.amount)}
                         </p>
@@ -259,6 +277,175 @@ function PeriodBalancePageContent() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Desglose de transacciones */}
+          {periodBalance.transactions && periodBalance.transactions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="w-5 h-5" />
+                  Desglose de Transacciones
+                </CardTitle>
+                <CardDescription>
+                  Transacciones realizadas en el periodo seleccionado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {periodBalance.transactions.map((transaction) => (
+                    <div key={transaction.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Receipt className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium">Transacción #{transaction.id}</span>
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                            {transaction.details?.type === 'reservation' ? 'Reservación' : 
+                             transaction.details?.type === 'package' ? 'Paquetería' : 'Transacción'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-green-600">
+                            {formatCurrency(transaction.amount)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          <span>{transaction.createdBy.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(transaction.createdAt).toLocaleDateString('es-MX')}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{new Date(transaction.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
+
+                      {/* Detalles de la transacción */}
+                      {transaction.details?.details && (
+                        <div className="mt-3 pt-3 border-t">
+                          {transaction.details.type === 'reservation' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                <div>
+                                  <span className="font-medium text-gray-600">Origen:</span>
+                                  <div className="text-gray-700">{transaction.details.details.origen}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                <div>
+                                  <span className="font-medium text-gray-600">Destino:</span>
+                                  <div className="text-gray-700">{transaction.details.details.destino}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-600">Pasajeros:</span>
+                                <span>{transaction.details.details.pasajeros}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-600">Método de pago:</span>
+                                <span className="capitalize">{transaction.details.details.metodoPago}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Información de viajes realizados */}
+          {periodBalance.tripsCount > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Car className="w-5 h-5" />
+                  Viajes Realizados
+                </CardTitle>
+                <CardDescription>
+                  Viajes principales realizados en el periodo seleccionado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Car className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-blue-800">
+                      Total de viajes: {periodBalance.tripsCount}
+                    </span>
+                  </div>
+                  <p className="text-sm text-blue-600 mt-1">
+                    Se contabilizaron solo los viajes principales (no sub-viajes)
+                  </p>
+                </div>
+
+                {periodBalance.trips && periodBalance.trips.length > 0 && (
+                  <div className="space-y-3">
+                    {periodBalance.trips.slice(0, 5).map((trip) => {
+                      const mainTrip = trip.tripData?.find((t: any) => t.isMainTrip);
+                      if (!mainTrip) return null;
+                      
+                      return (
+                        <div key={trip.id} className="border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Car className="w-4 h-4 text-gray-600" />
+                              <span className="font-medium">Viaje #{trip.id}</span>
+                            </div>
+                            <span className="text-sm font-bold text-green-600">
+                              {formatCurrency(mainTrip.price)}
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                              <div>
+                                <span className="font-medium text-gray-600">Origen:</span>
+                                <div className="text-gray-700">{mainTrip.origin}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                              <div>
+                                <span className="font-medium text-gray-600">Destino:</span>
+                                <div className="text-gray-700">{mainTrip.destination}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-gray-500" />
+                              <span className="text-gray-600">Fecha:</span>
+                              <span>{new Date(mainTrip.departureDate).toLocaleDateString('es-MX')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3 h-3 text-gray-500" />
+                              <span className="text-gray-600">Hora:</span>
+                              <span>{mainTrip.departureTime}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {periodBalance.trips.length > 5 && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        ... y {periodBalance.trips.length - 5} viajes más
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
