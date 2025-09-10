@@ -280,48 +280,32 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getTrips(companyId?: string): Promise<TripWithRouteInfo[]> {
-    console.log("DB Storage: Obteniendo viajes con JOIN optimizado");
+    console.log("DB Storage: Obteniendo viajes (versión estable)");
     const startTime = performance.now();
     
-    // Usar JOIN para obtener trips con routes en una sola consulta
-    let baseQuery = db
-      .select({
-        // Campos del trip
-        id: schema.trips.id,
-        routeId: schema.trips.routeId,
-        departureTime: schema.trips.departureTime,
-        arrivalTime: schema.trips.arrivalTime,
-        capacity: schema.trips.capacity,
-        price: schema.trips.price,
-        companyId: schema.trips.companyId,
-        visibility: schema.trips.visibility,
-        parentTripId: schema.trips.parentTripId,
-        startStopIndex: schema.trips.startStopIndex,
-        endStopIndex: schema.trips.endStopIndex,
-        status: schema.trips.status,
-        // Campos de la ruta
-        routeName: schema.routes.name,
-        routeOrigin: schema.routes.origin,
-        routeDestination: schema.routes.destination,
-        routeStops: schema.routes.stops,
-        routeDistance: schema.routes.distance,
-        routeDuration: schema.routes.duration,
-        routeCompanyId: schema.routes.companyId
-      })
-      .from(schema.trips)
-      .innerJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id));
+    // Construir la consulta base
+    let query = db.select().from(schema.trips);
     
     // Si hay un companyId, filtrar por esa compañía
     if (companyId) {
       console.log(`DB Storage: Filtrando viajes por compañía: ${companyId}`);
-      baseQuery = baseQuery.where(eq(schema.trips.companyId, companyId));
+      query = query.where(eq(schema.trips.companyId, companyId));
     }
     
-    // Ejecutar la consulta con JOIN
-    const tripsWithRoutes = await baseQuery;
-    console.log(`DB Storage: Encontrados ${tripsWithRoutes.length} viajes con JOIN`);
+    // Ejecutar la consulta construida
+    const trips = await query;
     
-    // Obtener todos los usuarios dueños (Owner) para relacionar con las compañías en paralelo
+    // Obtener todas las rutas únicas que necesitamos en una sola consulta
+    const routeIds = [...new Set(trips.map(trip => trip.routeId))];
+    const routes = await db
+      .select()
+      .from(schema.routes)
+      .where(inArray(schema.routes.id, routeIds));
+    
+    // Crear un mapa de rutas por ID para búsqueda rápida
+    const routeMap = new Map(routes.map(route => [route.id, route]));
+    
+    // Obtener todos los usuarios dueños (Owner) para relacionar con las compañías
     const owners = await db
       .select()
       .from(schema.users)
@@ -339,50 +323,28 @@ export class DatabaseStorage implements IStorage {
       }
     });
     
-    // Transformar los resultados con la información optimizada
-    const tripsWithRouteInfo: TripWithRouteInfo[] = tripsWithRoutes.map(tripData => {
-      // Reconstruir el objeto route
-      const route = {
-        id: tripData.routeId,
-        name: tripData.routeName,
-        origin: tripData.routeOrigin,
-        destination: tripData.routeDestination,
-        stops: tripData.routeStops,
-        distance: tripData.routeDistance,
-        duration: tripData.routeDuration,
-        companyId: tripData.routeCompanyId
-      };
-      
-      // Reconstruir el objeto trip
-      const trip = {
-        id: tripData.id,
-        routeId: tripData.routeId,
-        departureTime: tripData.departureTime,
-        arrivalTime: tripData.arrivalTime,
-        capacity: tripData.capacity,
-        price: tripData.price,
-        companyId: tripData.companyId,
-        visibility: tripData.visibility,
-        parentTripId: tripData.parentTripId,
-        startStopIndex: tripData.startStopIndex,
-        endStopIndex: tripData.endStopIndex,
-        status: tripData.status
-      };
-      
-      // Obtener datos de la compañía si existen
-      let companyData = { companyName: undefined, companyLogo: undefined };
-      if (trip.companyId && companyMap.has(trip.companyId)) {
-        companyData = companyMap.get(trip.companyId);
+    const tripsWithRouteInfo: TripWithRouteInfo[] = [];
+    for (const trip of trips) {
+      const route = routeMap.get(trip.routeId);
+      if (route) {
+        // Obtener datos de la compañía si existen
+        let companyData = { companyName: undefined, companyLogo: undefined };
+        if (trip.companyId && companyMap.has(trip.companyId)) {
+          companyData = companyMap.get(trip.companyId);
+        }
+        
+        const tripWithInfo = {
+          ...trip,
+          route,
+          numStops: route.stops.length,
+          // Agregar información de la compañía
+          companyName: companyData.companyName,
+          companyLogo: companyData.companyLogo
+        };
+        
+        tripsWithRouteInfo.push(tripWithInfo);
       }
-      
-      return {
-        ...trip,
-        route,
-        numStops: route.stops.length,
-        companyName: companyData.companyName,
-        companyLogo: companyData.companyLogo
-      };
-    });
+    }
     
     const endTime = performance.now();
     console.log(`getTrips-optimized: ${(endTime - startTime).toFixed(3)}ms`);
