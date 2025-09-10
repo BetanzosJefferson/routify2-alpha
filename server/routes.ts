@@ -10204,4 +10204,239 @@ function setupPackageRoutes(app: Express) {
       res.status(500).json({ error: "Error interno del servidor" });
     }
   });
+
+  // ===== COMPANY EXPENSES ENDPOINTS =====
+
+  // GET /api/expenses - Obtener gastos de la empresa
+  app.get(apiRouter("/expenses"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      console.log(`[GET /expenses] Usuario: ${user?.firstName || 'No auth'} ${user?.lastName || ''}, Rol: ${user?.role || 'N/A'}`);
+      
+      // Verificar que solo los dueños puedan acceder
+      if (user.role !== UserRole.OWNER) {
+        console.log(`[GET /expenses] Acceso denegado para rol: ${user.role}`);
+        return res.status(403).json({ 
+          message: "Acceso denegado. Solo los dueños pueden ver gastos de la empresa." 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          message: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      console.log(`[GET /expenses] Obteniendo gastos para compañía: ${companyId}`);
+      const expenses = await storage.getExpenses(companyId);
+      
+      console.log(`[GET /expenses] Encontrados ${expenses.length} gastos`);
+      res.json(expenses);
+    } catch (error: any) {
+      console.error(`[GET /expenses] Error:`, error);
+      res.status(500).json({ 
+        message: "Error al obtener gastos de la empresa",
+        details: error.message 
+      });
+    }
+  });
+
+  // POST /api/expenses - Crear nuevo gasto
+  app.post(apiRouter("/expenses"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      console.log(`[POST /expenses] Usuario ${user?.firstName || 'Unknown'} ${user?.lastName || ''} creando gasto:`, req.body);
+      
+      // Verificar que solo los dueños puedan crear gastos
+      if (user.role !== UserRole.OWNER) {
+        console.log(`[POST /expenses] Acceso denegado para rol: ${user.role}`);
+        return res.status(403).json({ 
+          message: "Acceso denegado. Solo los dueños pueden crear gastos de la empresa." 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          message: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      // Validar datos requeridos
+      const { amount, concept, periodDays, category } = req.body;
+      if (!amount || !concept || !periodDays || !category) {
+        return res.status(400).json({ 
+          message: "Datos incompletos. Se requieren: amount, concept, periodDays, category" 
+        });
+      }
+      
+      const expenseData = {
+        amount: Number(amount),
+        concept: String(concept),
+        periodDays: Number(periodDays),
+        category: String(category),
+        companyId,
+        createdBy: user.id
+      };
+      
+      const newExpense = await storage.createExpense(expenseData);
+      console.log(`[POST /expenses] Gasto creado exitosamente con ID ${newExpense.id}`);
+      
+      res.status(201).json(newExpense);
+    } catch (error: any) {
+      console.error(`[POST /expenses] Error:`, error);
+      res.status(500).json({ 
+        message: "Error al crear gasto",
+        details: error.message 
+      });
+    }
+  });
+
+  // GET /api/expenses/:id - Obtener gasto específico
+  app.get(apiRouter("/expenses/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const expenseId = parseInt(req.params.id);
+      
+      console.log(`[GET /expenses/${expenseId}] Usuario: ${user?.firstName || 'Unknown'}`);
+      
+      // Verificar que solo los dueños puedan acceder
+      if (user.role !== UserRole.OWNER) {
+        return res.status(403).json({ 
+          message: "Acceso denegado. Solo los dueños pueden ver gastos de la empresa." 
+        });
+      }
+      
+      if (isNaN(expenseId)) {
+        return res.status(400).json({ message: "ID de gasto inválido" });
+      }
+      
+      const expense = await storage.getExpense(expenseId);
+      if (!expense) {
+        return res.status(404).json({ message: "Gasto no encontrado" });
+      }
+      
+      // Verificar que el gasto pertenece a la compañía del usuario
+      const userCompany = user.companyId || user.company;
+      if (expense.companyId !== userCompany) {
+        return res.status(403).json({ 
+          message: "No tiene permiso para ver este gasto" 
+        });
+      }
+      
+      res.json(expense);
+    } catch (error: any) {
+      console.error(`[GET /expenses/${req.params.id}] Error:`, error);
+      res.status(500).json({ 
+        message: "Error al obtener gasto",
+        details: error.message 
+      });
+    }
+  });
+
+  // PUT /api/expenses/:id - Actualizar gasto
+  app.put(apiRouter("/expenses/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const expenseId = parseInt(req.params.id);
+      
+      console.log(`[PUT /expenses/${expenseId}] Usuario: ${user?.firstName || 'Unknown'}, Datos:`, req.body);
+      
+      // Verificar que solo los dueños puedan actualizar gastos
+      if (user.role !== UserRole.OWNER) {
+        return res.status(403).json({ 
+          message: "Acceso denegado. Solo los dueños pueden actualizar gastos de la empresa." 
+        });
+      }
+      
+      if (isNaN(expenseId)) {
+        return res.status(400).json({ message: "ID de gasto inválido" });
+      }
+      
+      // Verificar que el gasto existe y pertenece a la compañía del usuario
+      const existingExpense = await storage.getExpense(expenseId);
+      if (!existingExpense) {
+        return res.status(404).json({ message: "Gasto no encontrado" });
+      }
+      
+      const userCompany = user.companyId || user.company;
+      if (existingExpense.companyId !== userCompany) {
+        return res.status(403).json({ 
+          message: "No tiene permiso para actualizar este gasto" 
+        });
+      }
+      
+      // Preparar datos de actualización
+      const updates: Partial<typeof existingExpense> = {};
+      if (req.body.amount !== undefined) updates.amount = Number(req.body.amount);
+      if (req.body.concept !== undefined) updates.concept = String(req.body.concept);
+      if (req.body.periodDays !== undefined) updates.periodDays = Number(req.body.periodDays);
+      if (req.body.category !== undefined) updates.category = String(req.body.category);
+      
+      const updatedExpense = await storage.updateExpense(expenseId, updates);
+      if (!updatedExpense) {
+        return res.status(500).json({ message: "Error al actualizar gasto" });
+      }
+      
+      console.log(`[PUT /expenses/${expenseId}] Gasto actualizado exitosamente`);
+      res.json(updatedExpense);
+    } catch (error: any) {
+      console.error(`[PUT /expenses/${req.params.id}] Error:`, error);
+      res.status(500).json({ 
+        message: "Error al actualizar gasto",
+        details: error.message 
+      });
+    }
+  });
+
+  // DELETE /api/expenses/:id - Eliminar gasto
+  app.delete(apiRouter("/expenses/:id"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const expenseId = parseInt(req.params.id);
+      
+      console.log(`[DELETE /expenses/${expenseId}] Usuario: ${user?.firstName || 'Unknown'}`);
+      
+      // Verificar que solo los dueños puedan eliminar gastos
+      if (user.role !== UserRole.OWNER) {
+        return res.status(403).json({ 
+          message: "Acceso denegado. Solo los dueños pueden eliminar gastos de la empresa." 
+        });
+      }
+      
+      if (isNaN(expenseId)) {
+        return res.status(400).json({ message: "ID de gasto inválido" });
+      }
+      
+      // Verificar que el gasto existe y pertenece a la compañía del usuario
+      const existingExpense = await storage.getExpense(expenseId);
+      if (!existingExpense) {
+        return res.status(404).json({ message: "Gasto no encontrado" });
+      }
+      
+      const userCompany = user.companyId || user.company;
+      if (existingExpense.companyId !== userCompany) {
+        return res.status(403).json({ 
+          message: "No tiene permiso para eliminar este gasto" 
+        });
+      }
+      
+      const success = await storage.deleteExpense(expenseId);
+      if (!success) {
+        return res.status(500).json({ message: "Error al eliminar gasto" });
+      }
+      
+      console.log(`[DELETE /expenses/${expenseId}] Gasto eliminado exitosamente`);
+      res.status(204).end();
+    } catch (error: any) {
+      console.error(`[DELETE /expenses/${req.params.id}] Error:`, error);
+      res.status(500).json({ 
+        message: "Error al eliminar gasto",
+        details: error.message 
+      });
+    }
+  });
 }
