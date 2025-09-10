@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CalendarDays, DollarSign, TrendingUp, TrendingDown, Receipt, User, Calendar, MapPin, Clock, Car, FileText } from 'lucide-react';
+import * as Collapsible from '@radix-ui/react-collapsible';
+import { CalendarDays, DollarSign, TrendingUp, TrendingDown, Receipt, User, Calendar, MapPin, Clock, Car, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { DefaultLayout } from '@/components/layout/default-layout';
 
@@ -43,6 +44,10 @@ function PeriodBalancePageContent() {
   const [startDateTime, setStartDateTime] = useState('');
   const [endDateTime, setEndDateTime] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Estados para controlar los dropdowns
+  const [isExpensesExpanded, setIsExpensesExpanded] = useState(true);
+  const [isTransactionsExpanded, setIsTransactionsExpanded] = useState(true);
 
   // Generar valores por defecto para las fechas
   const generateDefaultDates = () => {
@@ -250,35 +255,50 @@ function PeriodBalancePageContent() {
             </Card>
           </div>
 
-          {/* Desglose de gastos */}
+          {/* Desglose de gastos con dropdown */}
           {periodBalance.expenseBreakdown.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Desglose de Gastos</CardTitle>
-                <CardDescription>
-                  Gastos proporcionales calculados por horas en el periodo seleccionado
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {periodBalance.expenseBreakdown.map((expense, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+            <Collapsible.Root open={isExpensesExpanded} onOpenChange={setIsExpensesExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium capitalize">{expense.category}</p>
-                        <p className="text-sm font-medium text-gray-700">{expense.concept}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Total: {formatCurrency(expense.amount)}
-                        </p>
+                        <CardTitle>Desglose de Gastos</CardTitle>
+                        <CardDescription>
+                          Gastos proporcionales calculados por horas en el periodo seleccionado
+                        </CardDescription>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{formatCurrency(expense.proportionalAmount)}</p>
-                        <p className="text-xs text-muted-foreground">Proporcional</p>
-                      </div>
+                      {isExpensesExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                      )}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {periodBalance.expenseBreakdown.map((expense, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                          <div>
+                            <p className="font-medium capitalize">{expense.category}</p>
+                            <p className="text-sm font-medium text-gray-700">{expense.concept}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Total: {formatCurrency(expense.amount)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">{formatCurrency(expense.proportionalAmount)}</p>
+                            <p className="text-xs text-muted-foreground">Proporcional</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
           )}
 
           {/* Desglose de transacciones */}
