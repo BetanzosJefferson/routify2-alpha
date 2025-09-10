@@ -10439,4 +10439,91 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+
+  // ===== RUTA PARA BALANCE POR PERIODO =====
+  
+  // GET /api/period-balance - Obtener balance (ingresos vs gastos) por rango de fecha/hora
+  app.get(apiRouter('/period-balance'), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo el dueño puede ver el balance por periodo
+      if (user.role !== UserRole.OWNER) {
+        return res.status(403).json({ 
+          message: "Acceso denegado. Solo los dueños pueden ver el balance por periodo." 
+        });
+      }
+
+      // Obtener parámetros de consulta
+      const { startDateTime, endDateTime } = req.query;
+      
+      if (!startDateTime || !endDateTime) {
+        return res.status(400).json({ 
+          message: "Se requieren startDateTime y endDateTime" 
+        });
+      }
+
+      const startDate = new Date(startDateTime as string);
+      const endDate = new Date(endDateTime as string);
+      
+      if (startDate >= endDate) {
+        return res.status(400).json({ 
+          message: "La fecha de inicio debe ser anterior a la fecha de fin" 
+        });
+      }
+
+      console.log(`[GET /period-balance] Usuario: ${user.firstName}, Rango: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+      const userCompany = user.companyId || user.company;
+      
+      // Obtener transacciones (ingresos) en el rango de fechas
+      const transactions = await storage.getTransactionsByDateRange(userCompany, startDate, endDate);
+      const totalIncome = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+      
+      // Obtener gastos de la empresa
+      const expenses = await storage.getExpensesByCompany(userCompany);
+      
+      // Calcular horas totales en el rango
+      const totalHours = Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
+      
+      // Calcular gastos proporcionales por hora
+      let totalExpenses = 0;
+      const expenseBreakdown = expenses.map(expense => {
+        // Fórmula: (monto ÷ días del período) ÷ 24 horas × horas totales
+        const dailyAmount = expense.amount / expense.periodDays;
+        const hourlyAmount = dailyAmount / 24;
+        const proportionalAmount = hourlyAmount * totalHours;
+        
+        totalExpenses += proportionalAmount;
+        
+        return {
+          category: expense.category,
+          amount: expense.amount,
+          proportionalAmount: proportionalAmount
+        };
+      });
+
+      const balance = totalIncome - totalExpenses;
+      
+      const response = {
+        income: totalIncome,
+        expenses: totalExpenses,
+        balance: balance,
+        transactionCount: transactions.length,
+        expenseBreakdown: expenseBreakdown
+      };
+
+      console.log(`[GET /period-balance] Balance calculado: Ingresos=${totalIncome}, Gastos=${totalExpenses}, Balance=${balance}`);
+      res.json(response);
+    } catch (error: any) {
+      console.error('[GET /period-balance] Error:', error);
+      res.status(500).json({ 
+        message: "Error al calcular balance por periodo",
+        details: error.message 
+      });
+    }
+  });
 }
