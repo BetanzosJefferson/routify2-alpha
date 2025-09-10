@@ -414,18 +414,7 @@ function PeriodBalancePageContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Car className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium text-blue-800">
-                      Total de viajes: {periodBalance.tripsCount}
-                    </span>
-                  </div>
-                  <p className="text-sm text-blue-600 mt-1">
-                    Se contabilizaron solo los viajes principales (no sub-viajes)
-                  </p>
-                </div>
-
+         
                 {periodBalance.trips && periodBalance.trips.length > 0 && (
                   <div className="space-y-3">
                     {periodBalance.trips.slice(0, 5).map((trip) => {
@@ -439,9 +428,7 @@ function PeriodBalancePageContent() {
                               <Car className="w-4 h-4 text-gray-600" />
                               <span className="font-medium">Viaje #{trip.id}</span>
                             </div>
-                            <span className="text-sm font-bold text-green-600">
-                              {formatCurrency(mainTrip.price)}
-                            </span>
+                          
                           </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
