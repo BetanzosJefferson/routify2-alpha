@@ -301,89 +301,104 @@ function PeriodBalancePageContent() {
             </Collapsible.Root>
           )}
 
-          {/* Desglose de transacciones */}
+          {/* Desglose de transacciones con dropdown */}
           {periodBalance.transactions && periodBalance.transactions.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5" />
-                  Desglose de Transacciones
-                </CardTitle>
-                <CardDescription>
-                  Transacciones realizadas en el periodo seleccionado
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {periodBalance.transactions.map((transaction) => (
-                    <div key={transaction.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Receipt className="w-4 h-4 text-blue-600" />
-                          <span className="font-medium">Transacción #{transaction.id}</span>
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            {transaction.details?.type === 'reservation' ? 'Reservación' : 
-                             transaction.details?.type === 'package' ? 'Paquetería' : 'Transacción'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-green-600">
-                            {formatCurrency(transaction.amount)}
-                          </span>
-                        </div>
+            <Collapsible.Root open={isTransactionsExpanded} onOpenChange={setIsTransactionsExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Receipt className="w-5 h-5" />
+                          Desglose de Transacciones
+                        </CardTitle>
+                        <CardDescription>
+                          Transacciones realizadas en el periodo seleccionado
+                        </CardDescription>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          <span>{transaction.createdBy?.name || 'Usuario no identificado'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{new Date(transaction.createdAt).toLocaleDateString('es-MX')}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{new Date(transaction.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                      </div>
+                      {isTransactionsExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                      )}
+                    </div>
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {periodBalance.transactions.map((transaction) => (
+                        <div key={transaction.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Receipt className="w-4 h-4 text-blue-600" />
+                              <span className="font-medium">Transacción #{transaction.id}</span>
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                                {transaction.details?.type === 'reservation' ? 'Reservación' : 
+                                 transaction.details?.type === 'package' ? 'Paquetería' : 'Transacción'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-green-600">
+                                {formatCurrency(transaction.amount)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <User className="w-3 h-3" />
+                              <span>{transaction.createdBy?.name || 'Usuario no identificado'}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{new Date(transaction.createdAt).toLocaleDateString('es-MX')}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{new Date(transaction.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
 
-                      {/* Detalles de la transacción */}
-                      {transaction.details?.details && (
-                        <div className="mt-3 pt-3 border-t">
-                          {transaction.details.type === 'reservation' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
-                                <div>
-                                  <span className="font-medium text-gray-600">Origen:</span>
-                                  <div className="text-gray-700">{transaction.details.details.origen}</div>
+                          {/* Detalles de la transacción */}
+                          {transaction.details?.details && (
+                            <div className="mt-3 pt-3 border-t">
+                              {transaction.details.type === 'reservation' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                  <div className="flex items-start gap-2">
+                                    <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                    <div>
+                                      <span className="font-medium text-gray-600">Origen:</span>
+                                      <div className="text-gray-700">{transaction.details.details.origen}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                    <div>
+                                      <span className="font-medium text-gray-600">Destino:</span>
+                                      <div className="text-gray-700">{transaction.details.details.destino}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-600">Pasajeros:</span>
+                                    <span>{transaction.details.details.pasajeros}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-600">Método de pago:</span>
+                                    <span className="capitalize">{transaction.details.details.metodoPago}</span>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
-                                <div>
-                                  <span className="font-medium text-gray-600">Destino:</span>
-                                  <div className="text-gray-700">{transaction.details.details.destino}</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-600">Pasajeros:</span>
-                                <span>{transaction.details.details.pasajeros}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-600">Método de pago:</span>
-                                <span className="capitalize">{transaction.details.details.metodoPago}</span>
-                              </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
           )}
 
           {/* Información de viajes realizados */}
