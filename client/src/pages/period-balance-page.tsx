@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { CalendarDays, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { DefaultLayout } from '@/components/layout/default-layout';
 
 interface PeriodBalanceData {
   income: number;
@@ -20,7 +21,7 @@ interface PeriodBalanceData {
   }>;
 }
 
-export default function PeriodBalancePage() {
+function PeriodBalancePageContent() {
   const { user } = useAuth();
   const [startDateTime, setStartDateTime] = useState('');
   const [endDateTime, setEndDateTime] = useState('');
@@ -51,6 +52,27 @@ export default function PeriodBalancePage() {
   // Query para obtener datos del balance por periodo
   const { data: periodBalance, refetch, isLoading } = useQuery<PeriodBalanceData>({
     queryKey: ['/api/period-balance', startDateTime, endDateTime],
+    queryFn: async () => {
+      if (!startDateTime || !endDateTime) {
+        throw new Error('Se requieren fechas de inicio y fin');
+      }
+      
+      const params = new URLSearchParams({
+        startDateTime: startDateTime,
+        endDateTime: endDateTime
+      });
+      
+      const response = await fetch(`/api/period-balance?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al obtener balance por periodo');
+      }
+      
+      return response.json();
+    },
     enabled: false, // Solo ejecutar manualmente
   });
 
@@ -65,8 +87,22 @@ export default function PeriodBalancePage() {
       return;
     }
 
+    console.log('Analizando periodo:', { startDateTime, endDateTime });
     setIsAnalyzing(true);
-    await refetch();
+    
+    try {
+      const result = await refetch();
+      console.log('Resultado del análisis:', result);
+      
+      if (result.error) {
+        console.error('Error en el análisis:', result.error);
+        alert(`Error: ${result.error.message}`);
+      }
+    } catch (error) {
+      console.error('Error al analizar periodo:', error);
+      alert(`Error: ${error.message || 'Error desconocido'}`);
+    }
+    
     setIsAnalyzing(false);
   };
 
@@ -242,5 +278,13 @@ export default function PeriodBalancePage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function PeriodBalancePage() {
+  return (
+    <DefaultLayout>
+      <PeriodBalancePageContent />
+    </DefaultLayout>
   );
 }
