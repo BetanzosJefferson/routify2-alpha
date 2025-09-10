@@ -211,6 +211,12 @@ export function ExpensesPage() {
       acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
       return acc;
     }, {} as Record<string, number>),
+    sueldosPerMonth: expenses
+      .filter(expense => expense.category === 'sueldos')
+      .reduce((sum, expense) => sum + (expense.amount * 30 / expense.periodDays), 0),
+    rentasPerMonth: expenses
+      .filter(expense => expense.category === 'rentas')
+      .reduce((sum, expense) => sum + (expense.amount * 30 / expense.periodDays), 0),
     count: expenses.length
   };
 
@@ -392,8 +398,11 @@ export function ExpensesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(stats.byCategory['sueldos'] || 0)}
+              {formatCurrency(stats.sueldosPerMonth)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Equivalente por 30 días
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -403,8 +412,11 @@ export function ExpensesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(stats.byCategory['rentas'] || 0)}
+              {formatCurrency(stats.rentasPerMonth)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Equivalente por 30 días
+            </p>
           </CardContent>
         </Card>
       </div>
