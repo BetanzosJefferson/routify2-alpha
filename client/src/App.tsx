@@ -43,6 +43,7 @@ import { ReservationsListPage } from "@/pages/reservations-list";
 import { TemplatesPage } from "@/pages/templates-page";
 import TransactionHistoryPageRoute from "@/pages/transaction-history-page";
 import OperatorTimelinePageRoute from "@/pages/operator-timeline-page";
+import ExpensesPageRoute from "@/pages/expenses-page";
 
 function Router() {
   return (
@@ -75,6 +76,7 @@ function Router() {
       <ProtectedRoute path="/user-cash-boxes" component={UserCashBoxesPageRoute} />
       <ProtectedRoute path="/transaction-history" component={TransactionHistoryPageRoute} />
       <ProtectedRoute path="/operator-timeline" component={OperatorTimelinePageRoute} />
+      <ProtectedRoute path="/expenses" component={ExpensesPageRoute} />
       <ProtectedRoute path="/profile" component={ProfilePageRoute} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/register/:token" component={RegisterPage} />
