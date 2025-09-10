@@ -4939,4 +4939,79 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // ===== MÉTODOS DE GASTOS DE LA EMPRESA =====
+
+  async createExpense(expense: schema.InsertExpense): Promise<schema.Expense> {
+    console.log('DB Storage: Creando nuevo gasto:', expense);
+    
+    const [result] = await this.db
+      .insert(schema.expenses)
+      .values(expense)
+      .returning();
+    
+    console.log('DB Storage: Gasto creado exitosamente con ID', result.id);
+    return result;
+  }
+
+  async getExpenses(companyId: string): Promise<schema.Expense[]> {
+    console.log('DB Storage: Obteniendo gastos para compañía:', companyId);
+    
+    const expenses = await this.db
+      .select()
+      .from(schema.expenses)
+      .where(eq(schema.expenses.companyId, companyId))
+      .orderBy(desc(schema.expenses.createdAt));
+    
+    console.log(`DB Storage: Encontrados ${expenses.length} gastos para compañía ${companyId}`);
+    return expenses;
+  }
+
+  async getExpense(id: number): Promise<schema.Expense | undefined> {
+    console.log('DB Storage: Obteniendo gasto con ID:', id);
+    
+    const [expense] = await this.db
+      .select()
+      .from(schema.expenses)
+      .where(eq(schema.expenses.id, id));
+    
+    if (expense) {
+      console.log('DB Storage: Gasto encontrado:', expense.id);
+    } else {
+      console.log('DB Storage: Gasto no encontrado para ID:', id);
+    }
+    
+    return expense;
+  }
+
+  async updateExpense(id: number, updates: Partial<schema.Expense>): Promise<schema.Expense | undefined> {
+    console.log('DB Storage: Actualizando gasto ID:', id, 'con datos:', updates);
+    
+    const [result] = await this.db
+      .update(schema.expenses)
+      .set(updates)
+      .where(eq(schema.expenses.id, id))
+      .returning();
+    
+    if (result) {
+      console.log('DB Storage: Gasto actualizado exitosamente');
+    } else {
+      console.log('DB Storage: No se pudo actualizar el gasto con ID:', id);
+    }
+    
+    return result;
+  }
+
+  async deleteExpense(id: number): Promise<boolean> {
+    console.log('DB Storage: Eliminando gasto con ID:', id);
+    
+    const result = await this.db
+      .delete(schema.expenses)
+      .where(eq(schema.expenses.id, id));
+    
+    const deleted = result.rowCount > 0;
+    console.log(`DB Storage: Gasto ${deleted ? 'eliminado' : 'no encontrado'}`);
+    
+    return deleted;
+  }
 }
