@@ -10527,13 +10527,32 @@ function setupPackageRoutes(app: Express) {
 
       // Obtener viajes realizados en el período (solo viajes padre)
       const trips = await storage.getTrips(userCompany, false); // false = solo viajes principales
+      
+      console.log(`[GET /period-balance] Total viajes obtenidos: ${trips.length}`);
+      
+      // Corregir filtrado: getTrips() ya devuelve una estructura procesada
       const tripsInPeriod = trips.filter(trip => {
-        if (!trip.tripData || !trip.tripData.length) return false;
-        const mainTrip = trip.tripData.find(t => t.isMainTrip);
-        if (!mainTrip) return false;
+        // getTrips() devuelve objetos con departureTime y arrivalTime ya procesados
+        if (!trip.departureTime) return false;
         
-        const tripDate = new Date(mainTrip.departureDate);
-        return tripDate >= startDate && tripDate <= endDate;
+        // Extraer fecha del departureTime (formato: "2025-09-10")
+        let tripDate;
+        if (typeof trip.departureTime === 'string') {
+          // Si departureTime incluye fecha, extraerla
+          tripDate = new Date(trip.departureTime.split('T')[0] || trip.departureTime);
+        } else {
+          // Si no, usar la fecha actual (fallback)
+          return false;
+        }
+        
+        console.log(`[GET /period-balance] Viaje ${trip.id}: fecha=${tripDate.toISOString().split('T')[0]}, rango=${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}`);
+        
+        // Comparar solo las fechas (sin tiempo)
+        const tripDateStr = tripDate.toISOString().split('T')[0];
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        
+        return tripDateStr >= startDateStr && tripDateStr <= endDateStr;
       });
 
       // Obtener información detallada de cada viaje incluyendo operador y gastos
