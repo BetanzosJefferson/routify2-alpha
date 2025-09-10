@@ -78,7 +78,6 @@ function isSameCity(location1: string, location2: string): boolean {
   return city1 === city2;
 }
 import { populateLocationData } from "./populate-locations";
-import { db } from "./db";
 import { setupFinancialRoutes } from "./financial-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -10530,7 +10529,7 @@ function setupPackageRoutes(app: Express) {
       
       console.log(`[GET /period-balance] Total viajes obtenidos: ${trips.length}`);
       
-      // Corregir filtrado: getTrips() devuelve trip.tripData con la información
+      // Filtrado corregido: usar comparación directa de strings de fecha sin conversiones de timezone
       const tripsInPeriod = trips.filter(trip => {
         // La información está en trip.tripData (jsonb)
         if (!trip.tripData || !Array.isArray(trip.tripData) || trip.tripData.length === 0) {
@@ -10545,13 +10544,14 @@ function setupPackageRoutes(app: Express) {
           return false;
         }
         
-        const tripDate = new Date(mainTrip.departureDate);
-        console.log(`[GET /period-balance] Viaje ${trip.id}: fecha=${tripDate.toISOString().split('T')[0]}, rango=${startDate.toISOString().split('T')[0]} - ${endDate.toISOString().split('T')[0]}`);
+        // Extraer fecha como string directamente, sin conversiones de timezone
+        const tripDateStr = mainTrip.departureDate.split('T')[0]; // "2025-09-12"
         
-        // Comparar solo las fechas (sin tiempo)
-        const tripDateStr = tripDate.toISOString().split('T')[0];
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
+        // Extraer fechas del rango también como strings directos
+        const startDateStr = (startDateTime as string).split('T')[0]; // "2025-09-10"
+        const endDateStr = (endDateTime as string).split('T')[0]; // "2025-09-11"
+        
+        console.log(`[GET /period-balance] Viaje ${trip.id}: fecha=${tripDateStr}, rango=${startDateStr} - ${endDateStr}`);
         
         const isInRange = tripDateStr >= startDateStr && tripDateStr <= endDateStr;
         console.log(`[GET /period-balance] Viaje ${trip.id}: ${isInRange ? 'INCLUIDO' : 'EXCLUIDO'}`);
