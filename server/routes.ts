@@ -10485,7 +10485,21 @@ function setupPackageRoutes(app: Express) {
         startDate: startDate,
         endDate: endDate
       });
-      const totalIncome = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+      
+      // Extraer el monto correcto de la estructura de transacciones
+      const totalIncome = transactions.reduce((sum, transaction) => {
+        let amount = 0;
+        if (transaction.details) {
+          if (typeof transaction.details === 'object' && transaction.details.details && transaction.details.details.monto) {
+            // Estructura: details.details.monto (reservaciones)
+            amount = transaction.details.details.monto;
+          } else if (transaction.details.amount) {
+            // Estructura: details.amount (otros tipos)
+            amount = transaction.details.amount;
+          }
+        }
+        return sum + (amount || 0);
+      }, 0);
       
       // Obtener gastos de la empresa
       const expenses = await storage.getExpenses(userCompany);
