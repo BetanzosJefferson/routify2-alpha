@@ -10479,11 +10479,11 @@ function setupPackageRoutes(app: Express) {
 
       const userCompany = user.companyId || user.company;
       
-      // Obtener transacciones (ingresos) en el rango de fechas
-      const transactions = await storage.getTransacciones({
+      // Obtener transacciones (ingresos) en el rango de fechas con información del usuario
+      const transactions = await storage.getTransactionHistory({
         companyId: userCompany,
-        startDate: startDate,
-        endDate: endDate
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
       });
       
       // Extraer el monto correcto de la estructura de transacciones

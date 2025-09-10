@@ -316,7 +316,7 @@ function PeriodBalancePageContent() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />
-                          <span>{transaction.createdBy.name}</span>
+                          <span>{transaction.createdBy?.name || 'Usuario no identificado'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
