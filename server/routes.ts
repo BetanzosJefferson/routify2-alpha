@@ -7463,6 +7463,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   
   setupPackageRoutes(app);
+  
+  // ===== RUTAS PARA GASTOS DE LA EMPRESA =====
+  
+  // Obtener todos los gastos de la empresa
+  app.get(apiRouter('/expenses'), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo el dueño puede ver los gastos
+      if (user.role !== 'dueño') {
+        return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede ver los gastos." });
+      }
+      
+      console.log(`[GET /expenses] Usuario ${user.firstName} ${user.lastName} (${user.role}) solicitando gastos`);
+      
+      const expenses = await storage.getExpenses(user.companyId);
+      
+      // Obtener información de usuarios que crearon los gastos
+      const expensesWithCreators = await Promise.all(expenses.map(async (expense) => {
+        const creator = await storage.getUser(expense.createdBy);
+        return {
+          ...expense,
+          createdByName: creator ? `${creator.firstName} ${creator.lastName}` : 'Usuario desconocido'
+        };
+      }));
+      
+      console.log(`[GET /expenses] Encontrados ${expenses.length} gastos para compañía ${user.companyId}`);
+      res.json(expensesWithCreators);
+    } catch (error) {
+      console.error('[GET /expenses] Error:', error);
+      res.status(500).json({ message: "Error al obtener gastos" });
+    }
+  });
+
+  // Crear nuevo gasto
+  app.post(apiRouter('/expenses'), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo el dueño puede crear gastos
+      if (user.role !== 'dueño') {
+        return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede crear gastos." });
+      }
+      
+      console.log(`[POST /expenses] Usuario ${user.firstName} ${user.lastName} creando gasto:`, req.body);
+      
+      // Validar datos requeridos
+      const { amount, concept, periodDays, category } = req.body;
+      
+      if (!amount || !concept || !periodDays || !category) {
+        return res.status(400).json({ 
+          message: "Datos incompletos. Se requiere: amount, concept, periodDays, category" 
+        });
+      }
+      
+      // Validar categoría
+      const validCategories = ['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ 
+          message: "Categoría inválida. Debe ser: gastos_fijos, gastos_variables, sueldos, o rentas" 
+        });
+      }
+      
+      const expenseData = {
+        amount: parseFloat(amount),
+        concept,
+        periodDays: parseInt(periodDays),
+        category,
+        companyId: user.companyId,
+        createdBy: user.id
+      };
+      
+      const newExpense = await storage.createExpense(expenseData);
+      
+      console.log(`[POST /expenses] Gasto creado exitosamente con ID ${newExpense.id}`);
+      res.status(201).json(newExpense);
+    } catch (error) {
+      console.error('[POST /expenses] Error:', error);
+      res.status(500).json({ message: "Error al crear gasto" });
+    }
+  });
+
+  // Actualizar gasto existente
+  app.put(apiRouter('/expenses/:id'), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const { id } = req.params;
+      
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo el dueño puede actualizar gastos
+      if (user.role !== 'dueño') {
+        return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede actualizar gastos." });
+      }
+      
+      console.log(`[PUT /expenses/${id}] Usuario ${user.firstName} ${user.lastName} actualizando gasto:`, req.body);
+      
+      // Verificar que el gasto existe y pertenece a la compañía
+      const existingExpense = await storage.getExpense(parseInt(id));
+      if (!existingExpense) {
+        return res.status(404).json({ message: "Gasto no encontrado" });
+      }
+      
+      if (existingExpense.companyId !== user.companyId) {
+        return res.status(403).json({ message: "No tiene permisos para actualizar este gasto" });
+      }
+      
+      // Validar categoría si se está actualizando
+      const { category } = req.body;
+      if (category) {
+        const validCategories = ['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas'];
+        if (!validCategories.includes(category)) {
+          return res.status(400).json({ 
+            message: "Categoría inválida. Debe ser: gastos_fijos, gastos_variables, sueldos, o rentas" 
+          });
+        }
+      }
+      
+      // Preparar datos de actualización
+      const updateData: any = {};
+      if (req.body.amount !== undefined) updateData.amount = parseFloat(req.body.amount);
+      if (req.body.concept !== undefined) updateData.concept = req.body.concept;
+      if (req.body.periodDays !== undefined) updateData.periodDays = parseInt(req.body.periodDays);
+      if (req.body.category !== undefined) updateData.category = req.body.category;
+      updateData.updatedAt = new Date();
+      
+      const updatedExpense = await storage.updateExpense(parseInt(id), updateData);
+      
+      if (!updatedExpense) {
+        return res.status(500).json({ message: "Error al actualizar el gasto" });
+      }
+      
+      console.log(`[PUT /expenses/${id}] Gasto actualizado exitosamente`);
+      res.json(updatedExpense);
+    } catch (error) {
+      console.error(`[PUT /expenses/${req.params.id}] Error:`, error);
+      res.status(500).json({ message: "Error al actualizar gasto" });
+    }
+  });
+
+  // Eliminar gasto
+  app.delete(apiRouter('/expenses/:id'), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      const { id } = req.params;
+      
+      if (!user) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo el dueño puede eliminar gastos
+      if (user.role !== 'dueño') {
+        return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede eliminar gastos." });
+      }
+      
+      console.log(`[DELETE /expenses/${id}] Usuario ${user.firstName} ${user.lastName} eliminando gasto`);
+      
+      // Verificar que el gasto existe y pertenece a la compañía
+      const existingExpense = await storage.getExpense(parseInt(id));
+      if (!existingExpense) {
+        return res.status(404).json({ message: "Gasto no encontrado" });
+      }
+      
+      if (existingExpense.companyId !== user.companyId) {
+        return res.status(403).json({ message: "No tiene permisos para eliminar este gasto" });
+      }
+      
+      const deleted = await storage.deleteExpense(parseInt(id));
+      
+      if (!deleted) {
+        return res.status(500).json({ message: "Error al eliminar el gasto" });
+      }
+      
+      console.log(`[DELETE /expenses/${id}] Gasto eliminado exitosamente`);
+      res.json({ message: "Gasto eliminado correctamente" });
+    } catch (error) {
+      console.error(`[DELETE /expenses/${req.params.id}] Error:`, error);
+      res.status(500).json({ message: "Error al eliminar gasto" });
+    }
+  });
 
   // Endpoint para verificar si hay reservaciones creadas por comisionistas
   app.post(apiRouter("/reservations/check-commission-agents"), isAuthenticated, async (req: Request, res: Response) => {
