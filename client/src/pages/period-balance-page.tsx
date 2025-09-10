@@ -571,7 +571,7 @@ function PeriodBalancePageContent() {
                             <div className="flex items-center gap-2">
                               <Calendar className="w-3 h-3 text-gray-500" />
                               <span className="text-gray-600">Fecha:</span>
-                              <span>{new Date(mainTrip.departureDate).toLocaleDateString('es-MX')}</span>
+                              <span>{mainTrip.departureDate.split('T')[0].split('-').reverse().join('/')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="w-3 h-3 text-gray-500" />
