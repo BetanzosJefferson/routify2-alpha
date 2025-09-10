@@ -29,6 +29,8 @@ import {
   // Referencias a caja registradora eliminadas
   BoxCutoff,
   InsertBoxCutoff,
+  Expense,
+  InsertExpense,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -288,6 +290,13 @@ export interface IStorage {
     totalRevenueGenerated: number;
     averageRevenuePerReservation: number;
   }[]>;
+
+  // ===== MÉTODOS DE GASTOS DE LA EMPRESA =====
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  getExpenses(companyId: string): Promise<Expense[]>;
+  getExpense(id: number): Promise<Expense | undefined>;
+  updateExpense(id: number, updates: Partial<Expense>): Promise<Expense | undefined>;
+  deleteExpense(id: number): Promise<boolean>;
 }
 
 // Importamos la clase DatabaseStorage desde el archivo separado
