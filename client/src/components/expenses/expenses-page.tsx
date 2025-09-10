@@ -84,8 +84,11 @@ export function ExpensesPage() {
 
   // Query para obtener gastos
   const { data: expenses = [], isLoading } = useQuery<Expense[]>({
-    queryKey: ['/api/expenses']
-    // Removido refetchInterval para evitar recargas automáticas
+    queryKey: ['/api/expenses'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/expenses');
+      return response;
+    }
   });
 
   // Mutación para crear gasto
