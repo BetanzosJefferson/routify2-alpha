@@ -10480,11 +10480,15 @@ function setupPackageRoutes(app: Express) {
       const userCompany = user.companyId || user.company;
       
       // Obtener transacciones (ingresos) en el rango de fechas
-      const transactions = await storage.getTransactionsByDateRange(userCompany, startDate, endDate);
+      const transactions = await storage.getTransacciones({
+        companyId: userCompany,
+        startDate: startDate,
+        endDate: endDate
+      });
       const totalIncome = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
       
       // Obtener gastos de la empresa
-      const expenses = await storage.getExpensesByCompany(userCompany);
+      const expenses = await storage.getExpenses(userCompany);
       
       // Calcular horas totales en el rango
       const totalHours = Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);

@@ -2423,6 +2423,10 @@ export class DatabaseStorage implements IStorage {
       if (filters?.startDate) {
         conditions.push(gte(schema.transacciones.createdAt, filters.startDate));
       }
+      
+      if (filters?.endDate) {
+        conditions.push(lte(schema.transacciones.createdAt, filters.endDate));
+      }
 
       const query = conditions.length > 0 
         ? this.db.select().from(schema.transacciones).where(and(...conditions))
