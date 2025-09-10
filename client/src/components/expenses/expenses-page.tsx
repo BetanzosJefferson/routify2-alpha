@@ -206,6 +206,7 @@ export function ExpensesPage() {
   // Calcular estadísticas
   const stats = {
     total: expenses.reduce((sum, expense) => sum + expense.amount, 0),
+    totalPerDay: expenses.reduce((sum, expense) => sum + (expense.amount / expense.periodDays), 0),
     byCategory: expenses.reduce((acc, expense) => {
       acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
       return acc;
@@ -372,34 +373,37 @@ export function ExpensesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos Fijos</CardTitle>
+            <CardTitle className="text-sm font-medium">Total por Día</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(stats.byCategory['gastos_fijos'] || 0)}
+              {formatCurrency(stats.totalPerDay)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Promedio diario de todos los gastos
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos Variables</CardTitle>
+            <CardTitle className="text-sm font-medium">Sueldos</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(stats.byCategory['gastos_variables'] || 0)}
+              {formatCurrency(stats.byCategory['sueldos'] || 0)}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sueldos + Rentas</CardTitle>
+            <CardTitle className="text-sm font-medium">Rentas</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency((stats.byCategory['sueldos'] || 0) + (stats.byCategory['rentas'] || 0))}
+              {formatCurrency(stats.byCategory['rentas'] || 0)}
             </div>
           </CardContent>
         </Card>
@@ -436,8 +440,6 @@ export function ExpensesPage() {
                   <TableHead>Categoría</TableHead>
                   <TableHead>Monto</TableHead>
                   <TableHead>Período</TableHead>
-                  <TableHead>Creado por</TableHead>
-                  <TableHead>Fecha</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -459,12 +461,6 @@ export function ExpensesPage() {
                     </TableCell>
                     <TableCell>
                       {expense.periodDays} día{expense.periodDays !== 1 ? 's' : ''}
-                    </TableCell>
-                    <TableCell>
-                      {expense.createdByName || 'Desconocido'}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(expense.createdAt).toLocaleDateString('es-MX')}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-1">
