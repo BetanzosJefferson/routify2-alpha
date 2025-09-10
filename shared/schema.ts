@@ -928,3 +928,45 @@ export const transaccionesRelations = relations(transacciones, ({ one }) => ({
   }),
   // Relación con corte de caja eliminada
 }));
+
+// ========== GASTOS DE LA EMPRESA ==========
+
+// EXPENSE CATEGORY ENUM
+export const ExpenseCategory = {
+  FIXED_EXPENSES: "gastos_fijos",
+  VARIABLE_EXPENSES: "gastos_variables", 
+  SALARIES: "sueldos",
+  RENTS: "rentas",
+} as const;
+
+export type ExpenseCategoryType = typeof ExpenseCategory[keyof typeof ExpenseCategory];
+
+// EXPENSES SCHEMA - Gastos de la empresa
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  amount: doublePrecision("amount").notNull(), // Monto en pesos mexicanos
+  concept: text("concept").notNull(), // Concepto del gasto (ej: renta, tenencia)
+  periodDays: integer("period_days").notNull(), // Cada cuántos días se repite el gasto
+  category: text("category").notNull(), // Categoria: gastos_fijos, gastos_variables, sueldos, rentas
+  companyId: text("company_id").notNull(), // Multi-tenancy
+  createdBy: integer("created_by").notNull(), // Usuario que creó el gasto
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertExpenseSchema = createInsertSchema(expenses, {
+  id: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;
+
+// Relaciones para la tabla de gastos
+export const expensesRelations = relations(expenses, ({ one }) => ({
+  creator: one(users, {
+    fields: [expenses.createdBy],
+    references: [users.id]
+  }),
+}));
