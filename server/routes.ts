@@ -10519,11 +10519,26 @@ function setupPackageRoutes(app: Express) {
         
         return {
           category: expense.category,
+          concept: expense.concept, // Agregar el concepto
           amount: expense.amount,
           proportionalAmount: proportionalAmount
         };
       });
 
+      // Obtener viajes realizados en el período (solo viajes padre)
+      const trips = await storage.getTrips(userCompany, false); // false = solo viajes principales
+      const tripsInPeriod = trips.filter(trip => {
+        if (!trip.tripData || !trip.tripData.length) return false;
+        const mainTrip = trip.tripData.find(t => t.isMainTrip);
+        if (!mainTrip) return false;
+        
+        const tripDate = new Date(mainTrip.departureDate);
+        return tripDate >= startDate && tripDate <= endDate;
+      });
+
+      // Obtener gastos asociados a viajes (si existen)
+      const tripExpenses = []; // Placeholder para futuros gastos por viaje
+      
       const balance = totalIncome - totalExpenses;
       
       const response = {
@@ -10531,7 +10546,11 @@ function setupPackageRoutes(app: Express) {
         expenses: totalExpenses,
         balance: balance,
         transactionCount: transactions.length,
-        expenseBreakdown: expenseBreakdown
+        expenseBreakdown: expenseBreakdown,
+        transactions: transactions, // Incluir transacciones completas
+        tripsCount: tripsInPeriod.length,
+        trips: tripsInPeriod,
+        tripExpenses: tripExpenses
       };
 
       console.log(`[GET /period-balance] Balance calculado: Ingresos=${totalIncome}, Gastos=${totalExpenses}, Balance=${balance}`);
