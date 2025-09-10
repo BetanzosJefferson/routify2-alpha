@@ -10536,8 +10536,38 @@ function setupPackageRoutes(app: Express) {
         return tripDate >= startDate && tripDate <= endDate;
       });
 
-      // Obtener gastos asociados a viajes (si existen)
-      const tripExpenses = []; // Placeholder para futuros gastos por viaje
+      // Obtener información detallada de cada viaje incluyendo operador y gastos
+      const tripsWithOperatorAndExpenses = await Promise.all(
+        tripsInPeriod.map(async (trip) => {
+          // Obtener información del operador (driver)
+          let operator = null;
+          if (trip.driverId) {
+            operator = await storage.getUser(trip.driverId);
+          }
+
+          // Obtener gastos del viaje
+          const tripExpenses = await storage.getTripExpenses(trip.id);
+
+          return {
+            ...trip,
+            operator: operator ? {
+              id: operator.id,
+              firstName: operator.firstName,
+              lastName: operator.lastName,
+              email: operator.email
+            } : null,
+            expenses: tripExpenses || []
+          };
+        })
+      );
+
+      // Obtener gastos totales por viaje para el resumen
+      const allTripExpenses = tripsWithOperatorAndExpenses.reduce((acc, trip) => {
+        return acc.concat(trip.expenses);
+      }, []);
+
+      // Calcular total de gastos por viaje
+      const totalTripExpenses = allTripExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
       
       const balance = totalIncome - totalExpenses;
       
@@ -10549,8 +10579,9 @@ function setupPackageRoutes(app: Express) {
         expenseBreakdown: expenseBreakdown,
         transactions: transactions, // Incluir transacciones completas
         tripsCount: tripsInPeriod.length,
-        trips: tripsInPeriod,
-        tripExpenses: tripExpenses
+        trips: tripsWithOperatorAndExpenses, // Viajes con operador y gastos
+        tripExpenses: allTripExpenses, // Todos los gastos de viajes
+        totalTripExpenses: totalTripExpenses // Total de gastos por viaje
       };
 
       console.log(`[GET /period-balance] Balance calculado: Ingresos=${totalIncome}, Gastos=${totalExpenses}, Balance=${balance}`);
