@@ -35,8 +35,30 @@ interface PeriodBalanceData {
   trips: Array<{
     id: number;
     tripData: any[];
+    operator?: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+    } | null;
+    expenses: Array<{
+      id: number;
+      tripId: number;
+      type: string;
+      amount: number;
+      description?: string;
+      createdAt: string;
+    }>;
   }>;
-  tripExpenses: any[];
+  tripExpenses: Array<{
+    id: number;
+    tripId: number;
+    type: string;
+    amount: number;
+    description?: string;
+    createdAt: string;
+  }>;
+  totalTripExpenses: number;
 }
 
 function PeriodBalancePageContent() {
@@ -48,6 +70,7 @@ function PeriodBalancePageContent() {
   // Estados para controlar los dropdowns
   const [isExpensesExpanded, setIsExpensesExpanded] = useState(true);
   const [isTransactionsExpanded, setIsTransactionsExpanded] = useState(true);
+  const [isTripExpensesExpanded, setIsTripExpensesExpanded] = useState(true);
 
   // Generar valores por defecto para las fechas
   const generateDefaultDates = () => {
@@ -254,6 +277,105 @@ function PeriodBalancePageContent() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Card de Gastos por Viaje */}
+          {periodBalance.tripExpenses && periodBalance.tripExpenses.length > 0 && (
+            <Collapsible.Root open={isTripExpensesExpanded} onOpenChange={setIsTripExpensesExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Car className="h-5 w-5 text-blue-600" />
+                          Gastos por Viaje
+                        </CardTitle>
+                        <CardDescription>
+                          Gastos específicos asociados a los viajes realizados en el periodo
+                        </CardDescription>
+                        <div className="text-lg font-semibold text-blue-600 mt-1">
+                          {formatCurrency(periodBalance.totalTripExpenses || 0)}
+                        </div>
+                      </div>
+                      {isTripExpensesExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                      )}
+                    </div>
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).map((trip) => {
+                        const mainTrip = trip.tripData?.find((t: any) => t.isMainTrip);
+                        if (!mainTrip) return null;
+
+                        const tripTotalExpenses = trip.expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+
+                        return (
+                          <div key={trip.id} className="border rounded-lg p-4 bg-gray-50">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <Car className="w-4 h-4 text-blue-600" />
+                                <span className="font-medium">Viaje #{trip.id}</span>
+                                {trip.operator && (
+                                  <span className="text-sm text-gray-600">
+                                    - Operador: {trip.operator.firstName} {trip.operator.lastName}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-lg font-semibold text-blue-600">
+                                {formatCurrency(tripTotalExpenses)}
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mb-3">
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                <div>
+                                  <span className="font-medium text-gray-600">Origen:</span>
+                                  <div className="text-gray-700">{mainTrip.origin}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                <div>
+                                  <span className="font-medium text-gray-600">Destino:</span>
+                                  <div className="text-gray-700">{mainTrip.destination}</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-gray-800">Gastos del viaje:</h4>
+                              {trip.expenses.map((expense) => (
+                                <div key={expense.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                                  <div className="flex items-center gap-2">
+                                    <Receipt className="w-4 h-4 text-gray-500" />
+                                    <div>
+                                      <div className="font-medium text-sm">{expense.type}</div>
+                                      {expense.description && (
+                                        <div className="text-xs text-gray-600">{expense.description}</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-sm font-semibold text-red-600">
+                                    {formatCurrency(expense.amount)}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
+          )}
 
           {/* Desglose de gastos con dropdown */}
           {periodBalance.expenseBreakdown.length > 0 && (
