@@ -213,10 +213,10 @@ export function ExpensesPage() {
     }, {} as Record<string, number>),
     sueldosPerMonth: expenses
       .filter(expense => expense.category === 'sueldos')
-      .reduce((sum, expense) => sum + (expense.amount * 30 / expense.periodDays), 0),
+      .reduce((sum, expense) => sum + ((expense.amount / expense.periodDays) * 30), 0),
     rentasPerMonth: expenses
       .filter(expense => expense.category === 'rentas')
-      .reduce((sum, expense) => sum + (expense.amount * 30 / expense.periodDays), 0),
+      .reduce((sum, expense) => sum + ((expense.amount / expense.periodDays) * 30), 0),
     count: expenses.length
   };
 
