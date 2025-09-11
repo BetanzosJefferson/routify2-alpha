@@ -9183,9 +9183,10 @@ function setupPackageRoutes(app: Express) {
       const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
       const cutoffId = req.query.cutoffId ? parseInt(req.query.cutoffId as string) : undefined;
       const paymentMethod = req.query.paymentMethod as string;
+      const transactionId = req.query.transactionId ? parseInt(req.query.transactionId as string) : undefined;
       
       console.log(`[GET /transaction-history] Obteniendo historial para compañía: ${companyId}, filtros:`, {
-        startDate, endDate, userId, cutoffId, paymentMethod
+        startDate, endDate, userId, cutoffId, paymentMethod, transactionId
       });
       
       const transactionHistory = await storage.getTransactionHistory({
@@ -9194,7 +9195,8 @@ function setupPackageRoutes(app: Express) {
         endDate,
         userId,
         cutoffId,
-        paymentMethod
+        paymentMethod,
+        transactionId
       });
       
       console.log(`[GET /transaction-history] Encontradas ${transactionHistory.length} transacciones`);

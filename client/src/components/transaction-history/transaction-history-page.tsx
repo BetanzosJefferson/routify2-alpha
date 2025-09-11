@@ -34,22 +34,30 @@ export default function TransactionHistoryPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [selectedCutoffId, setSelectedCutoffId] = useState<string>('all');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
+  const [transactionIdSearch, setTransactionIdSearch] = useState<string>('');
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
   // Obtener historial de transacciones
   const { data: transactionHistory, isLoading, refetch } = useQuery<TransactionHistoryItem[]>({
-    queryKey: ['/api/transaction-history', { startDate, endDate, userId: selectedUserId, cutoffId: selectedCutoffId, paymentMethod: selectedPaymentMethod }],
+    queryKey: ['/api/transaction-history', { startDate, endDate, userId: selectedUserId, cutoffId: selectedCutoffId, paymentMethod: selectedPaymentMethod, transactionId: transactionIdSearch }],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      if (selectedUserId && selectedUserId !== 'all') params.append('userId', selectedUserId);
-      if (selectedPaymentMethod && selectedPaymentMethod !== 'all') params.append('paymentMethod', selectedPaymentMethod);
-      if (selectedCutoffId && selectedCutoffId !== 'all') {
-        if (selectedCutoffId === 'pending') {
-          params.append('cutoffId', '0');
-        } else {
-          params.append('cutoffId', selectedCutoffId);
+      
+      // Si hay búsqueda por ID de transacción, es búsqueda global (ignora otros filtros)
+      if (transactionIdSearch && transactionIdSearch.trim() !== '') {
+        params.append('transactionId', transactionIdSearch.trim());
+      } else {
+        // Solo aplicar filtros normales si no hay búsqueda por ID
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (selectedUserId && selectedUserId !== 'all') params.append('userId', selectedUserId);
+        if (selectedPaymentMethod && selectedPaymentMethod !== 'all') params.append('paymentMethod', selectedPaymentMethod);
+        if (selectedCutoffId && selectedCutoffId !== 'all') {
+          if (selectedCutoffId === 'pending') {
+            params.append('cutoffId', '0');
+          } else {
+            params.append('cutoffId', selectedCutoffId);
+          }
         }
       }
       
@@ -109,8 +117,9 @@ export default function TransactionHistoryPage() {
   useEffect(() => {
     const currentDate = getCurrentLocalDate();
     const hasDateFilters = startDate !== currentDate || endDate !== currentDate;
-    setIsFiltersChanged(hasDateFilters || selectedUserId !== 'all' || selectedCutoffId !== 'all' || selectedPaymentMethod !== 'all');
-  }, [startDate, endDate, selectedUserId, selectedCutoffId, selectedPaymentMethod]);
+    const hasTransactionIdSearch = transactionIdSearch.trim() !== '';
+    setIsFiltersChanged(hasDateFilters || selectedUserId !== 'all' || selectedCutoffId !== 'all' || selectedPaymentMethod !== 'all' || hasTransactionIdSearch);
+  }, [startDate, endDate, selectedUserId, selectedCutoffId, selectedPaymentMethod, transactionIdSearch]);
 
   // Resetear filtro de corte cuando cambia el usuario
   useEffect(() => {
@@ -124,6 +133,7 @@ export default function TransactionHistoryPage() {
     setSelectedUserId('all');
     setSelectedCutoffId('all');
     setSelectedPaymentMethod('all');
+    setTransactionIdSearch('');
     // Refetch to reset the data
     refetch();
   };
@@ -409,6 +419,29 @@ export default function TransactionHistoryPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Búsqueda global por ID de transacción */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Búsqueda Global por ID de Transacción</span>
+            </div>
+            <div className="max-w-sm">
+              <Input
+                type="number"
+                value={transactionIdSearch}
+                onChange={(e) => setTransactionIdSearch(e.target.value)}
+                placeholder="Ingresa el ID de la transacción"
+                className="w-full"
+                data-testid="input-transaction-id-search"
+              />
+            </div>
+            {transactionIdSearch && (
+              <p className="text-xs text-blue-600 mt-1">
+                🔍 Búsqueda global activa - se ignoran otros filtros de fecha y usuario
+              </p>
+            )}
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Fecha inicio */}
             <div>

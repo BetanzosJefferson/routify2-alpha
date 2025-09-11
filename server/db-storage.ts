@@ -5004,6 +5004,7 @@ export class DatabaseStorage implements IStorage {
     paymentMethod?: string;
     type?: string;
     typeId?: number;
+    transactionId?: number;
   }): Promise<{
     id: number;
     details: any;
@@ -5028,14 +5029,19 @@ export class DatabaseStorage implements IStorage {
         eq(schema.transacciones.companyId, params.companyId)
       ];
 
-      // Filtros de fecha con zona horaria de Ciudad de México (UTC-6)
-      if (params.startDate) {
-        // Convertir fecha a zona horaria de Ciudad de México y obtener el inicio del día
-        baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') >= ${params.startDate}`);
-      }
-      if (params.endDate) {
-        // Convertir fecha a zona horaria de Ciudad de México y obtener el final del día
-        baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') <= ${params.endDate}`);
+      // Si se especifica un ID de transacción, buscar globalmente sin restricciones de fecha
+      if (params.transactionId) {
+        baseConditions.push(eq(schema.transacciones.id, params.transactionId));
+      } else {
+        // Filtros de fecha solo si no hay búsqueda por ID (búsqueda global por ID ignora fechas)
+        if (params.startDate) {
+          // Convertir fecha a zona horaria de Ciudad de México y obtener el inicio del día
+          baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') >= ${params.startDate}`);
+        }
+        if (params.endDate) {
+          // Convertir fecha a zona horaria de Ciudad de México y obtener el final del día
+          baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') <= ${params.endDate}`);
+        }
       }
 
       // Filtro por usuario
