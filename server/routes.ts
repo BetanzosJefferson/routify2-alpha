@@ -9246,14 +9246,25 @@ function setupPackageRoutes(app: Express) {
       
       // Calcular el monto total cubierto por las transacciones
       const totalCovered = transactions.reduce((sum, transaction) => {
+        console.log(`[DEBUG] Procesando transacción ${transaction.id}:`, JSON.stringify(transaction.details, null, 2));
+        
         // Extraer el monto desde el campo details
         if (transaction.details && typeof transaction.details === 'object') {
           const details = transaction.details as any;
-          // Corregido: buscar directamente en details.monto, no details.details.monto
-          if (details.monto && typeof details.monto === 'number') {
-            console.log(`[DEBUG] Transacción ${transaction.id}: añadiendo monto ${details.monto} al total`);
-            return sum + details.monto;
+          
+          // La estructura real es details.details.monto (doble anidado)
+          if (details.details && details.details.monto && typeof details.details.monto === 'number') {
+            console.log(`[DEBUG] ✅ Transacción ${transaction.id}: encontrado monto ${details.details.monto} en details.details.monto`);
+            return sum + details.details.monto;
+          } else {
+            console.log(`[DEBUG] ❌ Transacción ${transaction.id}: NO encontrado monto en details.details.monto`, {
+              hasDetails: !!details.details,
+              hasAmount: !!details.details?.monto,
+              amountType: typeof details.details?.monto
+            });
           }
+        } else {
+          console.log(`[DEBUG] ❌ Transacción ${transaction.id}: details no es objeto válido`);
         }
         return sum;
       }, 0);
