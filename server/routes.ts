@@ -9249,12 +9249,16 @@ function setupPackageRoutes(app: Express) {
         // Extraer el monto desde el campo details
         if (transaction.details && typeof transaction.details === 'object') {
           const details = transaction.details as any;
-          if (details.details && details.details.monto) {
-            return sum + details.details.monto;
+          // Corregido: buscar directamente en details.monto, no details.details.monto
+          if (details.monto && typeof details.monto === 'number') {
+            console.log(`[DEBUG] Transacción ${transaction.id}: añadiendo monto ${details.monto} al total`);
+            return sum + details.monto;
           }
         }
         return sum;
       }, 0);
+      
+      console.log(`[GET /reservations/${reservationId}/transactions] Total cubierto calculado: ${totalCovered}`);
       
       res.json({
         reservationId,
