@@ -5013,4 +5013,212 @@ export class DatabaseStorage implements IStorage {
     
     return deleted;
   }
+
+  // ========== MÉTODOS TRANSACCIONALES PARA INTEGRIDAD DE DATOS ==========
+
+  /**
+   * Crea una reservación con anticipo de forma transaccional
+   */
+  async createReservationDepositWithTransaction(
+    reservationId: number, 
+    transactionData: schema.InsertTransaccion
+  ): Promise<{ reservation: schema.Reservation; transaction: schema.Transaccion }> {
+    return await db.transaction(async (tx) => {
+      console.log(`[DB] Iniciando transacción para depósito de reservación ${reservationId}`);
+      
+      // Verificar que la reservación existe
+      const [reservation] = await tx
+        .select()
+        .from(schema.reservations)
+        .where(eq(schema.reservations.id, reservationId));
+      
+      if (!reservation) {
+        throw new Error(`Reservación ${reservationId} no encontrada`);
+      }
+
+      // Crear transacción con upsert para idempotencia
+      const [transaction] = await tx
+        .insert(schema.transacciones)
+        .values(transactionData)
+        .onConflictDoNothing({
+          target: [schema.transacciones.type, schema.transacciones.type_id]
+        })
+        .returning();
+
+      if (!transaction) {
+        // Ya existe, obtener la existente
+        const [existingTransaction] = await tx
+          .select()
+          .from(schema.transacciones)
+          .where(and(
+            eq(schema.transacciones.type, transactionData.type!),
+            eq(schema.transacciones.type_id, transactionData.type_id!)
+          ));
+        
+        console.log(`[DB] Transacción de depósito ya existe para reservación ${reservationId}`);
+        return { reservation, transaction: existingTransaction };
+      }
+
+      console.log(`[DB] Depósito creado exitosamente para reservación ${reservationId}, transacción ${transaction.id}`);
+      return { reservation, transaction };
+    });
+  }
+
+  /**
+   * Marca una reservación como pagada de forma transaccional
+   */
+  async payReservationWithTransaction(
+    reservationId: number,
+    transactionData: schema.InsertTransaccion,
+    paymentUpdates: Partial<schema.Reservation>
+  ): Promise<{ reservation: schema.Reservation; transaction: schema.Transaccion }> {
+    return await db.transaction(async (tx) => {
+      console.log(`[DB] Iniciando transacción para pago de reservación ${reservationId}`);
+      
+      // Verificar estado actual de la reservación
+      const [currentReservation] = await tx
+        .select()
+        .from(schema.reservations)
+        .where(eq(schema.reservations.id, reservationId));
+      
+      if (!currentReservation) {
+        throw new Error(`Reservación ${reservationId} no encontrada`);
+      }
+
+      if (currentReservation.paymentStatus === 'pagado') {
+        console.log(`[DB] Reservación ${reservationId} ya está marcada como pagada`);
+        // Obtener transacción existente
+        const [existingTransaction] = await tx
+          .select()
+          .from(schema.transacciones)
+          .where(and(
+            eq(schema.transacciones.type, "reservation"),
+            eq(schema.transacciones.type_id, reservationId)
+          ));
+        return { reservation: currentReservation, transaction: existingTransaction };
+      }
+
+      // Actualizar estado de pago
+      const [updatedReservation] = await tx
+        .update(schema.reservations)
+        .set(paymentUpdates)
+        .where(eq(schema.reservations.id, reservationId))
+        .returning();
+
+      // Crear transacción con upsert para idempotencia
+      const [transaction] = await tx
+        .insert(schema.transacciones)
+        .values(transactionData)
+        .onConflictDoNothing({
+          target: [schema.transacciones.type, schema.transacciones.type_id]
+        })
+        .returning();
+
+      if (!transaction) {
+        throw new Error(`Error al crear transacción para reservación ${reservationId}`);
+      }
+
+      console.log(`[DB] Reservación ${reservationId} marcada como pagada, transacción ${transaction.id} creada`);
+      return { reservation: updatedReservation, transaction };
+    });
+  }
+
+  /**
+   * Marca un paquete como pagado de forma transaccional
+   */
+  async markPackagePaidWithTransaction(
+    packageId: number,
+    transactionData: schema.InsertTransaccion
+  ): Promise<{ package: schema.Package; transaction: schema.Transaccion }> {
+    return await db.transaction(async (tx) => {
+      console.log(`[DB] Iniciando transacción para pago de paquete ${packageId}`);
+      
+      // Verificar estado actual del paquete
+      const [currentPackage] = await tx
+        .select()
+        .from(schema.packages)
+        .where(eq(schema.packages.id, packageId));
+      
+      if (!currentPackage) {
+        throw new Error(`Paquete ${packageId} no encontrado`);
+      }
+
+      if (currentPackage.isPaid) {
+        console.log(`[DB] Paquete ${packageId} ya está marcado como pagado`);
+        // Obtener transacción existente
+        const [existingTransaction] = await tx
+          .select()
+          .from(schema.transacciones)
+          .where(and(
+            eq(schema.transacciones.type, "package"),
+            eq(schema.transacciones.type_id, packageId)
+          ));
+        return { package: currentPackage, transaction: existingTransaction };
+      }
+
+      // Actualizar estado de pago del paquete
+      const [updatedPackage] = await tx
+        .update(schema.packages)
+        .set({ isPaid: true })
+        .where(eq(schema.packages.id, packageId))
+        .returning();
+
+      // Crear transacción con upsert para idempotencia
+      const [transaction] = await tx
+        .insert(schema.transacciones)
+        .values(transactionData)
+        .onConflictDoNothing({
+          target: [schema.transacciones.type, schema.transacciones.type_id]
+        })
+        .returning();
+
+      if (!transaction) {
+        throw new Error(`Error al crear transacción para paquete ${packageId}`);
+      }
+
+      console.log(`[DB] Paquete ${packageId} marcado como pagado, transacción ${transaction.id} creada`);
+      return { package: updatedPackage, transaction };
+    });
+  }
+
+  /**
+   * Crea un paquete pagado de forma transaccional
+   */
+  async createPaidPackageWithTransaction(
+    packageData: schema.InsertPackage,
+    transactionData: schema.InsertTransaccion
+  ): Promise<{ package: schema.Package; transaction: schema.Transaccion }> {
+    return await db.transaction(async (tx) => {
+      console.log(`[DB] Iniciando transacción para crear paquete pagado`);
+      
+      // Crear el paquete
+      const [newPackage] = await tx
+        .insert(schema.packages)
+        .values(packageData)
+        .returning();
+
+      if (!newPackage) {
+        throw new Error(`Error al crear paquete`);
+      }
+
+      // Actualizar transaction data con el ID del paquete creado
+      const completeTransactionData = {
+        ...transactionData,
+        type_id: newPackage.id
+      };
+
+      // Crear transacción
+      const [transaction] = await tx
+        .insert(schema.transacciones)
+        .values(completeTransactionData)
+        .returning();
+
+      if (!transaction) {
+        throw new Error(`Error al crear transacción para paquete ${newPackage.id}`);
+      }
+
+      console.log(`[DB] Paquete pagado ${newPackage.id} creado con transacción ${transaction.id}`);
+      return { package: newPackage, transaction };
+    });
+  }
 }
