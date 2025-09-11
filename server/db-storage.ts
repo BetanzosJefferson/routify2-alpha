@@ -2358,9 +2358,6 @@ export class DatabaseStorage implements IStorage {
                 }
               }
             })
-            .onConflictDoNothing({
-              target: [schema.transacciones.type, schema.transacciones.type_id]
-            })
             .returning();
 
           createdTransaction = transaction;
