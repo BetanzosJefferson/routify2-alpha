@@ -3798,8 +3798,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[POST /reservations] DEPURACIÓN - tripData parseado:`, JSON.stringify(tripDataArray, null, 2));
               
               // Buscar el segmento específico usando el índice del tripId sintético
-              const tripIndex = parseInt(tripId.split("_")[1], 10);
-              const targetSegment = tripDataArray[tripIndex];
+              let tripIndex = 0;
+              let targetSegment = null;
+              
+              // Si tripId es string y contiene "_", parsear el índice
+              if (typeof tripId === 'string' && tripId.includes("_")) {
+                tripIndex = parseInt(tripId.split("_")[1], 10);
+                targetSegment = tripDataArray[tripIndex];
+              } else {
+                // Si tripId es número, buscar el segmento principal o el primero disponible
+                targetSegment = tripDataArray.find((segment: any) => segment.isMainTrip) || tripDataArray[0];
+                console.log(`[POST /reservations] DEPURACIÓN - Usando segmento principal para tripId numérico ${tripId}`);
+              }
               
               if (targetSegment) {
                 console.log(`[POST /reservations] DEPURACIÓN - Segmento encontrado:`, JSON.stringify(targetSegment, null, 2));

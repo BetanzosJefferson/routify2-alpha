@@ -5183,9 +5183,6 @@ export class DatabaseStorage implements IStorage {
       const [transaction] = await tx
         .insert(schema.transacciones)
         .values(transactionData)
-        .onConflictDoNothing({
-          target: [schema.transacciones.type, schema.transacciones.type_id]
-        })
         .returning();
 
       if (!transaction) {
@@ -5252,9 +5249,6 @@ export class DatabaseStorage implements IStorage {
       const [transaction] = await tx
         .insert(schema.transacciones)
         .values(transactionData)
-        .onConflictDoNothing({
-          target: [schema.transacciones.type, schema.transacciones.type_id]
-        })
         .returning();
 
       if (!transaction) {
@@ -5320,9 +5314,6 @@ export class DatabaseStorage implements IStorage {
       const [transaction] = await tx
         .insert(schema.transacciones)
         .values(transactionData)
-        .onConflictDoNothing({
-          target: [schema.transacciones.type, schema.transacciones.type_id]
-        })
         .returning();
 
       if (!transaction) {
