@@ -78,6 +78,10 @@ function ReservationTransactionInfo({
   
   const { count: transactionCount, totalAmount: totalCovered } = transactionData.summary;
   
+  // Extraer IDs de las transacciones
+  const transactionIds = transactionData.transactions?.map((t: any) => t.id) || [];
+  const transactionIdsText = transactionIds.length > 0 ? transactionIds.join(', ') : 'N/A';
+  
   // Validar y normalizar datos para evitar NaN
   const validTotalCovered = Number.isFinite(totalCovered) ? totalCovered : 0;
   const validReservationAmount = Number.isFinite(reservationAmount) && reservationAmount > 0 ? reservationAmount : 0;
@@ -98,18 +102,31 @@ function ReservationTransactionInfo({
         )}
       </div>
       
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="flex items-center gap-1">
-          <TrendingUp className="h-3 w-3 text-gray-500" />
-          <span className="text-gray-600">Transacciones:</span>
-          <span className="font-medium" data-testid={`transaction-count-${reservationId}`}>{transactionCount}</span>
+      <div className="space-y-2 text-sm">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600">Transacciones:</span>
+            <span className="font-medium" data-testid={`transaction-count-${reservationId}`}>{transactionCount}</span>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <DollarSign className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600">Cubierto:</span>
+            <span className="font-medium" data-testid={`covered-amount-${reservationId}`}>{formatCurrency(validTotalCovered)}</span>
+          </div>
         </div>
         
-        <div className="flex items-center gap-1">
-          <DollarSign className="h-3 w-3 text-gray-500" />
-          <span className="text-gray-600">Cubierto:</span>
-          <span className="font-medium" data-testid={`covered-amount-${reservationId}`}>{formatCurrency(validTotalCovered)}</span>
-        </div>
+        {/* Mostrar IDs de las transacciones */}
+        {transactionIds.length > 0 && (
+          <div className="flex items-start gap-1 text-xs">
+            <FileText className="h-3 w-3 text-gray-400 mt-0.5 flex-shrink-0" />
+            <span className="text-gray-500">IDs:</span>
+            <span className="font-mono text-gray-600 break-all" data-testid={`transaction-ids-${reservationId}`}>
+              {transactionIdsText}
+            </span>
+          </div>
+        )}
       </div>
       
       {/* Alerta de cobertura financiera */}
