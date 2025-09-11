@@ -4762,6 +4762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Marcar paquete como pagado y crear transacción de forma atómica
+      let updatedPackage = null; // Declarar la variable en el scope correcto
+      
       if (userId) {
         // Obtener el companyId del paquete
         const companyId = packageData.companyId;
@@ -4793,7 +4795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Usar método transaccional para garantizar integridad
         try {
-          const { package: updatedPackage, transaction } = await storage.markPackagePaidWithTransaction(
+          const result = await storage.markPackagePaidWithTransaction(
             packageId,
             {
               details: detallesTransaccion,
@@ -4805,7 +4807,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           );
           
-          console.log(`[POST /public/packages/${packageId}/mark-paid] Paquete marcado como pagado y transacción creada con ID: ${transaction.id}`);
+          updatedPackage = result.package; // Asignar en el scope correcto
+          console.log(`[POST /public/packages/${packageId}/mark-paid] Paquete marcado como pagado y transacción creada con ID: ${result.transaction.id}`);
         } catch (error) {
           console.error(`[POST /public/packages/${packageId}/mark-paid] Error al marcar paquete como pagado:`, error);
           throw error; // Hacer que el error sea fatal para garantizar integridad
@@ -4815,7 +4818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`[POST /public/packages/${packageId}/mark-paid] Paquete actualizado con éxito`);
-      res.json(updatedPackage);
+      res.json({ success: true, message: "Paquete marcado como pagado exitosamente", package: updatedPackage });
     } catch (error) {
       console.error(`[POST /public/packages/:id/mark-paid] Error: ${error}`);
       res.status(500).json({ error: "Error al actualizar el estado de pago del paquete" });
