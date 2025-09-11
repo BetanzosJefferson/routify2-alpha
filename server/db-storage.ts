@@ -2300,10 +2300,35 @@ export class DatabaseStorage implements IStorage {
 
       let createdTransaction: Transaction | null = null;
 
-      // 5. Crear transacción solo si hay monto pendiente (versión simplificada para debug)
+      // 5. Crear transacción solo si hay monto pendiente
       if (remainingAmount > 0) {
         try {
-          console.log(`[TRANSACTIONAL] Creando transacción simplificada para reservación ${reservationId}`);
+          console.log(`[TRANSACTIONAL] Creando transacción para reservación ${reservationId}`);
+          
+          // Obtener información de la ruta
+          const routeInfo = await trx
+            .select({
+              routeOrigin: schema.routes.origin,
+              routeDestination: schema.routes.destination
+            })
+            .from(schema.routes)
+            .innerJoin(schema.trips, eq(schema.trips.route_id, schema.routes.id))
+            .where(eq(schema.trips.id, reservation.trip_id))
+            .limit(1);
+
+          // Obtener información de los pasajeros
+          const passengers = await trx
+            .select()
+            .from(schema.passengers)
+            .where(eq(schema.passengers.reservation_id, reservationId));
+
+          // Construir nombre de pasajeros
+          const passengerNames = passengers.map(p => `${p.firstName || ''} ${p.lastName || ''}`.trim()).filter(name => name).join(', ');
+          
+          // Usar valores por defecto si no hay información
+          const route = routeInfo[0];
+          const origen = route?.routeOrigin || "No especificado";
+          const destino = route?.routeDestination || "No especificado";
           
           const [transaction] = await trx
             .insert(schema.transacciones)
@@ -2318,10 +2343,17 @@ export class DatabaseStorage implements IStorage {
                   id: reservationId,
                   tripId: reservation.trip_id,
                   isSubTrip: false,
-                  pasajeros: `${reservation.passengerName} ${reservation.passengerLastName}`,
+                  pasajeros: passengerNames || 'Pasajero sin nombre',
+                  contacto: {
+                    email: reservation.email || '',
+                    telefono: reservation.phone || ''
+                  },
+                  origen: origen,
+                  destino: destino,
                   monto: remainingAmount,
                   metodoPago: paymentMethod,
                   notas: `Pago de reservación - Monto restante ($${remainingAmount})`,
+                  companyId: reservation.companyId,
                   dateCreated: new Date().toISOString()
                 }
               }
@@ -2329,7 +2361,7 @@ export class DatabaseStorage implements IStorage {
             .returning();
 
           createdTransaction = transaction;
-          console.log(`[TRANSACTIONAL] Transacción creada: ID ${transaction.id}, Monto: $${remainingAmount}`);
+          console.log(`[TRANSACTIONAL] Transacción creada: ID ${transaction.id}, Monto: $${remainingAmount}, Pasajeros: ${passengerNames}`);
         } catch (error: any) {
           // Manejar cualquier error en la creación de transacciones
           console.error(`[TRANSACTIONAL] Error al crear transacción:`, error);
