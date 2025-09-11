@@ -918,12 +918,8 @@ export function ReservationDetailsSidebar({
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
                           {(() => {
-                            // Usar información específica del segmento si está disponible
-                            if (reservation.trip?.origin && reservation.trip?.destination) {
-                              return reservation.trip.origin;
-                            }
-                            // Fallback al viaje padre
-                            return reservation.trip?.route?.origin || 'Origen';
+                            // Usar información de la ruta que está disponible
+                            return reservation.trip?.route?.origin || reservation.trip?.origin || 'Origen';
                           })()}
                         </div>
                       </div>
@@ -931,12 +927,8 @@ export function ReservationDetailsSidebar({
                         <div className="text-xs text-gray-500">Destino</div>
                         <div className="font-medium">
                           {(() => {
-                            // Usar información específica del segmento si está disponible
-                            if (reservation.trip?.origin && reservation.trip?.destination) {
-                              return reservation.trip.destination;
-                            }
-                            // Fallback al viaje padre
-                            return reservation.trip?.route?.destination || 'Destino';
+                            // Usar información de la ruta que está disponible
+                            return reservation.trip?.route?.destination || reservation.trip?.destination || 'Destino';
                           })()}
                         </div>
                       </div>
@@ -1128,13 +1120,13 @@ export function ReservationDetailsSidebar({
                     <div>
                       <div className="text-xs text-gray-500">Origen</div>
                       <div className="font-medium text-xs md:text-sm break-words">
-                        {pkg.tripDetails?.origin || pkg.tripOrigin || 'No especificado'}
+                        {pkg.tripDetails?.origin || pkg.trip?.route?.origin || pkg.tripOrigin || 'No especificado'}
                       </div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-500">Destino</div>
                       <div className="font-medium text-xs md:text-sm break-words">
-                        {pkg.tripDetails?.destination || pkg.tripDestination || 'No especificado'}
+                        {pkg.tripDetails?.destination || pkg.trip?.route?.destination || pkg.tripDestination || 'No especificado'}
                       </div>
                     </div>
                   </div>
