@@ -896,14 +896,6 @@ export type TransactionSourceType = typeof TransactionSource[keyof typeof Transa
 
 // Las tablas y funcionalidades de caja registradora han sido completamente eliminadas del sistema
 
-// TRANSACTION TYPE ENUM
-export const TransactionType = {
-  RESERVATION: "reservation",
-  PACKAGE: "package",
-} as const;
-
-export type TransactionTypeType = typeof TransactionType[keyof typeof TransactionType];
-
 // TABLA DE TRANSACCIONES
 export const transacciones = pgTable("transactions", {
   id: serial("id").primaryKey(),
