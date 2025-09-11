@@ -2245,6 +2245,131 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedReservation;
   }
+
+  /**
+   * Marca una reservación como pagada de forma transaccional atómica
+   * Garantiza que siempre se cree una transacción antes de marcar como pagado
+   * para evitar discrepancias financieras
+   */
+  async markReservationPaidTransactional(
+    reservationId: number, 
+    paymentMethod: string,
+    paidBy: number
+  ): Promise<{ reservation: Reservation; transaction: Transaction | null }> {
+    return await db.transaction(async (trx) => {
+      // 1. Bloquear la reservación para evitar condiciones de carrera
+      const [reservation] = await trx
+        .select()
+        .from(schema.reservations)
+        .where(eq(schema.reservations.id, reservationId))
+        .for('update');
+
+      if (!reservation) {
+        throw new Error(`Reservación ${reservationId} no encontrada`);
+      }
+
+      // 2. Validar que no esté cancelada
+      if (reservation.status === 'canceled') {
+        throw new Error('No se puede marcar como pagada una reservación cancelada');
+      }
+
+      // 3. Validar que no esté ya pagada para evitar duplicados
+      if (reservation.paymentStatus === 'pagado') {
+        // Buscar transacción existente para idempotencia
+        const existingTransaction = await trx
+          .select()
+          .from(schema.transactions)
+          .where(
+            and(
+              eq(schema.transactions.type, 'reservation'),
+              eq(schema.transactions.type_id, reservationId)
+            )
+          )
+          .limit(1);
+
+        return {
+          reservation,
+          transaction: existingTransaction[0] || null
+        };
+      }
+
+      // 4. Calcular monto pendiente
+      const advanceAmount = reservation.advanceAmount || 0;
+      const totalAmount = reservation.totalAmount;
+      const remainingAmount = totalAmount - advanceAmount;
+
+      let createdTransaction: Transaction | null = null;
+
+      // 5. Crear transacción solo si hay monto pendiente
+      if (remainingAmount > 0) {
+        try {
+          const [transaction] = await trx
+            .insert(schema.transactions)
+            .values({
+              type: 'reservation',
+              type_id: reservationId,
+              user_id: paidBy,
+              companyId: reservation.companyId,
+              details: {
+                reservationId: reservationId,
+                amount: remainingAmount,
+                paymentMethod: paymentMethod,
+                concept: 'Pago de reservación - Monto restante',
+                originalAmount: totalAmount,
+                advanceAmount: advanceAmount,
+                paidBy: paidBy
+              }
+            })
+            .returning();
+
+          createdTransaction = transaction;
+          console.log(`[TRANSACTIONAL] Transacción creada: ID ${transaction.id}, Monto: $${remainingAmount}`);
+        } catch (error: any) {
+          // Manejar violación de índice único (idempotencia)
+          if (error.code === '23505' && error.constraint === 'transactions_type_type_id_key') {
+            console.log(`[TRANSACTIONAL] Transacción ya existe para reservación ${reservationId} - Operación idempotente`);
+            
+            // Obtener la transacción existente
+            const [existingTransaction] = await trx
+              .select()
+              .from(schema.transactions)
+              .where(
+                and(
+                  eq(schema.transactions.type, 'reservation'),
+                  eq(schema.transactions.type_id, reservationId)
+                )
+              );
+            
+            createdTransaction = existingTransaction;
+          } else {
+            // Para cualquier otro error, hacer fallar la transacción completamente
+            console.error(`[TRANSACTIONAL] Error al crear transacción:`, error);
+            throw new Error(`Error al crear transacción financiera: ${error.message}`);
+          }
+        }
+      }
+
+      // 6. Actualizar reservación a pagado
+      const [updatedReservation] = await trx
+        .update(schema.reservations)
+        .set({
+          paymentStatus: 'pagado',
+          paymentMethod: paymentMethod,
+          paidBy: paidBy,
+          markedAsPaidAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(schema.reservations.id, reservationId))
+        .returning();
+
+      console.log(`[TRANSACTIONAL] Reservación ${reservationId} marcada como pagada exitosamente`);
+
+      return {
+        reservation: updatedReservation,
+        transaction: createdTransaction
+      };
+    });
+  }
   
   async deleteReservation(id: number): Promise<boolean> {
     const result = await db

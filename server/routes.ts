@@ -3917,108 +3917,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const reservationData = validationResult.data;
       
-      // Si está marcando como pagado, incluir el ID del usuario actual y la fecha
+      // Si está marcando como pagado, usar método transaccional para garantizar atomicidad
       if (reservationData.paymentStatus === "pagado") {
         console.log(`[PUT /reservations/${id}] Marcando como pagado por usuario ${user?.id || 'no autenticado'}`);
         
-        // Extender los datos de reservación con el ID del usuario que marca como pagado
-        // y la fecha actual para el registro de cuándo se realizó el pago
-        reservationData.paidBy = user?.id || null;
-        reservationData.markedAsPaidAt = new Date();
-        
-        // Obtener la reservación completa para calcular el monto restante
-        const originalReservation = await storage.getReservationWithDetails(id);
-        if (originalReservation) {
-          try {
-            // Calcular el monto restante (total - anticipo)
-            const remainingAmount = originalReservation.totalAmount - (originalReservation.advanceAmount || 0);
-            
-            if (remainingAmount > 0) {
-              console.log(`[PUT /reservations/${id}] Creando transacción para pago restante de $${remainingAmount}`);
-              
-              // Extraer información del viaje desde tripDetails
-              const { recordId: rawRecordId, tripId } = originalReservation.tripDetails as { recordId: number | string, tripId: string };
-              
-              // Extraer el recordId numérico si es string (formato "85_118" -> 85)
-              let recordId: number | undefined;
-              if (rawRecordId) {
-                if (typeof rawRecordId === 'string') {
-                  if (rawRecordId.includes('_')) {
-                    recordId = parseInt(rawRecordId.split('_')[0]);
-                  } else {
-                    recordId = parseInt(rawRecordId);
-                  }
-                } else {
-                  recordId = rawRecordId;
-                }
-              }
-              
-              if (!recordId) {
-                console.log(`[PUT /reservations/${id}] No se encontró recordId en tripDetails`);
-                // Continuamos con la actualización aunque no se pueda crear la transacción
-              } else {
-                // Obtener información del viaje usando recordId
-                const trip = await storage.getTrip(recordId);
-                if (!trip) {
-                  console.log(`[PUT /reservations/${id}] No se encontró el viaje ${recordId}`);
-                  // Continuamos con la actualización aunque no se pueda crear la transacción
-                } else {
-                const tripWithRouteInfo = await storage.getTripWithRouteInfo(recordId);
-                console.log(`[PUT /reservations/${id}] DEPURACIÓN - Información del viaje obtenida:`, JSON.stringify(tripWithRouteInfo, null, 2));
-                
-                // Extraer origen y destino del segmento específico usando tripId
-                let origen = "";
-                let destino = "";
-                
-                // Parsear tripData para obtener información del segmento específico
-                if (tripWithRouteInfo && tripWithRouteInfo.tripData) {
-                  try {
-                    const tripDataArray = Array.isArray(tripWithRouteInfo.tripData) 
-                      ? tripWithRouteInfo.tripData 
-                      : JSON.parse(tripWithRouteInfo.tripData as string);
-                    
-                    console.log(`[PUT /reservations/${id}] DEPURACIÓN - tripData parseado:`, JSON.stringify(tripDataArray, null, 2));
-                    
-                    // Buscar el segmento específico usando el índice del tripId sintético
-                    const tripIndex = parseInt(tripId.split("_")[1], 10);
-                    const targetSegment = tripDataArray[tripIndex];
-                    
-                    if (targetSegment) {
-                      console.log(`[PUT /reservations/${id}] DEPURACIÓN - Segmento encontrado:`, JSON.stringify(targetSegment, null, 2));
-                      origen = targetSegment.origin || "";
-                      destino = targetSegment.destination || "";
-                      console.log(`[PUT /reservations/${id}] Usando origen="${origen}" y destino="${destino}" del segmento ${tripId}`);
-                    } else {
-                      console.log(`[PUT /reservations/${id}] ADVERTENCIA - No se encontró el segmento ${tripId} en tripData`);
-                      // Fallback a la información de la ruta
-                      if (tripWithRouteInfo.route) {
-                        origen = tripWithRouteInfo.route.origin;
-                        destino = tripWithRouteInfo.route.destination;
-                        console.log(`[PUT /reservations/${id}] Usando fallback de ruta: origen="${origen}", destino="${destino}"`);
-                      }
-                    }
-                  } catch (parseError) {
-                    console.error(`[PUT /reservations/${id}] Error al parsear tripData:`, parseError);
-                    // Fallback a la información de la ruta
-                    if (tripWithRouteInfo.route) {
-                      origen = tripWithRouteInfo.route.origin;
-                      destino = tripWithRouteInfo.route.destination;
-                      console.log(`[PUT /reservations/${id}] Usando fallback de ruta por error de parseo: origen="${origen}", destino="${destino}"`);
-                    }
-                  }
-                } else if (tripWithRouteInfo && tripWithRouteInfo.route) {
-                  // Fallback directo a información de ruta si no hay tripData
-                  origen = tripWithRouteInfo.route.origin;
-                  destino = tripWithRouteInfo.route.destination;
-                  console.log(`[PUT /reservations/${id}] Usando información de ruta directa: origen="${origen}", destino="${destino}"`);
-                }
-                
-                // Obtener los pasajeros de la reservación
-                const passengers = await storage.getPassengers(id);
-                
-                if ((tripWithRouteInfo && tripWithRouteInfo.route) || (tripWithRouteInfo.isSubTrip && origen && destino)) {
-                  // Obtener el companyId del viaje
-                  const companyId = tripWithRouteInfo.companyId || trip.companyId;
+        if (!user?.id) {
+          return res.status(401).json({ 
+            error: "Usuario no autenticado", 
+            message: "Debe estar autenticado para marcar reservaciones como pagadas" 
+          });
+        }
+
+        try {
+          // Usar método transaccional que garantiza atomicidad financiera
+          const result = await storage.markReservationPaidTransactional(
+            id, 
+            reservationData.paymentMethod || 'efectivo',
+            user.id
+          );
+
+          console.log(`[PUT /reservations/${id}] ✅ Marcado como pagado exitosamente`);
+          if (result.transaction) {
+            console.log(`[PUT /reservations/${id}] ✅ Transacción creada con ID: ${result.transaction.id}`);
+          }
+
+          return res.status(200).json(result.reservation);
+        } catch (error: any) {
+          console.error(`[PUT /reservations/${id}] ❌ Error al marcar como pagado:`, error);
+          
+          // Manejar errores específicos
+          if (error.message.includes('cancelada')) {
+            return res.status(400).json({ 
+              error: "Reservación cancelada", 
+              message: "No se puede marcar como pagada una reservación cancelada" 
+            });
+          }
+          
+          return res.status(500).json({ 
+            error: "Error al procesar pago", 
+            message: error.message || "Error interno del servidor" 
+          });
+        }
+      }
+
+      // Para otros cambios que no sean marcar como pagado, usar método normal
+      const updatedReservation = await storage.updateReservation(id, reservationData);
+      
+      if (!updatedReservation) {
+        return res.status(404).json({ error: "Reservation not found" });
+      }
+
+      res.status(200).json(updatedReservation);
                   
                   // Crear los detalles de la transacción en formato JSON
                   const detallesTransaccion = {
