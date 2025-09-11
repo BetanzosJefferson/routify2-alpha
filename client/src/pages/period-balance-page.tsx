@@ -231,7 +231,7 @@ function PeriodBalancePageContent() {
       {periodBalance && (
         <>
           {/* Cards de resumen */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
@@ -258,6 +258,21 @@ function PeriodBalancePageContent() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Proporcional por {getTotalHours().toFixed(1)} horas
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Gastos de Viajes</CardTitle>
+                <Car className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(periodBalance.totalTripExpenses || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).length || 0} viaje{(periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).length || 0) !== 1 ? 's' : ''} con gastos
                 </p>
               </CardContent>
             </Card>
@@ -460,11 +475,7 @@ function PeriodBalancePageContent() {
                                 </span>
                               )}
                             </div>
-                            {tripTotalExpenses > 0 && (
-                              <div className="text-lg font-semibold text-red-600">
-                                {formatCurrency(tripTotalExpenses)}
-                              </div>
-                            )}
+
                           </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mb-3">
