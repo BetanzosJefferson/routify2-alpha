@@ -2278,11 +2278,11 @@ export class DatabaseStorage implements IStorage {
         // Buscar transacción existente para idempotencia
         const existingTransaction = await trx
           .select()
-          .from(schema.transactions)
+          .from(schema.transacciones)
           .where(
             and(
-              eq(schema.transactions.type, 'reservation'),
-              eq(schema.transactions.type_id, reservationId)
+              eq(schema.transacciones.type, 'reservation'),
+              eq(schema.transacciones.type_id, reservationId)
             )
           )
           .limit(1);
@@ -2304,7 +2304,7 @@ export class DatabaseStorage implements IStorage {
       if (remainingAmount > 0) {
         try {
           const [transaction] = await trx
-            .insert(schema.transactions)
+            .insert(schema.transacciones)
             .values({
               type: 'reservation',
               type_id: reservationId,
@@ -2332,11 +2332,11 @@ export class DatabaseStorage implements IStorage {
             // Obtener la transacción existente
             const [existingTransaction] = await trx
               .select()
-              .from(schema.transactions)
+              .from(schema.transacciones)
               .where(
                 and(
-                  eq(schema.transactions.type, 'reservation'),
-                  eq(schema.transactions.type_id, reservationId)
+                  eq(schema.transacciones.type, 'reservation'),
+                  eq(schema.transacciones.type_id, reservationId)
                 )
               );
             
