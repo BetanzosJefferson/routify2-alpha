@@ -5115,7 +5115,17 @@ export class DatabaseStorage implements IStorage {
         .returning();
 
       if (!transaction) {
-        throw new Error(`Error al crear transacción para reservación ${reservationId}`);
+        // Ya existe, obtener la existente
+        const [existingTransaction] = await tx
+          .select()
+          .from(schema.transacciones)
+          .where(and(
+            eq(schema.transacciones.type, transactionData.type!),
+            eq(schema.transacciones.type_id, transactionData.type_id!)
+          ));
+        
+        console.log(`[DB] Transacción de pago ya existe para reservación ${reservationId}`);
+        return { reservation: updatedReservation, transaction: existingTransaction };
       }
 
       console.log(`[DB] Reservación ${reservationId} marcada como pagada, transacción ${transaction.id} creada`);
@@ -5173,7 +5183,17 @@ export class DatabaseStorage implements IStorage {
         .returning();
 
       if (!transaction) {
-        throw new Error(`Error al crear transacción para paquete ${packageId}`);
+        // Ya existe, obtener la existente
+        const [existingTransaction] = await tx
+          .select()
+          .from(schema.transacciones)
+          .where(and(
+            eq(schema.transacciones.type, transactionData.type!),
+            eq(schema.transacciones.type_id, transactionData.type_id!)
+          ));
+        
+        console.log(`[DB] Transacción de pago ya existe para paquete ${packageId}`);
+        return { package: updatedPackage, transaction: existingTransaction };
       }
 
       console.log(`[DB] Paquete ${packageId} marcado como pagado, transacción ${transaction.id} creada`);
@@ -5207,14 +5227,27 @@ export class DatabaseStorage implements IStorage {
         type_id: newPackage.id
       };
 
-      // Crear transacción
+      // Crear transacción con upsert para idempotencia
       const [transaction] = await tx
         .insert(schema.transacciones)
         .values(completeTransactionData)
+        .onConflictDoNothing({
+          target: [schema.transacciones.type, schema.transacciones.type_id]
+        })
         .returning();
 
       if (!transaction) {
-        throw new Error(`Error al crear transacción para paquete ${newPackage.id}`);
+        // Ya existe, obtener la existente
+        const [existingTransaction] = await tx
+          .select()
+          .from(schema.transacciones)
+          .where(and(
+            eq(schema.transacciones.type, completeTransactionData.type!),
+            eq(schema.transacciones.type_id, completeTransactionData.type_id!)
+          ));
+        
+        console.log(`[DB] Transacción para paquete pagado ya existe: ${newPackage.id}`);
+        return { package: newPackage, transaction: existingTransaction };
       }
 
       console.log(`[DB] Paquete pagado ${newPackage.id} creado con transacción ${transaction.id}`);

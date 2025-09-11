@@ -3871,17 +3871,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`[POST /reservations] DEPURACIÓN - Datos para crear transacción:`, JSON.stringify(transaccionData, null, 2));
             
-            const transaccion = await storage.createTransaccion(transaccionData);
+            // Usar método transaccional para garantizar integridad
+            const { transaction } = await storage.createReservationDepositWithTransaction(
+              reservation.id,
+              transaccionData
+            );
             
-            console.log(`[POST /reservations] Transacción creada exitosamente con ID: ${transaccion.id}`);
-            console.log(`[POST /reservations] DEPURACIÓN - Transacción creada:`, JSON.stringify(transaccion, null, 2));
+            console.log(`[POST /reservations] Transacción creada exitosamente con ID: ${transaction.id}`);
+            console.log(`[POST /reservations] DEPURACIÓN - Transacción creada:`, JSON.stringify(transaction, null, 2));
           } else {
             console.log(`[POST /reservations] No se pudo obtener información completa del viaje para crear la transacción`);
           }
         } catch (error) {
-          console.error(`[POST /reservations] Error al crear transacción:`, error);
-          console.error(`[POST /reservations] DEPURACIÓN - Stack de error:`, error instanceof Error ? error.stack : 'No stack disponible');
-          // Continuamos aunque falle la creación de la transacción para no afectar la creación de la reserva
+          console.error('[POST /reservations] Error al crear transacción:', error);
+          throw error; // Hacer que el error sea fatal para garantizar integridad
         }
       } else {
         console.log(`[POST /reservations] DEPURACIÓN - No se creó transacción porque no hay anticipo o es 0: ${reservationData.advanceAmount}`);
@@ -4050,18 +4053,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     companyId: companyId // Añadimos el ID de la compañía a la transacción
                   };
                   
-                  const transaccion = await storage.createTransaccion(transaccionData);
-                  console.log(`[PUT /reservations/${id}] Transacción de pago final creada exitosamente con ID: ${transaccion.id}`);
+                  // Usar método transaccional para garantizar integridad
+                  const { reservation: updatedReservation, transaction } = await storage.payReservationWithTransaction(
+                    originalReservation.id,
+                    transaccionData,
+                    reservationData // Esto incluye paymentStatus, paidBy, markedAsPaidAt, etc.
+                  );
+                  console.log(`[PUT /reservations/${id}] Reservación marcada como pagada y transacción creada con ID: ${transaction.id}`);
                   }
                 }
               }
             } else {
               console.log(`[PUT /reservations/${id}] No se creó transacción porque no hay monto restante por pagar`);
+              // Aún necesitamos actualizar la reservación aunque no haya monto restante
+              await storage.updateReservation(id, reservationData);
             }
           } catch (error) {
-            console.error(`[PUT /reservations/${id}] Error al crear transacción de pago final:`, error);
-            console.error(`[PUT /reservations/${id}] DEPURACIÓN - Stack de error:`, error instanceof Error ? error.stack : 'No stack disponible');
-            // Continuamos con la actualización aunque falle la creación de la transacción
+            console.error(`[PUT /reservations/${id}] Error al crear transacción para pago restante:`, error);
+            throw error; // Hacer que el error sea fatal para garantizar integridad
           }
         }
       }
@@ -4927,16 +4936,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user ? (req.user as any).id : null;
       console.log(`[POST /public/packages/${packageId}/mark-paid] Usuario que marca como pagado:`, userId);
       
-      // Actualizar el estado de pago
-      console.log(`[POST /public/packages/${packageId}/mark-paid] Estado actual de pago:`, packageData.isPaid);
-      const updatedPackage = await storage.updatePackage(packageId, {
-        isPaid: true,
-        paymentMethod: packageData.paymentMethod || 'efectivo',
-        paidBy: userId, // Guardar el ID del usuario que marca como pagado
-        updatedAt: new Date()
-      });
-      console.log(`[POST /public/packages/${packageId}/mark-paid] Nuevo estado de pago:`, updatedPackage?.isPaid);
-      
       // Extraer información del viaje desde tripDetails
       const packageTripDetails = packageData.tripDetails as any;
       let tripId = "";
@@ -4955,52 +4954,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Crear una transacción cuando el paquete es marcado como pagado
-      if (userId && updatedPackage) {
+      // Marcar paquete como pagado y crear transacción de forma atómica
+      if (userId) {
+        // Obtener el companyId del paquete
+        const companyId = packageData.companyId;
+        
+        // Crear los detalles de la transacción en formato JSON
+        const detallesTransaccion = {
+          type: "package",
+          details: {
+            id: packageData.id,
+            monto: packageData.price,
+            notas: "Pago de paquetería",
+            origen: origen,
+            tripId: tripId,
+            destino: destino,
+            isSubTrip: false, // Se puede determinar desde tripId si es necesario
+            metodoPago: packageData.paymentMethod || "efectivo",
+            remitente: `${packageData.senderName} ${packageData.senderLastName}`,
+            destinatario: `${packageData.recipientName} ${packageData.recipientLastName}`,
+            descripcion: packageData.packageDescription || "",
+            usaAsientos: packageData.usesSeats || false,
+            asientos: packageData.seatsQuantity || 0,
+            companyId: companyId, // Añadimos el ID de la compañía
+            dateCreated: new Date().toISOString() // Fecha exacta de creación
+          }
+        };
+        
+        console.log(`[POST /public/packages/${packageId}/mark-paid] Creando transacción con detalles:`, 
+                    JSON.stringify(detallesTransaccion, null, 2));
+        
+        // Usar método transaccional para garantizar integridad
         try {
-          // Obtener el companyId del paquete
-          const companyId = packageData.companyId;
-          
-          // Crear los detalles de la transacción en formato JSON
-          const detallesTransaccion = {
-            type: "package",
-            details: {
-              id: packageData.id,
-              monto: packageData.price,
-              notas: "Pago de paquetería",
-              origen: origen,
-              tripId: tripId,
-              destino: destino,
-              isSubTrip: false, // Se puede determinar desde tripId si es necesario
-              metodoPago: packageData.paymentMethod || "efectivo",
-              remitente: `${packageData.senderName} ${packageData.senderLastName}`,
-              destinatario: `${packageData.recipientName} ${packageData.recipientLastName}`,
-              descripcion: packageData.packageDescription || "",
-              usaAsientos: packageData.usesSeats || false,
-              asientos: packageData.seatsQuantity || 0,
-              companyId: companyId, // Añadimos el ID de la compañía
-              dateCreated: new Date().toISOString() // Fecha exacta de creación
+          const { package: updatedPackage, transaction } = await storage.markPackagePaidWithTransaction(
+            packageId,
+            {
+              details: detallesTransaccion,
+              user_id: userId,
+              cutoff_id: null,
+              type: "package", // Tipo de transacción: package
+              type_id: packageData.id, // ID del paquete
+              companyId: companyId // Añadimos el ID de la compañía a la transacción
             }
-          };
+          );
           
-          console.log(`[POST /public/packages/${packageId}/mark-paid] Creando transacción con detalles:`, 
-                      JSON.stringify(detallesTransaccion, null, 2));
-          
-          // Crear la transacción en la base de datos
-          const transaccion = await storage.createTransaccion({
-            details: detallesTransaccion,
-            user_id: userId,
-            cutoff_id: null,
-            type: "package", // Tipo de transacción: package
-            type_id: packageData.id, // ID del paquete
-            companyId: companyId // Añadimos el ID de la compañía a la transacción
-          });
-          
-          console.log(`[POST /public/packages/${packageId}/mark-paid] Transacción creada con ID:`, transaccion.id);
-        } catch (transactionError) {
-          console.error(`[POST /public/packages/${packageId}/mark-paid] Error al crear la transacción:`, transactionError);
-          // Continuamos aunque haya error en la creación de la transacción, ya que el paquete ya fue marcado como pagado
+          console.log(`[POST /public/packages/${packageId}/mark-paid] Paquete marcado como pagado y transacción creada con ID: ${transaction.id}`);
+        } catch (error) {
+          console.error(`[POST /public/packages/${packageId}/mark-paid] Error al marcar paquete como pagado:`, error);
+          throw error; // Hacer que el error sea fatal para garantizar integridad
         }
+      } else {
+        throw new Error("Usuario requerido para marcar paquete como pagado");
       }
       
       console.log(`[POST /public/packages/${packageId}/mark-paid] Paquete actualizado con éxito`);
@@ -7122,8 +7126,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[POST /packages] Creando paquetería:`, packageData);
       
-      // Crear la paquetería
-      const newPackage = await storage.createPackage(packageData);
+      // Verificar si el paquete será marcado como pagado para usar método transaccional
+      let newPackage: any;
+      if (packageData.isPaid === true) {
+        // Para paquetes pagados, usar método transaccional que crea paquete y transacción atómicamente
+        
+        // Extraer información del viaje desde tripDetails para la transacción
+        let tripId = "";
+        let origen = "";
+        let destino = "";
+        
+        const tripDetails = packageData.tripDetails as any;
+        if (tripDetails) {
+          tripId = tripDetails.tripId || "";
+          origen = tripDetails.segmentOrigin || tripDetails.origin || "";
+          destino = tripDetails.segmentDestination || tripDetails.destination || "";
+          
+          console.log(`[POST /packages] Información extraída de tripDetails:`, {
+            tripId,
+            origen,
+            destino
+          });
+        }
+        
+        // Si no tenemos origen/destino desde tripDetails, intentar obtenerlos de la BD
+        if (!origen || !destino) {
+          try {
+            // Extraer recordId del tripId para buscar en la BD
+            if (tripId) {
+              const recordId = parseInt(tripId.split('_')[0]);
+              
+              if (!isNaN(recordId)) {
+                const tripDbDetails = await db
+                  .select({
+                    isSubTrip: schema.trips.isSubTrip,
+                    segmentOrigin: schema.trips.segmentOrigin,
+                    segmentDestination: schema.trips.segmentDestination
+                  })
+                  .from(schema.trips)
+                  .where(eq(schema.trips.id, recordId))
+                  .limit(1);
+
+                if (tripDbDetails && tripDbDetails.length > 0) {
+                  const tripData = tripDbDetails[0];
+                  
+                  if (tripData.isSubTrip && tripData.segmentOrigin && tripData.segmentDestination) {
+                    origen = origen || tripData.segmentOrigin;
+                    destino = destino || tripData.segmentDestination;
+                    console.log(`[POST /packages] Origen/destino complementados desde BD:`, { origen, destino });
+                  }
+                }
+              }
+            }
+          } catch (dbError) {
+            console.error(`[POST /packages] Error al consultar detalles del viaje en BD:`, dbError);
+          }
+        }
+        
+        // Crear los detalles de la transacción en formato JSON
+        const detallesTransaccion = {
+          type: "package",
+          details: {
+            // ID se asignará después de crear el paquete
+            monto: packageData.price,
+            notas: "Pago de paquetería",
+            origen: origen,
+            tripId: tripId,
+            destino: destino,
+            isSubTrip: false, // Se puede determinar desde tripId si es necesario
+            metodoPago: packageData.paymentMethod || "efectivo",
+            remitente: `${packageData.senderName} ${packageData.senderLastName}`,
+            destinatario: `${packageData.recipientName} ${packageData.recipientLastName}`,
+            descripcion: packageData.packageDescription || "",
+            usaAsientos: packageData.usesSeats || false,
+            asientos: packageData.seatsQuantity || 0
+          }
+        };
+        
+        console.log(`[POST /packages] Creando paquete pagado con transacción de forma atómica`);
+        
+        // Usar método transaccional para crear paquete y transacción de forma atómica
+        try {
+          const { package: createdPackage, transaction } = await storage.createPaidPackageWithTransaction(
+            packageData,
+            {
+              details: detallesTransaccion,
+              user_id: user.id,
+              cutoff_id: null,
+              type: "package", // Tipo de transacción: package
+              // type_id se asigna automáticamente en el método transaccional
+              companyId: userCompanyId // Incluir el ID de la compañía para el aislamiento de datos
+            }
+          );
+          
+          newPackage = createdPackage;
+          console.log(`[POST /packages] Paquete pagado y transacción creados con IDs: paquete=${newPackage.id}, transacción=${transaction.id}`);
+        } catch (error) {
+          console.error(`[POST /packages] Error al crear paquete pagado con transacción:`, error);
+          throw error; // Hacer que el error sea fatal para garantizar integridad
+        }
+      } else {
+        // Para paquetes no pagados, usar método tradicional
+        newPackage = await storage.createPackage(packageData);
+        console.log(`[POST /packages] Paquete no pagado creado con ID: ${newPackage.id}`);
+      }
       
       // ACTUALIZACIÓN DE ASIENTOS: Si el paquete ocupa asientos, actualizar disponibilidad del viaje
       if (packageData.usesSeats && packageData.seatsQuantity && packageData.seatsQuantity > 0) {
@@ -7151,103 +7257,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`[POST /packages] Error al actualizar asientos disponibles:`, seatUpdateError);
           // No fallar la operación principal, solo loggeamos el error
         }
-      }
-      
-      // Si el paquete está marcado como pagado, crear una transacción en la base de datos
-      if (packageData.isPaid === true) {
-        try {
-          // Extraer información del viaje desde tripDetails
-          const tripDetails = newPackage.tripDetails as any;
-          let tripId = "";
-          let origen = "";
-          let destino = "";
-          
-          if (tripDetails) {
-            tripId = tripDetails.tripId || "";
-            origen = tripDetails.segmentOrigin || tripDetails.origin || "";
-            destino = tripDetails.segmentDestination || tripDetails.destination || "";
-            
-            console.log(`[POST /packages] Información extraída de tripDetails:`, {
-              tripId,
-              origen,
-              destino
-            });
-          }
-          
-          // Si no tenemos origen/destino desde tripDetails, intentar obtenerlos de la BD
-          if (!origen || !destino) {
-            try {
-              // Extraer recordId del tripId para buscar en la BD
-              if (tripId) {
-                const recordId = parseInt(tripId.split('_')[0]);
-                
-                if (!isNaN(recordId)) {
-                  const tripDbDetails = await db
-                    .select({
-                      isSubTrip: schema.trips.isSubTrip,
-                      segmentOrigin: schema.trips.segmentOrigin,
-                      segmentDestination: schema.trips.segmentDestination
-                    })
-                    .from(schema.trips)
-                    .where(eq(schema.trips.id, recordId))
-                    .limit(1);
-
-                  if (tripDbDetails && tripDbDetails.length > 0) {
-                    const tripData = tripDbDetails[0];
-                    
-                    if (tripData.isSubTrip && tripData.segmentOrigin && tripData.segmentDestination) {
-                      origen = origen || tripData.segmentOrigin;
-                      destino = destino || tripData.segmentDestination;
-                      console.log(`[POST /packages] Origen/destino complementados desde BD:`, { origen, destino });
-                    }
-                  }
-                }
-              }
-            } catch (dbError) {
-              console.error(`[POST /packages] Error al consultar detalles del viaje en BD:`, dbError);
-            }
-          }
-          
-          // Crear los detalles de la transacción en formato JSON
-          const detallesTransaccion = {
-            type: "package",
-            details: {
-              id: newPackage.id,
-              monto: newPackage.price,
-              notas: "Pago de paquetería",
-              origen: origen,
-              tripId: tripId,
-              destino: destino,
-              isSubTrip: false, // Se puede determinar desde tripId si es necesario
-              metodoPago: newPackage.paymentMethod || "efectivo",
-              remitente: `${newPackage.senderName} ${newPackage.senderLastName}`,
-              destinatario: `${newPackage.recipientName} ${newPackage.recipientLastName}`,
-              descripcion: newPackage.packageDescription || "",
-              usaAsientos: newPackage.usesSeats || false,
-              asientos: newPackage.seatsQuantity || 0
-            }
-          };
-          
-          console.log(`[POST /packages] Creando transacción con detalles:`, 
-                      JSON.stringify(detallesTransaccion, null, 2));
-          
-          // Crear la transacción en la base de datos
-          const transaccion = await storage.createTransaccion({
-            details: detallesTransaccion,
-            user_id: user.id,
-            cutoff_id: null,
-            type: "package", // Tipo de transacción: package
-            type_id: newPackage.id, // ID del paquete
-            companyId: userCompanyId // Incluir el ID de la compañía para el aislamiento de datos
-          });
-          
-          console.log(`[POST /packages] Transacción creada con ID:`, transaccion.id);
-        } catch (transactionError: any) {
-          console.error(`[POST /packages] Error al crear transacción:`, transactionError);
-          // No detener el proceso si falla la creación de la transacción
-        }
-      } else {
-        console.log(`[POST /packages] No se creó transacción porque el paquete no está marcado como pagado`);
       }
       
       // Responder con la paquetería creada
