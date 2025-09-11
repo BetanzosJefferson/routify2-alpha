@@ -2309,6 +2309,9 @@ export class DatabaseStorage implements IStorage {
           const tripDetails = reservation.tripDetails as any;
           const tripId = tripDetails?.tripId;
           
+          console.log(`[TRANSACTIONAL] DEBUG - Reservación ${reservationId}, tripDetails:`, tripDetails);
+          console.log(`[TRANSACTIONAL] DEBUG - tripId extraído:`, tripId);
+          
           // Obtener información de la ruta
           const routeInfo = await trx
             .select({
@@ -2319,6 +2322,8 @@ export class DatabaseStorage implements IStorage {
             .innerJoin(schema.trips, eq(schema.trips.routeId, schema.routes.id))
             .where(eq(schema.trips.id, tripId))
             .limit(1);
+          
+          console.log(`[TRANSACTIONAL] DEBUG - Consulta de ruta para tripId ${tripId}, resultados:`, routeInfo);
 
           // Obtener información de los pasajeros
           const passengers = await trx
