@@ -9399,6 +9399,72 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // Endpoint para obtener transacciones asociadas a una reserva específica
+  app.get(apiRouter("/reservations/:reservationId/transactions"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      const reservationId = parseInt(req.params.reservationId);
+      if (isNaN(reservationId)) {
+        return res.status(400).json({ error: "ID de reservación inválido" });
+      }
+      
+      console.log(`[GET /reservations/${reservationId}/transactions] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver transacciones
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver transacciones" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      
+      // Obtener transacciones asociadas a esta reserva
+      const transactions = await storage.getTransactionHistory({
+        companyId,
+        type: 'reservation',
+        typeId: reservationId
+      });
+      
+      console.log(`[GET /reservations/${reservationId}/transactions] Encontradas ${transactions.length} transacciones para reserva ${reservationId}`);
+      
+      // Calcular el monto total cubierto por las transacciones
+      const totalCovered = transactions.reduce((sum, transaction) => {
+        // Extraer el monto desde el campo details
+        if (transaction.details && typeof transaction.details === 'object') {
+          const details = transaction.details as any;
+          if (details.details && details.details.monto) {
+            return sum + details.details.monto;
+          }
+        }
+        return sum;
+      }, 0);
+      
+      res.json({
+        reservationId,
+        transactions,
+        transactionCount: transactions.length,
+        totalCovered,
+        summary: {
+          count: transactions.length,
+          totalAmount: totalCovered
+        }
+      });
+    } catch (error: any) {
+      console.error(`[GET /reservations/transactions] Error:`, error);
+      res.status(500).json({ 
+        error: "Error al obtener transacciones de la reserva",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para obtener cortes pendientes de confirmación
   app.get(apiRouter("/cutoffs/pending"), isAuthenticated, async (req: Request, res: Response) => {
     try {

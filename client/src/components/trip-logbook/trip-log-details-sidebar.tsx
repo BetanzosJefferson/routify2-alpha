@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle } from "lucide-react";
+import { X, DollarSign, Package, Users, PlusCircle, MinusCircle, Calculator, Loader2, Trash2, MapPin, Clock, CheckCircle, XCircle, CreditCard, AlertCircle, FileText, TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,101 @@ interface TripLogDetailsSidebarProps {
   onClose: () => void;
 }
 
+// Componente para mostrar información de transacciones de una reserva
+interface ReservationTransactionInfoProps {
+  reservationId: number;
+  reservationAmount: number;
+  useReservationTransactions: (id: number) => any;
+  formatCurrency: (amount: number) => string;
+}
+
+function ReservationTransactionInfo({ 
+  reservationId, 
+  reservationAmount, 
+  useReservationTransactions,
+  formatCurrency 
+}: ReservationTransactionInfoProps) {
+  const { data: transactionData, isLoading, error } = useReservationTransactions(reservationId);
+  
+  if (isLoading) {
+    return (
+      <div className="mt-2 pt-2 border-t">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Cargando transacciones...</span>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error || !transactionData) {
+    return (
+      <div className="mt-2 pt-2 border-t">
+        <div className="flex items-center gap-2 text-sm text-red-500">
+          <AlertCircle className="h-3 w-3" />
+          <span>Error al cargar transacciones</span>
+        </div>
+      </div>
+    );
+  }
+  
+  const { transactionCount, totalCovered } = transactionData.summary;
+  const isCoveredCompletelyByTransactions = totalCovered >= reservationAmount;
+  const coveragePercentage = reservationAmount > 0 ? (totalCovered / reservationAmount) * 100 : 0;
+  
+  return (
+    <div className="mt-2 pt-2 border-t bg-gray-50 -mx-3 px-3 py-2 rounded-b-lg">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-gray-700">Seguimiento Financiero</span>
+        </div>
+        {!isCoveredCompletelyByTransactions && (
+          <AlertCircle className="h-4 w-4 text-orange-500" data-testid={`financial-alert-${reservationId}`} />
+        )}
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="flex items-center gap-1">
+          <TrendingUp className="h-3 w-3 text-gray-500" />
+          <span className="text-gray-600">Transacciones:</span>
+          <span className="font-medium" data-testid={`transaction-count-${reservationId}`}>{transactionCount}</span>
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <DollarSign className="h-3 w-3 text-gray-500" />
+          <span className="text-gray-600">Cubierto:</span>
+          <span className="font-medium" data-testid={`covered-amount-${reservationId}`}>{formatCurrency(totalCovered)}</span>
+        </div>
+      </div>
+      
+      {/* Alerta de cobertura financiera */}
+      {!isCoveredCompletelyByTransactions && (
+        <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+          <div className="flex items-center gap-1 text-orange-700">
+            <AlertCircle className="h-3 w-3" />
+            <span className="font-medium">Cobertura financiera incompleta</span>
+          </div>
+          <div className="mt-1 text-orange-600">
+            <span>Faltan: {formatCurrency(reservationAmount - totalCovered)}</span>
+            <span className="ml-2">({Math.round(coveragePercentage)}% cubierto)</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Confirmación de cobertura completa */}
+      {isCoveredCompletelyByTransactions && transactionCount > 0 && (
+        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+          <div className="flex items-center gap-1 text-green-700">
+            <CheckCircle className="h-3 w-3" />
+            <span className="font-medium">100% cubierto financieramente</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSidebarProps): JSX.Element {
   const [budget, setBudget] = useState<number>(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -59,6 +155,23 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
   const { toast } = useToast();
+
+  // Hook personalizado para obtener transacciones de una reserva
+  const useReservationTransactions = (reservationId: number) => {
+    return useQuery({
+      queryKey: ['reservation-transactions', reservationId],
+      queryFn: async () => {
+        const response = await fetch(`/api/reservations/${reservationId}/transactions`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Error al obtener transacciones de la reserva');
+        }
+        return response.json();
+      },
+      staleTime: 30000, // Datos válidos por 30 segundos
+    });
+  };
 
   // Cargar presupuesto y gastos al abrir el sidebar
   useEffect(() => {
@@ -551,6 +664,14 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                         </div>
                       </div>
                     )}
+
+                    {/* Información de transacciones financieras */}
+                    <ReservationTransactionInfo 
+                      reservationId={reservation.id} 
+                      reservationAmount={reservation.totalAmount}
+                      useReservationTransactions={useReservationTransactions}
+                      formatCurrency={formatCurrency}
+                    />
                   </div>
                   );
                 })}

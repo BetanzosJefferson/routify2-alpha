@@ -84,6 +84,9 @@ export interface IStorage {
     endDate?: string;
     userId?: number;
     cutoffId?: number;
+    paymentMethod?: string;
+    type?: string;
+    typeId?: number;
   }): Promise<{
     id: number;
     details: any;

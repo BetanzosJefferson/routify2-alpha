@@ -4805,6 +4805,8 @@ export class DatabaseStorage implements IStorage {
     userId?: number;
     cutoffId?: number;
     paymentMethod?: string;
+    type?: string;
+    typeId?: number;
   }): Promise<{
     id: number;
     details: any;
@@ -4865,6 +4867,16 @@ export class DatabaseStorage implements IStorage {
             (${schema.transacciones.details}->'details'->>'metodoPago' = ${params.paymentMethod})
           )`
         );
+      }
+
+      // Filtro por tipo de transacción
+      if (params.type) {
+        baseConditions.push(eq(schema.transacciones.type, params.type));
+      }
+
+      // Filtro por type_id de transacción
+      if (params.typeId !== undefined) {
+        baseConditions.push(eq(schema.transacciones.type_id, params.typeId));
       }
 
       // Crear alias para el usuario verificador
