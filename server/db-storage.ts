@@ -2300,20 +2300,10 @@ export class DatabaseStorage implements IStorage {
 
       let createdTransaction: Transaction | null = null;
 
-      // 5. Crear transacción solo si hay monto pendiente
+      // 5. Crear transacción solo si hay monto pendiente (versión simplificada para debug)
       if (remainingAmount > 0) {
         try {
-          // Obtener información básica de la ruta de forma directa
-          const routeInfo = await trx
-            .select()
-            .from(schema.routes)
-            .innerJoin(schema.trips, eq(schema.trips.route_id, schema.routes.id))
-            .where(eq(schema.trips.id, reservation.trip_id))
-            .limit(1);
-
-          const route = routeInfo[0];
-          const origen = route?.routes?.origin || "No especificado";
-          const destino = route?.routes?.destination || "No especificado";
+          console.log(`[TRANSACTIONAL] Creando transacción simplificada para reservación ${reservationId}`);
           
           const [transaction] = await trx
             .insert(schema.transacciones)
@@ -2329,16 +2319,9 @@ export class DatabaseStorage implements IStorage {
                   tripId: reservation.trip_id,
                   isSubTrip: false,
                   pasajeros: `${reservation.passengerName} ${reservation.passengerLastName}`,
-                  contacto: {
-                    email: reservation.email,
-                    telefono: reservation.phone
-                  },
-                  origen: origen,
-                  destino: destino,
                   monto: remainingAmount,
                   metodoPago: paymentMethod,
                   notas: `Pago de reservación - Monto restante ($${remainingAmount})`,
-                  companyId: reservation.companyId,
                   dateCreated: new Date().toISOString()
                 }
               }
