@@ -2312,7 +2312,7 @@ export class DatabaseStorage implements IStorage {
               routeDestination: schema.routes.destination
             })
             .from(schema.routes)
-            .innerJoin(schema.trips, eq(schema.trips.route_id, schema.routes.id))
+            .innerJoin(schema.trips, eq(schema.trips.routeId, schema.routes.id))
             .where(eq(schema.trips.id, reservation.trip_id))
             .limit(1);
 
@@ -2320,7 +2320,7 @@ export class DatabaseStorage implements IStorage {
           const passengers = await trx
             .select()
             .from(schema.passengers)
-            .where(eq(schema.passengers.reservation_id, reservationId));
+            .where(eq(schema.passengers.reservationId, reservationId));
 
           // Construir nombre de pasajeros
           const passengerNames = passengers.map(p => `${p.firstName || ''} ${p.lastName || ''}`.trim()).filter(name => name).join(', ');
@@ -2334,8 +2334,8 @@ export class DatabaseStorage implements IStorage {
             .insert(schema.transacciones)
             .values({
               type: 'reservation',
-              type_id: reservationId,
-              user_id: paidBy,
+              typeId: reservationId,
+              userId: paidBy,
               companyId: reservation.companyId,
               details: {
                 type: "reservation",
@@ -2359,7 +2359,7 @@ export class DatabaseStorage implements IStorage {
               }
             })
             .onConflictDoNothing({
-              target: [schema.transacciones.type, schema.transacciones.type_id]
+              target: [schema.transacciones.type, schema.transacciones.typeId]
             })
             .returning();
 
