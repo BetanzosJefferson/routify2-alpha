@@ -2334,8 +2334,8 @@ export class DatabaseStorage implements IStorage {
             .insert(schema.transacciones)
             .values({
               type: 'reservation',
-              typeId: reservationId,
-              userId: paidBy,
+              type_id: reservationId,
+              user_id: paidBy,
               companyId: reservation.companyId,
               details: {
                 type: "reservation",
@@ -2359,7 +2359,7 @@ export class DatabaseStorage implements IStorage {
               }
             })
             .onConflictDoNothing({
-              target: [schema.transacciones.type, schema.transacciones.typeId]
+              target: [schema.transacciones.type, schema.transacciones.type_id]
             })
             .returning();
 
