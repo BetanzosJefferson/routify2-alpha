@@ -2300,7 +2300,36 @@ export class DatabaseStorage implements IStorage {
 
       let createdTransaction: Transaction | null = null;
 
-      // 5. Crear transacción solo si hay monto pendiente
+      // 5. Obtener información adicional necesaria para la transacción
+      const tripDetails = reservation.tripDetails as any;
+      const tripId = tripDetails?.tripId || tripDetails?.recordId;
+      
+      // Obtener información del viaje
+      let tripInfo = null;
+      if (tripId) {
+        const [trip] = await trx
+          .select()
+          .from(schema.trips)
+          .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
+          .where(eq(schema.trips.id, tripId));
+        
+        if (trip) {
+          tripInfo = {
+            origen: trip.routes?.origin || '',
+            destino: trip.routes?.destination || ''
+          };
+        }
+      }
+      
+      // Obtener nombres de pasajeros
+      const passengers = await trx
+        .select()
+        .from(schema.passengers)
+        .where(eq(schema.passengers.reservationId, reservationId));
+      
+      const passengerNames = passengers.map(p => `${p.firstName} ${p.lastName}`).join(', ');
+
+      // 6. Crear transacción solo si hay monto pendiente
       if (remainingAmount > 0) {
         try {
           const [transaction] = await trx
@@ -2314,17 +2343,18 @@ export class DatabaseStorage implements IStorage {
                 id: reservationId,
                 monto: remainingAmount,
                 notas: `Pago final - Reservación #${reservationId}`,
-                origen: reservation.origen,
-                tripId: reservation.tripId,
-                destino: reservation.destino,
+                origen: tripInfo?.origen || '',
+                tripId: tripId,
+                destino: tripInfo?.destino || '',
                 contacto: {
                   email: reservation.email,
                   telefono: reservation.phone
                 },
                 companyId: reservation.companyId,
-                isSubTrip: reservation.isSubTrip || false,
-                pasajeros: reservation.passengerNames,
-                metodoPago: paymentMethod
+                isSubTrip: tripDetails?.isSubTrip || false,
+                pasajeros: passengerNames,
+                metodoPago: paymentMethod,
+                dateCreated: new Date().toISOString()
               }
             })
             .returning();
