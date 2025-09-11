@@ -2305,20 +2305,83 @@ export class DatabaseStorage implements IStorage {
         try {
           console.log(`[TRANSACTIONAL] Creando transacción para reservación ${reservationId}`);
           
-          // Extraer tripId del JSON tripDetails
+          // Extraer tripId del JSON tripDetails con parsing robusto
           const tripDetails = reservation.tripDetails as any;
           const tripId = tripDetails?.tripId;
+          let baseTripId: number;
+          let segmentIndex: number | null = null;
+          let isSubTrip = false;
           
-          // Obtener información de la ruta
-          const routeInfo = await trx
+          // Parsing robusto para manejar ambos formatos: "1288" y "1288_91"
+          if (typeof tripId === 'string' && tripId.includes('_')) {
+            // Formato: "baseTripId_segmentIndex"
+            const [baseTripIdStr, segmentIndexStr] = tripId.split('_');
+            baseTripId = parseInt(baseTripIdStr, 10);
+            segmentIndex = parseInt(segmentIndexStr, 10);
+            isSubTrip = true;
+            console.log(`[TRANSACTIONAL] Parsed sub-trip: baseTripId=${baseTripId}, segmentIndex=${segmentIndex}`);
+          } else {
+            // Formato numérico directo
+            baseTripId = typeof tripId === 'string' ? parseInt(tripId, 10) : tripId;
+            console.log(`[TRANSACTIONAL] Parsed main trip: baseTripId=${baseTripId}`);
+          }
+          
+          if (isNaN(baseTripId)) {
+            console.error(`[TRANSACTIONAL] Invalid tripId format: ${tripId}`);
+            throw new Error('Invalid trip ID format');
+          }
+          
+          // Obtener información completa del viaje
+          const tripInfo = await trx
             .select({
               routeOrigin: schema.routes.origin,
-              routeDestination: schema.routes.destination
+              routeDestination: schema.routes.destination,
+              tripData: schema.trips.tripData,
+              stops: schema.routes.stops
             })
             .from(schema.routes)
             .innerJoin(schema.trips, eq(schema.trips.routeId, schema.routes.id))
-            .where(eq(schema.trips.id, tripId))
+            .where(eq(schema.trips.id, baseTripId))
             .limit(1);
+
+          let origen = "No especificado";
+          let destino = "No especificado";
+          
+          if (tripInfo.length > 0) {
+            const trip = tripInfo[0];
+            
+            if (isSubTrip && segmentIndex !== null && trip.stops) {
+              // Es un sub-viaje: calcular origen/destino desde las paradas
+              const stops = trip.stops as string[];
+              let currentIndex = 0;
+              let segmentFound = false;
+              
+              for (let i = 0; i < stops.length - 1 && !segmentFound; i++) {
+                for (let j = i + 1; j < stops.length && !segmentFound; j++) {
+                  if (currentIndex === segmentIndex) {
+                    origen = stops[i];
+                    destino = stops[j];
+                    segmentFound = true;
+                    console.log(`[TRANSACTIONAL] Segment ${segmentIndex}: ${origen} → ${destino}`);
+                  }
+                  currentIndex++;
+                }
+              }
+              
+              if (!segmentFound) {
+                console.warn(`[TRANSACTIONAL] Segment ${segmentIndex} not found, using route defaults`);
+                origen = trip.routeOrigin || "No especificado";
+                destino = trip.routeDestination || "No especificado";
+              }
+            } else {
+              // Es viaje principal: usar información de la ruta
+              origen = trip.routeOrigin || "No especificado";
+              destino = trip.routeDestination || "No especificado";
+              console.log(`[TRANSACTIONAL] Main trip route: ${origen} → ${destino}`);
+            }
+          } else {
+            console.error(`[TRANSACTIONAL] Trip ${baseTripId} not found`);
+          }
 
           // Obtener información de los pasajeros
           const passengers = await trx
@@ -2329,10 +2392,7 @@ export class DatabaseStorage implements IStorage {
           // Construir nombre de pasajeros
           const passengerNames = passengers.map(p => `${p.firstName || ''} ${p.lastName || ''}`.trim()).filter(name => name).join(', ');
           
-          // Usar valores por defecto si no hay información
-          const route = routeInfo[0];
-          const origen = route?.routeOrigin || "No especificado";
-          const destino = route?.routeDestination || "No especificado";
+          console.log(`[TRANSACTIONAL] Final route info: ${origen} → ${destino}`);
           
           const [transaction] = await trx
             .insert(schema.transacciones)
@@ -2346,7 +2406,7 @@ export class DatabaseStorage implements IStorage {
                 details: {
                   id: reservationId,
                   tripId: tripId,
-                  isSubTrip: false,
+                  isSubTrip: isSubTrip,
                   pasajeros: passengerNames || 'Pasajero sin nombre',
                   contacto: {
                     email: reservation.email || '',

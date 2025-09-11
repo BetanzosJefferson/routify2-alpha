@@ -918,8 +918,44 @@ export function ReservationDetailsSidebar({
                         <div className="text-xs text-gray-500">Origen</div>
                         <div className="font-medium">
                           {(() => {
-                            // Usar información de la ruta que está disponible
-                            return reservation.trip?.route?.origin || reservation.trip?.origin || 'Origen';
+                            // Función helper para obtener origen/destino específico de cada reservación
+                            const getSegmentInfo = (isOrigin: boolean) => {
+                              const tripDetails = reservation.tripDetails as any;
+                              const tripId = tripDetails?.tripId;
+                              
+                              // Si tripId es string con formato "1288_91" (sub-viaje)
+                              if (typeof tripId === 'string' && tripId.includes('_')) {
+                                const [, segmentIndexStr] = tripId.split('_');
+                                const segmentIndex = parseInt(segmentIndexStr, 10);
+                                const route = reservation.trip?.route;
+                                
+                                if (route?.stops && !isNaN(segmentIndex)) {
+                                  // Generar segmentos desde las paradas
+                                  const stops = route.stops;
+                                  let currentIndex = 0;
+                                  for (let i = 0; i < stops.length - 1; i++) {
+                                    for (let j = i + 1; j < stops.length; j++) {
+                                      if (currentIndex === segmentIndex) {
+                                        return isOrigin ? stops[i] : stops[j];
+                                      }
+                                      currentIndex++;
+                                    }
+                                  }
+                                }
+                              }
+                              
+                              // Para tripId numérico o fallback: usar información específica si existe
+                              if (tripDetails?.segmentOrigin && tripDetails?.segmentDestination) {
+                                return isOrigin ? tripDetails.segmentOrigin : tripDetails.segmentDestination;
+                              }
+                              
+                              // Fallback final: información de la ruta
+                              return isOrigin 
+                                ? (reservation.trip?.route?.origin || 'Origen')
+                                : (reservation.trip?.route?.destination || 'Destino');
+                            };
+                            
+                            return getSegmentInfo(true);
                           })()}
                         </div>
                       </div>
@@ -927,8 +963,44 @@ export function ReservationDetailsSidebar({
                         <div className="text-xs text-gray-500">Destino</div>
                         <div className="font-medium">
                           {(() => {
-                            // Usar información de la ruta que está disponible
-                            return reservation.trip?.route?.destination || reservation.trip?.destination || 'Destino';
+                            // Función helper para obtener origen/destino específico de cada reservación
+                            const getSegmentInfo = (isOrigin: boolean) => {
+                              const tripDetails = reservation.tripDetails as any;
+                              const tripId = tripDetails?.tripId;
+                              
+                              // Si tripId es string con formato "1288_91" (sub-viaje)
+                              if (typeof tripId === 'string' && tripId.includes('_')) {
+                                const [, segmentIndexStr] = tripId.split('_');
+                                const segmentIndex = parseInt(segmentIndexStr, 10);
+                                const route = reservation.trip?.route;
+                                
+                                if (route?.stops && !isNaN(segmentIndex)) {
+                                  // Generar segmentos desde las paradas
+                                  const stops = route.stops;
+                                  let currentIndex = 0;
+                                  for (let i = 0; i < stops.length - 1; i++) {
+                                    for (let j = i + 1; j < stops.length; j++) {
+                                      if (currentIndex === segmentIndex) {
+                                        return isOrigin ? stops[i] : stops[j];
+                                      }
+                                      currentIndex++;
+                                    }
+                                  }
+                                }
+                              }
+                              
+                              // Para tripId numérico o fallback: usar información específica si existe
+                              if (tripDetails?.segmentOrigin && tripDetails?.segmentDestination) {
+                                return isOrigin ? tripDetails.segmentOrigin : tripDetails.segmentDestination;
+                              }
+                              
+                              // Fallback final: información de la ruta
+                              return isOrigin 
+                                ? (reservation.trip?.route?.origin || 'Origen')
+                                : (reservation.trip?.route?.destination || 'Destino');
+                            };
+                            
+                            return getSegmentInfo(false);
                           })()}
                         </div>
                       </div>
