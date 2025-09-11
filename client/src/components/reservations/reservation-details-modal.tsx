@@ -65,12 +65,10 @@ export default function ReservationDetailsModal({
 
   // Marcar como pagado
   const markAsPaid = async () => {
-    console.log('[DEBUG] markAsPaid called, reservationId:', reservationId);
     if (!reservationId) return;
 
     // Verificar si la reservación está cancelada
     if (reservation?.status === 'canceled') {
-      console.log('[DEBUG] Reservation is canceled, cannot mark as paid');
       toast({
         title: "Reservación cancelada",
         description: "Las reservaciones canceladas no pueden ser marcadas como pagadas.",
@@ -79,16 +77,13 @@ export default function ReservationDetailsModal({
       return;
     }
 
-    console.log('[DEBUG] Starting markAsPaid process...');
     setIsMarkingAsPaid(true);
     try {
-      console.log('[DEBUG] Making API request to mark as paid...');
       const response = await apiRequest(
         "PUT",
         `/api/reservations/${reservationId}`,
         { paymentStatus: "pagado" }
       );
-      console.log('[DEBUG] API response:', response);
 
       if (!response.ok) {
         toast({
