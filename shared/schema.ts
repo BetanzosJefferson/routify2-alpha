@@ -896,12 +896,22 @@ export type TransactionSourceType = typeof TransactionSource[keyof typeof Transa
 
 // Las tablas y funcionalidades de caja registradora han sido completamente eliminadas del sistema
 
+// TRANSACTION TYPE ENUM
+export const TransactionType = {
+  RESERVATION: "reservation",
+  PACKAGE: "package",
+} as const;
+
+export type TransactionTypeType = typeof TransactionType[keyof typeof TransactionType];
+
 // TABLA DE TRANSACCIONES
 export const transacciones = pgTable("transactions", {
   id: serial("id").primaryKey(),
   details: jsonb("details").notNull(), // Campo details que coincide con la BD
   user_id: integer("user_id").notNull().references(() => users.id),
   cutoff_id: integer("cutoff_id").references(() => boxCutoff.id),
+  type: text("type"), // Tipo de transacción: reservation o package
+  type_id: integer("type_id"), // ID de la reservación o paquete
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   companyId: text("company_id"), // Campo para aislamiento de datos por compañía
@@ -914,6 +924,8 @@ export const insertTransaccionSchema = createInsertSchema(transacciones, {
   cutoff_id: z.number().optional().nullable(),
   details: z.any(), // Campo details que coincide con la BD
   user_id: z.number(), // Campo user_id que coincide con la BD
+  type: z.string().optional().nullable(), // Tipo de transacción
+  type_id: z.number().optional().nullable(), // ID de la reservación o paquete
   companyId: z.string().optional().nullable()
 });
 
