@@ -52,9 +52,7 @@ function ReservationTransactionInfo({
   useReservationTransactions,
   formatCurrency 
 }: ReservationTransactionInfoProps) {
-  console.log(`[DEBUG] ReservationTransactionInfo rendered for reservation ${reservationId}, amount: ${reservationAmount}`);
   const { data: transactionData, isLoading, error } = useReservationTransactions(reservationId);
-  console.log(`[DEBUG] Transaction data for reservation ${reservationId}:`, transactionData);
   
   if (isLoading) {
     return (
@@ -78,7 +76,7 @@ function ReservationTransactionInfo({
     );
   }
   
-  const { transactionCount, totalCovered } = transactionData.summary;
+  const { count: transactionCount, totalAmount: totalCovered } = transactionData.summary;
   
   // Validar y normalizar datos para evitar NaN
   const validTotalCovered = Number.isFinite(totalCovered) ? totalCovered : 0;
@@ -152,8 +150,6 @@ function ReservationTransactionInfo({
 }
 
 export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSidebarProps): JSX.Element {
-  console.log('[DEBUG] TripLogDetailsSidebar tripData:', tripData);
-  console.log('[DEBUG] TripLogDetailsSidebar reservations:', tripData.reservations);
   const [budget, setBudget] = useState<number>(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [newExpense, setNewExpense] = useState<Expense>({
@@ -181,22 +177,16 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
     return useQuery({
       queryKey: ['reservation-transactions', reservationId],
       queryFn: async () => {
-        console.log(`[DEBUG] Fetch transactions for reservation ${reservationId}`);
         const response = await fetch(`/api/reservations/${reservationId}/transactions`, {
           credentials: 'include'
         });
         if (!response.ok) {
-          console.error(`[DEBUG] Error response for reservation ${reservationId}:`, response.status);
           throw new Error('Error al obtener transacciones de la reserva');
         }
         const data = await response.json();
-        console.log(`[DEBUG] Transaction data for reservation ${reservationId}:`, data);
         return data;
       },
-      enabled: !!reservationId,
-      staleTime: 0, // Forzar refetch para debugging
-      refetchOnMount: 'always',
-      refetchOnWindowFocus: true
+      enabled: !!reservationId
     });
   };
 
