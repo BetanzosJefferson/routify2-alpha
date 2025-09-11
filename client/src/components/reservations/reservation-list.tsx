@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatPrice, generateReservationId, normalizeToStartOfDay, isSameLocalDay, formatDateForInput } from "@/lib/utils";
@@ -34,7 +34,6 @@ import {
   Clock,
   Car,
   Users,
-  CreditCard,
 } from "lucide-react";
 import { useReservations } from "@/hooks/use-reservations";
 import { useAuth } from "@/hooks/use-auth";
@@ -83,68 +82,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Reservation, ReservationWithDetails } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Hook para obtener transacciones de una reservación
-function useReservationTransactions(reservationId: number) {
-  return useQuery({
-    queryKey: ['/api/reservations', reservationId, 'transactions'],
-    queryFn: async () => {
-      console.log(`[TransactionInfo] Fetching transactions for reservation ${reservationId}`);
-      const response = await fetch(`/api/reservations/${reservationId}/transactions`, {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        console.error(`[TransactionInfo] Error response for reservation ${reservationId}:`, response.status);
-        throw new Error('Error al obtener transacciones de la reserva');
-      }
-      const data = await response.json();
-      console.log(`[TransactionInfo] Transaction data for reservation ${reservationId}:`, data);
-      return data;
-    },
-    staleTime: 0,
-    refetchOnMount: 'always'
-  });
-}
-
-// Componente para mostrar información de transacciones
-interface TransactionInfoProps {
-  reservationId: number;
-  reservationAmount: number;
-}
-
-function TransactionInfo({ reservationId, reservationAmount }: TransactionInfoProps) {
-  console.log(`[TransactionInfo] Rendering component for reservation ${reservationId}`);
-  const { data: transactionData, isLoading, error } = useReservationTransactions(reservationId);
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center text-sm text-gray-700">
-        <CreditCard className="h-4 w-4 mr-3 text-gray-500" />
-        <span>Cargando...</span>
-      </div>
-    );
-  }
-  
-  if (error || !transactionData) {
-    return (
-      <div className="flex items-center text-sm text-gray-700">
-        <CreditCard className="h-4 w-4 mr-3 text-gray-500" />
-        <span>0 transacciones - ${formatPrice(0)}</span>
-      </div>
-    );
-  }
-  
-  const { count = 0, totalAmount = 0 } = transactionData;
-  
-  return (
-    <div className="flex items-center text-sm text-gray-700">
-      <CreditCard className="h-4 w-4 mr-3 text-gray-500" />
-      <span>
-        {count} transacción{count !== 1 ? 'es' : ''} - ${formatPrice(totalAmount)}
-      </span>
-    </div>
-  );
-}
 
 export function ReservationList() {
   // Mapeo de company_id a nombres amigables
@@ -1354,12 +1291,6 @@ export function ReservationList() {
                           )}
                         </span>
                       </div>
-                      
-                      {/* Información de transacciones */}
-                      <TransactionInfo 
-                        reservationId={reservation.id} 
-                        reservationAmount={reservation.totalAmount} 
-                      />
                     </div>
                   </div>
                 </div>
