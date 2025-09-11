@@ -77,8 +77,14 @@ function ReservationTransactionInfo({
   }
   
   const { transactionCount, totalCovered } = transactionData.summary;
-  const isCoveredCompletelyByTransactions = totalCovered >= reservationAmount;
-  const coveragePercentage = reservationAmount > 0 ? (totalCovered / reservationAmount) * 100 : 0;
+  
+  // Validar y normalizar datos para evitar NaN
+  const validTotalCovered = Number.isFinite(totalCovered) ? totalCovered : 0;
+  const validReservationAmount = Number.isFinite(reservationAmount) && reservationAmount > 0 ? reservationAmount : 0;
+  
+  const isCoveredCompletelyByTransactions = validTotalCovered >= validReservationAmount && validReservationAmount > 0;
+  const coveragePercentage = validReservationAmount > 0 ? Math.round((validTotalCovered / validReservationAmount) * 100) : 0;
+  const missingAmount = validReservationAmount - validTotalCovered;
   
   return (
     <div className="mt-2 pt-2 border-t bg-gray-50 -mx-3 px-3 py-2 rounded-b-lg">
@@ -102,20 +108,30 @@ function ReservationTransactionInfo({
         <div className="flex items-center gap-1">
           <DollarSign className="h-3 w-3 text-gray-500" />
           <span className="text-gray-600">Cubierto:</span>
-          <span className="font-medium" data-testid={`covered-amount-${reservationId}`}>{formatCurrency(totalCovered)}</span>
+          <span className="font-medium" data-testid={`covered-amount-${reservationId}`}>{formatCurrency(validTotalCovered)}</span>
         </div>
       </div>
       
       {/* Alerta de cobertura financiera */}
-      {!isCoveredCompletelyByTransactions && (
+      {!isCoveredCompletelyByTransactions && validReservationAmount > 0 && (
         <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
           <div className="flex items-center gap-1 text-orange-700">
             <AlertCircle className="h-3 w-3" />
             <span className="font-medium">Cobertura financiera incompleta</span>
           </div>
           <div className="mt-1 text-orange-600">
-            <span>Faltan: {formatCurrency(reservationAmount - totalCovered)}</span>
-            <span className="ml-2">({Math.round(coveragePercentage)}% cubierto)</span>
+            <span>Faltan: {formatCurrency(missingAmount > 0 ? missingAmount : 0)}</span>
+            <span className="ml-2">({coveragePercentage}% cubierto)</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Caso especial: no hay datos de reservación válidos */}
+      {validReservationAmount === 0 && (
+        <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+          <div className="flex items-center gap-1 text-gray-600">
+            <AlertCircle className="h-3 w-3" />
+            <span className="font-medium">Sin datos financieros válidos</span>
           </div>
         </div>
       )}

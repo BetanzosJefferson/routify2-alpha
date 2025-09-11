@@ -4869,14 +4869,38 @@ export class DatabaseStorage implements IStorage {
         );
       }
 
-      // Filtro por tipo de transacción
-      if (params.type) {
-        baseConditions.push(eq(schema.transacciones.type, params.type));
-      }
-
-      // Filtro por type_id de transacción
-      if (params.typeId !== undefined) {
-        baseConditions.push(eq(schema.transacciones.type_id, params.typeId));
+      // Filtro por tipo de transacción (incluyendo transacciones legacy)
+      if (params.type && params.typeId !== undefined) {
+        // Para transacciones de reservaciones, incluir tanto nuevas como legacy
+        if (params.type === 'reservation') {
+          baseConditions.push(
+            or(
+              // Transacciones nuevas con campos type y type_id
+              and(
+                eq(schema.transacciones.type, 'reservation'),
+                eq(schema.transacciones.type_id, params.typeId)
+              ),
+              // Transacciones legacy sin type/type_id pero con info en details JSON
+              and(
+                isNull(schema.transacciones.type),
+                sql`${schema.transacciones.details}->>'type' = 'reservation'`,
+                sql`CAST(${schema.transacciones.details}->'details'->>'id' AS INTEGER) = ${params.typeId}`
+              )
+            )
+          );
+        } else {
+          // Para otros tipos, usar solo el filtro normal
+          baseConditions.push(eq(schema.transacciones.type, params.type));
+          baseConditions.push(eq(schema.transacciones.type_id, params.typeId));
+        }
+      } else {
+        // Filtros individuales para compatibilidad
+        if (params.type) {
+          baseConditions.push(eq(schema.transacciones.type, params.type));
+        }
+        if (params.typeId !== undefined) {
+          baseConditions.push(eq(schema.transacciones.type_id, params.typeId));
+        }
       }
 
       // Crear alias para el usuario verificador
