@@ -2340,21 +2340,24 @@ export class DatabaseStorage implements IStorage {
               user_id: paidBy,
               companyId: reservation.companyId,
               details: {
-                id: reservationId,
-                monto: remainingAmount,
-                notas: `Pago final - Reservación #${reservationId}`,
-                origen: tripInfo?.origen || '',
-                tripId: tripId,
-                destino: tripInfo?.destino || '',
-                contacto: {
-                  email: reservation.email,
-                  telefono: reservation.phone
-                },
-                companyId: reservation.companyId,
-                isSubTrip: tripDetails?.isSubTrip || false,
-                pasajeros: passengerNames,
-                metodoPago: paymentMethod,
-                dateCreated: new Date().toISOString()
+                type: 'reservation',
+                details: {
+                  id: reservationId,
+                  monto: remainingAmount,
+                  notas: `Pago final - Reservación #${reservationId}`,
+                  origen: tripInfo?.origen || '',
+                  tripId: tripId,
+                  destino: tripInfo?.destino || '',
+                  contacto: {
+                    email: reservation.email,
+                    telefono: reservation.phone
+                  },
+                  companyId: reservation.companyId,
+                  isSubTrip: tripDetails?.isSubTrip || false,
+                  pasajeros: passengerNames,
+                  metodoPago: paymentMethod,
+                  dateCreated: new Date().toISOString()
+                }
               }
             })
             .returning();
