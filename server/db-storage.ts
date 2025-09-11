@@ -2303,19 +2303,17 @@ export class DatabaseStorage implements IStorage {
       // 5. Crear transacción solo si hay monto pendiente
       if (remainingAmount > 0) {
         try {
-          // Obtener información básica del viaje y ruta de forma simple
-          const tripInfo = await trx
-            .select({
-              routeOrigin: schema.routes.origin,
-              routeDestination: schema.routes.destination
-            })
-            .from(schema.trips)
-            .innerJoin(schema.routes, eq(schema.trips.route_id, schema.routes.id))
-            .where(eq(schema.trips.id, reservation.trip_id));
+          // Obtener información básica de la ruta de forma directa
+          const routeInfo = await trx
+            .select()
+            .from(schema.routes)
+            .innerJoin(schema.trips, eq(schema.trips.route_id, schema.routes.id))
+            .where(eq(schema.trips.id, reservation.trip_id))
+            .limit(1);
 
-          const route = tripInfo[0];
-          const origen = route?.routeOrigin || "No especificado";
-          const destino = route?.routeDestination || "No especificado";
+          const route = routeInfo[0];
+          const origen = route?.routes?.origin || "No especificado";
+          const destino = route?.routes?.destination || "No especificado";
           
           const [transaction] = await trx
             .insert(schema.transacciones)
