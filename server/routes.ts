@@ -3864,6 +3864,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               details: detallesTransaccion, // Campo correcto que coincide con la BD
               user_id: createdByUserId || (user ? user.id : null), // Campo correcto que coincide con la BD
               cutoff_id: null, // Campo correcto que coincide con la BD
+              type: "reservation", // Tipo de transacción: reservation
+              type_id: reservation.id, // ID de la reservación
               companyId: tripCompanyId // Añadimos el ID de la compañía a la transacción
             };
             
@@ -4043,6 +4045,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     details: detallesTransaccion, // Campo correcto que coincide con la BD
                     user_id: user?.id || null, // Campo correcto que coincide con la BD
                     cutoff_id: null, // Campo correcto que coincide con la BD
+                    type: "reservation", // Tipo de transacción: reservation
+                    type_id: originalReservation.id, // ID de la reservación
                     companyId: companyId // Añadimos el ID de la compañía a la transacción
                   };
                   
@@ -4987,6 +4991,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             details: detallesTransaccion,
             user_id: userId,
             cutoff_id: null,
+            type: "package", // Tipo de transacción: package
+            type_id: packageData.id, // ID del paquete
             companyId: companyId // Añadimos el ID de la compañía a la transacción
           });
           
@@ -7230,6 +7236,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             details: detallesTransaccion,
             user_id: user.id,
             cutoff_id: null,
+            type: "package", // Tipo de transacción: package
+            type_id: newPackage.id, // ID del paquete
             companyId: userCompanyId // Incluir el ID de la compañía para el aislamiento de datos
           });
           
