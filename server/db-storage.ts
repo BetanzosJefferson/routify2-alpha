@@ -3749,18 +3749,18 @@ export class DatabaseStorage implements IStorage {
       let destino = "Destino no especificado";
       let isSubTrip = false;
       
-      console.log(`DB Storage: [createTransactionFromReservation] Datos de trip_details:`, JSON.stringify(requestData.trip_details, null, 2));
+      console.log(`DB Storage: [createTransactionFromReservation] Datos de tripDetails:`, JSON.stringify(requestData.tripDetails, null, 2));
       
-      // Intentar obtener origen y destino directamente de trip_details
-      if (requestData.trip_details?.origin && requestData.trip_details?.destination) {
-        origen = requestData.trip_details.origin;
-        destino = requestData.trip_details.destination;
-        console.log(`DB Storage: [createTransactionFromReservation] ✅ Origen y destino obtenidos de trip_details: ${origen} → ${destino}`);
+      // Intentar obtener origen y destino directamente de tripDetails
+      if (requestData.tripDetails?.origin && requestData.tripDetails?.destination) {
+        origen = requestData.tripDetails.origin;
+        destino = requestData.tripDetails.destination;
+        console.log(`DB Storage: [createTransactionFromReservation] ✅ Origen y destino obtenidos de tripDetails: ${origen} → ${destino}`);
       } else {
-        console.log(`DB Storage: [createTransactionFromReservation] ⚠️ Origen y destino no encontrados en trip_details, buscando en BD...`);
+        console.log(`DB Storage: [createTransactionFromReservation] ⚠️ Origen y destino no encontrados en tripDetails, buscando en BD...`);
       }
       
-      const tripId = requestData.trip_details?.tripId;
+      const tripId = requestData.tripDetails?.tripId;
       if (tripId && (origen === "Origen no especificado" || destino === "Destino no especificado")) {
         try {
           // Extraer recordId del tripId 
