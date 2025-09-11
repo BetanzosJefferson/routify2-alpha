@@ -5451,28 +5451,11 @@ export class DatabaseStorage implements IStorage {
         type_id: newPackage.id
       };
 
-      // Crear transacción con upsert para idempotencia
+      // Crear transacción directamente (sin ON CONFLICT ya que no hay constraint único)
       const [transaction] = await tx
         .insert(schema.transacciones)
         .values(completeTransactionData)
-        .onConflictDoNothing({
-          target: [schema.transacciones.type, schema.transacciones.type_id]
-        })
         .returning();
-
-      if (!transaction) {
-        // Ya existe, obtener la existente
-        const [existingTransaction] = await tx
-          .select()
-          .from(schema.transacciones)
-          .where(and(
-            eq(schema.transacciones.type, completeTransactionData.type!),
-            eq(schema.transacciones.type_id, completeTransactionData.type_id!)
-          ));
-        
-        console.log(`[DB] Transacción para paquete pagado ya existe: ${newPackage.id}`);
-        return { package: newPackage, transaction: existingTransaction };
-      }
 
       console.log(`[DB] Paquete pagado ${newPackage.id} creado con transacción ${transaction.id}`);
       return { package: newPackage, transaction };
