@@ -2303,6 +2303,16 @@ export class DatabaseStorage implements IStorage {
       // 5. Crear transacción solo si hay monto pendiente
       if (remainingAmount > 0) {
         try {
+          // Obtener información completa de la reservación para mantener consistencia
+          const reservationDetails = await trx
+            .select()
+            .from(schema.reservations)
+            .where(eq(schema.reservations.id, reservationId))
+            .innerJoin(schema.trips, eq(schema.reservations.trip_id, schema.trips.id))
+            .innerJoin(schema.routes, eq(schema.trips.route_id, schema.routes.id));
+
+          const reservationInfo = reservationDetails[0];
+          
           const [transaction] = await trx
             .insert(schema.transacciones)
             .values({
@@ -2311,13 +2321,24 @@ export class DatabaseStorage implements IStorage {
               user_id: paidBy,
               companyId: reservation.companyId,
               details: {
-                reservationId: reservationId,
-                amount: remainingAmount,
-                paymentMethod: paymentMethod,
-                concept: 'Pago de reservación - Monto restante',
-                originalAmount: totalAmount,
-                advanceAmount: advanceAmount,
-                paidBy: paidBy
+                type: "reservation",
+                details: {
+                  id: reservationId,
+                  tripId: reservation.trip_id,
+                  isSubTrip: false,
+                  pasajeros: `${reservation.passengerName} ${reservation.passengerLastName}`,
+                  contacto: {
+                    email: reservation.email,
+                    telefono: reservation.phone
+                  },
+                  origen: reservationInfo.routes.origin,
+                  destino: reservationInfo.routes.destination,
+                  monto: remainingAmount,
+                  metodoPago: paymentMethod,
+                  notas: `Pago de reservación - Monto restante ($${remainingAmount})`,
+                  companyId: reservation.companyId,
+                  dateCreated: new Date().toISOString()
+                }
               }
             })
             .returning();
