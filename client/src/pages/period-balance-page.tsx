@@ -71,6 +71,7 @@ function PeriodBalancePageContent() {
   const [isExpensesExpanded, setIsExpensesExpanded] = useState(true);
   const [isTransactionsExpanded, setIsTransactionsExpanded] = useState(true);
   const [isTripExpensesExpanded, setIsTripExpensesExpanded] = useState(true);
+  const [isTripExpensesSummaryExpanded, setIsTripExpensesSummaryExpanded] = useState(false);
 
   // Generar valores por defecto para las fechas
   const generateDefaultDates = () => {
@@ -262,20 +263,59 @@ function PeriodBalancePageContent() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Gastos de Viajes</CardTitle>
-                <Car className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(periodBalance.totalTripExpenses || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).length || 0} viaje{(periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).length || 0) !== 1 ? 's' : ''} con gastos
-                </p>
-              </CardContent>
-            </Card>
+            <Collapsible.Root open={isTripExpensesSummaryExpanded} onOpenChange={setIsTripExpensesSummaryExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div>
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Car className="h-4 w-4 text-orange-600" />
+                        Gastos de Viajes
+                      </CardTitle>
+                      <div className="text-2xl font-bold text-orange-600 mt-1">
+                        {formatCurrency(periodBalance.totalTripExpenses || 0)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).length || 0} viaje{(periodBalance.trips?.filter(trip => trip.expenses && trip.expenses.length > 0).length || 0) !== 1 ? 's' : ''} con gastos
+                      </p>
+                    </div>
+                    {isTripExpensesSummaryExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-500" />
+                    )}
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Agrupar gastos por tipo/concepto */}
+                      {(() => {
+                        const expensesByType: { [key: string]: number } = {};
+                        periodBalance.trips?.forEach(trip => {
+                          trip.expenses?.forEach(expense => {
+                            const key = expense.type || expense.description || 'Sin especificar';
+                            expensesByType[key] = (expensesByType[key] || 0) + expense.amount;
+                          });
+                        });
+
+                        return Object.entries(expensesByType).map(([type, amount]) => (
+                          <div key={type} className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <div className="flex items-center gap-2">
+                              <Receipt className="w-4 h-4 text-orange-600" />
+                              <span className="font-medium capitalize">{type}</span>
+                            </div>
+                            <div className="text-lg font-semibold text-orange-600">
+                              {formatCurrency(amount)}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
