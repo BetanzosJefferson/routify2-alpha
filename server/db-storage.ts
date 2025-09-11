@@ -2311,13 +2311,20 @@ export class DatabaseStorage implements IStorage {
               user_id: paidBy,
               companyId: reservation.companyId,
               details: {
-                reservationId: reservationId,
-                amount: remainingAmount,
-                paymentMethod: paymentMethod,
-                concept: 'Pago de reservación - Monto restante',
-                originalAmount: totalAmount,
-                advanceAmount: advanceAmount,
-                paidBy: paidBy
+                id: reservationId,
+                monto: remainingAmount,
+                notas: `Pago final - Reservación #${reservationId}`,
+                origen: reservation.origen,
+                tripId: reservation.tripId,
+                destino: reservation.destino,
+                contacto: {
+                  email: reservation.email,
+                  telefono: reservation.phone
+                },
+                companyId: reservation.companyId,
+                isSubTrip: reservation.isSubTrip || false,
+                pasajeros: reservation.passengerNames,
+                metodoPago: paymentMethod
               }
             })
             .returning();
