@@ -2325,27 +2325,9 @@ export class DatabaseStorage implements IStorage {
           createdTransaction = transaction;
           console.log(`[TRANSACTIONAL] Transacción creada: ID ${transaction.id}, Monto: $${remainingAmount}`);
         } catch (error: any) {
-          // Manejar violación de índice único (idempotencia)
-          if (error.code === '23505' && error.constraint === 'transactions_type_type_id_key') {
-            console.log(`[TRANSACTIONAL] Transacción ya existe para reservación ${reservationId} - Operación idempotente`);
-            
-            // Obtener la transacción existente
-            const [existingTransaction] = await trx
-              .select()
-              .from(schema.transacciones)
-              .where(
-                and(
-                  eq(schema.transacciones.type, 'reservation'),
-                  eq(schema.transacciones.type_id, reservationId)
-                )
-              );
-            
-            createdTransaction = existingTransaction;
-          } else {
-            // Para cualquier otro error, hacer fallar la transacción completamente
-            console.error(`[TRANSACTIONAL] Error al crear transacción:`, error);
-            throw new Error(`Error al crear transacción financiera: ${error.message}`);
-          }
+          // Manejar cualquier error en la creación de transacciones
+          console.error(`[TRANSACTIONAL] Error al crear transacción:`, error);
+          throw new Error(`Error al crear transacción financiera: ${error.message}`);
         }
       }
 
