@@ -2119,14 +2119,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[PUT /trips/${id}] ========== DIAGNÓSTICO DE FECHAS Y CAPACIDAD ==========`);
       console.log(`[PUT /trips/${id}] startDate recibido del frontend:`, startDate);
       console.log(`[PUT /trips/${id}] endDate recibido del frontend:`, endDate);
-      console.log(`[PUT /trips/${id}] currentTrip.departureDate:`, currentTrip.departureDate);
       console.log(`[PUT /trips/${id}] getCurrentLocalDate():`, getCurrentLocalDate());
       console.log(`[PUT /trips/${id}] ========== DIAGNÓSTICO DE CAPACIDAD Y ASIENTOS ==========`);
       console.log(`[PUT /trips/${id}] segmentPrices recibidos:`, segmentPrices ? segmentPrices.length : 0);
       console.log(`[PUT /trips/${id}] stopTimes recibidos:`, stopTimes ? stopTimes.length : 0);
       console.log(`[PUT /trips/${id}] capacity recibida del frontend:`, capacity);
       console.log(`[PUT /trips/${id}] capacity actual del viaje:`, currentTrip.capacity);
-      console.log(`[PUT /trips/${id}] Primer segmento actual:`, currentTrip.tripData?.[0]);
+      console.log(`[PUT /trips/${id}] tripData actual:`, currentTrip.tripData);
       console.log(`[PUT /trips/${id}] ===============================================================`);
       
       // Obtener información de la ruta para generar segmentos completos
@@ -2139,7 +2138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[PUT /trips/${id}] Usando solo horarios explícitos del frontend, ignorando timeMap`);
       
       // PRESERVAR los tripId existentes del tripData original
-      const existingTripData = Array.isArray(currentTrip.tripData) ? currentTrip.tripData : [];
+      const existingTripData = Array.isArray(currentTrip.tripData) ? currentTrip.tripData as any[] : [];
       console.log(`[PUT /trips/${id}] tripData existente:`, existingTripData);
       
       // Crear mapa de tripId existentes por segmento (origin -> destination)
@@ -2198,13 +2197,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
             try {
               // Obtener todas las reservaciones confirmadas para este segmento específico
-              const allReservations = await storage.getReservations({companyId: currentTrip.companyId});
+              const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
               const segmentReservations = allReservations.filter(r => 
                 r.status === 'confirmed' && 
-                r.tripDetails?.tripId === existingTrip.tripId
+                (r.tripDetails as any)?.tripId === existingTrip.tripId
               );
               const realOccupiedSeats = segmentReservations
-                .reduce((sum, r) => sum + (r.tripDetails?.seats || r.passengers?.length || 0), 0);
+                .reduce((sum, r) => sum + ((r.tripDetails as any)?.seats || (r.passengers as any)?.length || 0), 0);
               calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
               console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
             } catch (error) {
