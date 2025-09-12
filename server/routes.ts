@@ -2696,50 +2696,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (currentTrip.tripData && Array.isArray(currentTrip.tripData)) {
             console.log(`Recalculando availableSeats para ${currentTrip.tripData.length} segmentos`);
             
-            // Obtener reservas existentes para este viaje
-            const existingReservations = await storage.getReservations(currentTrip.companyId);
-            const tripReservations = existingReservations.filter(r => 
-              r.tripDetails?.recordId === currentTrip.id && 
-              r.status !== 'cancelled'
+            // CORREGIDO: Obtener reservas para este viaje específico y calcular ocupación correctamente
+            console.log(`[PATCH ${id}] 🔧 INICIANDO cálculo de asientos para viaje ${id} con nueva capacidad ${newCapacity}`);
+            const allReservations = await storage.getReservations({companyId: currentTrip.companyId});
+            
+            // Filtrar reservas confirmadas para este viaje específico
+            const tripReservations = allReservations.filter(r => 
+              r.status === 'confirmed' && 
+              r.tripDetails?.recordId === currentTrip.id
             );
             
-            console.log(`📊 Reservas activas encontradas: ${tripReservations.length}`);
+            console.log(`[PATCH ${id}] 📊 Reservas activas encontradas para viaje ${id}: ${tripReservations.length}`);
+            tripReservations.forEach(r => {
+              console.log(`[PATCH ${id}] 📋 Reserva ${r.id}: recordId=${r.tripDetails?.recordId}, tripId=${r.tripDetails?.tripId}, passengers=${r.passengers?.length || 0}`);
+            });
             
             const updatedTripData = currentTrip.tripData.map((segment: any, index: number) => {
-              // Para debugging solo en los primeros 3 segmentos
-              const shouldLog = index < 3;
-              
               // Contar reservas para este segmento específico
               const segmentReservations = tripReservations.filter(r => {
-                // Comparar tanto con tripId del segmento como con recordId
-                const reservationTripId = r.tripDetails?.tripId;
-                const reservationRecordId = r.tripDetails?.recordId;
-                
-                // Extraer ID base del segmento (antes del guión bajo si existe)
-                const segmentBaseId = segment.tripId.toString().split('_')[0];
-                
-                const matches = reservationTripId === segment.tripId || 
-                       reservationRecordId === segment.tripId ||
-                       reservationTripId === segmentBaseId ||
-                       reservationRecordId === segmentBaseId ||
-                       reservationTripId === id ||
-                       reservationRecordId === id;
-                
-                if (shouldLog) {
-                  console.log(`[PATCH ${id}] Seg${index} (${segment.tripId}): Reserva ${r.id} - tripId:${reservationTripId}, recordId:${reservationRecordId}, segmentBaseId:${segmentBaseId}, matches:${matches}`);
-                }
-                
-                return matches;
+                // Para segmentos principales: coincidir recordId y tripId
+                // Para sub-segmentos: usar tripId exacto
+                return r.tripDetails?.tripId === segment.tripId;
               });
               
               const occupiedSeats = segmentReservations.reduce((sum, r) => {
-                // CORRECCIÓN CRÍTICA: Usar el campo correcto según la estructura de datos
-                const reservedSeats = r.tripDetails?.seats || r.tripDetails?.seatCount || r.tripDetails?.passengersData?.length || 0;
-                console.log(`[PATCH ${id}] 📋 Reserva ${r.id} en segmento ${segment.tripId}: ${reservedSeats} asientos (status: ${r.status}, seats: ${r.tripDetails?.seats}, seatCount: ${r.tripDetails?.seatCount}, passengers: ${r.tripDetails?.passengersData?.length || 0})`);
-                return sum + reservedSeats;
+                const passengerCount = r.passengers?.length || 0;
+                if (index < 3) { // Log solo para los primeros 3 segmentos
+                  console.log(`[PATCH ${id}] 📋 Segmento ${index} (${segment.tripId}): Reserva ${r.id} con ${passengerCount} pasajeros`);
+                }
+                return sum + passengerCount;
               }, 0);
               
               const availableSeats = newCapacity - occupiedSeats;
+              
+              if (index < 3) {
+                console.log(`[PATCH ${id}] ✅ Segmento ${index} (${segment.tripId}): ${occupiedSeats} ocupados de ${newCapacity} = ${availableSeats} disponibles`);
+              }
               
               // VALIDACIÓN DE INTEGRIDAD: Verificar que el cálculo sea válido
               if (availableSeats < 0) {
