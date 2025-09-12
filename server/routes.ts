@@ -2197,12 +2197,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (capacity !== undefined && capacity !== currentTrip.capacity) {
             // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
             try {
-              const reservations = await storage.getReservationsByTrip(existingTrip.tripId);
-              const realOccupiedSeats = reservations
-                .filter(r => r.status === 'confirmed')
+              // Obtener todas las reservaciones confirmadas para este segmento específico
+              const allReservations = await storage.getReservations({companyId: currentTrip.companyId});
+              const segmentReservations = allReservations.filter(r => 
+                r.status === 'confirmed' && 
+                r.tripDetails?.tripId === existingTrip.tripId
+              );
+              const realOccupiedSeats = segmentReservations
                 .reduce((sum, r) => sum + (r.tripDetails?.seats || r.passengers?.length || 0), 0);
               calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
-              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
             } catch (error) {
               console.error(`[PUT /trips/${id}] Error al obtener reservaciones para ${existingTrip.tripId}:`, error);
               // Fallback al método anterior si hay error
@@ -2250,12 +2254,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (capacity !== undefined && capacity !== currentTrip.capacity) {
             // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
             try {
-              const reservations = await storage.getReservationsByTrip(existingTrip.tripId);
-              const realOccupiedSeats = reservations
-                .filter(r => r.status === 'confirmed')
+              // Obtener todas las reservaciones confirmadas para este segmento específico
+              const allReservations = await storage.getReservations({companyId: currentTrip.companyId});
+              const segmentReservations = allReservations.filter(r => 
+                r.status === 'confirmed' && 
+                r.tripDetails?.tripId === existingTrip.tripId
+              );
+              const realOccupiedSeats = segmentReservations
                 .reduce((sum, r) => sum + (r.tripDetails?.seats || r.passengers?.length || 0), 0);
               calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
-              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
             } catch (error) {
               console.error(`[PUT /trips/${id}] Error al obtener reservaciones para ${existingTrip.tripId}:`, error);
               // Fallback al método anterior si hay error
