@@ -2164,7 +2164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[PUT /trips/${id}] Frontend enviará actualizaciones para ${Object.keys(frontendSegmentMap).length} segmentos de ${existingTripData.length} existentes`);
       
       // Procesar todos los segmentos existentes
-      existingTripData.forEach((existingTrip: any) => {
+      for (const existingTrip of existingTripData) {
         const segmentKey = `${existingTrip.origin} -> ${existingTrip.destination}`;
         const frontendUpdate = frontendSegmentMap[segmentKey];
         
@@ -2195,9 +2195,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // SOLO recalcular si la capacidad realmente cambió (no solo fue enviada)
           // CRÍTICO: Comparar con currentTrip.capacity (nivel de viaje) NO con existingTrip.capacity (nivel de segmento)
           if (capacity !== undefined && capacity !== currentTrip.capacity) {
-            const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
-            calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
-            console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
+            try {
+              const reservations = await storage.getReservationsByTrip(existingTrip.tripId);
+              const realOccupiedSeats = reservations
+                .filter(r => r.status === 'confirmed')
+                .reduce((sum, r) => sum + (r.tripDetails?.seats || r.passengers?.length || 0), 0);
+              calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
+              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            } catch (error) {
+              console.error(`[PUT /trips/${id}] Error al obtener reservaciones para ${existingTrip.tripId}:`, error);
+              // Fallback al método anterior si hay error
+              const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
+              calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
+              console.log(`[PUT /trips/${id}] FALLBACK - RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación estimada: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            }
           } else {
             console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey}: ${existingTrip.availableSeats} asientos (NO se cambió capacidad - trip: ${currentTrip.capacity}, recibido: ${capacity})`);
           }
@@ -2236,9 +2248,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // SOLO recalcular si la capacidad realmente cambió (no solo fue enviada)
           // CRÍTICO: Comparar con currentTrip.capacity (nivel de viaje) NO con existingTrip.capacity (nivel de segmento)
           if (capacity !== undefined && capacity !== currentTrip.capacity) {
-            const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
-            calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
-            console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación actual: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
+            try {
+              const reservations = await storage.getReservationsByTrip(existingTrip.tripId);
+              const realOccupiedSeats = reservations
+                .filter(r => r.status === 'confirmed')
+                .reduce((sum, r) => sum + (r.tripDetails?.seats || r.passengers?.length || 0), 0);
+              calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
+              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            } catch (error) {
+              console.error(`[PUT /trips/${id}] Error al obtener reservaciones para ${existingTrip.tripId}:`, error);
+              // Fallback al método anterior si hay error
+              const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
+              calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
+              console.log(`[PUT /trips/${id}] FALLBACK - RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación estimada: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
+            }
           } else {
             console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey} (preservado): ${existingTrip.availableSeats} asientos (NO se cambió capacidad - trip: ${currentTrip.capacity}, recibido: ${capacity})`);
           }
@@ -2267,7 +2291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           console.log(`[PUT /trips/${id}] Fecha calculada para ${segmentKey} (preservado): ${calculatedDepartureDate} (basada en ${existingTrip.departureTime})`);
         }
-      });
+      }
       
       console.log(`[PUT /trips/${id}] Resultado: ${newTripData.length} segmentos preservados (${existingTripData.length} originales)`);
       
