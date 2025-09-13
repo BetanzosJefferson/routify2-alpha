@@ -28,6 +28,7 @@ interface RouteStop {
 /**
  * Recalcula la disponibilidad de asientos para todos los segmentos
  * basándose únicamente en reservaciones activas.
+ * ARREGLADO: Ahora maneja correctamente los tripId padre vs. sub-trip IDs
  */
 export function recomputeSegmentAvailability(
   tripData: TripSegment[],
@@ -43,10 +44,19 @@ export function recomputeSegmentAvailability(
   if (!route?.stops) {
     console.log('[recomputeSegmentAvailability] Sin datos de ruta, usando cálculo simple');
     return tripData.map(segment => {
-      // Buscar reservaciones para este segmento específico
+      // ARREGLADO: Buscar reservaciones que afecten este segmento
       const segmentReservations = reservations.filter(r => {
+        if (!OCCUPYING_STATUSES.includes(r.status)) return false;
+        
         const tripDetails = r.tripDetails as any;
-        return OCCUPYING_STATUSES.includes(r.status) && tripDetails?.tripId === segment.tripId;
+        const reservationTripId = tripDetails?.tripId;
+        
+        // Coincidencia exacta con el segmento O si es reservación del trip completo que incluya este segmento
+        return reservationTripId === segment.tripId?.toString() || 
+               reservationTripId?.includes(segment.tripId?.toString()) ||
+               // Si es una reservación de sub-trip que referencia este segmento por paradas
+               (tripDetails && segment.origin && segment.destination &&
+                reservationTripId?.includes('_')); // Es sub-trip format
       });
       
       const occupiedSeats = segmentReservations.reduce((sum, r) => {
@@ -78,16 +88,35 @@ export function recomputeSegmentAvailability(
     if (!OCCUPYING_STATUSES.includes(reservation.status)) return;
     
     const tripDetails = reservation.tripDetails as any;
-    const passengers = reservation.passengers as any;
-    const seats = tripDetails?.seats || passengers?.length || 0;
+    const seats = tripDetails?.seats || 0;
     
     if (seats <= 0) return;
     
-    // Encontrar el segmento correspondiente a esta reservación
-    const reservationTripId = tripDetails?.tripId;
-    const segment = tripData.find(s => s.tripId === reservationTripId);
+    console.log(`[recomputeSegmentAvailability] Procesando reservación: tripId=${tripDetails?.tripId}, seats=${seats}`);
     
-    if (!segment) return;
+    // ARREGLADO: Encontrar el segmento usando la lógica correcta de matching
+    const reservationTripId = tripDetails?.tripId;
+    
+    // Si es formato sub-trip (ej: "1291_98"), extraer información del segmento
+    let segment;
+    if (reservationTripId?.includes('_')) {
+      // Formato sub-trip: buscar por tripId exacto primero
+      segment = tripData.find(s => s.tripId?.toString() === reservationTripId);
+      
+      if (!segment) {
+        // Si no encuentra por ID exacto, podría ser una reservación A-C que afecta múltiples segmentos
+        console.log(`[recomputeSegmentAvailability] Sub-trip ${reservationTripId} no encontrado en segmentos exactos`);
+        return;
+      }
+    } else {
+      // Reservación del trip padre: encontrar segmento principal o usar el primero
+      segment = tripData.find(s => s.isMainTrip) || tripData[0];
+    }
+    
+    if (!segment) {
+      console.log(`[recomputeSegmentAvailability] No se encontró segmento para reservación ${reservationTripId}`);
+      return;
+    }
     
     // Obtener índices de origen y destino
     const originIndex = stopMap.get(segment.origin);

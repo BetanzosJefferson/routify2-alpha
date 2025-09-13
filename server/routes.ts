@@ -2184,11 +2184,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (capacity !== undefined && capacity !== currentTrip.capacity) {
         console.log(`[PUT /trips/${id}] RECALCULANDO TODOS LOS ASIENTOS - Capacidad cambió de ${currentTrip.capacity} a ${capacity}`);
         
-        // Obtener todas las reservaciones activas para el viaje completo
-        const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
+        // CRÍTICO: Obtener reservaciones para el viaje padre (trip.id = 1291)
+        const allReservations = await storage.getReservations({});
         // Incluir todos los estados que ocupan asientos activamente
         const activeStates = ['confirmed', 'paid', 'checked_in', 'boarded'];
-        const tripReservations = allReservations.filter(r => activeStates.includes(r.status));
+        
+        // ARREGLO CRÍTICO: Buscar por trip ID padre y sub-trip IDs
+        const tripReservations = allReservations.filter(r => {
+          if (!activeStates.includes(r.status)) return false;
+          
+          const tripDetails = r.tripDetails as any;
+          const reservationTripId = tripDetails?.tripId;
+          const reservationRecordId = tripDetails?.recordId;
+          
+          // Buscar por ID del viaje padre O por sub-trip IDs
+          return reservationRecordId === id.toString() || 
+                 reservationTripId === id.toString() ||
+                 updatedTripData.some(segment => segment.tripId?.toString() === reservationTripId?.toString());
+        });
         
         console.log(`[PUT /trips/${id}] Encontradas ${tripReservations.length} reservaciones activas para recálculo (estados: ${activeStates.join(', ')})`);
         
