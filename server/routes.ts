@@ -2198,12 +2198,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               // Obtener todas las reservaciones confirmadas para este segmento específico
               const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
-              const segmentReservations = allReservations.filter(r => 
-                r.status === 'confirmed' && 
-                (r.tripDetails as any)?.tripId === existingTrip.tripId
-              );
+              const segmentReservations = allReservations.filter(r => {
+                const tripDetails = r.tripDetails as any;
+                return r.status === 'confirmed' && tripDetails?.tripId === existingTrip.tripId;
+              });
               const realOccupiedSeats = segmentReservations
-                .reduce((sum, r) => sum + ((r.tripDetails as any)?.seats || (r.passengers as any)?.length || 0), 0);
+                .reduce((sum, r) => {
+                  const tripDetails = r.tripDetails as any;
+                  const passengers = r.passengers as any;
+                  return sum + (tripDetails?.seats || passengers?.length || 0);
+                }, 0);
               calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
               console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
             } catch (error) {
@@ -2254,13 +2258,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
             try {
               // Obtener todas las reservaciones confirmadas para este segmento específico
-              const allReservations = await storage.getReservations({companyId: currentTrip.companyId});
-              const segmentReservations = allReservations.filter(r => 
-                r.status === 'confirmed' && 
-                r.tripDetails?.tripId === existingTrip.tripId
-              );
+              const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
+              const segmentReservations = allReservations.filter(r => {
+                const tripDetails = r.tripDetails as any;
+                return r.status === 'confirmed' && tripDetails?.tripId === existingTrip.tripId;
+              });
               const realOccupiedSeats = segmentReservations
-                .reduce((sum, r) => sum + (r.tripDetails?.seats || r.passengers?.length || 0), 0);
+                .reduce((sum, r) => {
+                  const tripDetails = r.tripDetails as any;
+                  const passengers = r.passengers as any;
+                  return sum + (tripDetails?.seats || passengers?.length || 0);
+                }, 0);
               calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
               console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
             } catch (error) {
@@ -2317,20 +2325,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // PRESERVAR datos críticos que NO deben cambiar en edición
         routeId: currentTrip.routeId, // NO cambiar routeId en edición
-        templateId: currentTrip.templateId, // PRESERVAR templateId
-        createdBy: currentTrip.createdBy, // PRESERVAR creador
         companyId: currentTrip.companyId, // PRESERVAR companyId
-        tripStatus: currentTrip.tripStatus, // PRESERVAR estado del viaje
-        createdAt: currentTrip.createdAt, // PRESERVAR fecha de creación
         updatedAt: new Date().toISOString() // Solo actualizar timestamp
       };
       
       console.log(`[PUT /trips/${id}] DATOS ORIGINALES PRESERVADOS:`, {
         routeId: currentTrip.routeId,
-        templateId: currentTrip.templateId,
-        createdBy: currentTrip.createdBy,
-        companyId: currentTrip.companyId,
-        tripStatus: currentTrip.tripStatus
+        companyId: currentTrip.companyId
       });
       
       console.log(`[PUT /trips/${id}] Actualizando viaje con datos:`, updateData);
