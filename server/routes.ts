@@ -31,6 +31,7 @@ import {
   TransactionType
 } from "@shared/schema";
 import { getCurrentLocalDate, formatDateToLocal, normalizeToStartOfDay } from "./utils";
+import { recomputeSegmentAvailability } from "./lib/seat-availability";
 // Constantes para roles y permisos de paqueterías
 const PACKAGE_ACCESS_ROLES = [
   UserRole.OWNER, 
@@ -2137,176 +2138,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NO usar timeMap - solo horarios explícitos del frontend
       console.log(`[PUT /trips/${id}] Usando solo horarios explícitos del frontend, ignorando timeMap`);
       
-      // PRESERVAR los tripId existentes del tripData original
+      // SOLUCIÓN CORREGIDA: Usar "single source of truth" con helper puro
       const existingTripData = Array.isArray(currentTrip.tripData) ? currentTrip.tripData as any[] : [];
-      console.log(`[PUT /trips/${id}] tripData existente:`, existingTripData);
+      console.log(`[PUT /trips/${id}] USANDO NUEVA LÓGICA DE RECÁLCULO DE ASIENTOS`);
+      console.log(`[PUT /trips/${id}] Tripdata existente tiene ${existingTripData.length} segmentos`);
+      console.log(`[PUT /trips/${id}] Capacidad actual: ${currentTrip.capacity}, nueva: ${capacity}`);
       
-      // Crear mapa de tripId existentes por segmento (origin -> destination)
-      const existingTripIdMap: Record<string, any> = {};
-      existingTripData.forEach((trip: any) => {
-        const key = `${trip.origin} -> ${trip.destination}`;
-        existingTripIdMap[key] = trip;
+      // Preparar tripData base con precios/horarios actualizados del frontend
+      let updatedTripData = existingTripData.map(existingSegment => {
+        // Buscar si este segmento tiene actualización de precio/horario desde frontend
+        const frontendUpdate = segmentPrices?.find((sp: any) => 
+          sp.origin === existingSegment.origin && sp.destination === existingSegment.destination
+        );
+        
+        const baseDateStr = startDate || existingSegment.departureDate || getCurrentLocalDate();
+        const baseDateObj = normalizeToStartOfDay(baseDateStr);
+        
+        let finalDepartureTime = existingSegment.departureTime;
+        let finalArrivalTime = existingSegment.arrivalTime;
+        
+        // Actualizar horarios si vienen del frontend
+        if (frontendUpdate?.departureTime !== undefined) {
+          finalDepartureTime = frontendUpdate.departureTime;
+        }
+        if (frontendUpdate?.arrivalTime !== undefined) {
+          finalArrivalTime = frontendUpdate.arrivalTime;
+        }
+        
+        const calculatedDepartureDate = formatDateToLocal(
+          calculateSegmentDate(baseDateObj, finalDepartureTime)
+        );
+        
+        return {
+          ...existingSegment,
+          price: frontendUpdate?.price !== undefined ? frontendUpdate.price : existingSegment.price,
+          departureDate: calculatedDepartureDate,
+          departureTime: finalDepartureTime,
+          arrivalTime: finalArrivalTime,
+          capacity: capacity !== undefined ? capacity : existingSegment.capacity,
+          // NO actualizar availableSeats aquí - se recalculará con el helper
+        };
       });
       
-      // CRÍTICO: Preservar TODOS los segmentos existentes y solo actualizar los que vienen en segmentPrices
-      const newTripData: any[] = [];
-      
-      // Crear mapa de segmentos que vienen del frontend para actualizar
-      const frontendSegmentMap: Record<string, any> = {};
-      if (segmentPrices && Array.isArray(segmentPrices)) {
-        segmentPrices.forEach((segment: any) => {
-          const key = `${segment.origin} -> ${segment.destination}`;
-          frontendSegmentMap[key] = segment;
-        });
-      }
-      
-      console.log(`[PUT /trips/${id}] Frontend enviará actualizaciones para ${Object.keys(frontendSegmentMap).length} segmentos de ${existingTripData.length} existentes`);
-      
-      // Procesar todos los segmentos existentes
-      for (const existingTrip of existingTripData) {
-        const segmentKey = `${existingTrip.origin} -> ${existingTrip.destination}`;
-        const frontendUpdate = frontendSegmentMap[segmentKey];
+      // CLAVE: Solo recalcular availableSeats si la capacidad cambió
+      if (capacity !== undefined && capacity !== currentTrip.capacity) {
+        console.log(`[PUT /trips/${id}] RECALCULANDO TODOS LOS ASIENTOS - Capacidad cambió de ${currentTrip.capacity} a ${capacity}`);
         
-        if (frontendUpdate) {
-          // Este segmento se está actualizando desde el frontend
-          console.log(`[PUT /trips/${id}] ACTUALIZANDO segmento: ${segmentKey}`);
-          
-          // Solo usar horarios del timeMap si se enviaron específicamente en el frontend
-          let finalDepartureTime = existingTrip.departureTime;
-          let finalArrivalTime = existingTrip.arrivalTime;
-          
-          // Solo actualizar horarios si vienen explícitamente en el frontendUpdate
-          if (frontendUpdate.departureTime !== undefined) {
-            finalDepartureTime = frontendUpdate.departureTime;
-          }
-          
-          if (frontendUpdate.arrivalTime !== undefined) {
-            finalArrivalTime = frontendUpdate.arrivalTime;
-          }
-          
-          // ELIMINAR completamente el uso de timeMap - solo usar horarios explícitos del frontend
-          
-          console.log(`[PUT /trips/${id}] Horarios para ${segmentKey}: departure=${finalDepartureTime} (original: ${existingTrip.departureTime}), arrival=${finalArrivalTime} (original: ${existingTrip.arrivalTime})`);
-          
-          // CRÍTICO: NO tocar availableSeats a menos que se cambie capacity explícitamente
-          let calculatedAvailableSeats = existingTrip.availableSeats;
-          
-          // SOLO recalcular si la capacidad realmente cambió (no solo fue enviada)
-          // CRÍTICO: Comparar con currentTrip.capacity (nivel de viaje) NO con existingTrip.capacity (nivel de segmento)
-          if (capacity !== undefined && capacity !== currentTrip.capacity) {
-            // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
-            try {
-              // Obtener todas las reservaciones confirmadas para este segmento específico
-              const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
-              const segmentReservations = allReservations.filter(r => {
-                const tripDetails = r.tripDetails as any;
-                return r.status === 'confirmed' && tripDetails?.tripId === existingTrip.tripId;
-              });
-              const realOccupiedSeats = segmentReservations
-                .reduce((sum, r) => {
-                  const tripDetails = r.tripDetails as any;
-                  const passengers = r.passengers as any;
-                  return sum + (tripDetails?.seats || passengers?.length || 0);
-                }, 0);
-              calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
-              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
-            } catch (error) {
-              console.error(`[PUT /trips/${id}] Error al obtener reservaciones para ${existingTrip.tripId}:`, error);
-              // Fallback al método anterior si hay error
-              const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
-              calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
-              console.log(`[PUT /trips/${id}] FALLBACK - RECALCULANDO asientos para ${segmentKey}: capacidad ${existingTrip.capacity}→${capacity}, ocupación estimada: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
-            }
-          } else {
-            console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey}: ${existingTrip.availableSeats} asientos (NO se cambió capacidad - trip: ${currentTrip.capacity}, recibido: ${capacity})`);
-          }
-          
-          // PRESERVAR el tripId existente y actualizar solo campos modificados
-          const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
-          console.log(`[PUT /trips/${id}] [calculateSegmentDate] COMPONENTES: startDate="${startDate}", existingTrip.departureDate="${existingTrip.departureDate}", getCurrentLocalDate()="${getCurrentLocalDate()}"`);
-          const baseDateObj = normalizeToStartOfDay(baseDateStr);
-          console.log(`[PUT /trips/${id}] [calculateSegmentDate] INPUT: baseDateStr="${baseDateStr}", finalDepartureTime="${finalDepartureTime}"`);
-          const calculatedDepartureDate = formatDateToLocal(
-            calculateSegmentDate(baseDateObj, finalDepartureTime)
-          );
-          console.log(`[PUT /trips/${id}] [calculateSegmentDate] OUTPUT: calculatedDepartureDate="${calculatedDepartureDate}"`)
-          
-          newTripData.push({
-            price: frontendUpdate.price !== undefined ? frontendUpdate.price : existingTrip.price,
-            origin: existingTrip.origin,
-            destination: existingTrip.destination,
-            tripId: existingTrip.tripId, // PRESERVAR tripId existente
-            isMainTrip: existingTrip.isMainTrip,
-            departureDate: calculatedDepartureDate,
-            departureTime: finalDepartureTime,
-            arrivalTime: finalArrivalTime,
-            availableSeats: calculatedAvailableSeats,
-            capacity: capacity !== undefined ? capacity : existingTrip.capacity
-          });
-          
-          console.log(`[PUT /trips/${id}] Fecha calculada para ${segmentKey}: ${calculatedDepartureDate} (basada en ${finalDepartureTime})`);
-        } else {
-          // Este segmento NO se está actualizando, preservar completamente
-          console.log(`[PUT /trips/${id}] PRESERVANDO segmento: ${segmentKey} (tripId: ${existingTrip.tripId})`);
-          
-          // CRÍTICO: NO tocar availableSeats a menos que se cambie capacity explícitamente
-          let calculatedAvailableSeats = existingTrip.availableSeats;
-          
-          // SOLO recalcular si la capacidad realmente cambió (no solo fue enviada)
-          // CRÍTICO: Comparar con currentTrip.capacity (nivel de viaje) NO con existingTrip.capacity (nivel de segmento)
-          if (capacity !== undefined && capacity !== currentTrip.capacity) {
-            // CORREGIDO: Calcular ocupación real basándose en reservaciones específicas del segmento
-            try {
-              // Obtener todas las reservaciones confirmadas para este segmento específico
-              const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
-              const segmentReservations = allReservations.filter(r => {
-                const tripDetails = r.tripDetails as any;
-                return r.status === 'confirmed' && tripDetails?.tripId === existingTrip.tripId;
-              });
-              const realOccupiedSeats = segmentReservations
-                .reduce((sum, r) => {
-                  const tripDetails = r.tripDetails as any;
-                  const passengers = r.passengers as any;
-                  return sum + (tripDetails?.seats || passengers?.length || 0);
-                }, 0);
-              calculatedAvailableSeats = Math.max(0, capacity - realOccupiedSeats);
-              console.log(`[PUT /trips/${id}] RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación real: ${realOccupiedSeats} reservaciones, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
-            } catch (error) {
-              console.error(`[PUT /trips/${id}] Error al obtener reservaciones para ${existingTrip.tripId}:`, error);
-              // Fallback al método anterior si hay error
-              const currentOccupancy = (existingTrip.capacity || 0) - (existingTrip.availableSeats || 0);
-              calculatedAvailableSeats = Math.max(0, capacity - currentOccupancy);
-              console.log(`[PUT /trips/${id}] FALLBACK - RECALCULANDO asientos para ${segmentKey} (preservado): capacidad ${existingTrip.capacity}→${capacity}, ocupación estimada: ${currentOccupancy}, nuevos asientos disponibles: ${calculatedAvailableSeats}`);
-            }
-          } else {
-            console.log(`[PUT /trips/${id}] PRESERVANDO asientos para ${segmentKey} (preservado): ${existingTrip.availableSeats} asientos (NO se cambió capacidad - trip: ${currentTrip.capacity}, recibido: ${capacity})`);
-          }
-          
-          const baseDateStr = startDate || existingTrip.departureDate || getCurrentLocalDate();
-          console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED COMPONENTES: startDate="${startDate}", existingTrip.departureDate="${existingTrip.departureDate}", getCurrentLocalDate()="${getCurrentLocalDate()}"`);
-          const baseDateObj = normalizeToStartOfDay(baseDateStr);
-          console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED INPUT: baseDateStr="${baseDateStr}", departureTime="${existingTrip.departureTime}"`);
-          const calculatedDepartureDate = formatDateToLocal(
-            calculateSegmentDate(baseDateObj, existingTrip.departureTime)
-          );
-          console.log(`[PUT /trips/${id}] [calculateSegmentDate] PRESERVED OUTPUT: calculatedDepartureDate="${calculatedDepartureDate}"`)
-          
-          newTripData.push({
-            price: existingTrip.price,
-            origin: existingTrip.origin,
-            destination: existingTrip.destination,
-            tripId: existingTrip.tripId, // PRESERVAR tripId existente
-            isMainTrip: existingTrip.isMainTrip,
-            departureDate: calculatedDepartureDate,
-            departureTime: existingTrip.departureTime,
-            arrivalTime: existingTrip.arrivalTime,
-            availableSeats: calculatedAvailableSeats,
-            capacity: capacity !== undefined ? capacity : existingTrip.capacity
-          });
-          
-          console.log(`[PUT /trips/${id}] Fecha calculada para ${segmentKey} (preservado): ${calculatedDepartureDate} (basada en ${existingTrip.departureTime})`);
-        }
+        // Obtener todas las reservaciones activas para el viaje completo
+        const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
+        // Incluir todos los estados que ocupan asientos activamente
+        const activeStates = ['confirmed', 'paid', 'checked_in', 'boarded'];
+        const tripReservations = allReservations.filter(r => activeStates.includes(r.status));
+        
+        console.log(`[PUT /trips/${id}] Encontradas ${tripReservations.length} reservaciones activas para recálculo (estados: ${activeStates.join(', ')})`);
+        
+        // CRÍTICO: Usar helper puro para recalcular TODOS los availableSeats con lógica A-C affects A-B
+        updatedTripData = recomputeSegmentAvailability(
+          updatedTripData,
+          route,
+          tripReservations,
+          capacity
+        );
+        
+        console.log(`[PUT /trips/${id}] RECÁLCULO COMPLETADO - Nuevos availableSeats aplicados usando helper puro`);
+      } else {
+        console.log(`[PUT /trips/${id}] PRESERVANDO asientos existentes - Capacidad NO cambió (${currentTrip.capacity})`);
       }
+      
+      // Después del recálculo, newTripData contiene los availableSeats correctos
+      const newTripData = updatedTripData;
       
       console.log(`[PUT /trips/${id}] Resultado: ${newTripData.length} segmentos preservados (${existingTripData.length} originales)`);
       
@@ -2345,9 +2245,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PUT /trips/${id}] Viaje actualizado exitosamente`);
       
-      // Invalidar caché después de actualizar viaje
+      // CRÍTICO: Invalidar caché después de actualizar capacidad y availableSeats
       serverTripCache.invalidateAll();
-      console.log(`[PUT /trips/${id}] Caché invalidado después de actualizar viaje`);
+      console.log(`[PUT /trips/${id}] Caché completamente invalidado después de actualizar capacidad y asientos`);
       
       // Retornar el viaje actualizado
       res.json(updatedTrip);
