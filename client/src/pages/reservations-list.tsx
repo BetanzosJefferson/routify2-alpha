@@ -33,7 +33,7 @@ function ReservationsListContent() {
   const [selectedDate, setSelectedDate] = useState(currentDate);
   const [searchDate, setSearchDate] = useState(currentDate); // Usar fecha actual por defecto
   
-  console.log(`[Reservaciones] 🔧 INICIALIZACIÓN: currentDate=${currentDate}, selectedDate=${selectedDate}, searchDate=${searchDate}`);
+  // Component initialized
   
   // Agregar opción para que el usuario pueda especificar la fecha actual manualmente
   const [manualDateMode, setManualDateMode] = useState(false);
@@ -61,13 +61,11 @@ function ReservationsListContent() {
     console.warn('Error en reservaciones-list (silenciado):', error);
   }
 
-  // Log para depuración
-  console.log(`[Reservaciones] Fecha búsqueda: ${searchDate}, Fecha seleccionada: ${selectedDate}, Reservaciones cargadas: ${reservations.length}`);
-  console.log(`[Reservaciones] Usuario: ${user?.firstName} ${user?.lastName}, Rol: ${user?.role}, ID: ${user?.id}`);
+  // Reservations loaded
   
   // Función para realizar búsqueda con invalidación de cache
   const handleSearch = async () => {
-    console.log(`[Reservaciones] Iniciando búsqueda para fecha: ${selectedDate}`);
+    // Starting search
     
     // Invalidar cache específico para la nueva fecha
     await queryClient.invalidateQueries({
@@ -132,7 +130,7 @@ function ReservationsListContent() {
     // IMPORTANTE: Normalizar recordId - usar solo la parte base sin sufijos como _122
     if (recordId.includes('_')) {
       recordId = recordId.split('_')[0];
-      console.log(`[Frontend] Normalizando recordId de ${tripDetails.recordId} a ${recordId}`);
+      // RecordId normalized
     }
     
     // Usar recordId normalizado como clave de agrupación
@@ -150,25 +148,9 @@ function ReservationsListContent() {
     
     // Establecer información del viaje padre usando la información del viaje padre (recordId)
     if (!groups[groupKey].tripInfo) {
-      // DEBUG: Logging detallado de la estructura de datos
-      console.log(`[TRIP_INFO_DEBUG] Procesando reservación ${reservation.id}:`, {
-        'tripDetails': reservation.tripDetails,
-        'trip': reservation.trip,
-        'trip?.driver': reservation.trip?.driver,
-        'trip?.parentTrip': reservation.trip?.parentTrip,
-        'trip?.parentTrip?.driver': reservation.trip?.parentTrip?.driver,
-        'tripDetails?.trip?.driver': reservation.tripDetails?.trip?.driver
-      });
+      // Processing reservation trip info
       
-      // DEBUG ESPECÍFICO: Mostrar información detallada del conductor
-      console.log(`[DRIVER_DEBUG] Reservación ${reservation.id} - Información del conductor:`, {
-        'trip?.driver?.firstName': reservation.trip?.driver?.firstName,
-        'trip?.driver?.lastName': reservation.trip?.driver?.lastName,
-        'trip?.driver?.id': reservation.trip?.driver?.id,
-        'trip?.parentTrip?.driver?.firstName': reservation.trip?.parentTrip?.driver?.firstName,
-        'trip?.parentTrip?.driver?.lastName': reservation.trip?.parentTrip?.driver?.lastName,
-        'trip?.parentTrip?.driver?.id': reservation.trip?.parentTrip?.driver?.id
-      });
+      // Processing driver info
       
       // Buscar información del viaje padre si está disponible
       const parentTripInfo = reservation.trip?.parentTrip;
@@ -185,12 +167,7 @@ function ReservationsListContent() {
           vehicle: parentTripInfo.vehicle || reservation.trip?.vehicle
         };
         
-        // DEBUG: Verificar que el conductor se asigna correctamente
-        console.log(`[TRIPINFO_DEBUG] Grupo ${groupKey} - Conductor asignado:`, {
-          'parentTripInfo.driver': parentTripInfo.driver,
-          'reservation.trip?.driver': reservation.trip?.driver,
-          'final driver': groups[groupKey].tripInfo.driver
-        });
+        // Driver assigned from parent trip
         groups[groupKey].parentTripDate = parentTripInfo.departureDate;
       } else if (reservation.trip) {
         // Fallback: usar información del trip asociado
@@ -206,12 +183,7 @@ function ReservationsListContent() {
           vehicle: reservation.trip.vehicle || reservation.tripDetails?.trip?.vehicle
         };
         
-        // DEBUG: Verificar que el conductor se asigna correctamente
-        console.log(`[TRIPINFO_DEBUG] Grupo ${groupKey} - Conductor asignado (fallback):`, {
-          'reservation.trip.driver': reservation.trip.driver,
-          'reservation.tripDetails?.trip?.driver': reservation.tripDetails?.trip?.driver,
-          'final driver': groups[groupKey].tripInfo.driver
-        });
+        // Driver assigned from fallback
         groups[groupKey].parentTripDate = reservation.trip.departureDate;
       }
     }
@@ -223,7 +195,7 @@ function ReservationsListContent() {
   // El backend con parentTripFilter=true ya envía solo las reservas del día correcto
   const filteredGroupedReservations = groupedReservations;
   
-  console.log(`[FILTER_DEBUG] Total grupos (sin filtrado redundante): ${Object.keys(filteredGroupedReservations).length}`);
+  // Groups filtered
 
   // Aplicar filtros adicionales de ruta y hora
   const finalFilteredReservations = Object.entries(filteredGroupedReservations).reduce((filtered, [groupKey, group]) => {
@@ -251,11 +223,7 @@ function ReservationsListContent() {
     return filtered;
   }, {} as Record<string, { reservations: ReservationWithDetails[], tripInfo: any, parentTripDate: string | null }>);
 
-  // Agregar logging adicional para debug
-  console.log(`[FILTER_DEBUG] Total grupos antes del filtrado: ${Object.keys(groupedReservations).length}`);
-  console.log(`[FILTER_DEBUG] Fecha de búsqueda: ${searchDate}`);
-  console.log(`[FILTER_DEBUG] Total grupos después del filtrado: ${Object.keys(finalFilteredReservations).length}`);
-  console.log(`[DRIVER_FILTER] Es conductor: ${isDriver}, Reservaciones filtradas: ${filteredReservations.length} de ${reservations.length}`);
+  // Filtering completed
 
   // Generar opciones de filtro dinámicamente
   const availableRoutes = Array.from(new Set(
@@ -352,7 +320,7 @@ function ReservationsListContent() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => {
-                  console.log(`[Reservaciones] Fecha seleccionada: ${e.target.value} (sin búsqueda automática)`);
+                  // Date selected
                   handleDateChange(e.target.value);
                 }}
                 onKeyPress={handleKeyPress}
