@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
+import { initializeOfficialCrossTabCache, cleanupOfficialCrossTabCache } from "./cache-persister";
 
-// Crear un cliente de consulta con configuración optimizada
+// Crear un cliente de consulta con configuración optimizada para cross-tab sharing
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -8,11 +9,25 @@ export const queryClient = new QueryClient({
       retry: 2, // Aumentamos los reintentos a 2
       staleTime: 60000, // Datos considerados válidos por 1 minuto
       gcTime: 10 * 60 * 1000, // Mantener en caché por 10 minutos (antes llamado cacheTime)
-      // Aseguramos que datos compartidos entre secciones estén disponibles
+      // Asegurar que datos compartidos entre secciones estén disponibles
       structuralSharing: true,
     },
   },
 });
+
+/**
+ * Inicializar cache cross-tab sharing oficial
+ */
+export async function initializeCrossTabCache() {
+  return await initializeOfficialCrossTabCache(queryClient);
+}
+
+/**
+ * Limpiar cache cross-tab sharing oficial
+ */
+export function cleanupCrossTabCache() {
+  cleanupOfficialCrossTabCache();
+}
 
 // Función para pre-cargar datos importantes al iniciar la aplicación
 export async function prefetchCriticalData() {

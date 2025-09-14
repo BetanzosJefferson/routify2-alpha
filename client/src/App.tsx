@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, initializeCrossTabCache, cleanupCrossTabCache } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +10,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { DataLoaderProvider } from "@/hooks/use-data-loader";
 import { NotificationsProvider } from "@/components/notifications/notifications-provider";
 import { ErrorBoundary, ErrorFallback } from "@/components/error-boundary";
-import "@/lib/error-handler"; // Inicializar el manejador de errores global
+// import "@/lib/error-handler"; // Inicializar el manejador de errores global - TEMPORARILY DISABLED
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AuthPage from "@/pages/auth-page";
@@ -91,6 +91,14 @@ function Router() {
 }
 
 function App() {
+  // Cache cross-tab sharing se inicializa en main.tsx antes del render
+  // Cleanup al desmontar la app
+  useEffect(() => {
+    return () => {
+      cleanupCrossTabCache();
+    };
+  }, []);
+
   return (
     <ErrorBoundary fallback={ErrorFallback}>
       <QueryClientProvider client={queryClient}>
