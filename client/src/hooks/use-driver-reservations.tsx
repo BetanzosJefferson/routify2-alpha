@@ -85,7 +85,7 @@ export function useDriverReservations(options: UseDriverReservationsOptions = {}
         url += `?${params.toString()}`;
       }
       
-      console.log(`[useDriverReservations] Consultando reservaciones: ${url}`);
+      // Processing driver reservations request
       
       try {
         const response = await fetch(url);
@@ -95,16 +95,10 @@ export function useDriverReservations(options: UseDriverReservationsOptions = {}
         
         const reservations = await response.json();
         
-        if (isDriver && user?.id) {
-          console.log(`[useDriverReservations] Obtenidas ${reservations.length} reservaciones para conductor ${user.id}`);
-        } else {
-          console.log(`[useDriverReservations] Obtenidas ${reservations.length} reservaciones en total`);
-        }
+        // Driver reservations fetched successfully
         
         // Si se solicitó un viaje específico, mostrar desglose
-        if (tripId) {
-          console.log(`[useDriverReservations] Reservaciones para viaje ${tripId}: ${reservations.length}`);
-        }
+        // Trip-specific reservations processed
         
         // Validar que todas las reservaciones tienen la estructura correcta de pasajeros
         return reservations.map((res: any) => {
@@ -148,7 +142,7 @@ export function useAllDriverReservations() {
         // Para conductores, filtramos por su ID
         if (isDriver && user?.id) {
           url += `?driverId=${user.id}`;
-          console.log(`[useAllDriverReservations] Obteniendo reservaciones para conductor ${user.id}`);
+          // Fetching all driver reservations
         }
         
         const response = await fetch(url);
@@ -158,11 +152,7 @@ export function useAllDriverReservations() {
         
         const reservations = await response.json();
         
-        if (isDriver && user?.id) {
-          console.log(`[useAllDriverReservations] Obtenidas ${reservations.length} reservaciones para conductor ${user.id}`);
-        } else {
-          console.log(`[useAllDriverReservations] Obtenidas ${reservations.length} reservaciones totales`);
-        }
+        // All driver reservations fetched successfully
         
         // Validar estructura
         return reservations.map((res: any) => {

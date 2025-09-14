@@ -45,14 +45,7 @@ export function TripLogbook() {
 
   // Filtrar reservaciones para excluir las que no representan ingresos
   const validReservations = useMemo(() => {
-    // Log detallado para depuración
-    console.log(`[Bitácora] Reservaciones antes del filtro:`, reservations.map(r => ({
-      id: r.id, 
-      status: r.status, 
-      advance: r.advanceAmount, 
-      total: r.totalAmount,
-      phone: r.phone
-    })));
+    // Processing reservations
     
     const filtered = reservations.filter((reservation: any) => {
       // Si no está cancelada en ninguna forma, siempre incluir
@@ -65,29 +58,25 @@ export function TripLogbook() {
       const wasFullyPaid = (reservation.advanceAmount || 0) >= (reservation.totalAmount || 0);
       const isRefunded = reservation.status === 'canceledAndRefund' || (reservation.status === 'canceled' && reservation.refunded);
       
-      // Log específico para reservaciones canceladas
-      console.log(`[Bitácora] Reservación cancelada ID ${reservation.id}: advance=${reservation.advanceAmount}, total=${reservation.totalAmount}, status=${reservation.status}, refunded=${isRefunded}`);
+      // Processing canceled reservation
       
       // Excluir reservaciones canceladas Y reembolsadas (no representan ingreso)
       if (isRefunded) {
-        console.log(`[Bitácora] Excluyendo reservación ${reservation.id} - cancelada y reembolsada`);
+        // Excluding refunded reservation
         return false;
       }
       
       // Excluir reservaciones canceladas SIN anticipo (no representan ingreso)
       if (!hasAdvance && !wasFullyPaid) {
-        console.log(`[Bitácora] Excluyendo reservación ${reservation.id} - cancelada sin anticipo ni pago completo`);
+        // Excluding reservation without advance
         return false;
       }
       
-      // Incluir reservaciones canceladas CON anticipo o que estaban pagadas (representan ingreso)
-      console.log(`[Bitácora] Incluyendo reservación ${reservation.id} - cancelada pero con ingreso`);
+      // Including reservation with income
       return hasAdvance || wasFullyPaid;
     });
     
-    // Log para depuración de filtrado
-    console.log(`[Bitácora] Filtrado de reservaciones: ${reservations.length} → ${filtered.length} (excluidas ${reservations.length - filtered.length} sin ingreso)`);
-    console.log(`[Bitácora] Datos cargados - Reservaciones: ${filtered.length}, Paquetes: ${packages.length}, Viajes: ${trips.length}`);
+    // Reservations filtered
     
     return filtered;
   }, [reservations, packages.length, trips.length]);

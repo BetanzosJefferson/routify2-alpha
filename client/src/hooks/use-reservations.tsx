@@ -59,8 +59,8 @@ export function useReservations(options: UseReservationsOptions = {}) {
           url += `?${params.toString()}`;
         }
         
-        console.log(`[useReservations] 🔧 DEBUG: dateFilter="${dateFilter}", original date="${date}"`);
-        console.log(`[useReservations] Obteniendo reservaciones${dateFilter ? ` para fecha ${dateFilter}` : ' (todas)'}: ${url}`);
+        // Processing reservations request
+        // Fetching reservations
         
         const response = await fetch(url);
         if (!response.ok) {
@@ -68,7 +68,7 @@ export function useReservations(options: UseReservationsOptions = {}) {
         }
         
         const reservations = await response.json();
-        console.log(`[useReservations] Obtenidas ${reservations.length} reservaciones${dateFilter ? ` para ${dateFilter}` : ' (todas)'}`);
+        // Reservations fetched successfully
         
         return reservations;
       } catch (error) {

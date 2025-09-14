@@ -46,7 +46,7 @@ export function useTrips(options: UseTripsOptions = {}) {
               ? departureDate
               : formatDateToLocal(new Date(departureDate));
               
-            console.log(`[useTrips] Fecha normalizada para API: ${normalizedDate} (original: ${departureDate})`);
+            // Date normalized for API
             params.append("date", normalizedDate);
           } catch (e) {
             console.warn(`[useTrips] Error al formatear fecha: ${e}. Usando fecha original.`);
@@ -72,7 +72,7 @@ export function useTrips(options: UseTripsOptions = {}) {
           url += `?${params.toString()}`;
         }
         
-        console.log(`[useTrips] Obteniendo viajes: ${url}`);
+        // Fetching trips
         
         const response = await fetch(url);
         if (!response.ok) {
@@ -80,7 +80,7 @@ export function useTrips(options: UseTripsOptions = {}) {
         }
         
         const trips = await response.json();
-        console.log(`[useTrips] Obtenidos ${trips.length} viajes`);
+        // Trips fetched successfully
         
         return trips;
       } catch (error) {
@@ -109,7 +109,7 @@ export function useTripDetails(tripId?: number) {
         }
         
         const url = `/api/trips/${tripId}`;
-        console.log(`[useTripDetails] Obteniendo detalles del viaje: ${url}`);
+        // Fetching trip details
         
         const response = await fetch(url);
         if (!response.ok) {
@@ -117,7 +117,7 @@ export function useTripDetails(tripId?: number) {
         }
         
         const trip = await response.json();
-        console.log(`[useTripDetails] Obtenidos detalles del viaje ${tripId}`);
+        // Trip details fetched successfully
         
         return trip;
       } catch (error) {
