@@ -14,7 +14,7 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
   return useQuery<ReservationWithDetails[]>({
     queryKey: ["reservations-by-trip", recordId, tripInfo?.departureDate, user?.role],
     queryFn: async () => {
-      console.log(`[useReservationsByTrip] Fetching reservations for trip:`, { recordId, tripInfo });
+      // Fetching reservations for specific trip
       
       // Usar parentTripFilter para obtener todas las reservas del día del viaje padre
       const searchParams = new URLSearchParams();
@@ -29,21 +29,21 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
       }
       
       const allReservations = await response.json();
-      console.log(`[useReservationsByTrip] Total reservations received:`, allReservations.length);
+      // Total reservations processed
       
       // Filtrar reservaciones que coincidan con el viaje específico
       const matchingReservations = allReservations.filter((reservation: ReservationWithDetails) => {
         return matchReservationToTrip(reservation, recordId, tripInfo);
       });
       
-      console.log(`[useReservationsByTrip] Matching reservations found:`, matchingReservations.length);
+      // Matching reservations filtered
       return matchingReservations;
     },
     enabled: enabled && !!(recordId || tripInfo),
-    staleTime: 0, // Datos siempre frescos para actualizaciones en tiempo real
-    refetchInterval: 30000, // Actualizar cada 30 segundos automáticamente
-    refetchOnWindowFocus: true, // Actualizar cuando el usuario regrese a la ventana
-    refetchOnMount: true, // Siempre actualizar al montar el componente
+    staleTime: 60000, // Considerar datos frescos por 1 minuto
+    refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
+    refetchOnWindowFocus: false, // Desactivar refetch automático al cambiar tabs
+    refetchOnMount: 'always', // Solo refetch si cache está vacío
   });
 }
 

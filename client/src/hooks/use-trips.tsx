@@ -22,8 +22,8 @@ export function useTrips(options: UseTripsOptions = {}) {
   return useQuery<TripWithRouteInfo[]>({
     queryKey: ["/api/trips", { routeId, departureDate, searchTerm, date, isSubTrip }],
     enabled: enabled, // Allow anonymous access to public trips
-    staleTime: 5000,
-    refetchInterval: 15000,
+    staleTime: 60000, // Considerar datos frescos por 1 minuto
+    refetchInterval: false, // Desactivar polling automático
     queryFn: async () => {
       try {
         // Construir la URL base
@@ -100,8 +100,8 @@ export function useTripDetails(tripId?: number) {
   return useQuery<TripWithRouteInfo>({
     queryKey: ["/api/trips", tripId],
     enabled: !!user && !!tripId,
-    staleTime: 5000,
-    refetchInterval: 15000,
+    staleTime: 60000, // Considerar datos frescos por 1 minuto
+    refetchInterval: false, // Desactivar polling automático
     queryFn: async () => {
       try {
         if (!tripId) {
