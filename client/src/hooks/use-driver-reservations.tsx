@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Trip } from "./use-driver-trips";
+import { queryKeys } from "@/lib/query-keys";
 
 // Tipos de datos para pasajeros y reservaciones
 export interface Passenger {
