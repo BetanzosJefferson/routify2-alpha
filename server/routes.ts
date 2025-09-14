@@ -2193,9 +2193,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tripReservations = allReservations.filter(r => {
           if (!activeStates.includes(r.status)) return false;
           
-          const tripDetails = r.tripDetails as any;
-          const reservationTripId = tripDetails?.tripId;
-          const reservationRecordId = tripDetails?.recordId;
+          // CORRECCIÓN CRÍTICA: Force-cast para evitar errores TypeScript
+          const tripDetails = r.tripDetails as Record<string, any> | null;
+          const reservationTripId = tripDetails?.tripId as string | undefined;
+          const reservationRecordId = tripDetails?.recordId as string | undefined;
           
           // Buscar por ID del viaje padre O por sub-trip IDs
           return reservationRecordId === id.toString() || 
