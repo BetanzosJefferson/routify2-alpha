@@ -85,14 +85,18 @@ export function recomputeSegmentAvailability(
   
   // Procesar todas las reservaciones activas
   reservations.forEach(reservation => {
-    if (!OCCUPYING_STATUSES.includes(reservation.status)) return;
+    // ARREGLADO: Normalizar status para evitar problemas de case sensitivity
+    const status = String(reservation.status).toLowerCase();
+    if (!OCCUPYING_STATUSES.includes(status)) return;
     
     const tripDetails = reservation.tripDetails as any;
-    const seats = tripDetails?.seats || 0;
+    const passengers = reservation.passengers as any;
+    // ARREGLADO: Usar passengers.length como fallback igual que en rama simple
+    const seats = (tripDetails?.seats ?? passengers?.length ?? 0) | 0;
     
     if (seats <= 0) return;
     
-    console.log(`[recomputeSegmentAvailability] Procesando reservación: tripId=${tripDetails?.tripId}, seats=${seats}`);
+    console.log(`[recomputeSegmentAvailability] Procesando reservación: tripId=${tripDetails?.tripId}, seats=${seats}, status=${status}`);
     
     // ARREGLADO: Encontrar el segmento usando la lógica correcta de matching
     const reservationTripId = tripDetails?.tripId;
@@ -109,8 +113,17 @@ export function recomputeSegmentAvailability(
         return;
       }
     } else {
-      // Reservación del trip padre: encontrar segmento principal o usar el primero
-      segment = tripData.find(s => s.isMainTrip) || tripData[0];
+      // ARREGLADO: Reservación del trip padre debe afectar TODO el viaje
+      // Para viajes padre, marcar ocupación en TODOS los subsegmentos
+      console.log(`[recomputeSegmentAvailability] Reservación de viaje padre: ${reservationTripId}, afectando todos los subsegmentos`);  
+      
+      // Marcar ocupación en TODOS los subsegmentos (0 a route.stops.length-1)
+      for (let i = 0; i < route.stops.length - 1; i++) {
+        subsegmentOccupancy[i] += seats;
+      }
+      
+      console.log(`[recomputeSegmentAvailability] Viaje padre procesado: +${seats} asientos en todos los ${route.stops.length - 1} subsegmentos`);
+      return; // Skip resto de lógica para esta reservación
     }
     
     if (!segment) {
@@ -133,6 +146,7 @@ export function recomputeSegmentAvailability(
     }
   });
 
+  console.log(`[recomputeSegmentAvailability] TOTAL reservaciones procesadas: ${reservations.filter(r => OCCUPYING_STATUSES.includes(String(r.status).toLowerCase())).length}`);
   console.log('[recomputeSegmentAvailability] Ocupación por subsegmento:', subsegmentOccupancy);
 
   // Recalcular availableSeats para cada segmento usando min-over-subsegments
