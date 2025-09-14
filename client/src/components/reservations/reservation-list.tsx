@@ -108,12 +108,6 @@ export function ReservationList() {
     const day = String(now.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
     
-    console.log(`[ReservationList] ========== DIAGNÓSTICO DE FECHA ==========`);
-    console.log(`[ReservationList] Fecha actual sistema: ${now.toISOString()}`);
-    console.log(`[ReservationList] Fecha local: ${now.toLocaleDateString()}`);
-    console.log(`[ReservationList] Fecha formateada: ${dateString}`);
-    console.log(`[ReservationList] =============================================`);
-    
     return dateString;
   };
   
@@ -198,17 +192,7 @@ export function ReservationList() {
   // Mostrar todas las reservaciones sin filtrar por estado
   const allReservations = reservations || [];
   
-  // ✅ DEBUG: Verificar datos recibidos del backend
-  useEffect(() => {
-    if (allReservations.length > 0) {
-      console.log(`[ReservationList] 🔍 DATOS RECIBIDOS PARA FECHA ${dateFilter}:`);
-      allReservations.forEach((res, index) => {
-        console.log(`  ${index + 1}. ID: ${res.id}, Viaje: ${res.trip.departureDate}, Creada: ${res.createdAt}`);
-      });
-    } else {
-      console.log(`[ReservationList] ❌ NO HAY RESERVACIONES para fecha ${dateFilter}`);
-    }
-  }, [allReservations, dateFilter]);
+  // Reservations data ready
 
   // Function to handle sorting
   const getSortedReservations = (reservations: ReservationWithDetails[]) => {
@@ -638,7 +622,7 @@ export function ReservationList() {
       
       updates.tripDetails = updatedTripDetails;
       
-      console.log(`[EditReservation] Actualizando asientos: ${currentSeatCount} → ${newSeatCountNum}`);
+      // Seats updated
     }
 
     // Enviamos todas las actualizaciones
@@ -843,7 +827,7 @@ export function ReservationList() {
                   type="date"
                   value={dateFilter}
                   onChange={(e) => {
-                    console.log(`[ReservationList] Fecha seleccionada: ${e.target.value} (sin búsqueda automática)`);
+                    // Date filter updated
                     setDateFilter(e.target.value);
                   }}
                   className="w-32 text-sm"
