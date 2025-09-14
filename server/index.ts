@@ -27,12 +27,30 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      
+      // OPTIMIZACIÓN: Logging inteligente - evitar JSON.stringify de datasets grandes
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+        if (Array.isArray(capturedJsonResponse)) {
+          // Para arrays (listas), solo mostrar cantidad de elementos
+          logLine += ` :: [${capturedJsonResponse.length} items]`;
+        } else if (typeof capturedJsonResponse === 'object' && capturedJsonResponse !== null) {
+          // Para objetos, mostrar claves principales sin todo el contenido
+          const keys = Object.keys(capturedJsonResponse);
+          if (keys.length > 3) {
+            logLine += ` :: {${keys.slice(0, 3).join(', ')}, ...+${keys.length - 3}}`;
+          } else {
+            // Solo si es objeto pequeño, hacer JSON.stringify limitado
+            const jsonStr = JSON.stringify(capturedJsonResponse);
+            if (jsonStr.length > 100) {
+              logLine += ` :: ${jsonStr.slice(0, 100)}...`;
+            } else {
+              logLine += ` :: ${jsonStr}`;
+            }
+          }
+        } else {
+          // Para primitivos, mostrar directamente
+          logLine += ` :: ${capturedJsonResponse}`;
+        }
       }
 
       log(logLine);
