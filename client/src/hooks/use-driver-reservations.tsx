@@ -45,14 +45,11 @@ export function useDriverReservations(options: UseDriverReservationsOptions = {}
   const isDriver = user?.role === 'chofer' || user?.role === 'DRIVER';
   
   return useQuery<Reservation[]>({
-    queryKey: [
-      "/api/reservations", 
-      { 
-        driverId: isDriver ? user?.id : undefined,
-        tripId,
-        includeRelated
-      }
-    ],
+    queryKey: queryKeys.reservations.filtered({
+      driverId: isDriver ? user?.id : undefined,
+      tripId,
+      includeRelated
+    }),
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
     refetchOnWindowFocus: false, // Desactivar refetch al cambiar tabs
@@ -132,7 +129,7 @@ export function useAllDriverReservations() {
   const isDriver = user?.role === 'chofer' || user?.role === 'DRIVER';
   
   return useQuery<Reservation[]>({
-    queryKey: ["/api/reservations", { driverId: isDriver ? user?.id : undefined }],
+    queryKey: queryKeys.reservations.filtered({ driverId: isDriver ? user?.id : undefined }),
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
     refetchOnWindowFocus: false, // Desactivar refetch al cambiar tabs

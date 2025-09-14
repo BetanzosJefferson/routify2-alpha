@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Trip, TripWithRouteInfo } from "@shared/schema";
 import { useAuth } from "./use-auth";
 import { formatDateToLocal } from "@/lib/utils";
+import { queryKeys } from "@/lib/query-keys";
 
 type UseTripsOptions = {
   enabled?: boolean;
@@ -20,7 +21,7 @@ export function useTrips(options: UseTripsOptions = {}) {
   const { routeId, departureDate, searchTerm, enabled = true, date, isSubTrip } = options;
   
   return useQuery<TripWithRouteInfo[]>({
-    queryKey: ["/api/trips", { routeId, departureDate, searchTerm, date, isSubTrip }],
+    queryKey: queryKeys.trips.filtered({ routeId, departureDate, searchTerm, date, isSubTrip }),
     enabled: enabled, // Allow anonymous access to public trips
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
@@ -99,7 +100,7 @@ export function useTripDetails(tripId?: number) {
   const { user } = useAuth();
   
   return useQuery<TripWithRouteInfo>({
-    queryKey: ["/api/trips", tripId],
+    queryKey: queryKeys.trips.single(tripId),
     enabled: !!user && !!tripId,
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático

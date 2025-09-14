@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { ReservationWithDetails } from "@shared/schema";
+import { queryKeys } from "@/lib/query-keys";
 
 interface ReservationsByTripParams {
   recordId?: string;
@@ -12,7 +13,7 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
   const { user } = useAuth();
   
   return useQuery<ReservationWithDetails[]>({
-    queryKey: ["reservations-by-trip", recordId, tripInfo?.departureDate, user?.role],
+    queryKey: queryKeys.reservations.byTrip(recordId, tripInfo?.departureDate, user?.role),
     queryFn: async () => {
       // Fetching reservations for specific trip
       

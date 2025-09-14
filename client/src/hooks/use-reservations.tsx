@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Reservation, ReservationWithDetails } from "@shared/schema";
 import { useAuth } from "./use-auth";
+import { queryKeys } from "@/lib/query-keys";
 
 type UseReservationsOptions = {
   enabled?: boolean;
@@ -22,7 +23,13 @@ export function useReservations(options: UseReservationsOptions = {}) {
   const dateFilter = date;
   
   return useQuery<ReservationWithDetails[]>({
-    queryKey: ["/api/reservations", { tripId, includeRelated, date: dateFilter, archived, parentTripFilter }],
+    queryKey: queryKeys.reservations.filtered({
+      tripId, 
+      includeRelated, 
+      date: dateFilter, 
+      archived, 
+      parentTripFilter 
+    }),
     enabled: !!user && enabled,
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
