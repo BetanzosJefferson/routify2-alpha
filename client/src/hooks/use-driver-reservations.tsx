@@ -55,6 +55,7 @@ export function useDriverReservations(options: UseDriverReservationsOptions = {}
     ],
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
+    refetchOnWindowFocus: false, // Desactivar refetch al cambiar tabs
     enabled: !!user, // Ejecutar para cualquier usuario autenticado
     queryFn: async () => {
       // Construir la URL base
@@ -134,6 +135,7 @@ export function useAllDriverReservations() {
     queryKey: ["/api/reservations", { driverId: isDriver ? user?.id : undefined }],
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
+    refetchOnWindowFocus: false, // Desactivar refetch al cambiar tabs
     enabled: !!user, // Ejecutar para cualquier usuario autenticado
     queryFn: async () => {
       try {

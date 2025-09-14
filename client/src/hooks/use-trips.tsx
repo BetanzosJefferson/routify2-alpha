@@ -24,6 +24,7 @@ export function useTrips(options: UseTripsOptions = {}) {
     enabled: enabled, // Allow anonymous access to public trips
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
+    refetchOnWindowFocus: false, // Desactivar refetch al cambiar tabs
     queryFn: async () => {
       try {
         // Construir la URL base
@@ -102,6 +103,7 @@ export function useTripDetails(tripId?: number) {
     enabled: !!user && !!tripId,
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático
+    refetchOnWindowFocus: false, // Desactivar refetch al cambiar tabs
     queryFn: async () => {
       try {
         if (!tripId) {

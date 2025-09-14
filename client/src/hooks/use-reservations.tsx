@@ -27,7 +27,7 @@ export function useReservations(options: UseReservationsOptions = {}) {
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
     refetchOnWindowFocus: false, // Desactivar refetch automático al cambiar tabs
-    refetchOnMount: 'always', // Solo refetch si cache está vacío
+    refetchOnMount: false, // Respetar staleTime - no refetch forzado
     queryFn: async () => {
       try {
         // Construir la URL base

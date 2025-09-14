@@ -43,7 +43,7 @@ export function useReservationsByTrip({ recordId, tripInfo, enabled = true }: Re
     staleTime: 60000, // Considerar datos frescos por 1 minuto
     refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
     refetchOnWindowFocus: false, // Desactivar refetch automático al cambiar tabs
-    refetchOnMount: 'always', // Solo refetch si cache está vacío
+    refetchOnMount: false, // Respetar staleTime - no refetch forzado
   });
 }
 
