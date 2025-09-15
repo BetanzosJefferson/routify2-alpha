@@ -81,7 +81,7 @@ function isSameCity(location1: string, location2: string): boolean {
 import { populateLocationData } from "./populate-locations";
 import { setupFinancialRoutes } from "./financial-routes";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express, httpServer: Server, options: { setupWebSocket?: boolean } = {}): Promise<void> {
   // prefix all routes with /api
   const apiRouter = (path: string) => `/api${path}`;
 
@@ -657,6 +657,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // EXTRAER PARÁMETROS DE PAGINACIÓN
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+      
+      // Agregar paginación a searchParams
+      if (page || limit || offset !== undefined) {
+        searchParams.page = page;
+        searchParams.limit = limit; 
+        searchParams.offset = offset;
+        console.log(`[GET /trips-optimized] Paginación solicitada: page=${page}, limit=${limit}, offset=${offset}`);
+      }
+      
       // Usar el método optimizado
       const startTime = Date.now();
       const trips = await storage.searchTripsOptimized(searchParams);
@@ -700,8 +713,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations-optimized] Usuario normal - acceso a compañía:`, companyId);
       }
       
+      // EXTRAER PARÁMETROS DE PAGINACIÓN
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+      
+      const paginationParams = (page || limit || offset !== undefined) ? { page, limit, offset } : undefined;
+      
+      if (paginationParams) {
+        console.log(`[GET /reservations-optimized] Paginación solicitada:`, paginationParams);
+      }
+      
       console.log(`[GET /reservations-optimized] Llamando getReservationsOptimized con companyId: ${companyId}`);
-      const reservations = await storage.getReservationsOptimized(companyId, user.id, user.role);
+      const reservations = await storage.getReservationsOptimized(companyId, user.id, user.role, paginationParams);
       
       const queryTime = Date.now() - startTime;
       console.log(`[GET /reservations-optimized] Obtenidas ${reservations.length} reservaciones en ${queryTime}ms`);
@@ -713,7 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Ruta estándar para buscar viajes (solo muestra los publicados por defecto)
+  // Ruta estándar para buscar viajes con paginación (solo muestra los publicados por defecto)
   app.get(apiRouter("/trips"), async (req: Request, res: Response) => {
     try {
       // Obtener el usuario autenticado
@@ -795,6 +819,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isSubTrip) {
         searchParams.isSubTrip = isSubTrip as string;
         console.log(`[GET /trips] Filtro isSubTrip: ${searchParams.isSubTrip}`);
+      }
+      
+      // AGREGAR PAGINACIÓN PARA ELIMINAR OVER-FETCHING
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+      
+      // Aplicar paginación por defecto si no hay filtros específicos
+      if (!origin && !destination && !date && !dateRange && !driverId && (page || limit || (!page && !limit && !offset))) {
+        searchParams.limit = limit || 50; // Default 50 para prevenir over-fetching
+        if (page && page > 0) {
+          searchParams.offset = (page - 1) * (limit || 50);
+        } else if (offset !== undefined) {
+          searchParams.offset = offset;
+        }
+        console.log(`[GET /trips] 📄 PAGINACIÓN APLICADA: limit=${searchParams.limit}, offset=${searchParams.offset || 0}`);
       }
       
       if (seats && !isNaN(parseInt(seats as string, 10))) {
@@ -2805,6 +2845,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let companyIds: string[] | undefined = undefined;
       let dateFilter: string | null = null;
       
+      // AGREGAR PAGINACIÓN PARA ELIMINAR OVER-FETCHING
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined; 
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+      
       // Verificar si se solicita filtrar por viaje específico
       if (req.query.tripId) {
         tripId = parseInt(req.query.tripId as string, 10);
@@ -4800,129 +4845,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-  
-  // Configuración del servidor WebSocket
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
-  // Mantener un registro de conexiones activas
-  const clients = new Map<string, WebSocket>();
-  
-  wss.on('connection', (ws, req) => {
-    console.log('[WebSocket] Nueva conexión establecida');
-    
-    // Manejar mensajes entrantes
-    ws.on('message', (message) => {
-      try {
-        const data = JSON.parse(message.toString());
-        console.log('[WebSocket] Mensaje recibido:', data);
-        
-        // Si el mensaje incluye una autenticación de usuario, almacenar la conexión
-        if (data.type === 'auth' && data.userId) {
-          const userId = data.userId.toString();
-          clients.set(userId, ws);
-          console.log(`[WebSocket] Usuario ${userId} autenticado`);
-          
-          // Confirmar autenticación al cliente
-          ws.send(JSON.stringify({ 
-            type: 'auth_success', 
-            message: 'Autenticación exitosa' 
-          }));
-        }
-      } catch (error) {
-        console.error('[WebSocket] Error al procesar mensaje:', error);
-      }
-    });
-    
-    // Manejar cierre de conexión
-    ws.on('close', () => {
-      console.log('[WebSocket] Conexión cerrada');
-      
-      // Eliminar la conexión del registro
-      clients.forEach((client, userId) => {
-        if (client === ws) {
-          clients.delete(userId);
-          console.log(`[WebSocket] Usuario ${userId} desconectado`);
-        }
-      });
-    });
-  });
-  
-  // Función para obtener usuarios por empresa y roles
-  const getUsersByCompanyAndRoles = async (companyId: string, roles: string[]): Promise<any[]> => {
-    try {
-      const users = await storage.getAllUsers();
-      const filteredUsers = users.filter(user => 
-        user.companyId === companyId && 
-        roles.includes(user.role)
-      );
-      console.log(`[getUsersByCompanyAndRoles] Encontrados ${filteredUsers.length} usuarios para la empresa ${companyId} con roles ${roles.join(', ')}`);
-      return filteredUsers;
-    } catch (error) {
-      console.error('[getUsersByCompanyAndRoles] Error al obtener usuarios:', error);
-      return [];
-    }
-  };
-  
-  // Función para enviar notificaciones a través de WebSocket
-  const sendNotificationToUsers = (userIds: number[], notification: any) => {
-    console.log(`[WebSocket] Intentando enviar notificación a ${userIds.length} usuarios: ${userIds.join(', ')}`);
-    
-    // Verificar clientes conectados
-    console.log(`[WebSocket] Total de clientes conectados: ${clients.size}`);
-    clients.forEach((_, key) => {
-      console.log(`[WebSocket] Cliente conectado: ID=${key}`);
-    });
-    
-    let sentCount = 0;
-    
-    for (const userId of userIds) {
-      const userIdStr = userId.toString();
-      const client = clients.get(userIdStr);
-      
-      if (client) {
-        if (client.readyState === WebSocket.OPEN) {
-          try {
-            // Asegurarse de que la notificación tenga todos los campos necesarios
-            const enhancedNotification = {
-              ...notification,
-              id: notification.id || Date.now(),
-              title: notification.title || 'Nueva notificación',
-              message: notification.message || 'Has recibido una nueva notificación',
-              type: notification.type || 'default',
-              createdAt: notification.createdAt || new Date().toISOString(),
-              updatedAt: notification.updatedAt || new Date().toISOString()
-            };
-            
-            // Formato del mensaje para el cliente
-            const message = JSON.stringify({
-              type: 'notification',
-              data: enhancedNotification
-            });
-            
-            // Enviar notificación
-            client.send(message);
-            console.log(`[WebSocket] Notificación enviada al usuario ${userIdStr}:`, JSON.stringify(enhancedNotification));
-            sentCount++;
-          } catch (error) {
-            console.error(`[WebSocket] Error al enviar notificación al usuario ${userIdStr}:`, error);
-          }
-        } else {
-          console.log(`[WebSocket] Usuario ${userIdStr} tiene conexión pero no está abierta. Estado: ${client.readyState}`);
-        }
-      } else {
-        console.log(`[WebSocket] Usuario ${userIdStr} no está conectado actualmente`);
-      }
-    }
-    
-    console.log(`[WebSocket] Resumen: ${sentCount}/${userIds.length} notificaciones enviadas exitosamente`);
-    
-    // Si no se enviaron notificaciones, intentamos guardarlas para cuando los usuarios se conecten
-    if (sentCount === 0) {
-      console.log('[WebSocket] Ninguna notificación enviada en tiempo real. Las notificaciones deberán ser recuperadas por API.');
-    }
-  };
-  
+  // Only setup WebSocket if explicitly requested
+  if (options.setupWebSocket !== false) {
+    await setupWebSocketServer(httpServer);
+  }
+
   // Endpoint para obtener reservaciones creadas por comisionistas
   app.get(apiRouter("/commissions/reservations"), async (req: Request, res: Response) => {
     try {
@@ -8089,7 +8016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  return httpServer;
+  // Server setup completed - no return needed
 }
 
 /**
@@ -10452,4 +10379,129 @@ function setupPackageRoutes(app: Express) {
       });
     }
   });
+}
+
+// Separate function to setup WebSocket server
+export async function setupWebSocketServer(httpServer: Server): Promise<void> {
+  // Configuración del servidor WebSocket con singleton guard para hot restarts
+  const wss = (globalThis as any).wss ?? new WebSocketServer({ server: httpServer, path: '/ws' });
+  (globalThis as any).wss = wss;
+  
+  // Mantener un registro de conexiones activas
+  const clients = new Map<string, WebSocket>();
+  
+  wss.on('connection', (ws, req) => {
+    console.log('[WebSocket] Nueva conexión establecida');
+    
+    // Manejar mensajes entrantes
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('[WebSocket] Mensaje recibido:', data);
+        
+        // Si el mensaje incluye una autenticación de usuario, almacenar la conexión
+        if (data.type === 'auth' && data.userId) {
+          const userId = data.userId.toString();
+          clients.set(userId, ws);
+          console.log(`[WebSocket] Usuario ${userId} autenticado`);
+          
+          // Confirmar autenticación al cliente
+          ws.send(JSON.stringify({ 
+            type: 'auth_success', 
+            message: 'Autenticación exitosa' 
+          }));
+        }
+      } catch (error) {
+        console.error('[WebSocket] Error al procesar mensaje:', error);
+      }
+    });
+    
+    // Manejar cierre de conexión
+    ws.on('close', () => {
+      console.log('[WebSocket] Conexión cerrada');
+      
+      // Eliminar la conexión del registro
+      clients.forEach((client, userId) => {
+        if (client === ws) {
+          clients.delete(userId);
+          console.log(`[WebSocket] Usuario ${userId} desconectado`);
+        }
+      });
+    });
+  });
+  
+  // Función para obtener usuarios por empresa y roles
+  const getUsersByCompanyAndRoles = async (companyId: string, roles: string[]): Promise<any[]> => {
+    try {
+      const users = await storage.getAllUsers();
+      const filteredUsers = users.filter(user => 
+        user.companyId === companyId && 
+        roles.includes(user.role)
+      );
+      console.log(`[getUsersByCompanyAndRoles] Encontrados ${filteredUsers.length} usuarios para la empresa ${companyId} con roles ${roles.join(', ')}`);
+      return filteredUsers;
+    } catch (error) {
+      console.error('[getUsersByCompanyAndRoles] Error al obtener usuarios:', error);
+      return [];
+    }
+  };
+  
+  // Función para enviar notificaciones a través de WebSocket
+  const sendNotificationToUsers = (userIds: number[], notification: any) => {
+    console.log(`[WebSocket] Intentando enviar notificación a ${userIds.length} usuarios: ${userIds.join(', ')}`);
+    
+    // Verificar clientes conectados
+    console.log(`[WebSocket] Total de clientes conectados: ${clients.size}`);
+    clients.forEach((_, key) => {
+      console.log(`[WebSocket] Cliente conectado: ID=${key}`);
+    });
+    
+    let sentCount = 0;
+    
+    for (const userId of userIds) {
+      const userIdStr = userId.toString();
+      const client = clients.get(userIdStr);
+      
+      if (client) {
+        if (client.readyState === WebSocket.OPEN) {
+          try {
+            // Asegurarse de que la notificación tenga todos los campos necesarios
+            const enhancedNotification = {
+              ...notification,
+              id: notification.id || Date.now(),
+              title: notification.title || 'Nueva notificación',
+              message: notification.message || 'Has recibido una nueva notificación',
+              type: notification.type || 'default',
+              createdAt: notification.createdAt || new Date().toISOString(),
+              updatedAt: notification.updatedAt || new Date().toISOString()
+            };
+            
+            // Formato del mensaje para el cliente
+            const message = JSON.stringify({
+              type: 'notification',
+              data: enhancedNotification
+            });
+            
+            // Enviar notificación
+            client.send(message);
+            console.log(`[WebSocket] Notificación enviada al usuario ${userIdStr}:`, JSON.stringify(enhancedNotification));
+            sentCount++;
+          } catch (error) {
+            console.error(`[WebSocket] Error al enviar notificación al usuario ${userIdStr}:`, error);
+          }
+        } else {
+          console.log(`[WebSocket] Usuario ${userIdStr} tiene conexión pero no está abierta. Estado: ${client.readyState}`);
+        }
+      } else {
+        console.log(`[WebSocket] Usuario ${userIdStr} no está conectado actualmente`);
+      }
+    }
+    
+    console.log(`[WebSocket] Resumen: ${sentCount}/${userIds.length} notificaciones enviadas exitosamente`);
+    
+    // Si no se enviaron notificaciones, intentamos guardarlas para cuando los usuarios se conecten
+    if (sentCount === 0) {
+      console.log('[WebSocket] Ninguna notificación enviada en tiempo real. Las notificaciones deberán ser recuperadas por API.');
+    }
+  };
 }

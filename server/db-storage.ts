@@ -623,6 +623,10 @@ export class DatabaseStorage implements IStorage {
     visibility?: string;
     includeAllVisibilities?: boolean;
     optimizedResponse?: boolean;
+    // NUEVOS PARÁMETROS DE PAGINACIÓN
+    page?: number;        // Página actual (1-based)
+    limit?: number;       // Número de elementos por página
+    offset?: number;      // Offset directo (alternativo a page)
   }): Promise<TripWithRouteInfo[]> {
     console.log(`[searchTripsOptimized] Iniciando búsqueda optimizada con parámetros:`, params);
     
@@ -709,7 +713,26 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
       .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
     
-    const results = whereClause ? await query.where(whereClause) : await query;
+    // AGREGAR ORDENAMIENTO DETERMINÍSTICO para paginación estable
+    let baseQuery = whereClause ? query.where(whereClause) : query;
+    let finalQuery = baseQuery.orderBy(desc(schema.trips.id)); // Ordenar por ID descendente para consistencia
+    
+    // APLICAR PAGINACIÓN si se especifica
+    
+    if (params.limit || params.page || params.offset !== undefined) {
+      const limit = params.limit || 50; // Default 50 items por página
+      let offset = params.offset || 0;
+      
+      // Si se especifica página, calcular offset
+      if (params.page && params.page > 0) {
+        offset = (params.page - 1) * limit;
+      }
+      
+      console.log(`[searchTripsOptimized] 📄 PAGINACIÓN: limit=${limit}, offset=${offset}, page=${params.page || 'N/A'}`);
+      finalQuery = finalQuery.limit(limit).offset(offset);
+    }
+    
+    const results = await finalQuery;
     
     console.log(`[searchTripsOptimized] ✅ Consulta optimizada completada. Encontrados ${results.length} resultados`);
     console.log(`[searchTripsOptimized] ✅ Total consultas a DB: 1 (vs 5+ en versión anterior)`);
@@ -1320,7 +1343,17 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.trips.id, recordId));
   }
   
-  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
+  async getReservationsOptimized(
+    companyId?: string, 
+    currentUserId?: number, 
+    userRole?: string,
+    // NUEVOS PARÁMETROS DE PAGINACIÓN
+    paginationParams?: {
+      page?: number;        // Página actual (1-based)
+      limit?: number;       // Número de elementos por página  
+      offset?: number;      // Offset directo (alternativo a page)
+    }
+  ): Promise<ReservationWithDetails[]> {
     console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
     
     try {
@@ -1414,8 +1447,27 @@ export class DatabaseStorage implements IStorage {
         query.where(eq(schema.reservations.companyId, companyId));
       }
       
+      // AGREGAR ORDENAMIENTO DETERMINÍSTICO para paginación estable  
+      let baseQuery = query.orderBy(desc(schema.reservations.id)); // Ordenar por ID descendente para consistencia
+      
+      // APLICAR PAGINACIÓN si se especifica
+      let finalQuery = baseQuery;
+      
+      if (paginationParams && (paginationParams.limit || paginationParams.page || paginationParams.offset !== undefined)) {
+        const limit = paginationParams.limit || 50; // Default 50 items por página
+        let offset = paginationParams.offset || 0;
+        
+        // Si se especifica página, calcular offset
+        if (paginationParams.page && paginationParams.page > 0) {
+          offset = (paginationParams.page - 1) * limit;
+        }
+        
+        console.log(`[getReservationsOptimized] 📄 PAGINACIÓN: limit=${limit}, offset=${offset}, page=${paginationParams.page || 'N/A'}`);
+        finalQuery = finalQuery.limit(limit).offset(offset);
+      }
+      
       console.log("[getReservationsOptimized] Ejecutando consulta única con JOINs");
-      const results = await query;
+      const results = await finalQuery;
       console.log(`[getReservationsOptimized] Obtenidos ${results.length} resultados de la consulta`);
       
       // Transformar resultados
