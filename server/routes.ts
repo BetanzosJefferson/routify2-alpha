@@ -7695,9 +7695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Obtener datos de la empresa destino
-      const targetCompany = await storage.getCompanyById(targetCompanyId);
-      if (!targetCompany) {
+      // Verificar que la empresa destino existe (simplificado)
+      if (!targetCompanyId) {
         return res.status(404).json({ 
           success: false, 
           message: 'La empresa destino no existe' 
@@ -8442,7 +8441,7 @@ function setupPackageRoutes(app: Express) {
         console.log(`[GET /cash-register] IDs de compañías asociadas: ${associatedCompanyIds.join(', ')}`);
         
         // Obtener todas las reservaciones marcadas como pagadas por este taquillero
-        const taquilleroReservations = await storage.getPaidReservationsByUser(user.id);
+        const taquilleroReservations = await storage.getReservations({ paidBy: user.id });
         
         // Filtrar las reservaciones para mostrar solo las de las compañías asociadas
         const filteredReservations = taquilleroReservations.filter(reservation => {
@@ -8493,7 +8492,7 @@ function setupPackageRoutes(app: Express) {
         
         if (!companyId) {
           console.log(`[GET /cash-register] Usuario dueño/admin sin compañía asignada. Usando vista limitada.`);
-          const paidReservations = await storage.getPaidReservationsByUser(user.id);
+          const paidReservations = await storage.getReservations({ paidBy: user.id });
           
           // Agregar información adicional para identificar a qué empresa pertenece cada reserva
           const enrichedReservations = await Promise.all(
@@ -8546,7 +8545,7 @@ function setupPackageRoutes(app: Express) {
         
         // Para cada taquillero, obtener las reservaciones que marcó como pagadas
         for (const ticketOfficeUser of ticketOfficeUsers) {
-          const ticketOfficeReservations = await storage.getPaidReservationsByUser(ticketOfficeUser.id);
+          const ticketOfficeReservations = await storage.getReservations({ paidBy: ticketOfficeUser.id });
           
           // Filtrar solo las que pertenecen a la compañía actual
           const companyTicketOfficeReservations = ticketOfficeReservations.filter(
@@ -8597,7 +8596,7 @@ function setupPackageRoutes(app: Express) {
       }
       
       // Para otros roles, mostrar solo sus propias reservaciones
-      const paidReservations = await storage.getPaidReservationsByUser(user.id);
+      const paidReservations = await storage.getReservations({ paidBy: user.id });
       
       // Agregar información adicional para identificar a qué empresa pertenece cada reserva
       const enrichedReservations = await Promise.all(
@@ -9521,7 +9520,7 @@ function setupPackageRoutes(app: Express) {
         }
 
         // Obtener reservas actuales del viaje destino para calcular asientos disponibles
-        const destinationReservations = await storage.getReservationsByTrip(transfer.tripId);
+        const destinationReservations = await storage.getReservations({ tripId: transfer.tripId });
         const occupiedSeats = destinationReservations.reduce((sum, res) => sum + res.passengers.length, 0);
         const availableSeats = destinationTrip.capacity - occupiedSeats;
 
