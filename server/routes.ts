@@ -3877,19 +3877,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         try {
-          // Usar método transaccional que garantiza atomicidad financiera
-          const result = await storage.markReservationPaidTransactional(
-            id, 
-            reservationData.paymentMethod || 'efectivo',
-            user.id
-          );
+          // Usar markAsPaid que consulta el método de pago real de la reservación
+          const result = await storage.markAsPaid(id, user.id);
+          
+          if (!result) {
+            return res.status(404).json({ 
+              error: "Reservación no encontrada", 
+              message: "No se pudo encontrar la reservación especificada" 
+            });
+          }
+          
+          // Convertir a formato compatible con markReservationPaidTransactional
+          const transactionResult = { 
+            reservation: result, 
+            transaction: null // markAsPaid no retorna la transacción, pero el log ya se maneja internamente
+          };
 
           console.log(`[PUT /reservations/${id}] ✅ Marcado como pagado exitosamente`);
-          if (result.transaction) {
-            console.log(`[PUT /reservations/${id}] ✅ Transacción creada con ID: ${result.transaction.id}`);
-          }
 
-          return res.status(200).json(result.reservation);
+          return res.status(200).json(result);
         } catch (error: any) {
           console.error(`[PUT /reservations/${id}] ❌ Error al marcar como pagado:`, error);
           
