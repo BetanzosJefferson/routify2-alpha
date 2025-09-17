@@ -3877,12 +3877,12 @@ export class DatabaseStorage implements IStorage {
       if (advanceAmount > 0) {
         // Hay anticipo - crear transacción por el monto del anticipo
         transactionAmount = advanceAmount;
-        transactionType = 'anticipo';
+        transactionType = 'reservation';
         paymentMethod = requestData.advance_payment_method || 'efectivo';
       } else if (paymentStatus === 'pagado' || paymentStatus === 'completado') {
         // Está marcado como pagado - crear transacción por el monto total
         transactionAmount = totalAmount;
-        transactionType = 'pago_completo';
+        transactionType = 'reservation';
         paymentMethod = requestData.payment_method || 'efectivo';
       } else {
         throw new Error('Condición de transacción no válida');
@@ -4010,6 +4010,7 @@ export class DatabaseStorage implements IStorage {
         user_id: assignedUserId, // NUEVA LÓGICA: Asignar basado en caja del comisionista
         amount: transactionAmount,
         type: transactionType,
+        type_id: reservationId,
         paymentMethod: paymentMethod,
         notes: `Transacción creada automáticamente por aprobación de solicitud de comisionista - ${assignmentReason}`,
         details: {
