@@ -10330,12 +10330,25 @@ function setupPackageRoutes(app: Express) {
       const totalIncome = transactions.reduce((sum, transaction) => {
         let amount = 0;
         if (transaction.details) {
-          if (typeof transaction.details === 'object' && transaction.details.details && transaction.details.details.monto) {
-            // Estructura: details.details.monto (reservaciones)
-            amount = transaction.details.details.monto;
-          } else if (transaction.details.amount) {
-            // Estructura: details.amount (otros tipos)
-            amount = transaction.details.amount;
+          // Parsing defensivo para campos JSON que pueden ser strings en producción
+          let parsedDetails;
+          try {
+            parsedDetails = typeof transaction.details === 'string' 
+              ? JSON.parse(transaction.details) 
+              : transaction.details;
+          } catch (e) {
+            console.log(`[GET /period-balance] Error parsing transaction.details para transacción ${transaction.id}:`, e);
+            parsedDetails = {};
+          }
+          
+          if (parsedDetails && typeof parsedDetails === 'object') {
+            if (parsedDetails.details && parsedDetails.details.monto) {
+              // Estructura: details.details.monto (reservaciones)
+              amount = parsedDetails.details.monto;
+            } else if (parsedDetails.amount) {
+              // Estructura: details.amount (otros tipos)
+              amount = parsedDetails.amount;
+            }
           }
         }
         return sum + (amount || 0);
@@ -10372,21 +10385,38 @@ function setupPackageRoutes(app: Express) {
       
       // Filtrado corregido: usar comparación directa de strings de fecha sin conversiones de timezone
       const tripsInPeriod = trips.filter(trip => {
-        // La información está en trip.tripData (jsonb)
-        if (!trip.tripData || !Array.isArray(trip.tripData) || trip.tripData.length === 0) {
+        // Parsing defensivo para tripData que puede ser string JSON en producción
+        let parsedTripData;
+        try {
+          parsedTripData = typeof trip.tripData === 'string' 
+            ? JSON.parse(trip.tripData) 
+            : trip.tripData;
+        } catch (e) {
+          console.log(`[GET /period-balance] Error parsing trip.tripData para viaje ${trip.id}:`, e);
+          parsedTripData = [];
+        }
+        
+        // Validar que tripData sea un array válido
+        if (!parsedTripData || !Array.isArray(parsedTripData) || parsedTripData.length === 0) {
           console.log(`[GET /period-balance] Viaje ${trip.id}: Sin tripData válido`);
           return false;
         }
         
         // Buscar el segmento principal del viaje
-        const mainTrip = trip.tripData.find((segment: any) => segment.isMainTrip);
+        const mainTrip = parsedTripData.find((segment: any) => segment && segment.isMainTrip);
         if (!mainTrip || !mainTrip.departureDate) {
           console.log(`[GET /period-balance] Viaje ${trip.id}: Sin segmento principal o departureDate`);
           return false;
         }
         
         // Extraer fecha como string directamente, sin conversiones de timezone
-        const tripDateStr = mainTrip.departureDate.split('T')[0]; // "2025-09-12"
+        let tripDateStr;
+        try {
+          tripDateStr = mainTrip.departureDate.split('T')[0]; // "2025-09-12"
+        } catch (e) {
+          console.log(`[GET /period-balance] Error parsing departureDate para viaje ${trip.id}:`, e);
+          return false;
+        }
         
         // Extraer fechas del rango también como strings directos
         const startDateStr = (startDateTime as string).split('T')[0]; // "2025-09-10"
