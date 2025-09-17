@@ -29,7 +29,7 @@ const expenseSchema = z.object({
     (val) => !isNaN(Number(val)) && Number(val) > 0,
     "El período debe ser un número mayor a 0"
   ),
-  category: z.enum(['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas'], {
+  category: z.enum(['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas', 'gastos_personales', 'prestamos'], {
     required_error: "La categoría es requerida"
   })
 });
@@ -54,7 +54,9 @@ const categoryLabels = {
   'gastos_fijos': 'Gastos Fijos',
   'gastos_variables': 'Gastos Variables', 
   'sueldos': 'Sueldos',
-  'rentas': 'Rentas'
+  'rentas': 'Rentas',
+  'gastos_personales': 'Gastos Personales',
+  'prestamos': 'Prestamos'
 };
 
 // Colores para las categorías
@@ -62,7 +64,9 @@ const categoryColors = {
   'gastos_fijos': 'bg-blue-100 text-blue-800',
   'gastos_variables': 'bg-green-100 text-green-800',
   'sueldos': 'bg-purple-100 text-purple-800',
-  'rentas': 'bg-orange-100 text-orange-800'
+  'rentas': 'bg-orange-100 text-orange-800',
+  'gastos_personales': 'bg-pink-100 text-pink-800',
+  'prestamos': 'bg-yellow-100 text-yellow-800'
 };
 
 export function ExpensesPage() {
@@ -240,7 +244,7 @@ export function ExpensesPage() {
         <div>
           <h1 className="text-3xl font-bold">Gastos de la Empresa</h1>
           <p className="text-gray-600 mt-1">
-            Gestión de gastos fijos, variables, sueldos y rentas
+            Gestión de gastos fijos, variables, sueldos, rentas, gastos personales y préstamos
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -333,6 +337,8 @@ export function ExpensesPage() {
                           <SelectItem value="gastos_variables">Gastos Variables</SelectItem>
                           <SelectItem value="sueldos">Sueldos</SelectItem>
                           <SelectItem value="rentas">Rentas</SelectItem>
+                          <SelectItem value="gastos_personales">Gastos Personales</SelectItem>
+                          <SelectItem value="prestamos">Prestamos</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

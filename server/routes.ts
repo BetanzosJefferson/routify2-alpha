@@ -7295,10 +7295,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validar categoría
-      const validCategories = ['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas'];
+      const validCategories = ['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas', 'gastos_personales', 'prestamos'];
       if (!validCategories.includes(category)) {
         return res.status(400).json({ 
-          message: "Categoría inválida. Debe ser: gastos_fijos, gastos_variables, sueldos, o rentas" 
+          message: "Categoría inválida. Debe ser: gastos_fijos, gastos_variables, sueldos, rentas, gastos_personales, o prestamos" 
         });
       }
       
@@ -7351,10 +7351,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validar categoría si se está actualizando
       const { category } = req.body;
       if (category) {
-        const validCategories = ['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas'];
+        const validCategories = ['gastos_fijos', 'gastos_variables', 'sueldos', 'rentas', 'gastos_personales', 'prestamos'];
         if (!validCategories.includes(category)) {
           return res.status(400).json({ 
-            message: "Categoría inválida. Debe ser: gastos_fijos, gastos_variables, sueldos, o rentas" 
+            message: "Categoría inválida. Debe ser: gastos_fijos, gastos_variables, sueldos, rentas, gastos_personales, o prestamos" 
           });
         }
       }
