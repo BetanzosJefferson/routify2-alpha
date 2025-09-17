@@ -46,6 +46,14 @@ interface ReservationTransactionInfoProps {
   formatCurrency: (amount: number) => string;
 }
 
+// Componente para mostrar información de transacciones de una paquetería
+interface PackageTransactionInfoProps {
+  packageId: number;
+  packageAmount: number;
+  usePackageTransactions: (id: number) => any;
+  formatCurrency: (amount: number) => string;
+}
+
 function ReservationTransactionInfo({ 
   reservationId, 
   reservationAmount, 
@@ -166,6 +174,127 @@ function ReservationTransactionInfo({
   );
 }
 
+// Componente para mostrar transacciones de paqueterías
+function PackageTransactionInfo({ 
+  packageId, 
+  packageAmount, 
+  usePackageTransactions,
+  formatCurrency 
+}: PackageTransactionInfoProps) {
+  const { data: transactionData, isLoading, error } = usePackageTransactions(packageId);
+  
+  if (isLoading) {
+    return (
+      <div className="mt-2 pt-2 border-t">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Cargando transacciones...</span>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error || !transactionData) {
+    return (
+      <div className="mt-2 pt-2 border-t">
+        <div className="flex items-center gap-2 text-sm text-red-500">
+          <AlertCircle className="h-3 w-3" />
+          <span>Error al cargar transacciones</span>
+        </div>
+      </div>
+    );
+  }
+  
+  const { count: transactionCount, totalAmount: totalCovered } = transactionData.summary;
+  
+  // Extraer IDs de las transacciones
+  const transactionIds = transactionData.transactions?.map((t: any) => t.id) || [];
+  const transactionIdsText = transactionIds.length > 0 ? transactionIds.join(', ') : 'N/A';
+  
+  // Validar y normalizar datos para evitar NaN
+  const validTotalCovered = Number.isFinite(totalCovered) ? totalCovered : 0;
+  const validPackageAmount = Number.isFinite(packageAmount) && packageAmount > 0 ? packageAmount : 0;
+  
+  const isCoveredCompletelyByTransactions = validTotalCovered >= validPackageAmount && validPackageAmount > 0;
+  const coveragePercentage = validPackageAmount > 0 ? Math.round((validTotalCovered / validPackageAmount) * 100) : 0;
+  const missingAmount = validPackageAmount - validTotalCovered;
+  
+  return (
+    <div className="mt-2 pt-2 border-t bg-gray-50 -mx-3 px-3 py-2 rounded-b-lg">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-gray-700">Seguimiento Financiero</span>
+        </div>
+        {!isCoveredCompletelyByTransactions && (
+          <AlertCircle className="h-4 w-4 text-orange-500" data-testid={`financial-alert-package-${packageId}`} />
+        )}
+      </div>
+      
+      <div className="space-y-2 text-sm">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center gap-1">
+            <TrendingUp className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600">Transacciones:</span>
+            <span className="font-medium" data-testid={`transaction-count-package-${packageId}`}>{transactionCount}</span>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <DollarSign className="h-3 w-3 text-gray-500" />
+            <span className="text-gray-600">Cubierto:</span>
+            <span className="font-medium" data-testid={`covered-amount-package-${packageId}`}>{formatCurrency(validTotalCovered)}</span>
+          </div>
+        </div>
+        
+        {/* Mostrar IDs de las transacciones */}
+        {transactionIds.length > 0 && (
+          <div className="flex items-start gap-1 text-xs">
+            <FileText className="h-3 w-3 text-gray-400 mt-0.5 flex-shrink-0" />
+            <span className="text-gray-500">IDs:</span>
+            <span className="font-mono text-gray-600 break-all" data-testid={`transaction-ids-package-${packageId}`}>
+              {transactionIdsText}
+            </span>
+          </div>
+        )}
+      </div>
+      
+      {/* Alerta de cobertura financiera */}
+      {!isCoveredCompletelyByTransactions && validPackageAmount > 0 && (
+        <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs">
+          <div className="flex items-center gap-1 text-orange-700">
+            <AlertCircle className="h-3 w-3" />
+            <span className="font-medium">Cobertura financiera incompleta</span>
+          </div>
+          <div className="mt-1 text-orange-600">
+            <span>Faltan: {formatCurrency(missingAmount > 0 ? missingAmount : 0)}</span>
+            <span className="ml-2">({coveragePercentage}% cubierto)</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Caso especial: no hay datos de paquetería válidos */}
+      {validPackageAmount === 0 && (
+        <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+          <div className="flex items-center gap-1 text-gray-600">
+            <AlertCircle className="h-3 w-3" />
+            <span className="font-medium">Sin datos financieros válidos</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Confirmación de cobertura completa */}
+      {isCoveredCompletelyByTransactions && transactionCount > 0 && (
+        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+          <div className="flex items-center gap-1 text-green-700">
+            <CheckCircle className="h-3 w-3" />
+            <span className="font-medium">100% cubierto financieramente</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSidebarProps): JSX.Element {
   const [budget, setBudget] = useState<number>(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -204,6 +333,24 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
         return data;
       },
       enabled: !!reservationId
+    });
+  };
+
+  // Hook personalizado para obtener transacciones de una paquetería
+  const usePackageTransactions = (packageId: number) => {
+    return useQuery({
+      queryKey: ['package-transactions', packageId],
+      queryFn: async () => {
+        const response = await fetch(`/api/packages/${packageId}/transactions`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Error al obtener transacciones de la paquetería');
+        }
+        const data = await response.json();
+        return data;
+      },
+      enabled: !!packageId
     });
   };
 
@@ -812,6 +959,14 @@ export function TripLogDetailsSidebar({ tripData, onClose }: TripLogDetailsSideb
                           <span className="text-gray-500 ml-1">({pkg.paymentMethod || 'efectivo'})</span>
                         </div>
                       </div>
+
+                      {/* Información de transacciones financieras */}
+                      <PackageTransactionInfo 
+                        packageId={pkg.id} 
+                        packageAmount={pkg.price || 0}
+                        usePackageTransactions={usePackageTransactions}
+                        formatCurrency={formatCurrency}
+                      />
                     </div>
                   );
                 })}
