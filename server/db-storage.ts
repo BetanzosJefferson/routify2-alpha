@@ -2474,7 +2474,24 @@ export class DatabaseStorage implements IStorage {
   // Missing reservation operation methods
   async markAsPaid(reservationId: number, userId: number): Promise<Reservation | undefined> {
     try {
-      const result = await this.markReservationPaidTransactional(reservationId, 'efectivo', userId);
+      // Consultar la reservación para obtener su método de pago real
+      const reservation = await db
+        .select()
+        .from(schema.reservations)
+        .where(eq(schema.reservations.id, reservationId))
+        .limit(1);
+
+      if (reservation.length === 0) {
+        console.error(`Reservación ${reservationId} no encontrada`);
+        return undefined;
+      }
+
+      // Usar el método de pago de la reservación, o 'efectivo' como fallback
+      const paymentMethod = reservation[0].paymentMethod || 'efectivo';
+      
+      console.log(`[markAsPaid] Reservación ${reservationId} - Método de pago: ${paymentMethod}`);
+      
+      const result = await this.markReservationPaidTransactional(reservationId, paymentMethod, userId);
       return result.reservation;
     } catch (error) {
       console.error('Error marking reservation as paid:', error);
