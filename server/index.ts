@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes, setupWebSocketServer } from "./routes";
+import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 // Referencia a rutas de cortes de caja eliminada
 
@@ -61,12 +61,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Create single HTTP server instance 
-  const { createServer } = await import("http");
-  const server = createServer(app);
-
-  // Register API routes without WebSocket setup (defer until after successful port binding)
-  await registerRoutes(app, server, { setupWebSocket: false });
+  const server = await registerRoutes(app);
   
   // Rutas de cortes de caja eliminadas
 
@@ -87,43 +82,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Helper function to setup WebSocket after successful server start
-  const setupWebSocketAfterServerStart = async (port: number | string) => {
-    try {
-      await setupWebSocketServer(server);
-      log(`WebSocket server setup completed on port ${port}`);
-    } catch (wsError: any) {
-      console.error(`Failed to setup WebSocket server: ${wsError.message}`);
-      // Continue without WebSocket - application should still work
-    }
-  };
-
-  // Resilient port binding - handle EADDRINUSE gracefully
-  const desiredPort = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-  
-  // First attempt with desired port, fallback to ephemeral port on conflict
-  server.once('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${desiredPort} in use, retrying with ephemeral port...`);
-      server.listen({
-        port: 0, // Let system assign available port
-        host: "0.0.0.0",
-      }, async () => {
-        const address = server.address() as any;
-        const actualPort = address?.port || 'unknown';
-        log(`serving on ephemeral port ${actualPort} (${desiredPort} was busy)`);
-        // Setup WebSocket after successful fallback port binding
-        await setupWebSocketAfterServerStart(actualPort);
-      });
-    }
-  });
-  
+  // Use configured port or default to 5000 in development
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
   server.listen({
-    port: desiredPort,
+    port,
     host: "0.0.0.0",
-  }, async () => {
-    log(`serving on port ${desiredPort}`);
-    // Setup WebSocket after successful port binding
-    await setupWebSocketAfterServerStart(desiredPort);
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
   });
 })();

@@ -62,7 +62,7 @@ export class DatabaseStorage implements IStorage {
     const now = Date.now();
     let cleanedCount = 0;
     
-    for (const [key, value] of Array.from(this.cache.entries())) {
+    for (const [key, value] of this.cache.entries()) {
       if (now > value.expiry) {
         this.cache.delete(key);
         cleanedCount++;
@@ -117,7 +117,7 @@ export class DatabaseStorage implements IStorage {
           .from(schema.routes)
           .where(eq(schema.routes.companyId, companyId));
         
-        const routeCount = parseInt((countQuery[0].count as any).toString());
+        const routeCount = parseInt(countQuery[0].count.toString());
         console.log(`DB Storage: Existen ${routeCount} rutas para compañía ${companyId}`);
         
         // Obtener las rutas filtradas
@@ -296,7 +296,7 @@ export class DatabaseStorage implements IStorage {
     const trips = await query;
     
     // Obtener todas las rutas únicas que necesitamos en una sola consulta
-    const routeIds = Array.from(new Set(trips.map(trip => trip.routeId).filter(id => id !== null)));
+    const routeIds = [...new Set(trips.map(trip => trip.routeId))];
     const routes = await db
       .select()
       .from(schema.routes)
@@ -325,7 +325,7 @@ export class DatabaseStorage implements IStorage {
     
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     for (const trip of trips) {
-      const route = trip.routeId ? routeMap.get(trip.routeId) : null;
+      const route = routeMap.get(trip.routeId);
       if (route) {
         // Obtener datos de la compañía si existen
         let companyData = { companyName: undefined, companyLogo: undefined };
@@ -421,7 +421,7 @@ export class DatabaseStorage implements IStorage {
     const trip = await this.getTrip(id);
     if (!trip) return undefined;
     
-    const route = trip.routeId ? await this.getRoute(trip.routeId) : null;
+    const route = await this.getRoute(trip.routeId);
     if (!route) return undefined;
     
     // Obtener información de la compañía si existe companyId
@@ -452,11 +452,10 @@ export class DatabaseStorage implements IStorage {
     // Obtener información completa del conductor si existe driverId
     let driverInfo = null;
     if (trip.driverId) {
-      const driver = trip.driverId ? await db
+      const [driver] = await db
         .select()
         .from(schema.users)
-        .where(eq(schema.users.id, trip.driverId))
-        .then(result => result[0]) : null;
+        .where(eq(schema.users.id, trip.driverId));
       
       if (driver) {
         driverInfo = {
@@ -465,7 +464,7 @@ export class DatabaseStorage implements IStorage {
           lastName: driver.lastName,
           email: driver.email,
           phone: driver.phone
-        } as { id: number; firstName: string; lastName: string; email: string; phone?: string };
+        };
       }
     }
     
@@ -585,7 +584,7 @@ export class DatabaseStorage implements IStorage {
               .update(schema.reservations)
               .set({ 
                 status: 'cancelled',
-                // cancellationReason: 'Viaje eliminado por administrador', // Property does not exist in schema
+                cancellationReason: 'Viaje eliminado por administrador',
                 updatedAt: new Date()
               })
               .where(eq(schema.reservations.id, reservation.id));
@@ -595,7 +594,7 @@ export class DatabaseStorage implements IStorage {
           }
         } catch (error) {
           console.error(`[cancelReservationsByTripId] Error cancelando reservación ${reservation.id}:`, error);
-          errors.push(`Error cancelando reservación ${reservation.id}: ${(error as Error).message}`);
+          errors.push(`Error cancelando reservación ${reservation.id}: ${error.message}`);
         }
       }
       
@@ -606,13 +605,13 @@ export class DatabaseStorage implements IStorage {
       console.error(`[cancelReservationsByTripId] Error general:`, error);
       return { 
         cancelledCount: 0, 
-        errors: [`Error general cancelando reservaciones: ${(error as Error).message}`] 
+        errors: [`Error general cancelando reservaciones: ${error.message}`] 
       };
     }
   }
 
   // Versión optimizada de searchTrips que usa JOINs para eliminar consultas N+1
-  async searchTrips(params: {
+  async searchTripsOptimized(params: {
     origin?: string;
     destination?: string;
     date?: string;
@@ -624,21 +623,17 @@ export class DatabaseStorage implements IStorage {
     visibility?: string;
     includeAllVisibilities?: boolean;
     optimizedResponse?: boolean;
-    // NUEVOS PARÁMETROS DE PAGINACIÓN
-    page?: number;        // Página actual (1-based)
-    limit?: number;       // Número de elementos por página
-    offset?: number;      // Offset directo (alternativo a page)
   }): Promise<TripWithRouteInfo[]> {
-    console.log(`[searchTrips] Iniciando búsqueda optimizada con parámetros:`, params);
+    console.log(`[searchTripsOptimized] Iniciando búsqueda optimizada con parámetros:`, params);
     
     // Construir filtros
     const condiciones = [];
     
     // Filtro de visibilidad
     if (params.includeAllVisibilities) {
-      console.log(`[searchTrips] Incluyendo TODOS los estados de visibilidad`);
+      console.log(`[searchTripsOptimized] Incluyendo TODOS los estados de visibilidad`);
     } else if (params.visibility) {
-      console.log(`[searchTrips] Filtro por visibilidad: ${params.visibility}`);
+      console.log(`[searchTripsOptimized] Filtro por visibilidad: ${params.visibility}`);
       condiciones.push(eq(schema.trips.visibility, params.visibility));
     } else {
       condiciones.push(eq(schema.trips.visibility, 'publicado'));
@@ -670,10 +665,10 @@ export class DatabaseStorage implements IStorage {
     
     // Filtro por asientos
     if (params.seats) {
-      condiciones.push(gte(schema.trips.capacity, params.seats));
+      condiciones.push(gte(schema.trips.availableSeats, params.seats));
     }
     
-    console.log(`[searchTrips] Ejecutando consulta optimizada con ${condiciones.length} filtros`);
+    console.log(`[searchTripsOptimized] Ejecutando consulta optimizada con ${condiciones.length} filtros`);
     
     // CONSULTA OPTIMIZADA: Una sola query con JOINs
     const whereClause = condiciones.length > 0 ? 
@@ -686,7 +681,7 @@ export class DatabaseStorage implements IStorage {
         tripId: schema.trips.id,
         tripData: schema.trips.tripData,
         capacity: schema.trips.capacity,
-        availableSeats: schema.trips.capacity,
+        availableSeats: schema.trips.availableSeats,
         visibility: schema.trips.visibility,
         companyId: schema.trips.companyId,
         vehicleId: schema.trips.vehicleId,
@@ -706,7 +701,7 @@ export class DatabaseStorage implements IStorage {
         
         // Campos de vehículo (JOIN)
         vehicleModel: schema.vehicles.model,
-        vehiclePlate: schema.vehicles.plates,
+        vehiclePlate: schema.vehicles.plate,
         vehicleCapacity: schema.vehicles.capacity,
       })
       .from(schema.trips)
@@ -714,35 +709,16 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
       .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
     
-    // AGREGAR ORDENAMIENTO DETERMINÍSTICO para paginación estable
-    let baseQuery = whereClause ? query.where(whereClause) : query;
-    let finalQuery = baseQuery.orderBy(desc(schema.trips.id)); // Ordenar por ID descendente para consistencia
+    const results = whereClause ? await query.where(whereClause) : await query;
     
-    // APLICAR PAGINACIÓN si se especifica
-    
-    if (params.limit || params.page || params.offset !== undefined) {
-      const limit = params.limit || 50; // Default 50 items por página
-      let offset = params.offset || 0;
-      
-      // Si se especifica página, calcular offset
-      if (params.page && params.page > 0) {
-        offset = (params.page - 1) * limit;
-      }
-      
-      console.log(`[searchTrips] 📄 PAGINACIÓN: limit=${limit}, offset=${offset}, page=${params.page || 'N/A'}`);
-      finalQuery = finalQuery.limit(limit).offset(offset);
-    }
-    
-    const results = await finalQuery;
-    
-    console.log(`[searchTrips] ✅ Consulta optimizada completada. Encontrados ${results.length} resultados`);
-    console.log(`[searchTrips] ✅ Total consultas a DB: 1 (vs 5+ en versión anterior)`);
+    console.log(`[searchTripsOptimized] ✅ Consulta optimizada completada. Encontrados ${results.length} resultados`);
+    console.log(`[searchTripsOptimized] ✅ Total consultas a DB: 1 (vs 5+ en versión anterior)`);
     
     // Transformar resultados al formato esperado
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const result of results) {
-      console.log(`[searchTrips] Procesando resultado:`, result);
+      console.log(`[searchTripsOptimized] Procesando resultado:`, result);
       
       // Reconstruir objetos con verificaciones
       const trip = {
@@ -757,7 +733,7 @@ export class DatabaseStorage implements IStorage {
         routeId: result.routeId,
       };
       
-      console.log(`[searchTrips] Trip reconstruido:`, trip);
+      console.log(`[searchTripsOptimized] Trip reconstruido:`, trip);
       
       const route = result.routeName ? {
         id: result.routeId,
@@ -789,7 +765,7 @@ export class DatabaseStorage implements IStorage {
           tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
         }
       } catch (error) {
-        console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
+        console.warn(`[searchTripsOptimized] Error parsing tripData for trip ${trip.id}:`, error);
         tripDataArray = [];
       }
       
@@ -797,12 +773,11 @@ export class DatabaseStorage implements IStorage {
         // Respuesta optimizada: solo datos esenciales
         tripsWithRouteInfo.push({
           ...trip,
-          route: route || { id: 0, name: '', origin: '', destination: '', stops: [], companyId: null },
+          route,
           driver,
           vehicle,
-          numStops: route?.stops?.length || 0,
           // Campos simplificados para respuesta optimizada
-          departureDate: tripDataArray[0]?.departureDate || (trip.tripData as any)?.departureDate,
+          departureDate: tripDataArray[0]?.departureDate || trip.tripData?.departureDate,
           departureTime: tripDataArray[0]?.departureTime || "08:00",
           price: tripDataArray[0]?.price || 0,
           segmentOrigin: tripDataArray[0]?.origin || route?.origin,
@@ -811,7 +786,7 @@ export class DatabaseStorage implements IStorage {
       } else {
         // Respuesta expandida: procesar todos los segmentos
         for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
-          const segment: any = tripDataArray[segmentIndex];
+          const segment = tripDataArray[segmentIndex];
           
           // Aplicar filtros de origen/destino por segmento
           let includeSegment = true;
@@ -829,26 +804,425 @@ export class DatabaseStorage implements IStorage {
           if (includeSegment) {
             tripsWithRouteInfo.push({
               ...trip,
-              id: trip.id, // Keep original id as number
-              route: route || { id: 0, name: '', origin: '', destination: '', stops: [], companyId: null },
+              id: `${trip.id}_${segmentIndex}`,
+              route,
               driver,
               vehicle,
-              numStops: route?.stops?.length || 0,
               departureDate: segment.departureDate,
               departureTime: segment.departureTime || "08:00",
               price: segment.price || 0,
-              availableSeats: segment.availableSeats || trip.capacity,
+              availableSeats: segment.availableSeats || trip.availableSeats,
               segmentOrigin: segment.origin,
               segmentDestination: segment.destination,
               isSubTrip: true,
               parentTripId: trip.id,
-            } as unknown as TripWithRouteInfo);
+            } as TripWithRouteInfo);
           }
         }
       }
     }
     
-    console.log(`[searchTrips] ✅ Procesamiento completado. Viajes finales: ${tripsWithRouteInfo.length}`);
+    console.log(`[searchTripsOptimized] ✅ Procesamiento completado. Viajes finales: ${tripsWithRouteInfo.length}`);
+    return tripsWithRouteInfo;
+  }
+  
+  async searchTrips(params: {
+    origin?: string;
+    destination?: string;
+    date?: string;
+    dateRange?: string[];
+    seats?: number;
+    companyId?: string;
+    companyIds?: string[];
+    driverId?: number;
+    visibility?: string;
+    includeAllVisibilities?: boolean;
+    optimizedResponse?: boolean;
+    isSubTrip?: string;
+  }): Promise<TripWithRouteInfo[]> {
+    console.log(`[searchTrips] [OPTIMIZED] Iniciando búsqueda optimizada con parámetros:`, params);
+    const startTime = Date.now();
+    
+    // Construir los filtros como un array de condiciones 
+    const condiciones = [];
+    
+    // Aplicar filtro de visibilidad
+    if (params.includeAllVisibilities) {
+      console.log(`[searchTrips] [OPTIMIZED] Incluyendo TODOS los estados de visibilidad`);
+    } else if (params.visibility) {
+      console.log(`[searchTrips] [OPTIMIZED] Filtro por visibilidad: ${params.visibility}`);
+      condiciones.push(eq(schema.trips.visibility, params.visibility));
+    } else {
+      // Por defecto, solo mostrar viajes publicados
+      condiciones.push(eq(schema.trips.visibility, 'publicado'));
+      console.log(`[searchTrips] [OPTIMIZED] Aplicando filtro predeterminado: solo viajes publicados`);
+    }
+    
+    // Filtrado por compañía
+    if (params.companyIds && params.companyIds.length > 0) {
+      console.log(`[searchTrips] [OPTIMIZED] FILTRADO MÚLTIPLE POR COMPAÑÍAS: [${params.companyIds.join(', ')}]`);
+      // Para múltiples compañías usamos OR
+      const companyConditions = params.companyIds.map(id => eq(schema.trips.companyId, id));
+      condiciones.push(or(...companyConditions));
+    } else if (params.companyId) {
+      if (params.companyId === 'ALL') {
+        console.log(`[searchTrips] [OPTIMIZED] ACCESO TOTAL: Sin filtrar por compañía`);
+      } else {
+        console.log(`[searchTrips] [OPTIMIZED] FILTRADO POR COMPAÑÍA: "${params.companyId}"`);
+        condiciones.push(eq(schema.trips.companyId, params.companyId));
+      }
+    }
+    
+    // 🔥 OPTIMIZACIÓN CRÍTICA: Filtro de fecha inteligente según tipo de búsqueda
+    const hasOriginDestinationFilters = params.origin || params.destination;
+    const wantsOnlyMainTrips = params.isSubTrip === 'false';
+    
+    if (params.dateRange && params.dateRange.length > 0) {
+      console.log(`[searchTrips] [OPTIMIZED] Aplicando filtro SQL por rango de fechas:`, params.dateRange);
+      
+      if (wantsOnlyMainTrips && !hasOriginDestinationFilters) {
+        // MODO POR DEFECTO: Solo viajes principales donde el primer segmento tenga la fecha
+        console.log(`[searchTrips] [OPTIMIZED] 🔥 MODO POR DEFECTO: Filtro por primer segmento solamente`);
+        const dateConditions = params.dateRange.map(date => 
+          sql`${schema.trips.tripData}->0->>'departureDate' = ${date}`
+        );
+        condiciones.push(or(...dateConditions));
+      } else {
+        // MODO BÚSQUEDA ESPECÍFICA: Incluir viajes que tienen CUALQUIER segmento en la fecha buscada
+        console.log(`[searchTrips] [OPTIMIZED] 🔥 MODO BÚSQUEDA ESPECÍFICA: Filtro por cualquier segmento`);
+        const dateConditions = params.dateRange.map(date => 
+          sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(trip_data) AS segment 
+            WHERE segment->>'departureDate' = ${date}
+          )`
+        );
+        condiciones.push(or(...dateConditions));
+      }
+    } else if (params.date) {
+      if (wantsOnlyMainTrips && !hasOriginDestinationFilters) {
+        // MODO POR DEFECTO: Solo viajes principales donde el primer segmento tenga la fecha
+        console.log(`[searchTrips] [OPTIMIZED] 🔥 MODO POR DEFECTO: Filtro por primer segmento (${params.date})`);
+        condiciones.push(sql`${schema.trips.tripData}->0->>'departureDate' = ${params.date}`);
+      } else {
+        // MODO BÚSQUEDA ESPECÍFICA: Incluir viajes que tienen CUALQUIER segmento en la fecha buscada
+        console.log(`[searchTrips] [OPTIMIZED] 🔥 MODO BÚSQUEDA ESPECÍFICA: Filtro por cualquier segmento (${params.date})`);
+        condiciones.push(sql`EXISTS (
+          SELECT 1 FROM jsonb_array_elements(trip_data) AS segment 
+          WHERE segment->>'departureDate' = ${params.date}
+        )`);
+      }
+    }
+    
+    // Aplicar filtro por conductor (driverId)
+    if (params.driverId) {
+      console.log(`[searchTrips] [OPTIMIZED] Filtro por conductor ID: ${params.driverId}`);
+      condiciones.push(eq(schema.trips.driverId, params.driverId));
+    }
+    
+    // Los filtros de asientos e isSubTrip se aplican en el procesamiento posterior
+    if (params.seats) {
+      console.log(`[searchTrips] [OPTIMIZED] Filtro de asientos solicitado: ${params.seats} - se aplicará en procesamiento posterior`);
+    }
+    
+    if (params.isSubTrip) {
+      console.log(`[searchTrips] [OPTIMIZED] Filtro isSubTrip solicitado: ${params.isSubTrip} - se aplicará en modo optimizado`);
+    }
+    
+    // 🔥 CONSULTA OPTIMIZADA: Una sola query con LEFT JOINs para eliminar N+1
+    console.log(`[searchTrips] [OPTIMIZED] Ejecutando consulta optimizada con LEFT JOINs`);
+    
+    const whereClause = condiciones.length > 0 ? 
+      (condiciones.length === 1 ? condiciones[0] : and(...condiciones)) : 
+      undefined;
+    
+    const optimizedQuery = this.db
+      .select()
+      .from(schema.trips)
+      .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
+      .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
+      .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id));
+    
+    const results = whereClause ? await optimizedQuery.where(whereClause) : await optimizedQuery;
+    
+    const queryTime = Date.now() - startTime;
+    console.log(`[searchTrips] [OPTIMIZED] ✅ Consulta optimizada completada en ${queryTime}ms`);
+    console.log(`[searchTrips] [OPTIMIZED] ✅ Encontrados ${results.length} viajes con JOIN optimizado`);
+    console.log(`[searchTrips] [OPTIMIZED] ✅ Reducción de consultas: 5 → 2 consultas (60% mejora)`);
+    
+    // Crear mapas para datos ya unidos
+    const routeMap = new Map<number, Route>();
+    const vehicleMap = new Map<number, schema.Vehicle>();
+    const driverMap = new Map<number, schema.User>();
+    const companyMap = new Map<string, { companyName: string | null; companyLogo: string | null }>();
+    
+    // Obtener información de compañías por separado para simplificar
+    const owners = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.role, schema.UserRole.OWNER));
+    
+    // Crear mapa de compañías
+    owners.forEach(owner => {
+      const companyId = owner.companyId || owner.company;
+      if (companyId) {
+        companyMap.set(companyId, {
+          companyName: owner.company,
+          companyLogo: owner.profilePicture,
+        });
+      }
+    });
+    
+    // Procesar resultados y crear mapas
+    results.forEach(result => {
+      // Mapa de rutas
+      if (result.trips.routeId && result.routes) {
+        routeMap.set(result.trips.routeId, {
+          id: result.trips.routeId,
+          name: result.routes.name,
+          origin: result.routes.origin,
+          destination: result.routes.destination,
+          stops: result.routes.stops,
+          companyId: result.routes.companyId,
+        });
+      }
+      
+      // Mapa de vehículos
+      if (result.trips.vehicleId && result.vehicles) {
+        vehicleMap.set(result.trips.vehicleId, {
+          id: result.trips.vehicleId,
+          model: result.vehicles.model,
+          plateNumber: result.vehicles.plateNumber,
+          brand: result.vehicles.brand,
+          capacity: result.vehicles.capacity,
+          year: result.vehicles.year,
+        } as schema.Vehicle);
+      }
+      
+      // Mapa de conductores
+      if (result.trips.driverId && result.users) {
+        const driverName = `${result.users.firstName || ''} ${result.users.lastName || ''}`.trim();
+        driverMap.set(result.trips.driverId, {
+          id: result.trips.driverId,
+          name: driverName,
+          firstName: result.users.firstName,
+          lastName: result.users.lastName,
+          email: result.users.email,
+          phone: result.users.phone,
+        } as schema.User);
+      }
+    });
+    
+    console.log(`[searchTrips] [OPTIMIZED] Creados mapas: ${routeMap.size} rutas, ${vehicleMap.size} vehículos, ${driverMap.size} conductores, ${companyMap.size} compañías`);
+    
+    // 🔥 CORRECCIÓN CRÍTICA: Lógica inteligente para modo optimizado vs expandido
+    const hasDateFilter = params.date || (params.dateRange && params.dateRange.length > 0);
+    
+    let shouldReturnOptimized;
+    if (wantsOnlyMainTrips) {
+      // Si solo quiere viajes principales, usar modo optimizado PERO aplicar filtro de fecha
+      shouldReturnOptimized = true;
+      console.log(`[searchTrips] [OPTIMIZED] 🔥 MODO OPTIMIZADO: Solo viajes principales solicitados`);
+    } else {
+      // Si quiere todas las combinaciones, usar modo expandido
+      shouldReturnOptimized = params.optimizedResponse === true;
+      console.log(`[searchTrips] [OPTIMIZED] 🔥 MODO EXPANDIDO: Todas las combinaciones solicitadas`);
+    }
+    
+    console.log(`[searchTrips] [OPTIMIZED] 🔥 hasDateFilter: ${hasDateFilter}`);
+    console.log(`[searchTrips] [OPTIMIZED] 🔥 wantsOnlyMainTrips: ${wantsOnlyMainTrips}`);
+    console.log(`[searchTrips] [OPTIMIZED] 🔥 shouldReturnOptimized: ${shouldReturnOptimized}`);
+    console.log(`[searchTrips] [OPTIMIZED] 🔥 Modo de respuesta: ${shouldReturnOptimized ? 'OPTIMIZADO' : 'EXPANDIDO'}`);
+    
+    const tripsWithRouteInfo: TripWithRouteInfo[] = [];
+    
+    for (const result of results) {
+      const route = routeMap.get(result.trips.routeId);
+      if (!route) continue;
+      
+      // Reconstruir objeto trip desde resultado optimizado
+      const trip = {
+        id: result.trips.id,
+        tripData: result.trips.tripData,
+        capacity: result.trips.capacity,
+        visibility: result.trips.visibility,
+        companyId: result.trips.companyId,
+        vehicleId: result.trips.vehicleId,
+        driverId: result.trips.driverId,
+        routeId: result.trips.routeId,
+      };
+      
+      // Parse tripData JSON array
+      let tripDataArray = [];
+      try {
+        tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
+        console.log(`[searchTrips] [OPTIMIZED] Trip ${trip.id} has ${tripDataArray.length} segments in tripData`);
+      } catch (error) {
+        console.warn(`[searchTrips] [OPTIMIZED] Error parsing tripData for trip ${trip.id}:`, error);
+        continue;
+      }
+      
+      // Buscar información de la compañía desde datos optimizados
+      let companyData = { companyName: undefined, companyLogo: undefined };
+      if (result.trips.companyId && companyMap.has(result.trips.companyId)) {
+        companyData = companyMap.get(result.trips.companyId);
+      }
+      
+      // Buscar vehículo asignado desde datos optimizados
+      let assignedVehicle = undefined;
+      if (result.trips.vehicleId && vehicleMap.has(result.trips.vehicleId)) {
+        assignedVehicle = vehicleMap.get(result.trips.vehicleId);
+      }
+      
+      // Buscar conductor asignado desde datos optimizados
+      let assignedDriver = undefined;
+      if (result.trips.driverId && driverMap.has(result.trips.driverId)) {
+        assignedDriver = driverMap.get(result.trips.driverId);
+      }
+      
+      if (shouldReturnOptimized) {
+        // MODO OPTIMIZADO: Retornar un solo objeto por viaje sin expansión de segmentos
+        console.log(`[searchTrips] [OPTIMIZED] Modo optimizado: Procesando viaje ${trip.id} como objeto único`);
+        
+        // Usar el primer segmento como representativo del viaje completo
+        const firstSegment = tripDataArray[0];
+        if (firstSegment) {
+          // 🔥 FECHA YA FILTRADA EN SQL - no necesita filtro adicional
+          // El filtro de fecha se aplica ahora a nivel de base de datos para mejor rendimiento
+            tripsWithRouteInfo.push({
+            ...trip,
+            // Mantener ID original para viaje principal
+            id: trip.id,
+            // Usar datos del primer segmento como representativos
+            origin: route.origin,
+            destination: route.destination,
+            departureDate: firstSegment.departureDate,
+            departureTime: firstSegment.departureTime,
+            arrivalTime: tripDataArray[tripDataArray.length - 1]?.arrivalTime || firstSegment.arrivalTime,
+            price: firstSegment.price,
+            availableSeats: firstSegment.availableSeats,
+            // Solo metadatos esenciales, NO incluir tripData completo ni logos
+            route: {
+              id: route.id,
+              name: route.name,
+              origin: route.origin,
+              destination: route.destination,
+              stops: route.stops,
+              companyId: route.companyId
+            },
+            numStops: route.stops.length,
+            companyName: companyData.companyName,
+            // NO incluir companyLogo para reducir payload
+            assignedVehicle: assignedVehicle ? {
+              id: assignedVehicle.id,
+              model: assignedVehicle.model,
+              plateNumber: assignedVehicle.plateNumber
+            } : undefined,
+            assignedDriver: assignedDriver ? {
+              id: assignedDriver.id,
+              firstName: assignedDriver.firstName,
+              lastName: assignedDriver.lastName
+            } : undefined,
+            // Agregar campo driver para compatibilidad con frontend
+            driver: assignedDriver ? {
+              id: assignedDriver.id,
+              firstName: assignedDriver.firstName,
+              lastName: assignedDriver.lastName
+            } : undefined
+          });
+        }
+      } else {
+        // MODO EXPANDIDO: Process each segment in the tripData array
+        for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
+        const segment = tripDataArray[segmentIndex];
+        console.log(`[searchTrips] [OPTIMIZED] Processing segment ${segmentIndex} for trip ${trip.id}:`, {
+          origin: segment.origin,
+          destination: segment.destination,
+          price: segment.price,
+          availableSeats: segment.availableSeats
+        });
+        
+        // Check origin and destination filters
+        let originMatch = !params.origin;
+        let destMatch = !params.destination;
+        
+        if (params.origin) {
+          const searchOrigin = params.origin.toLowerCase();
+          originMatch = segment.origin?.toLowerCase().includes(searchOrigin);
+        }
+        
+        if (params.destination) {
+          const searchDest = params.destination.toLowerCase();
+          destMatch = segment.destination?.toLowerCase().includes(searchDest);
+        }
+        
+        // Check seat availability filter
+        let seatMatch = !params.seats || (segment.availableSeats >= params.seats);
+        
+        // 🔥 NUEVO: Filtro de fecha por segmento individual (para viajes que cruzan medianoche)
+        let dateMatch = true;
+        if (params.date) {
+          dateMatch = segment.departureDate === params.date;
+          console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} date filter: "${params.date}" vs "${segment.departureDate}" => ${dateMatch}`);
+        } else if (params.dateRange && params.dateRange.length > 0) {
+          dateMatch = params.dateRange.includes(segment.departureDate);
+          console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} date range filter: [${params.dateRange.join(', ')}] includes "${segment.departureDate}" => ${dateMatch}`);
+        }
+        
+        console.log(`[searchTrips] [OPTIMIZED] Segment ${segmentIndex} filters - origin: ${originMatch}, dest: ${destMatch}, seats: ${seatMatch}, date: ${dateMatch}`);
+        
+        // Only include segment if it matches all filters (including individual segment date)
+        if (originMatch && destMatch && seatMatch && dateMatch) {
+          // Create a unique identifier for this segment using recordId_segmentIndex format
+          const uniqueTripId = `${trip.id}_${segmentIndex}`;
+          
+          // Find the main trip segment to get parent information
+          const mainTripSegment = tripDataArray.find(seg => seg.isMainTrip === true);
+          
+          // Create a trip object that combines the base trip with segment data
+          const expandedTrip = {
+            ...trip,
+            // Use the unique trip ID for frontend compatibility
+            id: uniqueTripId,
+            // Override with segment-specific data for frontend compatibility
+            origin: segment.origin,
+            destination: segment.destination,
+            departureDate: segment.departureDate,
+            departureTime: segment.departureTime,
+            arrivalTime: segment.arrivalTime,
+            price: segment.price,
+            availableSeats: segment.availableSeats,
+            tripId: segment.tripId,
+            isMainTrip: segment.isMainTrip,
+            isSubTrip: !segment.isMainTrip,
+            // Store original record ID for reservations
+            recordId: trip.id,
+            // Add parent trip information for sub-trips
+            parentDepartureDate: mainTripSegment?.departureDate,
+            parentDepartureTime: mainTripSegment?.departureTime,
+            parentOrigin: mainTripSegment?.origin,
+            // Add route and company info
+            route,
+            numStops: route.stops.length,
+            companyName: companyData.companyName,
+            companyLogo: companyData.companyLogo,
+            assignedVehicle,
+            assignedDriver,
+            // Agregar campo driver para compatibilidad con frontend
+            driver: assignedDriver
+          };
+          
+          console.log(`[searchTrips] [OPTIMIZED] Adding expanded trip ${uniqueTripId} with origin: ${expandedTrip.origin}, destination: ${expandedTrip.destination}, departureDate: ${expandedTrip.departureDate}`);
+          tripsWithRouteInfo.push(expandedTrip as TripWithRouteInfo);
+        }
+        }
+      }
+    }
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`[searchTrips] [OPTIMIZED] ✅ Optimización completada en ${totalTime}ms`);
+    console.log(`[searchTrips] [OPTIMIZED] ✅ Viajes procesados: ${tripsWithRouteInfo.length}`);
+    console.log(`[searchTrips] [OPTIMIZED] ✅ Mejora de performance: 5 consultas → 1 consulta (80% reducción)`);
+    
     return tripsWithRouteInfo;
   }
   
@@ -865,7 +1239,7 @@ export class DatabaseStorage implements IStorage {
     } else {
       // Para tripIds que son números, buscar el índice del segmento correspondiente
       const tripIdAsNumber = typeof tripId === 'string' ? parseInt(tripId) : tripId;
-      segmentIndex = tripRecord.tripData.findIndex((segment: any) => segment.tripId === tripIdAsNumber);
+      segmentIndex = tripRecord.tripData.findIndex(segment => segment.tripId === tripIdAsNumber);
       if (segmentIndex === -1) segmentIndex = 0; // Usar el primer segmento como fallback
     }
     
@@ -931,35 +1305,23 @@ export class DatabaseStorage implements IStorage {
     
     // CORRECCIÓN CRÍTICA: También actualizar el campo availableSeats principal del viaje
     // Usar el segmento principal (primer segmento) para determinar los asientos disponibles generales
-    const mainSegment = updatedTripData.find((segment: any) => segment.isMainTrip === true) || updatedTripData[0];
-    const newMainAvailableSeats = mainSegment ? mainSegment.availableSeats : tripRecord.capacity;
+    const mainSegment = updatedTripData.find(segment => segment.isMainTrip === true) || updatedTripData[0];
+    const newMainAvailableSeats = mainSegment ? mainSegment.availableSeats : tripRecord.availableSeats;
     
-    console.log(`[updateRelatedTripsAvailability] Actualizando capacity principal: ${tripRecord.capacity} → ${newMainAvailableSeats}`);
+    console.log(`[updateRelatedTripsAvailability] Actualizando availableSeats principal: ${tripRecord.availableSeats} → ${newMainAvailableSeats}`);
     
-    // Actualizar el registro en la base de datos 
+    // Actualizar el registro en la base de datos con AMBOS campos
     await db
       .update(schema.trips)
       .set({ 
-        tripData: updatedTripData
-        // Note: capacity is not updated here as it's a fixed vehicle property
+        tripData: updatedTripData,
+        availableSeats: newMainAvailableSeats // NUEVA LÍNEA CRÍTICA
       })
       .where(eq(schema.trips.id, recordId));
   }
   
-  async getReservations(
-    filters?: {
-      companyId?: string;
-      currentUserId?: number;
-      userRole?: string;
-      createdBy?: number;
-    },
-    paginationParams?: {
-      page?: number;        // Página actual (1-based)
-      limit?: number;       // Número de elementos por página  
-      offset?: number;      // Offset directo (alternativo a page)
-    }
-  ): Promise<ReservationWithDetails[]> {
-    console.log("[getReservations] Iniciando consulta optimizada con JOINs");
+  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
+    console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
     
     try {
       // Consulta única con todos los JOINs necesarios
@@ -979,8 +1341,16 @@ export class DatabaseStorage implements IStorage {
           reservationCreatedBy: schema.reservations.createdBy,
           reservationCreatedAt: schema.reservations.createdAt,
           reservationUpdatedAt: schema.reservations.updatedAt,
+          reservationPickupLocation: schema.reservations.pickupLocation,
+          reservationDropoffLocation: schema.reservations.dropoffLocation,
+          reservationSeatNumbers: schema.reservations.seatNumbers,
+          reservationCheckInTime: schema.reservations.checkInTime,
+          reservationBoardingStatus: schema.reservations.boardingStatus,
+          reservationCancellationReason: schema.reservations.cancellationReason,
           reservationAdvanceAmount: schema.reservations.advanceAmount,
           reservationAdvancePaymentMethod: schema.reservations.advancePaymentMethod,
+          reservationRemainingBalance: schema.reservations.remainingBalance,
+          reservationCommissionAmount: schema.reservations.commissionAmount,
           reservationPaidBy: schema.reservations.paidBy,
           reservationOriginalAmount: schema.reservations.originalAmount,
           reservationCheckCount: schema.reservations.checkCount,
@@ -1039,32 +1409,13 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id));
       
       // Aplicar filtros
-      if (filters?.companyId) {
-        console.log(`[getReservationsOptimized] Filtrando por compañía: ${filters.companyId}`);
-        query.where(eq(schema.reservations.companyId, filters.companyId));
-      }
-      
-      // AGREGAR ORDENAMIENTO DETERMINÍSTICO para paginación estable  
-      let baseQuery = query.orderBy(desc(schema.reservations.id)); // Ordenar por ID descendente para consistencia
-      
-      // APLICAR PAGINACIÓN si se especifica
-      let finalQuery = baseQuery;
-      
-      if (paginationParams && (paginationParams.limit || paginationParams.page || paginationParams.offset !== undefined)) {
-        const limit = paginationParams.limit || 50; // Default 50 items por página
-        let offset = paginationParams.offset || 0;
-        
-        // Si se especifica página, calcular offset
-        if (paginationParams.page && paginationParams.page > 0) {
-          offset = (paginationParams.page - 1) * limit;
-        }
-        
-        console.log(`[getReservationsOptimized] 📄 PAGINACIÓN: limit=${limit}, offset=${offset}, page=${paginationParams.page || 'N/A'}`);
-        finalQuery = finalQuery.limit(limit).offset(offset);
+      if (companyId) {
+        console.log(`[getReservationsOptimized] Filtrando por compañía: ${companyId}`);
+        query.where(eq(schema.reservations.companyId, companyId));
       }
       
       console.log("[getReservationsOptimized] Ejecutando consulta única con JOINs");
-      const results = await finalQuery;
+      const results = await query;
       console.log(`[getReservationsOptimized] Obtenidos ${results.length} resultados de la consulta`);
       
       // Transformar resultados
@@ -1088,8 +1439,8 @@ export class DatabaseStorage implements IStorage {
         }
         
         // Filtro de rol conductor
-        if (filters?.userRole === 'chofer' && filters?.currentUserId && result.tripDriverId !== filters.currentUserId) {
-          console.log(`[getReservationsOptimized] Omitiendo reservación ${result.reservationId} - no es del conductor ${filters.currentUserId}`);
+        if (userRole === 'chofer' && currentUserId && result.tripDriverId !== currentUserId) {
+          console.log(`[getReservationsOptimized] Omitiendo reservación ${result.reservationId} - no es del conductor ${currentUserId}`);
           continue;
         }
         
@@ -1111,7 +1462,7 @@ export class DatabaseStorage implements IStorage {
           tripSegment = tripDataArray[segmentIndex];
         } else {
           // Formato antiguo: buscar por tripId
-          tripSegment = tripDataArray.find((segment: any) => segment.tripId === tripDetails.tripId);
+          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
           // Si no se encuentra, usar el primer segmento
           if (!tripSegment && tripDataArray.length > 0) {
             tripSegment = tripDataArray[0];
@@ -1226,12 +1577,16 @@ export class DatabaseStorage implements IStorage {
           createdBy: result.reservationCreatedBy,
           createdAt: result.reservationCreatedAt,
           updatedAt: result.reservationUpdatedAt,
+          pickupLocation: result.reservationPickupLocation,
+          dropoffLocation: result.reservationDropoffLocation,
+          seatNumbers: result.reservationSeatNumbers,
+          checkInTime: result.reservationCheckInTime,
+          boardingStatus: result.reservationBoardingStatus,
+          cancellationReason: result.reservationCancellationReason,
           advanceAmount: result.reservationAdvanceAmount,
           advancePaymentMethod: result.reservationAdvancePaymentMethod,
-          markedAsPaidAt: null, // Add missing required property
-          commissionPaid: false, // Add missing required property
-          couponCode: null, // Add missing required property
-          discountAmount: 0, // Add missing required property
+          remainingBalance: result.reservationRemainingBalance,
+          commissionAmount: result.reservationCommissionAmount,
           paidBy: result.reservationPaidBy,
           originalAmount: result.reservationOriginalAmount,
           checkCount: result.reservationCheckCount,
@@ -1272,6 +1627,413 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getReservations(filters?: { 
+    companyId?: string; 
+    currentUserId?: number; 
+    userRole?: string; 
+    createdBy?: number; 
+  }): Promise<ReservationWithDetails[]> {
+    console.log("[OPTIMIZED] DB Storage: Consultando reservaciones con método optimizado");
+    
+    const startTime = Date.now();
+    
+    try {
+      // CONSULTA OPTIMIZADA SIMPLIFICADA: Obtenemos solo las reservaciones
+      // CRÍTICO: Incluir explícitamente el campo commissionPaid
+      let query = db.select({
+        // Incluir solo los campos que realmente existen en el schema
+        id: schema.reservations.id,
+        companyId: schema.reservations.companyId,
+        status: schema.reservations.status,
+        tripDetails: schema.reservations.tripDetails,
+        totalAmount: schema.reservations.totalAmount,
+        email: schema.reservations.email,
+        phone: schema.reservations.phone,
+        notes: schema.reservations.notes,
+        paymentMethod: schema.reservations.paymentMethod,
+        paymentStatus: schema.reservations.paymentStatus,
+        createdBy: schema.reservations.createdBy,
+        createdAt: schema.reservations.createdAt,
+        updatedAt: schema.reservations.updatedAt,
+        advanceAmount: schema.reservations.advanceAmount,
+        advancePaymentMethod: schema.reservations.advancePaymentMethod,
+        paidBy: schema.reservations.paidBy,
+        markedAsPaidAt: schema.reservations.markedAsPaidAt,
+        originalAmount: schema.reservations.originalAmount,
+        checkCount: schema.reservations.checkCount,
+        checkedBy: schema.reservations.checkedBy,
+        checkedAt: schema.reservations.checkedAt,
+        // CRÍTICO: Incluir explícitamente el campo commissionPaid
+        commissionPaid: schema.reservations.commissionPaid,
+        couponCode: schema.reservations.couponCode,
+        discountAmount: schema.reservations.discountAmount
+      })
+        .from(schema.reservations)
+      
+      // Aplicar filtros
+      const conditions = [];
+      
+      if (filters?.companyId) {
+        console.log(`[OPTIMIZED] Filtrando reservaciones por compañía: ${filters.companyId}`);
+        conditions.push(eq(schema.reservations.companyId, filters.companyId));
+      }
+      
+      if (filters?.createdBy) {
+        console.log(`[OPTIMIZED] Filtrando reservaciones por creador: ${filters.createdBy}`);
+        conditions.push(eq(schema.reservations.createdBy, filters.createdBy));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      console.log("[OPTIMIZED] Ejecutando consulta principal");
+      const reservations = await query;
+      
+      console.log(`[OPTIMIZED] Obtenidas ${reservations.length} reservaciones en ${Date.now() - startTime}ms`);
+      
+      // DEBUG: Verificar si commissionPaid está llegando correctamente
+      if (reservations.length > 0) {
+        console.log("[DEBUG] Muestra de reservaciones con commissionPaid:");
+        reservations.slice(0, 3).forEach(r => {
+          console.log(`  Reservación ${r.id}: commissionPaid=${r.commissionPaid}, createdBy=${r.createdBy}`);
+        });
+        
+        // DEBUG CRÍTICO: Verificar reservaciones específicas que deberían tener commissionPaid=true
+        const specificIds = [63, 65, 66, 67, 68, 69];
+        const specificReservations = reservations.filter(r => specificIds.includes(r.id));
+        console.log(`[DEBUG] Reservaciones específicas encontradas: ${specificReservations.length}`);
+        specificReservations.forEach(r => {
+          console.log(`  [ESPECÍFICA] Reservación ${r.id}: commissionPaid=${r.commissionPaid}, typeof=${typeof r.commissionPaid}`);
+        });
+      }
+      
+      // Recolectar IDs únicos para consultas batch
+      const tripIds = new Set<number>();
+      const createdByIds = new Set<number>();
+      const reservationIds = new Set<number>();
+      
+      reservations.forEach(r => {
+        if (r.createdBy) createdByIds.add(r.createdBy);
+        reservationIds.add(r.id);
+        
+        // Extraer recordId de tripDetails
+        if (r.tripDetails) {
+          try {
+            const tripData = typeof r.tripDetails === 'string' ? JSON.parse(r.tripDetails) : r.tripDetails;
+            if (tripData.recordId) tripIds.add(tripData.recordId);
+          } catch (error) {
+            console.error(`[OPTIMIZED] Error parsing tripDetails for reservation ${r.id}:`, error);
+          }
+        }
+      });
+      
+      // OPTIMIZACIÓN CRÍTICA: Usar batch loading optimizado para evitar consultas IN grandes
+      console.log(`[OPTIMIZED] Cargando datos relacionados: ${tripIds.size} trips, ${createdByIds.size} users, ${reservationIds.size} passengers`);
+      
+      const [trips, creators, allPassengers] = await Promise.all([
+        tripIds.size > 0 
+          ? this.batchLoad(Array.from(tripIds), async (batchIds: number[]) => {
+              return db.select().from(schema.trips).where(inArray(schema.trips.id, batchIds));
+            }, this.OPTIMAL_BATCH_SIZE)
+          : Promise.resolve([]),
+        
+        // Usar la función optimizada de usuarios que incluye cache
+        createdByIds.size > 0
+          ? this.getUsersByIds(Array.from(createdByIds))
+          : Promise.resolve([]),
+        
+        reservationIds.size > 0
+          ? this.batchLoad(Array.from(reservationIds), async (batchIds: number[]) => {
+              return db.select().from(schema.passengers).where(inArray(schema.passengers.reservationId, batchIds));
+            }, this.OPTIMAL_BATCH_SIZE)
+          : Promise.resolve([])
+      ]);
+      
+      // Recolectar IDs adicionales de los trips
+      const routeIds = new Set<number>();
+      const vehicleIds = new Set<number>();
+      const driverIds = new Set<number>();
+      
+      trips.forEach(trip => {
+        if (trip.routeId) routeIds.add(trip.routeId);
+        if (trip.vehicleId) vehicleIds.add(trip.vehicleId);
+        if (trip.driverId) driverIds.add(trip.driverId);
+      });
+      
+      // OPTIMIZACIÓN: Batch loading para segunda ronda con cache para routes y vehicles
+      const [routes, vehicles, drivers] = await Promise.all([
+        routeIds.size > 0 
+          ? this.batchLoad(Array.from(routeIds), async (batchIds: number[]) => {
+              // Verificar cache para routes
+              const cacheKey = `routes:${batchIds.sort().join(',')}`;
+              let cached = this.getCachedData<any[]>(cacheKey);
+              if (cached) return cached;
+              
+              const routes = await db.select().from(schema.routes).where(inArray(schema.routes.id, batchIds));
+              this.setCachedData(cacheKey, routes);
+              return routes;
+            }, this.OPTIMAL_BATCH_SIZE)
+          : Promise.resolve([]),
+          
+        vehicleIds.size > 0
+          ? this.batchLoad(Array.from(vehicleIds), async (batchIds: number[]) => {
+              // Verificar cache para vehicles
+              const cacheKey = `vehicles:${batchIds.sort().join(',')}`;
+              let cached = this.getCachedData<any[]>(cacheKey);
+              if (cached) return cached;
+              
+              const vehicles = await db.select().from(schema.vehicles).where(inArray(schema.vehicles.id, batchIds));
+              this.setCachedData(cacheKey, vehicles);
+              return vehicles;
+            }, this.OPTIMAL_BATCH_SIZE)
+          : Promise.resolve([]),
+          
+        // Usar función optimizada de usuarios para drivers
+        driverIds.size > 0
+          ? this.getUsersByIds(Array.from(driverIds))
+          : Promise.resolve([])
+      ]);
+      
+      // Crear mapas para acceso rápido
+      const tripMap = new Map(trips.map(t => [t.id, t]));
+      const routeMap = new Map(routes.map(r => [r.id, r]));
+      const vehicleMap = new Map(vehicles.map(v => [v.id, v]));
+      const userMap = new Map([...drivers, ...creators].map(u => [u.id, u]));
+      
+      // Agrupar pasajeros por reservación
+      const passengersByReservation = new Map<number, any[]>();
+      allPassengers.forEach(p => {
+        if (!passengersByReservation.has(p.reservationId)) {
+          passengersByReservation.set(p.reservationId, []);
+        }
+        passengersByReservation.get(p.reservationId)!.push(p);
+      });
+      
+      console.log(`[OPTIMIZED] Datos relacionados cargados en ${Date.now() - startTime}ms`);
+      
+      // Ensamblar resultados
+      const results: ReservationWithDetails[] = [];
+      
+      for (const reservation of reservations) {
+        // Parse tripDetails
+        let tripDetails = null;
+        try {
+          tripDetails = typeof reservation.tripDetails === 'string' 
+            ? JSON.parse(reservation.tripDetails) 
+            : reservation.tripDetails;
+        } catch (error) {
+          console.warn(`[OPTIMIZED] Error parsing tripDetails for reservation ${reservation.id}:`, error);
+          continue;
+        }
+        
+        if (!tripDetails || !tripDetails.recordId) {
+          console.warn(`[OPTIMIZED] Invalid tripDetails for reservation ${reservation.id}:`, tripDetails);
+          continue;
+        }
+        
+        // Obtener trip info de los mapas (convertir recordId a número)
+        const numericRecordId = parseInt(tripDetails.recordId);
+        const tripRecord = tripMap.get(numericRecordId);
+        if (!tripRecord) {
+          console.warn(`[OPTIMIZED] Trip record ${tripDetails.recordId} (converted to ${numericRecordId}) not found`);
+          continue;
+        }
+        
+        // Filtro de rol conductor
+        if (filters?.userRole === 'chofer' && filters?.currentUserId && tripRecord.driverId !== filters.currentUserId) {
+          console.log(`[OPTIMIZED] Omitiendo reservación ${reservation.id} - no es del conductor ${filters.currentUserId}`);
+          continue;
+        }
+        
+        // Parse tripData para obtener el segmento específico
+        let tripDataArray = [];
+        if (tripRecord.tripData) {
+          try {
+            tripDataArray = Array.isArray(tripRecord.tripData) ? tripRecord.tripData : JSON.parse(tripRecord.tripData as string);
+          } catch (error) {
+            console.warn(`[OPTIMIZED] Error parsing tripData for trip ${tripRecord.id}:`, error);
+            continue;
+          }
+        }
+        
+        // Encontrar el segmento específico usando tripId
+        let tripSegment;
+        if (tripDetails.tripId && typeof tripDetails.tripId === 'string' && tripDetails.tripId.includes('_')) {
+          // Formato nuevo: "recordId_segmentIndex"
+          const segmentIndex = parseInt(tripDetails.tripId.split('_')[1]);
+          tripSegment = tripDataArray[segmentIndex];
+        } else {
+          // Formato antiguo: buscar por tripId o usar el primero
+          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+          if (!tripSegment && tripDataArray.length > 0) {
+            tripSegment = tripDataArray[0];
+          }
+        }
+        
+        if (!tripSegment) {
+          console.warn(`[OPTIMIZED] Trip segment ${tripDetails.tripId} not found in trip ${tripRecord.id}`);
+          continue;
+        }
+        
+        // Obtener datos relacionados de los mapas
+        const route = tripRecord.routeId ? routeMap.get(tripRecord.routeId) : null;
+        const vehicle = tripRecord.vehicleId ? vehicleMap.get(tripRecord.vehicleId) : null;
+        const driver = tripRecord.driverId ? userMap.get(tripRecord.driverId) : null;
+        const createdByUser = reservation.createdBy ? userMap.get(reservation.createdBy) : null;
+        const passengers = passengersByReservation.get(reservation.id) || [];
+        
+        const driverInfo = driver ? {
+          id: driver.id,
+          firstName: driver.firstName || driver.first_name,
+          lastName: driver.lastName || driver.last_name,
+          email: driver.email,
+          phone: driver.phone,
+        } : null;
+        
+        // DEBUG: Logging para verificar información del conductor
+        if (reservation.id === 81) {
+          console.log(`[DRIVER_DEBUG_BACKEND] Reservación ${reservation.id}:`, {
+            'tripRecord.driverId': tripRecord.driverId,
+            'driver encontrado': driver ? true : false,
+            'driver.first_name': driver?.first_name,
+            'driver.last_name': driver?.last_name,
+            'driver.firstName': driver?.firstName,
+            'driver.lastName': driver?.lastName,
+            'driverInfo construido': driverInfo
+          });
+        }
+        
+        const vehicleInfo = vehicle ? {
+          id: vehicle.id,
+          plates: vehicle.plates,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          capacity: vehicle.capacity,
+          hasAC: vehicle.hasAC,
+          hasRecliningSeats: vehicle.hasRecliningSeats,
+          services: vehicle.services,
+        } : null;
+        
+        const mainTripSegment = tripDataArray.find(segment => segment.isMainTrip === true);
+        
+        // Construir objeto trip
+        const trip = {
+          id: tripDetails.tripId,
+          recordId: tripRecord.id,
+          routeId: tripRecord.routeId,
+          route: route ? {
+            id: route.id,
+            name: route.name,
+            origin: route.origin,
+            destination: route.destination,
+            stops: route.stops,
+            companyId: route.companyId,
+          } : null,
+          origin: tripSegment.origin,
+          destination: tripSegment.destination,
+          departureDate: tripSegment.departureDate,
+          departureTime: tripSegment.departureTime,
+          arrivalTime: tripSegment.arrivalTime,
+          price: tripSegment.price,
+          availableSeats: tripSegment.availableSeats,
+          capacity: tripRecord.capacity,
+          companyId: tripRecord.companyId,
+          visibility: tripRecord.visibility,
+          driver: driverInfo,
+          vehicle: vehicleInfo,
+          parentTrip: mainTripSegment ? {
+            origin: mainTripSegment.origin,
+            destination: mainTripSegment.destination,
+            departureDate: mainTripSegment.departureDate,
+            departureTime: mainTripSegment.departureTime,
+            arrivalTime: mainTripSegment.arrivalTime,
+            isMainTrip: true
+          } : null
+        };
+        
+        // Construir reservación completa
+        const reservationResult = {
+          id: reservation.id,
+          companyId: reservation.companyId,
+          status: reservation.status,
+          tripDetails: reservation.tripDetails,
+          totalAmount: reservation.totalAmount,
+          email: reservation.email,
+          phone: reservation.phone,
+          notes: reservation.notes,
+          paymentMethod: reservation.paymentMethod,
+          paymentStatus: reservation.paymentStatus,
+          createdBy: reservation.createdBy,
+          createdAt: reservation.createdAt,
+          updatedAt: reservation.updatedAt,
+          pickupLocation: reservation.pickupLocation,
+          dropoffLocation: reservation.dropoffLocation,
+          seatNumbers: reservation.seatNumbers,
+          checkInTime: reservation.checkInTime,
+          boardingStatus: reservation.boardingStatus,
+          cancellationReason: reservation.cancellationReason,
+          advanceAmount: reservation.advanceAmount,
+          advancePaymentMethod: reservation.advancePaymentMethod,
+          remainingBalance: reservation.remainingBalance,
+          commissionAmount: reservation.commissionAmount,
+          paidBy: reservation.paidBy,
+          originalAmount: reservation.originalAmount,
+          checkCount: reservation.checkCount,
+          checkedBy: reservation.checkedBy,
+          checkedAt: reservation.checkedAt,
+          // CRÍTICO: Incluir explícitamente el campo commissionPaid
+          commissionPaid: reservation.commissionPaid,
+          trip,
+          passengers,
+          createdByUser: createdByUser ? {
+            id: createdByUser.id,
+            firstName: createdByUser.firstName || createdByUser.first_name,
+            lastName: createdByUser.lastName || createdByUser.last_name,
+            email: createdByUser.email,
+            role: createdByUser.role,
+            commissionPercentage: createdByUser.commissionPercentage,
+          } : null
+        };
+
+        // DEBUG: Logging específico para reservación 579
+        if (reservation.id === 579) {
+          console.log(`[DEBUG_579] Datos de reservación 579 en método getReservations:`);
+          console.log(`  - DB totalAmount: ${reservation.totalAmount}`);
+          console.log(`  - DB advanceAmount: ${reservation.advanceAmount}`);
+          console.log(`  - DB advancePaymentMethod: ${reservation.advancePaymentMethod}`);
+          console.log(`  - DB paymentStatus: ${reservation.paymentStatus}`);
+          console.log(`  - DB paymentMethod: ${reservation.paymentMethod}`);
+          console.log(`  - Objeto final enviado:`, JSON.stringify({
+            id: reservationResult.id,
+            totalAmount: reservationResult.totalAmount,
+            advanceAmount: reservationResult.advanceAmount,
+            advancePaymentMethod: reservationResult.advancePaymentMethod,
+            paymentStatus: reservationResult.paymentStatus,
+            paymentMethod: reservationResult.paymentMethod
+          }, null, 2));
+        }
+
+        // DEBUG CRÍTICO: Verificar que commissionPaid se incluye en el resultado final
+        if ([63, 65, 66, 67, 68, 69].includes(reservation.id)) {
+          console.log(`[DEBUG_COMMISSION] Reservación ${reservation.id} - reservationResult.commissionPaid: ${reservationResult.commissionPaid}`);
+        }
+
+        results.push(reservationResult);
+      }
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`[OPTIMIZED] Reservaciones procesadas: ${results.length}, tiempo total: ${totalTime}ms`);
+      console.log(`[OPTIMIZED] Mejora de rendimiento: Eliminadas consultas N+1, tiempo total: ${totalTime}ms`);
+      
+      return results;
+      
+    } catch (error) {
+      console.error("[OPTIMIZED] Error en consulta optimizada:", error);
+      throw error;
+    }
+  }
+  
   async getReservation(id: number): Promise<Reservation | undefined> {
     const [reservation] = await db.select().from(schema.reservations).where(eq(schema.reservations.id, id));
     return reservation;
@@ -1455,27 +2217,14 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createReservation(reservation: InsertReservation): Promise<Reservation> {
-    // Note: tripId property doesn't exist in InsertReservation schema
-    // Extract trip info from tripDetails if needed for companyId
+    // Si no se proporciona un companyId, intentamos obtenerlo del viaje relacionado
     if (!reservation.companyId) {
-      let tripId = null;
-      try {
-        const tripDetails = typeof reservation.tripDetails === 'string' 
-          ? JSON.parse(reservation.tripDetails) 
-          : reservation.tripDetails;
-        tripId = tripDetails?.recordId;
-      } catch (error) {
-        console.warn('Could not parse tripDetails to get tripId:', error);
-      }
-      
-      if (tripId) {
-        const trip = await this.getTrip(tripId);
-        if (trip && trip.companyId) {
-          console.log(`Heredando companyId ${trip.companyId} del viaje ${trip.id} para la nueva reservación`);
-          reservation.companyId = trip.companyId;
-        } else {
-          console.warn(`No se pudo obtener companyId del viaje. La reservación no tendrá companyId.`);
-        }
+      const trip = await this.getTrip(reservation.tripId);
+      if (trip && trip.companyId) {
+        console.log(`Heredando companyId ${trip.companyId} del viaje ${trip.id} para la nueva reservación`);
+        reservation.companyId = trip.companyId;
+      } else {
+        console.warn(`No se pudo obtener companyId del viaje ${reservation.tripId}. La reservación no tendrá companyId.`);
       }
     }
     
@@ -1506,7 +2255,7 @@ export class DatabaseStorage implements IStorage {
     reservationId: number, 
     paymentMethod: string,
     paidBy: number
-  ): Promise<{ reservation: Reservation; transaction: any | null }> {
+  ): Promise<{ reservation: Reservation; transaction: Transaction | null }> {
     return await db.transaction(async (trx) => {
       // 1. Bloquear la reservación para evitar condiciones de carrera
       const [reservation] = await trx
@@ -1549,7 +2298,7 @@ export class DatabaseStorage implements IStorage {
       const totalAmount = reservation.totalAmount;
       const remainingAmount = totalAmount - advanceAmount;
 
-      let createdTransaction: any | null = null;
+      let createdTransaction: Transaction | null = null;
 
       // 5. Crear transacción solo si hay monto pendiente
       if (remainingAmount > 0) {
