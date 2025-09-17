@@ -10341,6 +10341,11 @@ function setupPackageRoutes(app: Express) {
             parsedDetails = {};
           }
           
+          // Normalizar: asegurar que parsedDetails sea siempre un objeto
+          if (!parsedDetails || typeof parsedDetails !== 'object' || Array.isArray(parsedDetails)) {
+            parsedDetails = {};
+          }
+          
           if (parsedDetails && typeof parsedDetails === 'object') {
             if (parsedDetails.details && parsedDetails.details.monto) {
               // Estructura: details.details.monto (reservaciones)
@@ -10393,6 +10398,11 @@ function setupPackageRoutes(app: Express) {
             : trip.tripData;
         } catch (e) {
           console.log(`[GET /period-balance] Error parsing trip.tripData para viaje ${trip.id}:`, e);
+          parsedTripData = [];
+        }
+        
+        // Normalizar: asegurar que parsedTripData sea siempre un array
+        if (!Array.isArray(parsedTripData)) {
           parsedTripData = [];
         }
         
