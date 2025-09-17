@@ -329,12 +329,10 @@ export function ExpensesPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="rentas">Gastos personales</SelectItem>
                           <SelectItem value="gastos_fijos">Gastos Fijos</SelectItem>
                           <SelectItem value="gastos_variables">Gastos Variables</SelectItem>
                           <SelectItem value="sueldos">Sueldos</SelectItem>
                           <SelectItem value="rentas">Rentas</SelectItem>
-                          <SelectItem value="rentas">Prestamos</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
