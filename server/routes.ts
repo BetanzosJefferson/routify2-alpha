@@ -8317,6 +8317,74 @@ function setupPackageRoutes(app: Express) {
     }
   });
   
+  // GET /api/packages/:id/transactions - Obtener transacciones de un paquete específico
+  app.get(apiRouter("/packages/:packageId/transactions"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      const packageId = parseInt(req.params.packageId);
+      if (isNaN(packageId)) {
+        return res.status(400).json({ error: "ID de paquete inválido" });
+      }
+      
+      console.log(`[GET /packages/${packageId}/transactions] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver transacciones
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver transacciones" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      
+      // Obtener transacciones asociadas a este paquete
+      const transactions = await storage.getTransactionHistory({
+        companyId,
+        type: 'package',
+        typeId: packageId
+      });
+      
+      console.log(`[GET /packages/${packageId}/transactions] Encontradas ${transactions.length} transacciones para paquete ${packageId}`);
+      
+      // Calcular el monto total cubierto por las transacciones
+      const totalCovered = transactions.reduce((sum, transaction) => {
+        // Extraer el monto desde el campo details
+        if (transaction.details && typeof transaction.details === 'object') {
+          const details = transaction.details as any;
+          
+          // La estructura real es details.details.monto (doble anidado)
+          if (details.details && details.details.monto && typeof details.details.monto === 'number') {
+            return sum + details.details.monto;
+          }
+        }
+        return sum;
+      }, 0);
+      
+      res.json({
+        packageId,
+        transactions,
+        transactionCount: transactions.length,
+        totalCovered,
+        summary: {
+          count: transactions.length,
+          totalAmount: totalCovered
+        }
+      });
+    } catch (error: any) {
+      console.error(`[GET /packages/transactions] Error:`, error);
+      res.status(500).json({ 
+        error: "Error al obtener transacciones del paquete",
+        details: error.message 
+      });
+    }
+  });
+
   // DELETE /api/packages/:id - Eliminar un paquete
   app.delete(apiRouter('/packages/:id'), isAuthenticated, hasPackageWriteAccess, async (req, res) => {
     try {
