@@ -122,19 +122,7 @@ export interface IStorage {
     includeAllVisibilities?: boolean;
     optimizedResponse?: boolean;
   }): Promise<TripWithRouteInfo[]>;
-  searchTripsOptimized(params: {
-    origin?: string;
-    destination?: string;
-    date?: string;
-    dateRange?: string[];
-    seats?: number;
-    companyId?: string;
-    companyIds?: string[];
-    driverId?: number;
-    visibility?: string;
-    includeAllVisibilities?: boolean;
-    optimizedResponse?: boolean;
-  }): Promise<TripWithRouteInfo[]>;
+  // ELIMINADO: searchTripsOptimized - usar searchTrips unificado
   updateRelatedTripsAvailability(recordId: number, tripId: string, seatChange: number): Promise<void>;
   cancelReservationsByTripId(tripId: number): Promise<{ cancelledCount: number; errors: string[] }>;
   
@@ -145,7 +133,7 @@ export interface IStorage {
     userRole?: string; 
     createdBy?: number; 
   }): Promise<ReservationWithDetails[]>;
-  getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]>;
+  // ELIMINADO: getReservationsOptimized - usar getReservations unificado
   getReservation(id: number): Promise<Reservation | undefined>;
   getReservationWithDetails(id: number, companyId?: string): Promise<ReservationWithDetails | undefined>;
   createReservation(reservation: InsertReservation): Promise<Reservation>;

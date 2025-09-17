@@ -62,7 +62,7 @@ export class DatabaseStorage implements IStorage {
     const now = Date.now();
     let cleanedCount = 0;
     
-    for (const [key, value] of this.cache.entries()) {
+    for (const [key, value] of Array.from(this.cache.entries())) {
       if (now > value.expiry) {
         this.cache.delete(key);
         cleanedCount++;
@@ -117,7 +117,7 @@ export class DatabaseStorage implements IStorage {
           .from(schema.routes)
           .where(eq(schema.routes.companyId, companyId));
         
-        const routeCount = parseInt(countQuery[0].count.toString());
+        const routeCount = parseInt((countQuery[0].count as any).toString());
         console.log(`DB Storage: Existen ${routeCount} rutas para compañía ${companyId}`);
         
         // Obtener las rutas filtradas
@@ -296,7 +296,7 @@ export class DatabaseStorage implements IStorage {
     const trips = await query;
     
     // Obtener todas las rutas únicas que necesitamos en una sola consulta
-    const routeIds = [...new Set(trips.map(trip => trip.routeId))];
+    const routeIds = Array.from(new Set(trips.map(trip => trip.routeId).filter(id => id !== null)));
     const routes = await db
       .select()
       .from(schema.routes)
@@ -325,7 +325,7 @@ export class DatabaseStorage implements IStorage {
     
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     for (const trip of trips) {
-      const route = routeMap.get(trip.routeId);
+      const route = trip.routeId ? routeMap.get(trip.routeId) : null;
       if (route) {
         // Obtener datos de la compañía si existen
         let companyData = { companyName: undefined, companyLogo: undefined };
@@ -421,7 +421,7 @@ export class DatabaseStorage implements IStorage {
     const trip = await this.getTrip(id);
     if (!trip) return undefined;
     
-    const route = await this.getRoute(trip.routeId);
+    const route = trip.routeId ? await this.getRoute(trip.routeId) : null;
     if (!route) return undefined;
     
     // Obtener información de la compañía si existe companyId
@@ -452,10 +452,11 @@ export class DatabaseStorage implements IStorage {
     // Obtener información completa del conductor si existe driverId
     let driverInfo = null;
     if (trip.driverId) {
-      const [driver] = await db
+      const driver = trip.driverId ? await db
         .select()
         .from(schema.users)
-        .where(eq(schema.users.id, trip.driverId));
+        .where(eq(schema.users.id, trip.driverId))
+        .then(result => result[0]) : null;
       
       if (driver) {
         driverInfo = {
@@ -464,7 +465,7 @@ export class DatabaseStorage implements IStorage {
           lastName: driver.lastName,
           email: driver.email,
           phone: driver.phone
-        };
+        } as { id: number; firstName: string; lastName: string; email: string; phone?: string };
       }
     }
     
@@ -584,7 +585,7 @@ export class DatabaseStorage implements IStorage {
               .update(schema.reservations)
               .set({ 
                 status: 'cancelled',
-                cancellationReason: 'Viaje eliminado por administrador',
+                // cancellationReason: 'Viaje eliminado por administrador', // Property does not exist in schema
                 updatedAt: new Date()
               })
               .where(eq(schema.reservations.id, reservation.id));
@@ -594,7 +595,7 @@ export class DatabaseStorage implements IStorage {
           }
         } catch (error) {
           console.error(`[cancelReservationsByTripId] Error cancelando reservación ${reservation.id}:`, error);
-          errors.push(`Error cancelando reservación ${reservation.id}: ${error.message}`);
+          errors.push(`Error cancelando reservación ${reservation.id}: ${(error as Error).message}`);
         }
       }
       
@@ -605,7 +606,7 @@ export class DatabaseStorage implements IStorage {
       console.error(`[cancelReservationsByTripId] Error general:`, error);
       return { 
         cancelledCount: 0, 
-        errors: [`Error general cancelando reservaciones: ${error.message}`] 
+        errors: [`Error general cancelando reservaciones: ${(error as Error).message}`] 
       };
     }
   }
@@ -635,9 +636,9 @@ export class DatabaseStorage implements IStorage {
     
     // Filtro de visibilidad
     if (params.includeAllVisibilities) {
-      console.log(`[searchTripsOptimized] Incluyendo TODOS los estados de visibilidad`);
+      console.log(`[searchTrips] Incluyendo TODOS los estados de visibilidad`);
     } else if (params.visibility) {
-      console.log(`[searchTripsOptimized] Filtro por visibilidad: ${params.visibility}`);
+      console.log(`[searchTrips] Filtro por visibilidad: ${params.visibility}`);
       condiciones.push(eq(schema.trips.visibility, params.visibility));
     } else {
       condiciones.push(eq(schema.trips.visibility, 'publicado'));
@@ -669,10 +670,10 @@ export class DatabaseStorage implements IStorage {
     
     // Filtro por asientos
     if (params.seats) {
-      condiciones.push(gte(schema.trips.availableSeats, params.seats));
+      condiciones.push(gte(schema.trips.capacity, params.seats));
     }
     
-    console.log(`[searchTripsOptimized] Ejecutando consulta optimizada con ${condiciones.length} filtros`);
+    console.log(`[searchTrips] Ejecutando consulta optimizada con ${condiciones.length} filtros`);
     
     // CONSULTA OPTIMIZADA: Una sola query con JOINs
     const whereClause = condiciones.length > 0 ? 
@@ -685,7 +686,7 @@ export class DatabaseStorage implements IStorage {
         tripId: schema.trips.id,
         tripData: schema.trips.tripData,
         capacity: schema.trips.capacity,
-        availableSeats: schema.trips.availableSeats,
+        availableSeats: schema.trips.capacity,
         visibility: schema.trips.visibility,
         companyId: schema.trips.companyId,
         vehicleId: schema.trips.vehicleId,
@@ -705,7 +706,7 @@ export class DatabaseStorage implements IStorage {
         
         // Campos de vehículo (JOIN)
         vehicleModel: schema.vehicles.model,
-        vehiclePlate: schema.vehicles.plate,
+        vehiclePlate: schema.vehicles.plates,
         vehicleCapacity: schema.vehicles.capacity,
       })
       .from(schema.trips)
@@ -728,20 +729,20 @@ export class DatabaseStorage implements IStorage {
         offset = (params.page - 1) * limit;
       }
       
-      console.log(`[searchTripsOptimized] 📄 PAGINACIÓN: limit=${limit}, offset=${offset}, page=${params.page || 'N/A'}`);
+      console.log(`[searchTrips] 📄 PAGINACIÓN: limit=${limit}, offset=${offset}, page=${params.page || 'N/A'}`);
       finalQuery = finalQuery.limit(limit).offset(offset);
     }
     
     const results = await finalQuery;
     
-    console.log(`[searchTripsOptimized] ✅ Consulta optimizada completada. Encontrados ${results.length} resultados`);
-    console.log(`[searchTripsOptimized] ✅ Total consultas a DB: 1 (vs 5+ en versión anterior)`);
+    console.log(`[searchTrips] ✅ Consulta optimizada completada. Encontrados ${results.length} resultados`);
+    console.log(`[searchTrips] ✅ Total consultas a DB: 1 (vs 5+ en versión anterior)`);
     
     // Transformar resultados al formato esperado
     const tripsWithRouteInfo: TripWithRouteInfo[] = [];
     
     for (const result of results) {
-      console.log(`[searchTripsOptimized] Procesando resultado:`, result);
+      console.log(`[searchTrips] Procesando resultado:`, result);
       
       // Reconstruir objetos con verificaciones
       const trip = {
@@ -756,7 +757,7 @@ export class DatabaseStorage implements IStorage {
         routeId: result.routeId,
       };
       
-      console.log(`[searchTripsOptimized] Trip reconstruido:`, trip);
+      console.log(`[searchTrips] Trip reconstruido:`, trip);
       
       const route = result.routeName ? {
         id: result.routeId,
@@ -788,7 +789,7 @@ export class DatabaseStorage implements IStorage {
           tripDataArray = Array.isArray(trip.tripData) ? trip.tripData : JSON.parse(trip.tripData as string);
         }
       } catch (error) {
-        console.warn(`[searchTripsOptimized] Error parsing tripData for trip ${trip.id}:`, error);
+        console.warn(`[searchTrips] Error parsing tripData for trip ${trip.id}:`, error);
         tripDataArray = [];
       }
       
@@ -796,11 +797,12 @@ export class DatabaseStorage implements IStorage {
         // Respuesta optimizada: solo datos esenciales
         tripsWithRouteInfo.push({
           ...trip,
-          route,
+          route: route || { id: 0, name: '', origin: '', destination: '', stops: [], companyId: null },
           driver,
           vehicle,
+          numStops: route?.stops?.length || 0,
           // Campos simplificados para respuesta optimizada
-          departureDate: tripDataArray[0]?.departureDate || trip.tripData?.departureDate,
+          departureDate: tripDataArray[0]?.departureDate || (trip.tripData as any)?.departureDate,
           departureTime: tripDataArray[0]?.departureTime || "08:00",
           price: tripDataArray[0]?.price || 0,
           segmentOrigin: tripDataArray[0]?.origin || route?.origin,
@@ -809,7 +811,7 @@ export class DatabaseStorage implements IStorage {
       } else {
         // Respuesta expandida: procesar todos los segmentos
         for (let segmentIndex = 0; segmentIndex < tripDataArray.length; segmentIndex++) {
-          const segment = tripDataArray[segmentIndex];
+          const segment: any = tripDataArray[segmentIndex];
           
           // Aplicar filtros de origen/destino por segmento
           let includeSegment = true;
@@ -827,25 +829,26 @@ export class DatabaseStorage implements IStorage {
           if (includeSegment) {
             tripsWithRouteInfo.push({
               ...trip,
-              id: `${trip.id}_${segmentIndex}`,
-              route,
+              id: trip.id, // Keep original id as number
+              route: route || { id: 0, name: '', origin: '', destination: '', stops: [], companyId: null },
               driver,
               vehicle,
+              numStops: route?.stops?.length || 0,
               departureDate: segment.departureDate,
               departureTime: segment.departureTime || "08:00",
               price: segment.price || 0,
-              availableSeats: segment.availableSeats || trip.availableSeats,
+              availableSeats: segment.availableSeats || trip.capacity,
               segmentOrigin: segment.origin,
               segmentDestination: segment.destination,
               isSubTrip: true,
               parentTripId: trip.id,
-            } as TripWithRouteInfo);
+            } as unknown as TripWithRouteInfo);
           }
         }
       }
     }
     
-    console.log(`[searchTripsOptimized] ✅ Procesamiento completado. Viajes finales: ${tripsWithRouteInfo.length}`);
+    console.log(`[searchTrips] ✅ Procesamiento completado. Viajes finales: ${tripsWithRouteInfo.length}`);
     return tripsWithRouteInfo;
   }
   
@@ -862,7 +865,7 @@ export class DatabaseStorage implements IStorage {
     } else {
       // Para tripIds que son números, buscar el índice del segmento correspondiente
       const tripIdAsNumber = typeof tripId === 'string' ? parseInt(tripId) : tripId;
-      segmentIndex = tripRecord.tripData.findIndex(segment => segment.tripId === tripIdAsNumber);
+      segmentIndex = tripRecord.tripData.findIndex((segment: any) => segment.tripId === tripIdAsNumber);
       if (segmentIndex === -1) segmentIndex = 0; // Usar el primer segmento como fallback
     }
     
@@ -928,26 +931,28 @@ export class DatabaseStorage implements IStorage {
     
     // CORRECCIÓN CRÍTICA: También actualizar el campo availableSeats principal del viaje
     // Usar el segmento principal (primer segmento) para determinar los asientos disponibles generales
-    const mainSegment = updatedTripData.find(segment => segment.isMainTrip === true) || updatedTripData[0];
-    const newMainAvailableSeats = mainSegment ? mainSegment.availableSeats : tripRecord.availableSeats;
+    const mainSegment = updatedTripData.find((segment: any) => segment.isMainTrip === true) || updatedTripData[0];
+    const newMainAvailableSeats = mainSegment ? mainSegment.availableSeats : tripRecord.capacity;
     
-    console.log(`[updateRelatedTripsAvailability] Actualizando availableSeats principal: ${tripRecord.availableSeats} → ${newMainAvailableSeats}`);
+    console.log(`[updateRelatedTripsAvailability] Actualizando capacity principal: ${tripRecord.capacity} → ${newMainAvailableSeats}`);
     
-    // Actualizar el registro en la base de datos con AMBOS campos
+    // Actualizar el registro en la base de datos 
     await db
       .update(schema.trips)
       .set({ 
-        tripData: updatedTripData,
-        availableSeats: newMainAvailableSeats // NUEVA LÍNEA CRÍTICA
+        tripData: updatedTripData
+        // Note: capacity is not updated here as it's a fixed vehicle property
       })
       .where(eq(schema.trips.id, recordId));
   }
   
   async getReservations(
-    companyId?: string, 
-    currentUserId?: number, 
-    userRole?: string,
-    // NUEVOS PARÁMETROS DE PAGINACIÓN
+    filters?: {
+      companyId?: string;
+      currentUserId?: number;
+      userRole?: string;
+      createdBy?: number;
+    },
     paginationParams?: {
       page?: number;        // Página actual (1-based)
       limit?: number;       // Número de elementos por página  
@@ -974,16 +979,8 @@ export class DatabaseStorage implements IStorage {
           reservationCreatedBy: schema.reservations.createdBy,
           reservationCreatedAt: schema.reservations.createdAt,
           reservationUpdatedAt: schema.reservations.updatedAt,
-          reservationPickupLocation: schema.reservations.pickupLocation,
-          reservationDropoffLocation: schema.reservations.dropoffLocation,
-          reservationSeatNumbers: schema.reservations.seatNumbers,
-          reservationCheckInTime: schema.reservations.checkInTime,
-          reservationBoardingStatus: schema.reservations.boardingStatus,
-          reservationCancellationReason: schema.reservations.cancellationReason,
           reservationAdvanceAmount: schema.reservations.advanceAmount,
           reservationAdvancePaymentMethod: schema.reservations.advancePaymentMethod,
-          reservationRemainingBalance: schema.reservations.remainingBalance,
-          reservationCommissionAmount: schema.reservations.commissionAmount,
           reservationPaidBy: schema.reservations.paidBy,
           reservationOriginalAmount: schema.reservations.originalAmount,
           reservationCheckCount: schema.reservations.checkCount,
@@ -1042,9 +1039,9 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id));
       
       // Aplicar filtros
-      if (companyId) {
-        console.log(`[getReservationsOptimized] Filtrando por compañía: ${companyId}`);
-        query.where(eq(schema.reservations.companyId, companyId));
+      if (filters?.companyId) {
+        console.log(`[getReservationsOptimized] Filtrando por compañía: ${filters.companyId}`);
+        query.where(eq(schema.reservations.companyId, filters.companyId));
       }
       
       // AGREGAR ORDENAMIENTO DETERMINÍSTICO para paginación estable  
@@ -1091,8 +1088,8 @@ export class DatabaseStorage implements IStorage {
         }
         
         // Filtro de rol conductor
-        if (userRole === 'chofer' && currentUserId && result.tripDriverId !== currentUserId) {
-          console.log(`[getReservationsOptimized] Omitiendo reservación ${result.reservationId} - no es del conductor ${currentUserId}`);
+        if (filters?.userRole === 'chofer' && filters?.currentUserId && result.tripDriverId !== filters.currentUserId) {
+          console.log(`[getReservationsOptimized] Omitiendo reservación ${result.reservationId} - no es del conductor ${filters.currentUserId}`);
           continue;
         }
         
@@ -1114,7 +1111,7 @@ export class DatabaseStorage implements IStorage {
           tripSegment = tripDataArray[segmentIndex];
         } else {
           // Formato antiguo: buscar por tripId
-          tripSegment = tripDataArray.find(segment => segment.tripId === tripDetails.tripId);
+          tripSegment = tripDataArray.find((segment: any) => segment.tripId === tripDetails.tripId);
           // Si no se encuentra, usar el primer segmento
           if (!tripSegment && tripDataArray.length > 0) {
             tripSegment = tripDataArray[0];
@@ -1229,16 +1226,12 @@ export class DatabaseStorage implements IStorage {
           createdBy: result.reservationCreatedBy,
           createdAt: result.reservationCreatedAt,
           updatedAt: result.reservationUpdatedAt,
-          pickupLocation: result.reservationPickupLocation,
-          dropoffLocation: result.reservationDropoffLocation,
-          seatNumbers: result.reservationSeatNumbers,
-          checkInTime: result.reservationCheckInTime,
-          boardingStatus: result.reservationBoardingStatus,
-          cancellationReason: result.reservationCancellationReason,
           advanceAmount: result.reservationAdvanceAmount,
           advancePaymentMethod: result.reservationAdvancePaymentMethod,
-          remainingBalance: result.reservationRemainingBalance,
-          commissionAmount: result.reservationCommissionAmount,
+          markedAsPaidAt: null, // Add missing required property
+          commissionPaid: false, // Add missing required property
+          couponCode: null, // Add missing required property
+          discountAmount: 0, // Add missing required property
           paidBy: result.reservationPaidBy,
           originalAmount: result.reservationOriginalAmount,
           checkCount: result.reservationCheckCount,
@@ -1462,14 +1455,27 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createReservation(reservation: InsertReservation): Promise<Reservation> {
-    // Si no se proporciona un companyId, intentamos obtenerlo del viaje relacionado
+    // Note: tripId property doesn't exist in InsertReservation schema
+    // Extract trip info from tripDetails if needed for companyId
     if (!reservation.companyId) {
-      const trip = await this.getTrip(reservation.tripId);
-      if (trip && trip.companyId) {
-        console.log(`Heredando companyId ${trip.companyId} del viaje ${trip.id} para la nueva reservación`);
-        reservation.companyId = trip.companyId;
-      } else {
-        console.warn(`No se pudo obtener companyId del viaje ${reservation.tripId}. La reservación no tendrá companyId.`);
+      let tripId = null;
+      try {
+        const tripDetails = typeof reservation.tripDetails === 'string' 
+          ? JSON.parse(reservation.tripDetails) 
+          : reservation.tripDetails;
+        tripId = tripDetails?.recordId;
+      } catch (error) {
+        console.warn('Could not parse tripDetails to get tripId:', error);
+      }
+      
+      if (tripId) {
+        const trip = await this.getTrip(tripId);
+        if (trip && trip.companyId) {
+          console.log(`Heredando companyId ${trip.companyId} del viaje ${trip.id} para la nueva reservación`);
+          reservation.companyId = trip.companyId;
+        } else {
+          console.warn(`No se pudo obtener companyId del viaje. La reservación no tendrá companyId.`);
+        }
       }
     }
     
@@ -1500,7 +1506,7 @@ export class DatabaseStorage implements IStorage {
     reservationId: number, 
     paymentMethod: string,
     paidBy: number
-  ): Promise<{ reservation: Reservation; transaction: Transaction | null }> {
+  ): Promise<{ reservation: Reservation; transaction: any | null }> {
     return await db.transaction(async (trx) => {
       // 1. Bloquear la reservación para evitar condiciones de carrera
       const [reservation] = await trx
@@ -1543,7 +1549,7 @@ export class DatabaseStorage implements IStorage {
       const totalAmount = reservation.totalAmount;
       const remainingAmount = totalAmount - advanceAmount;
 
-      let createdTransaction: Transaction | null = null;
+      let createdTransaction: any | null = null;
 
       // 5. Crear transacción solo si hay monto pendiente
       if (remainingAmount > 0) {

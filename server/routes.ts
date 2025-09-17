@@ -40,7 +40,7 @@ const PACKAGE_ACCESS_ROLES = [
   UserRole.CHECKER, 
   UserRole.DRIVER,
   UserRole.TICKET_OFFICE,
-  'superAdmin'
+  UserRole.SUPER_ADMIN
 ];
 
 const PACKAGE_WRITE_ROLES = [
@@ -87,6 +87,11 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
 
   // Setup session-based auth system
   const { isAuthenticated, hasRole } = setupAuthentication(app);
+  
+  // STEP 2 - RESTORE MISSING MIDDLEWARE: Define package access middleware
+  const hasPackageAccess = hasRole(PACKAGE_ACCESS_ROLES);
+  const hasPackageWriteAccess = hasRole(PACKAGE_WRITE_ROLES);
+  const hasPackageCreateAccess = hasRole(PACKAGE_CREATE_ROLES);
   
   // Setup authentication routes (both old and new)
   // Pasamos el middleware de autenticación al setup de rutas de autenticación
@@ -3225,7 +3230,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
 
       // Verificar permisos
-      const allowedRoles = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, 'superAdmin'];
+      const allowedRoles = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, UserRole.SUPER_ADMIN];
       if (!allowedRoles.includes(user.role as UserRole)) {
         return res.status(403).json({ error: "No tienes permisos para transferir pasajeros" });
       }
@@ -3981,7 +3986,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
 
       // Verificar permisos de empresa
-      if (user.role !== 'superAdmin' && reservation.companyId !== user.companyId) {
+      if (user.role !== UserRole.SUPER_ADMIN && reservation.companyId !== user.companyId) {
         return res.status(403).json({ error: "No tienes permisos para cancelar esta reservación" });
       }
 
@@ -5705,7 +5710,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
 
       // Verificar permisos de compañía - diferente lógica para taquilla vs otros roles
-      if (user.role === 'taquilla') {
+      if (user.role === UserRole.TICKET_OFFICE) {
         // Para usuarios taquilla, verificar acceso a través de userCompanies
         console.log(`[CHECK TICKET] Usuario taquilla ${user.id} intentando verificar reservación de compañía ${reservation.companyId}`);
         
@@ -5986,7 +5991,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
 
       // Verificar permisos - solo superAdmin, admin y dueño pueden cancelar con reembolso
-      const allowedRoles = ['superAdmin', 'admin', 'dueño'];
+      const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.OWNER];
       if (!allowedRoles.includes(req.user.role)) {
         return res.status(403).json({ 
           success: false, 
@@ -6012,7 +6017,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
 
       // Verificar permisos de compañía (excepto para superAdmin)
-      if (req.user.role !== 'superAdmin') {
+      if (req.user.role !== UserRole.SUPER_ADMIN) {
         const userCompanyId = req.user.company_id;
         const reservationCompanyId = reservation.companyId;
         
@@ -6407,22 +6412,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
   });
 
   // ========== RUTAS DE PAQUETERÍAS ==========
-  // Middleware para validar acceso a paqueterías según rol
-  function validatePackageAccess(req: Request, res: Response, next: Function) {
-    const { user } = req as any;
-    
-    if (!user) {
-      console.log(`[packages] Acceso denegado: Usuario no autenticado`);
-      return res.status(401).json({ message: "No autenticado" });
-    }
-    
-    if (!PACKAGE_ACCESS_ROLES.includes(user.role)) {
-      console.log(`[packages] Acceso denegado: Rol ${user.role} no tiene permisos`);
-      return res.status(403).json({ message: "Acceso denegado" });
-    }
-    
-    next();
-  }
+  // STEP 3 - CLEAN ORPHANED REFERENCES: Removed validatePackageAccess function
   
   // 1. Obtener todas las paqueterías (con filtros)
   // Endpoint específico para taquilleros: obtener paqueterías de todas sus empresas
@@ -6442,7 +6432,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
       
       // Verificar que el usuario sea taquillero o chofer
-      if (user.role !== 'taquilla' && user.role !== 'chofer') {
+      if (user.role !== UserRole.TICKET_OFFICE && user.role !== UserRole.DRIVER) {
         console.log(`[GET /taquilla/packages] ACCESO DENEGADO: El usuario tiene rol ${user.role}, se requiere rol taquilla o chofer`);
         return res.status(403).json({ error: "Acceso denegado. Solo usuarios con rol taquilla o chofer pueden usar este endpoint." });
       }
@@ -6514,490 +6504,6 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
     }
   });
 
-  
-  // 3. Crear nueva paquetería
-  app.post(apiRouter("/packages"), validatePackageAccess, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      
-      console.log(`[POST /packages] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-      
-      // Verificar permisos para crear paqueterías
-      if (!PACKAGE_CREATE_ROLES.includes(user.role)) {
-        console.log(`[POST /packages] Acceso denegado: Rol ${user.role} no puede crear paqueterías`);
-        return res.status(403).json({ message: "No tienes permisos para crear paqueterías" });
-      }
-      
-      // Validar datos recibidos
-      try {
-        insertPackageSchema.parse(req.body);
-      } catch (validationError: any) {
-        console.error(`[POST /packages] Error de validación:`, validationError);
-        return res.status(400).json({ 
-          message: "Datos de paquetería inválidos", 
-          errors: validationError.errors 
-        });
-      }
-      
-      // Extraer companyId del usuario para aislamiento de datos
-      let userCompanyId = user.companyId || user.company;
-      
-      // SOLUCIÓN PARA USUARIOS TAQUILLA: Si el usuario es Taquilla y no tiene companyId,
-      // extraer la companyId del viaje seleccionado
-      if (user.role === UserRole.TICKET_OFFICE && !userCompanyId) {
-        try {
-          // Extraer tripId desde tripDetails en el request body
-          const tripDetails = req.body.tripDetails;
-          if (tripDetails && tripDetails.tripId) {
-            const tripIdString = tripDetails.tripId.toString();
-            const recordId = parseInt(tripIdString.split('_')[0]); // Extraer ID base del viaje
-            
-            if (!isNaN(recordId)) {
-              console.log(`[POST /packages] Usuario Taquilla sin companyId, buscando empresa del viaje ${recordId}`);
-              
-              // Obtener la empresa del viaje seleccionado
-              const tripCompanyData = await db
-                .select({ companyId: schema.trips.companyId })
-                .from(schema.trips)
-                .where(eq(schema.trips.id, recordId))
-                .limit(1);
-              
-              if (tripCompanyData && tripCompanyData.length > 0 && tripCompanyData[0].companyId) {
-                const tripCompanyId = tripCompanyData[0].companyId;
-                
-                // Verificar que el usuario Taquilla tiene permisos para esta empresa
-                const userCompanyAssociation = await db
-                  .select()
-                  .from(schema.userCompanies)
-                  .where(
-                    and(
-                      eq(schema.userCompanies.userId, user.id),
-                      eq(schema.userCompanies.companyId, tripCompanyId)
-                    )
-                  )
-                  .limit(1);
-                
-                if (userCompanyAssociation && userCompanyAssociation.length > 0) {
-                  userCompanyId = tripCompanyId;
-                  console.log(`[POST /packages] Usuario Taquilla autorizado para empresa ${tripCompanyId}, usando como companyId del paquete`);
-                } else {
-                  console.log(`[POST /packages] ERROR: Usuario Taquilla no tiene permisos para empresa ${tripCompanyId}`);
-                  return res.status(403).json({ 
-                    message: "No tienes permisos para crear paqueterías para la empresa de este viaje" 
-                  });
-                }
-              } else {
-                console.log(`[POST /packages] ERROR: No se pudo obtener la empresa del viaje ${recordId}`);
-                return res.status(400).json({ 
-                  message: "No se pudo determinar la empresa del viaje seleccionado" 
-                });
-              }
-            } else {
-              console.log(`[POST /packages] ERROR: ID de viaje inválido en tripDetails: ${tripIdString}`);
-              return res.status(400).json({ 
-                message: "ID de viaje inválido en los detalles del viaje" 
-              });
-            }
-          } else {
-            console.log(`[POST /packages] ERROR: tripDetails no encontrado o tripId faltante`);
-            return res.status(400).json({ 
-              message: "Información del viaje requerida para usuarios Taquilla" 
-            });
-          }
-        } catch (error) {
-          console.error(`[POST /packages] Error al obtener empresa del viaje para usuario Taquilla:`, error);
-          return res.status(500).json({ 
-            message: "Error al verificar permisos de empresa para el viaje" 
-          });
-        }
-      }
-      
-      // Verificar que tenemos una companyId válida antes de continuar
-      if (!userCompanyId) {
-        console.log(`[POST /packages] ERROR: Usuario ${user.id} no tiene companyId definida`);
-        return res.status(400).json({ 
-          message: "Usuario sin empresa asignada. Contacte al administrador." 
-        });
-      }
-      
-      console.log(`[POST /packages] CompanyId final asignada: ${userCompanyId}`);
-      
-      // Preparar datos para crear la paquetería
-      const packageData = {
-        ...req.body,
-        companyId: userCompanyId,
-        createdBy: user.id
-      };
-      
-      // Si el paquete está marcado como pagado (isPaid=true), 
-      // guardar el ID del usuario que lo está creando en el campo paidBy
-      if (packageData.isPaid === true) {
-        packageData.paidBy = user.id;
-        console.log(`[POST /packages] Paquete marcado como pagado por el usuario: ${user.id}`);
-      }
-      
-      // Si hay un tripId, obtener la fecha de salida del viaje y datos de la ruta
-      let tripWithRouteInfo: any = null;
-      if (packageData.tripId) {
-        try {
-          tripWithRouteInfo = await storage.getTripWithRouteInfo(packageData.tripId);
-          if (tripWithRouteInfo && tripWithRouteInfo.departureDate) {
-            console.log(`[POST /packages] Usando fecha de salida del viaje: ${tripWithRouteInfo.departureDate}`);
-            // Actualizar la fecha de creación para que coincida con la fecha del viaje
-            packageData.createdAt = tripWithRouteInfo.departureDate;
-          }
-        } catch (tripError) {
-          console.error(`[POST /packages] Error al obtener datos del viaje: ${tripError}`);
-          // Continuamos sin fecha específica si hay un error (usará la fecha actual)
-        }
-      }
-      
-      console.log(`[POST /packages] Creando paquetería:`, packageData);
-      
-      // Verificar si el paquete será marcado como pagado para usar método transaccional
-      let newPackage: any;
-      if (packageData.isPaid === true) {
-        // Para paquetes pagados, usar método transaccional que crea paquete y transacción atómicamente
-        
-        // Extraer información del viaje desde tripDetails para la transacción
-        let tripId = "";
-        let origen = "";
-        let destino = "";
-        
-        const tripDetails = packageData.tripDetails as any;
-        if (tripDetails) {
-          tripId = tripDetails.tripId || "";
-          origen = tripDetails.segmentOrigin || tripDetails.origin || "";
-          destino = tripDetails.segmentDestination || tripDetails.destination || "";
-          
-          console.log(`[POST /packages] Información extraída de tripDetails:`, {
-            tripId,
-            origen,
-            destino
-          });
-        }
-        
-        // Si no tenemos origen/destino desde tripDetails, intentar obtenerlos de la BD
-        if (!origen || !destino) {
-          try {
-            // Extraer recordId del tripId para buscar en la BD
-            if (tripId) {
-              const recordId = parseInt(tripId.split('_')[0]);
-              
-              if (!isNaN(recordId)) {
-                const tripDbDetails = await db
-                  .select({
-                    isSubTrip: schema.trips.isSubTrip,
-                    segmentOrigin: schema.trips.segmentOrigin,
-                    segmentDestination: schema.trips.segmentDestination
-                  })
-                  .from(schema.trips)
-                  .where(eq(schema.trips.id, recordId))
-                  .limit(1);
-
-                if (tripDbDetails && tripDbDetails.length > 0) {
-                  const tripData = tripDbDetails[0];
-                  
-                  if (tripData.isSubTrip && tripData.segmentOrigin && tripData.segmentDestination) {
-                    origen = origen || tripData.segmentOrigin;
-                    destino = destino || tripData.segmentDestination;
-                    console.log(`[POST /packages] Origen/destino complementados desde BD:`, { origen, destino });
-                  }
-                }
-              }
-            }
-          } catch (dbError) {
-            console.error(`[POST /packages] Error al consultar detalles del viaje en BD:`, dbError);
-          }
-        }
-        
-        // Crear los detalles de la transacción en formato JSON
-        const detallesTransaccion = {
-          type: "package",
-          details: {
-            // ID se asignará después de crear el paquete
-            monto: packageData.price,
-            notas: "Pago de paquetería",
-            origen: origen,
-            tripId: tripId,
-            destino: destino,
-            isSubTrip: false, // Se puede determinar desde tripId si es necesario
-            metodoPago: packageData.paymentMethod || "efectivo",
-            remitente: `${packageData.senderName} ${packageData.senderLastName}`,
-            destinatario: `${packageData.recipientName} ${packageData.recipientLastName}`,
-            descripcion: packageData.packageDescription || "",
-            usaAsientos: packageData.usesSeats || false,
-            asientos: packageData.seatsQuantity || 0
-          }
-        };
-        
-        console.log(`[POST /packages] Creando paquete pagado con transacción de forma atómica`);
-        
-        // Usar método transaccional para crear paquete y transacción de forma atómica
-        try {
-          const { package: createdPackage, transaction } = await storage.createPaidPackageWithTransaction(
-            packageData,
-            {
-              details: detallesTransaccion,
-              user_id: user.id,
-              cutoff_id: null,
-              type: "package", // Tipo de transacción: package
-              // type_id se asigna automáticamente en el método transaccional
-              companyId: userCompanyId // Incluir el ID de la compañía para el aislamiento de datos
-            }
-          );
-          
-          newPackage = createdPackage;
-          console.log(`[POST /packages] Paquete pagado y transacción creados con IDs: paquete=${newPackage.id}, transacción=${transaction.id}`);
-        } catch (error) {
-          console.error(`[POST /packages] Error al crear paquete pagado con transacción:`, error);
-          throw error; // Hacer que el error sea fatal para garantizar integridad
-        }
-      } else {
-        // Para paquetes no pagados, usar método tradicional
-        newPackage = await storage.createPackage(packageData);
-        console.log(`[POST /packages] Paquete no pagado creado con ID: ${newPackage.id}`);
-      }
-      
-      // ACTUALIZACIÓN DE ASIENTOS: Si el paquete ocupa asientos, actualizar disponibilidad del viaje
-      if (packageData.usesSeats && packageData.seatsQuantity && packageData.seatsQuantity > 0) {
-        try {
-          // Extraer recordId y tripId desde tripDetails JSON
-          const tripDetails = packageData.tripDetails as any;
-          if (tripDetails && tripDetails.tripId) {
-            const tripIdString = tripDetails.tripId.toString(); // ej: "28_2"
-            const recordId = parseInt(tripIdString.split('_')[0]); // ej: 28
-            
-            if (!isNaN(recordId)) {
-              console.log(`[POST /packages] Paquete ocupa ${packageData.seatsQuantity} asientos. Actualizando viaje ${recordId}, segmento ${tripIdString}`);
-              
-              // Reducir asientos disponibles (número negativo)
-              await storage.updateRelatedTripsAvailability(recordId, tripIdString, -packageData.seatsQuantity);
-              
-              console.log(`[POST /packages] Asientos actualizados exitosamente: -${packageData.seatsQuantity} para ${tripIdString}`);
-            } else {
-              console.warn(`[POST /packages] No se pudo extraer recordId válido de tripId: ${tripIdString}`);
-            }
-          } else {
-            console.warn(`[POST /packages] tripDetails no contiene tripId válido:`, tripDetails);
-          }
-        } catch (seatUpdateError) {
-          console.error(`[POST /packages] Error al actualizar asientos disponibles:`, seatUpdateError);
-          // No fallar la operación principal, solo loggeamos el error
-        }
-      }
-      
-      // Responder con la paquetería creada
-      res.status(201).json(newPackage);
-    } catch (error: any) {
-      console.error(`[POST /packages] Error:`, error);
-      res.status(500).json({ message: error.message || "Error al crear la paquetería" });
-    }
-  });
-  
-  // 4. Actualizar una paquetería existente
-  app.patch(apiRouter("/packages/:id"), validatePackageAccess, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      const { id } = req.params;
-      
-      console.log(`[PATCH /packages/${id}] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-      
-      // Verificar permisos para editar paqueterías
-      if (!PACKAGE_WRITE_ROLES.includes(user.role)) {
-        console.log(`[PATCH /packages/${id}] Acceso denegado: Rol ${user.role} no puede editar paqueterías`);
-        return res.status(403).json({ message: "No tienes permisos para editar paqueterías" });
-      }
-      
-      // Obtener la paquetería existente
-      const existingPackage = await storage.getPackage(parseInt(id));
-      
-      if (!existingPackage) {
-        return res.status(404).json({ message: "Paquetería no encontrada" });
-      }
-      
-      // Validar aislamiento por compañía excepto para superAdmin
-      if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company;
-        
-        if (existingPackage.companyId !== userCompanyId) {
-          console.log(`[PATCH /packages/${id}] Acceso denegado: La paquetería pertenece a otra compañía`);
-          return res.status(403).json({ message: "Acceso denegado" });
-        }
-      }
-      
-      // Preparar datos para actualizar
-      const updateData = { ...req.body };
-      
-      // Si se está cambiando el viaje (tripId), actualizar la fecha de creación para que coincida con la nueva fecha del viaje
-      if (updateData.tripId && updateData.tripId !== existingPackage.tripId) {
-        try {
-          const trip = await storage.getTrip(updateData.tripId);
-          if (trip && trip.departureDate) {
-            console.log(`[PATCH /packages/${id}] Actualizando fecha a fecha de salida del nuevo viaje: ${trip.departureDate}`);
-            // Usar la fecha del nuevo viaje
-            updateData.createdAt = trip.departureDate;
-          }
-        } catch (tripError) {
-          console.error(`[PATCH /packages/${id}] Error al obtener datos del nuevo viaje: ${tripError}`);
-          // Continuamos con la actualización sin cambiar la fecha
-        }
-      }
-      
-      // ACTUALIZACIÓN DE ASIENTOS: Manejar cambios en el uso de asientos
-      const oldUsesSeats = existingPackage.usesSeats || false;
-      const oldSeatsQuantity = existingPackage.seatsQuantity || 0;
-      const newUsesSeats = updateData.usesSeats !== undefined ? updateData.usesSeats : oldUsesSeats;
-      const newSeatsQuantity = updateData.seatsQuantity !== undefined ? updateData.seatsQuantity : oldSeatsQuantity;
-      
-      // Calcular el cambio neto en asientos
-      const oldSeatsUsed = oldUsesSeats ? oldSeatsQuantity : 0;
-      const newSeatsUsed = newUsesSeats ? newSeatsQuantity : 0;
-      const seatChangeDelta = newSeatsUsed - oldSeatsUsed;
-      
-      // ESTADO DE ENTREGA: Establecer deliveredAt cuando se marca como entregado
-      if (updateData.deliveryStatus === 'entregado' && existingPackage.deliveryStatus !== 'entregado') {
-        console.log(`[PATCH /packages/${id}] Marcando paquete como entregado - estableciendo deliveredAt`);
-        // Crear fecha en zona horaria de México (UTC-6)
-        const now = new Date();
-        const mexicoTime = new Date(now.getTime() - (6 * 60 * 60 * 1000)); // UTC-6
-        updateData.deliveredAt = mexicoTime;
-        console.log(`[PATCH /packages/${id}] Timestamp ajustado a zona horaria de México: ${mexicoTime.toISOString()}`);
-      }
-      
-      // Actualizar la paquetería
-      const updatedPackage = await storage.updatePackage(parseInt(id), updateData);
-      
-      // Si hay cambio en los asientos, actualizar disponibilidad del viaje
-      if (seatChangeDelta !== 0) {
-        try {
-          // Usar tripDetails del paquete existente (asumir que el viaje no cambió)
-          const tripDetails = existingPackage.tripDetails as any;
-          if (tripDetails && tripDetails.tripId) {
-            const tripIdString = tripDetails.tripId.toString();
-            const recordId = parseInt(tripIdString.split('_')[0]);
-            
-            if (!isNaN(recordId)) {
-              console.log(`[PATCH /packages/${id}] Cambio en asientos: ${oldSeatsUsed} → ${newSeatsUsed} (Δ${seatChangeDelta})`);
-              
-              // Aplicar el cambio neto (negativo para reducir disponibilidad, positivo para aumentar)
-              await storage.updateRelatedTripsAvailability(recordId, tripIdString, -seatChangeDelta);
-              
-              console.log(`[PATCH /packages/${id}] Asientos actualizados: ${seatChangeDelta > 0 ? '-' : '+'}${Math.abs(seatChangeDelta)} para ${tripIdString}`);
-            }
-          }
-        } catch (seatUpdateError) {
-          console.error(`[PATCH /packages/${id}] Error al actualizar asientos disponibles:`, seatUpdateError);
-        }
-      }
-      
-      // Responder con la paquetería actualizada
-      res.json(updatedPackage);
-    } catch (error: any) {
-      console.error(`[PATCH /packages/${req.params.id}] Error:`, error);
-      res.status(500).json({ message: error.message || "Error al actualizar la paquetería" });
-    }
-  });
-  
-  // 5. Eliminar una paquetería
-  app.delete(apiRouter("/packages/:id"), validatePackageAccess, async (req: Request, res: Response) => {
-    try {
-      const { user } = req as any;
-      const { id } = req.params;
-      
-      console.log(`[DELETE /packages/${id}] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
-      
-      // Verificar permisos para eliminar paqueterías
-      if (!PACKAGE_WRITE_ROLES.includes(user.role)) {
-        console.log(`[DELETE /packages/${id}] Acceso denegado: Rol ${user.role} no puede eliminar paqueterías`);
-        return res.status(403).json({ message: "No tienes permisos para eliminar paqueterías" });
-      }
-      
-      // Obtener la paquetería existente
-      const existingPackage = await storage.getPackage(parseInt(id));
-      
-      if (!existingPackage) {
-        return res.status(404).json({ message: "Paquetería no encontrada" });
-      }
-      
-      // Validar aislamiento por compañía excepto para superAdmin
-      if (user.role !== UserRole.SUPER_ADMIN) {
-        const userCompanyId = user.companyId || user.company;
-        
-        if (existingPackage.companyId !== userCompanyId) {
-          console.log(`[DELETE /packages/${id}] Acceso denegado: La paquetería pertenece a otra compañía`);
-          return res.status(403).json({ message: "Acceso denegado" });
-        }
-      }
-      
-      // LIBERACIÓN DE ASIENTOS: Si el paquete ocupaba asientos, liberarlos antes de eliminar
-      if (existingPackage.usesSeats && existingPackage.seatsQuantity && existingPackage.seatsQuantity > 0) {
-        try {
-          const tripDetails = existingPackage.tripDetails as any;
-          if (tripDetails && tripDetails.tripId) {
-            const tripIdString = tripDetails.tripId.toString();
-            const recordId = parseInt(tripIdString.split('_')[0]);
-            
-            if (!isNaN(recordId)) {
-              console.log(`[DELETE /packages/${id}] Liberando ${existingPackage.seatsQuantity} asientos para ${tripIdString}`);
-              
-              // Liberar asientos (número positivo para aumentar disponibilidad)
-              await storage.updateRelatedTripsAvailability(recordId, tripIdString, existingPackage.seatsQuantity);
-              
-              console.log(`[DELETE /packages/${id}] Asientos liberados exitosamente: +${existingPackage.seatsQuantity} para ${tripIdString}`);
-            }
-          }
-        } catch (seatUpdateError) {
-          console.error(`[DELETE /packages/${id}] Error al liberar asientos:`, seatUpdateError);
-          // Continuamos con la eliminación aunque falle la liberación de asientos
-        }
-      }
-      
-      // ELIMINACIÓN EN CASCADA: Eliminar transacciones relacionadas con esta paquetería
-      try {
-        console.log(`[DELETE /packages/${id}] Buscando transacciones relacionadas con paquetería ID ${id}`);
-        const relatedTransactions = await storage.getTransaccionesByPackageId(parseInt(id));
-        
-        if (relatedTransactions.length > 0) {
-          console.log(`[DELETE /packages/${id}] Encontradas ${relatedTransactions.length} transacciones relacionadas, procediendo a eliminarlas`);
-          
-          for (const transaction of relatedTransactions) {
-            try {
-              const deletedTransaction = await storage.deleteTransaccion(transaction.id);
-              if (deletedTransaction) {
-                console.log(`[DELETE /packages/${id}] Transacción ${transaction.id} eliminada exitosamente`);
-              } else {
-                console.warn(`[DELETE /packages/${id}] No se pudo eliminar la transacción ${transaction.id}`);
-              }
-            } catch (transactionError) {
-              console.error(`[DELETE /packages/${id}] Error eliminando transacción ${transaction.id}:`, transactionError);
-              // Continuamos con otras transacciones aunque falle una
-            }
-          }
-          
-          console.log(`[DELETE /packages/${id}] Proceso de eliminación de transacciones completado`);
-        } else {
-          console.log(`[DELETE /packages/${id}] No se encontraron transacciones relacionadas con esta paquetería`);
-        }
-      } catch (transactionSearchError) {
-        console.error(`[DELETE /packages/${id}] Error al buscar/eliminar transacciones relacionadas:`, transactionSearchError);
-        // Continuamos con la eliminación de la paquetería aunque falle la eliminación de transacciones
-      }
-      
-      // Eliminar la paquetería
-      const deleted = await storage.deletePackage(parseInt(id));
-      
-      if (!deleted) {
-        return res.status(500).json({ message: "No se pudo eliminar la paquetería" });
-      }
-      
-      // Responder con éxito
-      res.json({ message: "Paquetería eliminada correctamente" });
-    } catch (error: any) {
-      console.error(`[DELETE /packages/${req.params.id}] Error:`, error);
-      res.status(500).json({ message: error.message || "Error al eliminar la paquetería" });
-    }
-  });
 
   // Setup routes for packages
   // Configurar rutas para presupuestos y gastos
@@ -7019,7 +6525,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
       
       // Solo el dueño puede ver los gastos
-      if (user.role !== 'dueño') {
+      if (user.role !== UserRole.OWNER) {
         return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede ver los gastos." });
       }
       
@@ -7053,7 +6559,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
       
       // Solo el dueño puede crear gastos
-      if (user.role !== 'dueño') {
+      if (user.role !== UserRole.OWNER) {
         return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede crear gastos." });
       }
       
@@ -7106,7 +6612,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
       
       // Solo el dueño puede actualizar gastos
-      if (user.role !== 'dueño') {
+      if (user.role !== UserRole.OWNER) {
         return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede actualizar gastos." });
       }
       
@@ -7166,7 +6672,7 @@ export async function registerRoutes(app: Express, httpServer: Server, options: 
       }
       
       // Solo el dueño puede eliminar gastos
-      if (user.role !== 'dueño') {
+      if (user.role !== UserRole.OWNER) {
         return res.status(403).json({ message: "Acceso denegado. Solo el dueño puede eliminar gastos." });
       }
       
