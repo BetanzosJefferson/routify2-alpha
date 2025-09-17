@@ -33,6 +33,7 @@ declare global {
       email: string;
       role: string;
       company: string | null;
+      companyId: string | null;
       profilePicture: string | null;
     }
   }

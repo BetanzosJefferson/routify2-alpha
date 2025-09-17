@@ -218,6 +218,21 @@ export interface IStorage {
     affectedCount: number;
   }>;
   
+  // Reservations operations
+  markAsPaid(reservationId: number, userId: number): Promise<Reservation | undefined>;
+  checkTicket(reservationId: number, userId: number): Promise<{
+    success: boolean;
+    message: string;
+    reservation?: ReservationWithDetails;
+  }>;
+  cancelReservationWithRefund(reservationId: number, userId: number): Promise<{
+    success: boolean;
+    message: string;
+  }>;
+  
+  // User methods (alias for getUserById)
+  getUser(id: number): Promise<User | undefined>;
+  
   // Cupones methods
   getCoupons(companyId?: string): Promise<Coupon[]>;
   getCoupon(id: number): Promise<Coupon | undefined>;

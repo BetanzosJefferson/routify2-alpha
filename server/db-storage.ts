@@ -2470,6 +2470,86 @@ export class DatabaseStorage implements IStorage {
       .returning({ id: schema.passengers.id });
     return result.length > 0;
   }
+
+  // Missing reservation operation methods
+  async markAsPaid(reservationId: number, userId: number): Promise<Reservation | undefined> {
+    try {
+      const result = await this.markReservationPaidTransactional(reservationId, 'efectivo', userId);
+      return result.reservation;
+    } catch (error) {
+      console.error('Error marking reservation as paid:', error);
+      return undefined;
+    }
+  }
+
+  async checkTicket(reservationId: number, userId: number): Promise<{
+    success: boolean;
+    message: string;
+    reservation?: ReservationWithDetails;
+  }> {
+    try {
+      const reservation = await this.getReservationWithDetails(reservationId);
+      if (!reservation) {
+        return { success: false, message: 'Reservación no encontrada' };
+      }
+
+      // Update check count and checked by info
+      await db
+        .update(schema.reservations)
+        .set({
+          checkedBy: userId,
+          checkedAt: new Date(),
+          checkCount: (reservation.checkCount || 0) + 1,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.reservations.id, reservationId));
+
+      const updatedReservation = await this.getReservationWithDetails(reservationId);
+      return { 
+        success: true, 
+        message: 'Ticket escaneado exitosamente',
+        reservation: updatedReservation
+      };
+    } catch (error) {
+      console.error('Error checking ticket:', error);
+      return { success: false, message: 'Error al escanear el ticket' };
+    }
+  }
+
+  async cancelReservationWithRefund(reservationId: number, userId: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const reservation = await this.getReservation(reservationId);
+      if (!reservation) {
+        return { success: false, message: 'Reservación no encontrada' };
+      }
+
+      if (reservation.status === 'canceled') {
+        return { success: false, message: 'La reservación ya está cancelada' };
+      }
+
+      // Cancel the reservation
+      await db
+        .update(schema.reservations)
+        .set({
+          status: 'canceled',
+          updatedAt: new Date()
+        })
+        .where(eq(schema.reservations.id, reservationId));
+
+      return { success: true, message: 'Reservación cancelada exitosamente' };
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+      return { success: false, message: 'Error al cancelar la reservación' };
+    }
+  }
+
+  // User method alias
+  async getUser(id: number): Promise<schema.User | undefined> {
+    return this.getUserById(id);
+  }
   
   // Métodos para gestión de vehículos (unidades)
   async getVehicles(companyId?: string): Promise<Vehicle[]> {

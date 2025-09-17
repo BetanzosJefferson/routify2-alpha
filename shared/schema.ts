@@ -194,6 +194,10 @@ export type RouteWithSegments = Route & {
 export type TripWithRouteInfo = Trip & {
   route: Route;
   numStops: number;
+  // Campos críticos para funcionalidad
+  availableSeats?: number;
+  tripId?: string;
+  recordId?: number;
   // Campos adicionales para mostrar información de la empresa
   companyName?: string;
   companyLogo?: string;
@@ -226,7 +230,7 @@ export type TripWithRouteInfo = Trip & {
   // Datos específicos del segmento extraídos del tripData JSON
   origin?: string;
   destination?: string;
-  departureDate?: string;
+  departureDate?: string | Date;
   departureTime?: string;
   arrivalTime?: string;
   price?: number;

@@ -1179,7 +1179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`segmentPrices del frontend disponibles: ${tripData.segmentPrices ? 'SÍ' : 'NO'}`);
       console.log(`stopTimes manuales disponibles: ${tripDataWithStopTimes.stopTimes ? 'SÍ' : 'NO'}`);
       
-      let segmentTimes;
+      let segmentTimes: Record<string, { departureTime: string; arrivalTime: string; }> = {};
       
       // Verificar si hay horarios personalizados en segmentPrices del frontend
       const hasCustomTimes = tripData.segmentPrices?.some(
@@ -1212,8 +1212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allSegments,
           departureTime,
           route,
-          template.timeConfiguration
-        );
+          template.timeConfiguration as Record<string, any>
+        ) as Record<string, { departureTime: string; arrivalTime: string; }>;
       } else {
         // PRIORIDAD 3: Usar cálculo proporcional como fallback
         console.log("⚠️ PRIORIDAD 3: Usando cálculo proporcional (fallback) - no hay configuración disponible");
@@ -1222,7 +1222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           departureTime, 
           arrivalTime,
           route
-        );
+        ) as Record<string, { departureTime: string; arrivalTime: string; }>;
       }
       
       // Detectar si el viaje cruza medianoche
@@ -2612,7 +2612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // CORREGIDO: Obtener reservas para este viaje específico y calcular ocupación correctamente
             console.log(`[PATCH ${id}] 🔧 INICIANDO cálculo de asientos para viaje ${id} con nueva capacidad ${newCapacity}`);
-            const allReservations = await storage.getReservations({companyId: currentTrip.companyId});
+            const allReservations = await storage.getReservations({companyId: currentTrip.companyId || undefined});
             
             // Filtrar reservas confirmadas para este viaje específico
             const tripReservations = allReservations.filter(r => 
@@ -2869,7 +2869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Get reservations using the OPTIMIZED storage method
         const reservations = await storage.getReservations({
-          companyId: companyId,
+          companyId: companyId || undefined,
           currentUserId: user.id,
           userRole: user.role
         });
@@ -3136,7 +3136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verificar permisos para transferencia de pasajeros
       const allowedRoles = [UserRole.OWNER, UserRole.ADMIN, UserRole.CALL_CENTER, UserRole.SUPER_ADMIN];
-      if (!allowedRoles.includes(user.role as UserRole)) {
+      if (!allowedRoles.includes(user.role as typeof UserRole[keyof typeof UserRole])) {
         return res.status(403).json({ error: "No tienes permisos para transferir pasajeros" });
       }
       
