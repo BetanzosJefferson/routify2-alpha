@@ -1314,8 +1314,8 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(schema.trips)
       .set({ 
-        tripData: updatedTripData,
-        availableSeats: newMainAvailableSeats // NUEVA LÍNEA CRÍTICA
+        tripData: updatedTripData
+        // availableSeats está dentro del JSON tripData, no es campo directo
       })
       .where(eq(schema.trips.id, recordId));
   }
@@ -1341,16 +1341,9 @@ export class DatabaseStorage implements IStorage {
           reservationCreatedBy: schema.reservations.createdBy,
           reservationCreatedAt: schema.reservations.createdAt,
           reservationUpdatedAt: schema.reservations.updatedAt,
-          reservationPickupLocation: schema.reservations.pickupLocation,
-          reservationDropoffLocation: schema.reservations.dropoffLocation,
-          reservationSeatNumbers: schema.reservations.seatNumbers,
-          reservationCheckInTime: schema.reservations.checkInTime,
-          reservationBoardingStatus: schema.reservations.boardingStatus,
-          reservationCancellationReason: schema.reservations.cancellationReason,
+          // Campos reales que SÍ EXISTEN en reservations:
           reservationAdvanceAmount: schema.reservations.advanceAmount,
           reservationAdvancePaymentMethod: schema.reservations.advancePaymentMethod,
-          reservationRemainingBalance: schema.reservations.remainingBalance,
-          reservationCommissionAmount: schema.reservations.commissionAmount,
           reservationPaidBy: schema.reservations.paidBy,
           reservationOriginalAmount: schema.reservations.originalAmount,
           reservationCheckCount: schema.reservations.checkCount,
@@ -1375,12 +1368,12 @@ export class DatabaseStorage implements IStorage {
           routeStops: schema.routes.stops,
           routeCompanyId: schema.routes.companyId,
           
-          // Campos de conductor
+          // Campos de conductor (solo campos que EXISTEN en users)
           driverId: schema.users.id,
           driverFirstName: schema.users.firstName,
           driverLastName: schema.users.lastName,
           driverEmail: schema.users.email,
-          driverPhone: schema.users.phone,
+          // phone no existe en users table
           
           // Campos de vehículo
           vehicleId: schema.vehicles.id,
