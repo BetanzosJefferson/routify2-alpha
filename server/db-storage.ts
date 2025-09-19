@@ -1320,12 +1320,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.trips.id, recordId));
   }
   
-  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string, limit?: number, offset?: number): Promise<ReservationWithDetails[]> {
+  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
     console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
     
     try {
       // Consulta única con todos los JOINs necesarios
-      const query = db
+      let query = db
         .select({
           // Campos de reservación
           reservationId: schema.reservations.id,
@@ -1401,22 +1401,12 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
         .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
         .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id))
-        .orderBy(desc(schema.reservations.createdAt), desc(schema.reservations.id)); // ORDER BY determinístico
+        .orderBy(desc(schema.reservations.createdAt), desc(schema.reservations.id)); // Orden determinístico
       
       // Aplicar filtros
       if (companyId) {
         console.log(`[getReservationsOptimized] Filtrando por compañía: ${companyId}`);
-        query.where(eq(schema.reservations.companyId, companyId));
-      }
-      
-      // 📄 PAGINACIÓN: Aplicar limit y offset para optimización (manejo correcto de offset=0)
-      if (typeof limit === 'number' && limit > 0) {
-        query = query.limit(limit);
-        console.log(`[getReservationsOptimized] 📄 Aplicando LIMIT: ${limit}`);
-      }
-      if (typeof offset === 'number' && offset >= 0) {
-        query = query.offset(offset);
-        console.log(`[getReservationsOptimized] 📄 Aplicando OFFSET: ${offset}`);
+        query = query.where(eq(schema.reservations.companyId, companyId)); // CRÍTICO: Reasignar para aplicar filtro
       }
       
       console.log("[getReservationsOptimized] Ejecutando consulta única con JOINs");
@@ -1578,29 +1568,12 @@ export class DatabaseStorage implements IStorage {
           createdByUser
         };
 
-        // DEBUG: Logging específico para reservación 579
-        if (result.reservationId === 579) {
-          console.log(`[DEBUG_579] Datos de reservación 579:`);
-          console.log(`  - totalAmount: ${result.reservationTotalAmount}`);
-          console.log(`  - advanceAmount: ${result.reservationAdvanceAmount}`);
-          console.log(`  - advancePaymentMethod: ${result.reservationAdvancePaymentMethod}`);
-          console.log(`  - paymentStatus: ${result.reservationPaymentStatus}`);
-          console.log(`  - paymentMethod: ${result.reservationPaymentMethod}`);
-          console.log(`  - Objeto final:`, JSON.stringify({
-            id: reservation.id,
-            totalAmount: reservation.totalAmount,
-            advanceAmount: reservation.advanceAmount,
-            advancePaymentMethod: reservation.advancePaymentMethod,
-            paymentStatus: reservation.paymentStatus,
-            paymentMethod: reservation.paymentMethod
-          }, null, 2));
-        }
+        // Debug logging removido para producción por seguridad
         
         reservationsWithDetails.push(reservation);
       }
       
       // 🚀 BATCH LOADING: Resolver el N+1 problem de usuarios
-      console.log(`[BATCH_LOADING] Iniciando batch loading de usuarios para ${reservationsWithDetails.length} reservaciones`);
       
       // 1. Extraer todos los user IDs únicos
       const userIds = [...new Set(
@@ -1608,8 +1581,6 @@ export class DatabaseStorage implements IStorage {
           .map(r => r.createdBy)
           .filter(id => id !== null && id !== undefined)
       )];
-      
-      console.log(`[BATCH_LOADING] Encontrados ${userIds.length} usuarios únicos para cargar`);
       
       // 2. Batch query: Obtener TODOS los usuarios en una sola consulta
       let userMap = new Map();
@@ -1637,7 +1608,7 @@ export class DatabaseStorage implements IStorage {
             commissionPercentage: user.commissionPercentage
           }]));
           
-          console.log(`[BATCH_LOADING] Cargados ${users.length} usuarios en userMap`);
+          // Usuarios cargados exitosamente en userMap
         } catch (error) {
           console.error("[BATCH_LOADING] Error cargando usuarios:", error);
         }
@@ -1650,7 +1621,7 @@ export class DatabaseStorage implements IStorage {
         }
       });
       
-      console.log(`[BATCH_LOADING] Completado. N+1 problem RESUELTO: ${userIds.length} usuarios cargados en 1 query vs ${reservationsWithDetails.length} queries individuales`);
+      // N+1 problem resuelto: batch loading completado
       console.log(`[getReservationsOptimized] Procesadas ${reservationsWithDetails.length} reservaciones optimizadas`);
       return reservationsWithDetails;
       
