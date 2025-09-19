@@ -1396,7 +1396,11 @@ export class DatabaseStorage implements IStorage {
         .from(schema.reservations)
         // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}
         // En lugar de esto, obtendremos trip data por separado
-        .leftJoin(schema.trips, sql`${schema.trips.id} = CAST(${schema.reservations.tripDetails}->'recordId' AS INTEGER)`)
+        .leftJoin(schema.trips, sql`${schema.trips.id} = CASE 
+          WHEN ${schema.reservations.tripDetails}->>'recordId' ~ '^[0-9]+$' 
+          THEN CAST(${schema.reservations.tripDetails}->>'recordId' AS INTEGER)
+          ELSE NULL 
+        END`)
         .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
         .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))

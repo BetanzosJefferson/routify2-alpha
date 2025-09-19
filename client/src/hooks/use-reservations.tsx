@@ -37,8 +37,8 @@ export function useReservations(options: UseReservationsOptions = {}) {
     refetchOnMount: false, // OPTIMIZACIÓN: evitar refetch innecesario al montar
     queryFn: async () => {
       try {
-        // Construir la URL base - USAR ENDPOINT OPTIMIZADO para resolver N+1 problem
-        let url = archived ? "/api/reservations/archived" : "/api/reservations-optimized";
+        // Construir la URL base - REVERTIR temporalmente mientras arreglo JOIN issue
+        let url = archived ? "/api/reservations/archived" : "/api/reservations";
         
         // Añadir parámetros según sea necesario
         const params = new URLSearchParams();
