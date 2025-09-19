@@ -1506,25 +1506,8 @@ export class DatabaseStorage implements IStorage {
           capacity: result.vehicleCapacity,
         } : null;
         
-        // Obtener createdByUser con consulta separada (optimización posterior)
-        let createdByUser = null;
-        if (result.reservationCreatedBy) {
-          try {
-            const [user] = await db.select().from(schema.users).where(eq(schema.users.id, result.reservationCreatedBy));
-            if (user) {
-              createdByUser = {
-                id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                role: user.role,
-                commissionPercentage: user.commissionPercentage,
-              };
-            }
-          } catch (error) {
-            console.warn(`Error fetching created_by user ${result.reservationCreatedBy}:`, error);
-          }
-        }
+        // ⚡ BATCH LOADING: Los usuarios se cargan DESPUÉS en una sola query
+        // createdByUser se asignará del userMap después del batch loading
         
         const mainTripSegment = tripDataArray.find(segment => segment.isMainTrip === true);
         
@@ -1571,16 +1554,9 @@ export class DatabaseStorage implements IStorage {
           createdBy: result.reservationCreatedBy,
           createdAt: result.reservationCreatedAt,
           updatedAt: result.reservationUpdatedAt,
-          pickupLocation: result.reservationPickupLocation,
-          dropoffLocation: result.reservationDropoffLocation,
-          seatNumbers: result.reservationSeatNumbers,
-          checkInTime: result.reservationCheckInTime,
-          boardingStatus: result.reservationBoardingStatus,
-          cancellationReason: result.reservationCancellationReason,
+          // Solo campos que SÍ EXISTEN en reservations:
           advanceAmount: result.reservationAdvanceAmount,
           advancePaymentMethod: result.reservationAdvancePaymentMethod,
-          remainingBalance: result.reservationRemainingBalance,
-          commissionAmount: result.reservationCommissionAmount,
           paidBy: result.reservationPaidBy,
           originalAmount: result.reservationOriginalAmount,
           checkCount: result.reservationCheckCount,
@@ -1612,6 +1588,58 @@ export class DatabaseStorage implements IStorage {
         reservationsWithDetails.push(reservation);
       }
       
+      // 🚀 BATCH LOADING: Resolver el N+1 problem de usuarios
+      console.log(`[BATCH_LOADING] Iniciando batch loading de usuarios para ${reservationsWithDetails.length} reservaciones`);
+      
+      // 1. Extraer todos los user IDs únicos
+      const userIds = [...new Set(
+        reservationsWithDetails
+          .map(r => r.createdBy)
+          .filter(id => id !== null && id !== undefined)
+      )];
+      
+      console.log(`[BATCH_LOADING] Encontrados ${userIds.length} usuarios únicos para cargar`);
+      
+      // 2. Batch query: Obtener TODOS los usuarios en una sola consulta
+      let userMap = new Map();
+      if (userIds.length > 0) {
+        try {
+          const users = await db
+            .select({
+              id: schema.users.id,
+              firstName: schema.users.firstName,
+              lastName: schema.users.lastName,
+              email: schema.users.email,
+              role: schema.users.role,
+              commissionPercentage: schema.users.commissionPercentage
+            })
+            .from(schema.users)
+            .where(inArray(schema.users.id, userIds));
+          
+          // 3. Crear Map para lookup O(1)
+          userMap = new Map(users.map(user => [user.id, {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+            commissionPercentage: user.commissionPercentage
+          }]));
+          
+          console.log(`[BATCH_LOADING] Cargados ${users.length} usuarios en userMap`);
+        } catch (error) {
+          console.error("[BATCH_LOADING] Error cargando usuarios:", error);
+        }
+      }
+      
+      // 4. Asignar createdByUser a cada reservación usando el Map
+      reservationsWithDetails.forEach(reservation => {
+        if (reservation.createdBy && userMap.has(reservation.createdBy)) {
+          reservation.createdByUser = userMap.get(reservation.createdBy);
+        }
+      });
+      
+      console.log(`[BATCH_LOADING] Completado. N+1 problem RESUELTO: ${userIds.length} usuarios cargados en 1 query vs ${reservationsWithDetails.length} queries individuales`);
       console.log(`[getReservationsOptimized] Procesadas ${reservationsWithDetails.length} reservaciones optimizadas`);
       return reservationsWithDetails;
       
