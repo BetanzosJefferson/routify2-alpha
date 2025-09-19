@@ -5,9 +5,9 @@ import { initializeOfficialCrossTabCache, cleanupOfficialCrossTabCache } from ".
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true, // OPTIMIZACIÓN: Mantener refetch en focus
       retry: 2, // Aumentamos los reintentos a 2
-      staleTime: 60000, // Datos considerados válidos por 1 minuto
+      staleTime: 90000, // OPTIMIZACIÓN: 90 segundos para balance performance/frescura
       gcTime: 10 * 60 * 1000, // Mantener en caché por 10 minutos (antes llamado cacheTime)
       // Asegurar que datos compartidos entre secciones estén disponibles
       structuralSharing: true,

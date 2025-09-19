@@ -1398,6 +1398,7 @@ export class DatabaseStorage implements IStorage {
           passengerAge: schema.passengers.age,
           passengerSeat: schema.passengers.seat,
 
+
         })
         .from(schema.reservations)
         // NOTE: No podemos hacer JOIN directo porque tripDetails es JSON que contiene {recordId, tripId, seats}

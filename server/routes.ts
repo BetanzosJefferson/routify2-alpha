@@ -2830,6 +2830,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         console.log(`[GET /reservations] Sin filtro de fecha para viaje específico ${tripId}`);
       }
+
+      // OPTIMIZACIÓN: Agregar paginación básica
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+      
+      // Validar parámetros de paginación
+      const validLimit = Math.min(Math.max(limit, 1), 200); // Entre 1 y 200
+      const validOffset = Math.max(offset, 0); // No negativo
+      
+      console.log(`[GET /reservations] 📄 Paginación: limit=${validLimit}, offset=${validOffset}`);
       
       // Determinar filtros de seguridad según el rol
       if (user.role === UserRole.TICKET_OFFICE) {

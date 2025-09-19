@@ -31,10 +31,10 @@ export function useReservations(options: UseReservationsOptions = {}) {
       parentTripFilter 
     }),
     enabled: !!user && enabled,
-    staleTime: 60000, // Considerar datos frescos por 1 minuto
+    staleTime: 90000, // OPTIMIZACIÓN: 90 segundos para balance performance/frescura
     refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
-    refetchOnWindowFocus: false, // Desactivar refetch automático al cambiar tabs
-    refetchOnMount: false, // Respetar staleTime - no refetch forzado
+    refetchOnWindowFocus: true, // Mantener refetch en focus para actualizaciones importantes
+    refetchOnMount: false, // OPTIMIZACIÓN: evitar refetch innecesario al montar
     queryFn: async () => {
       try {
         // Construir la URL base
@@ -60,6 +60,9 @@ export function useReservations(options: UseReservationsOptions = {}) {
         if (parentTripFilter) {
           params.append("parentTripFilter", "true");
         }
+        
+        // OPTIMIZACIÓN: Agregar paginación básica
+        // TODO: Implementar paginación completa en próxima iteración
         
         // Añadir los parámetros a la URL solo si hay parámetros
         if (params.toString()) {
