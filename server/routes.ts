@@ -682,6 +682,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const startTime = Date.now();
+      
+      // 📄 PAGINACIÓN: Extraer y validar parámetros
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+      const validLimit = Math.min(Math.max(limit, 1), 200); // Entre 1 y 200
+      const validOffset = Math.max(offset, 0); // No negativo
+      console.log(`[GET /reservations-optimized] 📄 Paginación: limit=${validLimit}, offset=${validOffset}`);
+      
       let companyId = null;
       
       // Aplicar filtros de compañía según el rol del usuario
@@ -700,8 +708,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[GET /reservations-optimized] Usuario normal - acceso a compañía:`, companyId);
       }
       
-      console.log(`[GET /reservations-optimized] Llamando getReservationsOptimized con companyId: ${companyId}`);
-      const reservations = await storage.getReservationsOptimized(companyId, user.id, user.role);
+      console.log(`[GET /reservations-optimized] Llamando getReservationsOptimized con companyId: ${companyId}, limit: ${validLimit}, offset: ${validOffset}`);
+      const reservations = await storage.getReservationsOptimized(companyId, user.id, user.role, validLimit, validOffset);
       
       const queryTime = Date.now() - startTime;
       console.log(`[GET /reservations-optimized] Obtenidas ${reservations.length} reservaciones en ${queryTime}ms`);

@@ -1320,7 +1320,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(schema.trips.id, recordId));
   }
   
-  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string): Promise<ReservationWithDetails[]> {
+  async getReservationsOptimized(companyId?: string, currentUserId?: number, userRole?: string, limit?: number, offset?: number): Promise<ReservationWithDetails[]> {
     console.log("[getReservationsOptimized] Iniciando consulta optimizada con JOINs");
     
     try {
@@ -1400,12 +1400,23 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(schema.routes, eq(schema.trips.routeId, schema.routes.id))
         .leftJoin(schema.users, eq(schema.trips.driverId, schema.users.id))
         .leftJoin(schema.vehicles, eq(schema.trips.vehicleId, schema.vehicles.id))
-        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id));
+        .leftJoin(schema.passengers, eq(schema.passengers.reservationId, schema.reservations.id))
+        .orderBy(desc(schema.reservations.createdAt), desc(schema.reservations.id)); // ORDER BY determinístico
       
       // Aplicar filtros
       if (companyId) {
         console.log(`[getReservationsOptimized] Filtrando por compañía: ${companyId}`);
         query.where(eq(schema.reservations.companyId, companyId));
+      }
+      
+      // 📄 PAGINACIÓN: Aplicar limit y offset para optimización (manejo correcto de offset=0)
+      if (typeof limit === 'number' && limit > 0) {
+        query = query.limit(limit);
+        console.log(`[getReservationsOptimized] 📄 Aplicando LIMIT: ${limit}`);
+      }
+      if (typeof offset === 'number' && offset >= 0) {
+        query = query.offset(offset);
+        console.log(`[getReservationsOptimized] 📄 Aplicando OFFSET: ${offset}`);
       }
       
       console.log("[getReservationsOptimized] Ejecutando consulta única con JOINs");
