@@ -2981,10 +2981,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const matchesDate = parentDate.toDateString() === targetDate.toDateString();
                 
                 if (matchesDate) {
-                  console.log(`[GET /reservations] ✅ INCLUIR GRUPO recordId ${recordId} con fecha padre ${group.parentTripDate} (${group.reservations.length} reservaciones)`);
                   filteredReservations.push(...group.reservations);
                 } else {
-                  console.log(`[GET /reservations] ❌ EXCLUIR GRUPO recordId ${recordId} - fecha padre ${group.parentTripDate} no coincide con ${dateFilter}`);
+                  // Grupo excluido por filtro de fecha
                 }
               }
             });
@@ -3412,7 +3411,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (newTripIdStr.includes('_')) {
         // Para sub-viajes: recordId = ID principal, tripId = formato completo
         recordIdForDetails = newTripIdStr.split('_')[0];
-        console.log(`[POST /reservations/transfer] Sub-viaje: recordId=${recordIdForDetails}, tripId=${newTripIdStr}`);
       }
       
       const newTripDetails = {
@@ -3583,7 +3581,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         numericRecordId = reservationData.tripDetails.recordId;
       }
       
-      console.log(`[POST /reservations] RecordId extraído: ${numericRecordId} (original: ${reservationData.tripDetails.recordId})`);
       
       // Get the trip using recordId from tripDetails
       const trip = await storage.getTrip(numericRecordId);
@@ -3592,7 +3589,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Trip record not found" });
       }
       
-      console.log(`[POST /reservations] Verificando tripDetails: recordId=${reservationData.tripDetails.recordId}, tripId=${reservationData.tripDetails.tripId}, seats=${reservationData.tripDetails.seats}`);
       
       const passengerCount = reservationData.passengers.length;
       
@@ -3726,7 +3722,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Obtener información del viaje usando el recordId y tripId específicos
           const { tripId } = reservationData.tripDetails;
-          console.log(`[POST /reservations] DEPURACIÓN - Obteniendo información para recordId=${numericRecordId}, tripId=${tripId}`);
           
           // Obtener la información específica del segmento del viaje
           const tripWithRouteInfo = await storage.getTripWithRouteInfo(numericRecordId);
@@ -3986,7 +3981,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const passengers = await storage.getPassengers(id);
       const passengerCount = passengers.length;
       
-      console.log(`[POST /reservations/${id}/cancel] Liberando ${passengerCount} asientos del viaje recordId: ${recordId}, tripId: ${tripId}`);
       
       // Actualizar el status de la reservación a cancelada
       const updatedReservation = await storage.updateReservation(id, {
@@ -4002,7 +3996,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Usar la función existente para actualizar asientos en viajes relacionados
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
-          console.log(`[POST /reservations/${id}/cancel] Asientos liberados exitosamente para recordId: ${recordId}, tripId: ${tripId}`);
         } catch (e) {
           console.error("Error al liberar asientos en viajes relacionados:", e);
           // No fallar la operación principal si esto falla
@@ -4065,7 +4058,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Actualizar todos los viajes afectados usando la nueva función con tripDetails
           await storage.updateRelatedTripsAvailability(recordId, tripId, passengerCount);
           
-          console.log(`Asientos actualizados para el registro ${recordId}, segmento ${tripId} y viajes relacionados.`);
         } catch (e) {
           console.error("Error al actualizar viajes relacionados:", e);
           // No fallamos si esto falla, podemos seguir con la operación principal
@@ -5125,7 +5117,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tripIndex = 0; // Usar el primer segmento por defecto
           }
           
-          console.log(`[GET /commissions/reservations] Procesando tripId: ${tripId}, recordId: ${recordId}, tripIndex: ${tripIndex}`);
           
           try {
             // Obtener el viaje específico usando recordId
@@ -6789,7 +6780,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const recordId = parseInt(tripIdString.split('_')[0]); // Extraer ID base del viaje
             
             if (!isNaN(recordId)) {
-              console.log(`[POST /packages] Usuario Taquilla sin companyId, buscando empresa del viaje ${recordId}`);
               
               // Obtener la empresa del viaje seleccionado
               const tripCompanyData = await db
@@ -6823,7 +6813,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
                 }
               } else {
-                console.log(`[POST /packages] ERROR: No se pudo obtener la empresa del viaje ${recordId}`);
                 return res.status(400).json({ 
                   message: "No se pudo determinar la empresa del viaje seleccionado" 
                 });

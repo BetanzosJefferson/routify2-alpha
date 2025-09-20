@@ -106,7 +106,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRoutes(companyId?: string): Promise<Route[]> {
-    console.log(companyId ? `DB Storage: Consultando rutas para la compañía: ${companyId}` : "DB Storage: Consultando todas las rutas");
     
     try {
       // Si se proporciona un companyId, filtrar por compañía
@@ -118,7 +117,6 @@ export class DatabaseStorage implements IStorage {
           .where(eq(schema.routes.companyId, companyId));
         
         const routeCount = parseInt(countQuery[0].count.toString());
-        console.log(`DB Storage: Existen ${routeCount} rutas para compañía ${companyId}`);
         
         // Obtener las rutas filtradas
         const routes = await db
@@ -126,19 +124,13 @@ export class DatabaseStorage implements IStorage {
           .from(schema.routes)
           .where(eq(schema.routes.companyId, companyId));
         
-        console.log(`DB Storage: Rutas filtradas encontradas: ${routes.length}`);
         
-        // Verificación adicional - imprimir datos para depuración
-        if (routes.length > 0) {
-          console.log(`DB Storage: Datos de rutas:`, JSON.stringify(routes));
-        }
         
         return routes;
       }
       
       // Si no hay filtro, obtener todas las rutas
       const routes = await db.select().from(schema.routes);
-      console.log(`DB Storage: Rutas encontradas: ${routes.length}`);
       return routes;
     } catch (error) {
       console.error(`DB Storage ERROR - getRoutes: ${error}`);
@@ -152,15 +144,9 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createRoute(route: InsertRoute): Promise<Route> {
-    console.log("DB Storage: Creando ruta con los datos:", JSON.stringify(route));
     
-    // Validación adicional para asegurar que rutas no superadmin tengan companyId
-    if (!route.companyId) {
-      console.log("DB Storage - ADVERTENCIA: Intento de crear ruta sin companyId");
-    }
     
     const [newRoute] = await db.insert(schema.routes).values(route).returning();
-    console.log("DB Storage: Ruta creada con ID:", newRoute.id, "CompanyId:", newRoute.companyId);
     return newRoute;
   }
   
@@ -3469,7 +3455,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getNotifications(userId: number): Promise<schema.Notification[]> {
-    console.log(`DB Storage: Consultando notificaciones para usuario ${userId}`);
     
     try {
       const currentTime = new Date();
@@ -3486,7 +3471,6 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(sql`${schema.notifications.createdAt} DESC`);
       
-      console.log(`DB Storage: Encontradas ${notifications.length} notificaciones válidas para usuario ${userId}`);
       
       // Ejecutar limpieza de notificaciones expiradas en segundo plano
       this.cleanupExpiredNotifications().catch(error => {
@@ -3501,7 +3485,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markNotificationAsRead(id: number): Promise<schema.Notification | undefined> {
-    console.log(`DB Storage: Marcando notificación ${id} como leída`);
     
     try {
       const [notification] = await db
@@ -3510,11 +3493,7 @@ export class DatabaseStorage implements IStorage {
         .where(eq(schema.notifications.id, id))
         .returning();
       
-      if (notification) {
-        console.log(`DB Storage: Notificación ${id} marcada como leída`);
-      } else {
-        console.log(`DB Storage: No se pudo marcar la notificación ${id} como leída`);
-      }
+      // Notificación procesada
       
       return notification;
     } catch (error) {
@@ -3552,7 +3531,6 @@ export class DatabaseStorage implements IStorage {
 
   // Método para limpiar notificaciones expiradas
   async cleanupExpiredNotifications(): Promise<number> {
-    console.log('DB Storage: Iniciando limpieza de notificaciones expiradas');
     
     try {
       const currentTime = new Date();
@@ -3563,7 +3541,6 @@ export class DatabaseStorage implements IStorage {
         .returning({ id: schema.notifications.id });
       
       const deletedCount = deletedResult.length;
-      console.log(`DB Storage: Eliminadas ${deletedCount} notificaciones expiradas`);
       
       return deletedCount;
     } catch (error) {
@@ -3574,25 +3551,21 @@ export class DatabaseStorage implements IStorage {
 
   // Paso 2: Validar disponibilidad de asientos antes de crear reservación
   async validateSeatAvailability(recordId: number, tripId: string, seatsRequested: number): Promise<boolean> {
-    console.log(`DB Storage: [validateSeatAvailability] Iniciando validación - Registro: ${recordId}, Segmento: ${tripId}, Asientos: ${seatsRequested}`);
     
     try {
       // 1. Validar parámetros de entrada
       if (!recordId || !tripId || seatsRequested <= 0) {
-        console.log(`DB Storage: [validateSeatAvailability] Parámetros inválidos - recordId: ${recordId}, tripId: ${tripId}, seats: ${seatsRequested}`);
         return false;
       }
       
       // 2. Obtener el registro del viaje
       const trip = await this.getTrip(recordId);
       if (!trip) {
-        console.log(`DB Storage: [validateSeatAvailability] Registro ${recordId} no encontrado`);
         return false;
       }
       
       // 3. Validar estructura de datos del viaje
       if (!trip.tripData || !Array.isArray(trip.tripData)) {
-        console.log(`DB Storage: [validateSeatAvailability] Registro ${recordId} sin datos de segmentos válidos`);
         return false;
       }
       
@@ -3602,7 +3575,6 @@ export class DatabaseStorage implements IStorage {
       if (typeof tripId === 'string' && tripId.includes('_')) {
         const tripIdParts = tripId.split('_');
         if (tripIdParts.length !== 2) {
-          console.log(`DB Storage: [validateSeatAvailability] Formato de tripId inválido: ${tripId}. Esperado: recordId_segmentIndex`);
           return false;
         }
         segmentIndex = parseInt(tripIdParts[1]);
@@ -3616,7 +3588,6 @@ export class DatabaseStorage implements IStorage {
         }
       }
       if (isNaN(segmentIndex) || segmentIndex < 0 || segmentIndex >= trip.tripData.length) {
-        console.log(`DB Storage: [validateSeatAvailability] Índice de segmento ${segmentIndex} fuera de rango para ${tripId}. Segmentos disponibles: ${trip.tripData.length}`);
         return false;
       }
       
