@@ -10494,15 +10494,28 @@ function setupPackageRoutes(app: Express) {
           const [time, modifier] = time12h.split(' ');
           let [hours, minutes] = time.split(':').map(Number);
           
+          // Si ya está en formato 24h (ej: "23:50 PM" es inválido, pero asumimos 23:50)
+          if (hours >= 13 && hours <= 23) {
+            console.log(`🚨 Dato inconsistente encontrado: ${time12h}, usando hora directamente: ${hours}:${minutes}`);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          }
+          
+          // Conversión normal de 12h a 24h
           if (hours === 12) {
             hours = modifier === 'AM' ? 0 : 12;
           } else {
             hours = modifier === 'AM' ? hours : hours + 12;
           }
           
+          // Validar que el resultado sea válido
+          if (hours >= 24 || hours < 0 || minutes >= 60 || minutes < 0) {
+            console.log(`🚨 Resultado inválido para ${time12h}: ${hours}:${minutes}, usando 00:00`);
+            return '00:00';
+          }
+          
           return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         } catch (e) {
-          console.log(`Error converting time ${time12h}:`, e);
+          console.log(`🚨 Error converting time ${time12h}:`, e, 'usando 00:00');
           return '00:00'; // fallback
         }
       }
