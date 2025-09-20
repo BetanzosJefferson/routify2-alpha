@@ -12,6 +12,10 @@ import { DefaultLayout } from '@/components/layout/default-layout';
 
 interface PeriodBalanceData {
   income: number;
+  incomeByMethod: {
+    efectivo: number;
+    transferencia: number;
+  };
   expenses: number;
   balance: number;
   transactionCount: number;
@@ -30,6 +34,7 @@ interface PeriodBalanceData {
       name: string;
     };
     amount: number;
+    paymentMethod: string;
   }>;
   tripsCount: number;
   trips: Array<{
@@ -239,10 +244,32 @@ function PeriodBalancePageContent() {
                 <TrendingUp className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(periodBalance.income)}
+                <div className="space-y-2">
+                  {/* Transferencias */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Transferencias:</span>
+                    <span className="text-sm font-medium text-blue-600">
+                      {formatCurrency(periodBalance.incomeByMethod?.transferencia || 0)}
+                    </span>
+                  </div>
+                  {/* Efectivo */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Efectivo:</span>
+                    <span className="text-sm font-medium text-green-600">
+                      {formatCurrency(periodBalance.incomeByMethod?.efectivo || 0)}
+                    </span>
+                  </div>
+                  {/* Separador */}
+                  <hr className="my-2" />
+                  {/* Total */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold">Total:</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {formatCurrency(periodBalance.income)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-2">
                   {periodBalance.transactionCount} transacción{periodBalance.transactionCount !== 1 ? 'es' : ''}
                 </p>
               </CardContent>
@@ -419,7 +446,11 @@ function PeriodBalancePageContent() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-green-600">
+                              <span className={`font-bold ${
+                                transaction.paymentMethod === 'transferencia' 
+                                  ? 'text-blue-600' 
+                                  : 'text-green-600'
+                              }`}>
                                 {formatCurrency(transaction.amount)}
                               </span>
                             </div>

@@ -10405,9 +10405,18 @@ function setupPackageRoutes(app: Express) {
         endDateTime: endDate.toISOString()      // Fecha completa con hora
       });
       
-      // Extraer el monto correcto de la estructura de transacciones
-      const totalIncome = transactions.reduce((sum, transaction) => {
+      // Calcular ingresos totales y por método de pago
+      let totalIncome = 0;
+      const incomeByMethod = {
+        efectivo: 0,
+        transferencia: 0
+      };
+      
+      // Procesar transacciones para extraer montos y métodos de pago
+      const processedTransactions = transactions.map(transaction => {
         let amount = 0;
+        let paymentMethod = 'efectivo'; // default
+        
         if (transaction.details) {
           // Parsing defensivo para campos JSON que pueden ser strings en producción
           let parsedDetails;
@@ -10429,14 +10438,31 @@ function setupPackageRoutes(app: Express) {
             if (parsedDetails.details && parsedDetails.details.monto) {
               // Estructura: details.details.monto (reservaciones)
               amount = parsedDetails.details.monto;
+              // Obtener método de pago de la estructura de reservación
+              paymentMethod = parsedDetails.details.metodoPago || 'efectivo';
             } else if (parsedDetails.amount) {
               // Estructura: details.amount (otros tipos)
               amount = parsedDetails.amount;
+              paymentMethod = parsedDetails.paymentMethod || 'efectivo';
             }
           }
         }
-        return sum + (amount || 0);
-      }, 0);
+        
+        // Acumular totales por método de pago
+        totalIncome += (amount || 0);
+        if (paymentMethod === 'transferencia') {
+          incomeByMethod.transferencia += (amount || 0);
+        } else {
+          incomeByMethod.efectivo += (amount || 0);
+        }
+        
+        // Retornar transacción procesada con información adicional
+        return {
+          ...transaction,
+          amount: amount || 0,
+          paymentMethod: paymentMethod
+        };
+      });
       
       // Obtener gastos de la empresa
       const expenses = await storage.getExpenses(userCompany);
@@ -10558,9 +10584,10 @@ function setupPackageRoutes(app: Express) {
         income: totalIncome,
         expenses: totalExpenses,
         balance: balance,
+        incomeByMethod: incomeByMethod, // Desglose por método de pago
         transactionCount: transactions.length,
         expenseBreakdown: expenseBreakdown,
-        transactions: transactions, // Incluir transacciones completas
+        transactions: processedTransactions, // Incluir transacciones procesadas con método de pago
         tripsCount: tripsInPeriod.length,
         trips: tripsWithOperatorAndExpenses, // Viajes con operador y gastos
         tripExpenses: allTripExpenses, // Todos los gastos de viajes
