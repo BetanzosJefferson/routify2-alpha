@@ -7,7 +7,7 @@ export const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: true, // OPTIMIZACIÓN: Mantener refetch en focus
       retry: 2, // Aumentamos los reintentos a 2
-      staleTime: 90000, // OPTIMIZACIÓN: 90 segundos para balance performance/frescura
+      staleTime: 30000, // OPTIMIZACIÓN: 30 segundos para datos más frescos
       gcTime: 10 * 60 * 1000, // Mantener en caché por 10 minutos (antes llamado cacheTime)
       // Asegurar que datos compartidos entre secciones estén disponibles
       structuralSharing: true,

@@ -31,10 +31,10 @@ export function useReservations(options: UseReservationsOptions = {}) {
       parentTripFilter 
     }),
     enabled: !!user && enabled,
-    staleTime: 90000, // OPTIMIZACIÓN: 90 segundos para balance performance/frescura
+    staleTime: 15000, // OPTIMIZACIÓN: 15 segundos para datos más frescos (reservaciones cambian frecuentemente)
     refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
     refetchOnWindowFocus: true, // Mantener refetch en focus para actualizaciones importantes
-    refetchOnMount: false, // OPTIMIZACIÓN: evitar refetch innecesario al montar
+    refetchOnMount: true, // CRÍTICO: Refetch al montar para datos frescos
     queryFn: async () => {
       try {
         // Construir la URL base - REVERTIR temporalmente mientras arreglo JOIN issue
