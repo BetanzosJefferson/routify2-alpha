@@ -10627,16 +10627,19 @@ function setupPackageRoutes(app: Express) {
       const allReservations = await storage.getReservations(userCompany);
       
       // Filtrar reservaciones con comisiones pendientes en el período de tiempo
+      // Usar el mismo criterio de tiempo que las transacciones
       const pendingCommissionsInPeriod = allReservations.filter(reservation => {
         // Solo incluir reservaciones con comisiones pendientes
         if (reservation.commissionPaid) {
           return false;
         }
         
-        // Verificar que la reservación esté en el rango de fechas
+        // Verificar que la reservación esté en el rango de fechas usando el mismo criterio que las transacciones
         try {
+          // Convertir createdAt a zona horaria de México para comparar
           const reservationDate = new Date(reservation.createdAt);
-          return reservationDate >= startDate && reservationDate <= endDate;
+          // Usar UTC para comparar con el rango de fechas startDateTime/endDateTime
+          return reservationDate >= startDateTime && reservationDate <= endDateTime;
         } catch (e) {
           console.log(`[GET /period-balance] Error parsing reservation date for ${reservation.id}:`, e);
           return false;
@@ -10649,13 +10652,42 @@ function setupPackageRoutes(app: Express) {
           // Obtener información del comisionista
           let commissionAgent = null;
           if (reservation.commissionUserId) {
-            commissionAgent = await storage.getUser(reservation.commissionUserId);
+            try {
+              commissionAgent = await storage.getUser(reservation.commissionUserId);
+            } catch (error) {
+              console.log(`[GET /period-balance] Error getting commission agent ${reservation.commissionUserId}:`, error);
+            }
           }
           
-          // Obtener información del viaje
+          // Obtener información del viaje - buscar por recordId o tripId
           let trip = null;
-          if (reservation.tripId) {
-            trip = await storage.getTrip(reservation.tripId);
+          const tripId = reservation.recordId || reservation.tripId;
+          if (tripId) {
+            try {
+              // Si recordId incluye un sub-trip (formato "tripId_segmentIndex"), extraer solo el tripId
+              const mainTripId = typeof tripId === 'string' && tripId.includes('_') ? 
+                parseInt(tripId.split('_')[0]) : tripId;
+              
+              trip = await storage.getTrip(mainTripId);
+              
+              // Si no encontramos el viaje, buscar en tripDetails como alternativa
+              if (!trip && reservation.tripDetails) {
+                const tripDetails = typeof reservation.tripDetails === 'string' ? 
+                  JSON.parse(reservation.tripDetails) : reservation.tripDetails;
+                  
+                if (tripDetails && tripDetails.origin && tripDetails.destination) {
+                  trip = {
+                    id: mainTripId,
+                    origin: tripDetails.origin,
+                    destination: tripDetails.destination,
+                    departureDate: tripDetails.departureDate,
+                    departureTime: tripDetails.departureTime
+                  };
+                }
+              }
+            } catch (error) {
+              console.log(`[GET /period-balance] Error getting trip ${tripId}:`, error);
+            }
           }
           
           // Calcular comisión

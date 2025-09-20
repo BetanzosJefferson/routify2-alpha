@@ -80,6 +80,7 @@ function PeriodBalancePageContent() {
   const [isTripExpensesExpanded, setIsTripExpensesExpanded] = useState(true);
   const [isTripExpensesSummaryExpanded, setIsTripExpensesSummaryExpanded] = useState(false);
   const [isPendingCommissionsExpanded, setIsPendingCommissionsExpanded] = useState(false);
+  const [isCommissionsBreakdownExpanded, setIsCommissionsBreakdownExpanded] = useState(true);
 
   // Generar valores por defecto para las fechas
   const generateDefaultDates = () => {
@@ -362,117 +363,22 @@ function PeriodBalancePageContent() {
               </CardContent>
             </Card>
 
-            <Collapsible.Root open={isPendingCommissionsExpanded} onOpenChange={setIsPendingCommissionsExpanded}>
-              <Card>
-                <Collapsible.Trigger asChild>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                    <div>
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-yellow-600" />
-                        Comisiones Pendientes
-                      </CardTitle>
-                      <div className="text-2xl font-bold text-yellow-600 mt-1">
-                        {formatCurrency(periodBalance.pendingCommissions || 0)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {periodBalance.pendingCommissionsCount || 0} comisión{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 'es' : ''} pendiente{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    {isPendingCommissionsExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-500" />
-                    )}
-                  </CardHeader>
-                </Collapsible.Trigger>
-                <Collapsible.Content>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {/* Desglose de comisiones pendientes */}
-                      {periodBalance.pendingCommissionsDetails && periodBalance.pendingCommissionsDetails.length > 0 ? (
-                        periodBalance.pendingCommissionsDetails.map((reservation) => (
-                          <div key={reservation.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <User className="w-4 h-4 text-yellow-600" />
-                                <span className="font-medium">Reservación #{reservation.id}</span>
-                                <span className="text-sm text-muted-foreground">- {reservation.passengerName}</span>
-                              </div>
-                              <div className="text-sm text-muted-foreground space-y-1">
-                                <p>Comisionista: {reservation.commissionAgent ? `${reservation.commissionAgent.firstName} ${reservation.commissionAgent.lastName}` : 'No asignado'}</p>
-                                <p>Viaje: {reservation.trip ? `${reservation.trip.origin} → ${reservation.trip.destination}` : 'Información no disponible'}</p>
-                                <p>Fecha: {new Date(reservation.createdAt).toLocaleDateString('es-MX')}</p>
-                                <p>Monto reservación: {formatCurrency(reservation.totalAmount)}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-lg font-semibold text-yellow-600">
-                                {formatCurrency(reservation.commissionAmount)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                4.44% comisión
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center text-muted-foreground py-4">
-                          No hay comisiones pendientes en este período
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Collapsible.Content>
-              </Card>
-            </Collapsible.Root>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Comisiones Pendientes</CardTitle>
+                <FileText className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {formatCurrency(periodBalance.pendingCommissions || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {periodBalance.pendingCommissionsCount || 0} comisión{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 'es' : ''} pendiente{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 's' : ''}
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
-
-          {/* Desglose de gastos con dropdown */}
-          {periodBalance.expenseBreakdown.length > 0 && (
-            <Collapsible.Root open={isExpensesExpanded} onOpenChange={setIsExpensesExpanded}>
-              <Card>
-                <Collapsible.Trigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>Desglose de Gastos</CardTitle>
-                        <CardDescription>
-                          Gastos proporcionales calculados por horas en el periodo seleccionado
-                        </CardDescription>
-                      </div>
-                      {isExpensesExpanded ? (
-                        <ChevronUp className="h-5 w-5 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-gray-500" />
-                      )}
-                    </div>
-                  </CardHeader>
-                </Collapsible.Trigger>
-                <Collapsible.Content>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {periodBalance.expenseBreakdown.map((expense, index) => (
-                        <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                          <div>
-                            <p className="font-medium capitalize">{expense.category}</p>
-                            <p className="text-sm font-medium text-gray-700">{expense.concept}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Total: {formatCurrency(expense.amount)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold">{formatCurrency(expense.proportionalAmount)}</p>
-                            <p className="text-xs text-muted-foreground">Proporcional</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Collapsible.Content>
-              </Card>
-            </Collapsible.Root>
-          )}
 
           {/* Desglose de transacciones con dropdown */}
           {periodBalance.transactions && periodBalance.transactions.length > 0 && (
@@ -569,6 +475,167 @@ function PeriodBalancePageContent() {
                               )}
                             </div>
                           )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
+          )}
+
+          {/* Desglose de comisiones pendientes */}
+          {periodBalance.pendingCommissionsDetails && periodBalance.pendingCommissionsDetails.length > 0 && (
+            <Collapsible.Root open={isCommissionsBreakdownExpanded} onOpenChange={setIsCommissionsBreakdownExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-yellow-600" />
+                          Desglose de Comisiones Pendientes
+                        </CardTitle>
+                        <CardDescription>
+                          Comisiones pendientes de pago en el periodo seleccionado
+                        </CardDescription>
+                      </div>
+                      {isCommissionsBreakdownExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                      )}
+                    </div>
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {periodBalance.pendingCommissionsDetails.map((reservation) => (
+                        <div key={reservation.id} className="border rounded-lg p-4 hover:bg-yellow-50">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-yellow-600" />
+                              <span className="font-medium">Reservación #{reservation.id}</span>
+                              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                                Comisión Pendiente
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-bold text-yellow-600">
+                                {formatCurrency(reservation.commissionAmount)}
+                              </span>
+                              <div className="text-xs text-muted-foreground">
+                                4.44% comisión
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <User className="w-3 h-3" />
+                              <span className="text-muted-foreground">Pasajero:</span>
+                              <span>{reservation.passengerName || 'No especificado'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3 h-3" />
+                              <span className="text-muted-foreground">Fecha:</span>
+                              <span>{new Date(reservation.createdAt).toLocaleDateString('es-MX')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-3 h-3" />
+                              <span className="text-muted-foreground">Monto reservación:</span>
+                              <span>{formatCurrency(reservation.totalAmount)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <User className="w-3 h-3" />
+                              <span className="text-muted-foreground">Comisionista:</span>
+                              <span>
+                                {reservation.commissionAgent ? 
+                                  `${reservation.commissionAgent.firstName} ${reservation.commissionAgent.lastName}` : 
+                                  'No asignado'
+                                }
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Información del viaje */}
+                          {reservation.trip && (
+                            <div className="mt-3 pt-3 border-t">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                  <div>
+                                    <span className="font-medium text-gray-600">Origen:</span>
+                                    <div className="text-gray-700">{reservation.trip.origin}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="w-3 h-3 text-gray-500 mt-0.5" />
+                                  <div>
+                                    <span className="font-medium text-gray-600">Destino:</span>
+                                    <div className="text-gray-700">{reservation.trip.destination}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-3 h-3 text-gray-500" />
+                                  <span className="font-medium text-gray-600">Fecha viaje:</span>
+                                  <span>{new Date(reservation.trip.departureDate).toLocaleDateString('es-MX')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3 h-3 text-gray-500" />
+                                  <span className="font-medium text-gray-600">Hora:</span>
+                                  <span>{reservation.trip.departureTime}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
+          )}
+
+          {/* Desglose de gastos con dropdown */}
+          {periodBalance.expenseBreakdown.length > 0 && (
+            <Collapsible.Root open={isExpensesExpanded} onOpenChange={setIsExpensesExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Desglose de Gastos</CardTitle>
+                        <CardDescription>
+                          Gastos proporcionales calculados por horas en el periodo seleccionado
+                        </CardDescription>
+                      </div>
+                      {isExpensesExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                      )}
+                    </div>
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {periodBalance.expenseBreakdown.map((expense, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                          <div>
+                            <p className="font-medium capitalize">{expense.category}</p>
+                            <p className="text-sm font-medium text-gray-700">{expense.concept}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Total: {formatCurrency(expense.amount)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">{formatCurrency(expense.proportionalAmount)}</p>
+                            <p className="text-xs text-muted-foreground">Proporcional</p>
+                          </div>
                         </div>
                       ))}
                     </div>
