@@ -10566,9 +10566,10 @@ function setupPackageRoutes(app: Express) {
           // Convertir formato AM/PM a 24 horas
           const time24h = convertTo24Hour(timeStr);
           
-          // Combinar fecha y hora
-          const fullDateTimeStr = `${dateStr}T${time24h}:00.000Z`;
-          tripDateTime = new Date(fullDateTimeStr);
+          // Combinar fecha y hora EN ZONA HORARIA DE MÉXICO (UTC-6)
+          const fullDateTimeStr = `${dateStr}T${time24h}:00.000`;
+          // Crear fecha en zona horaria local de México y luego convertir a UTC
+          tripDateTime = new Date(fullDateTimeStr + '-06:00'); // UTC-6 (México)
           
           console.log(`🕰 VIAJE ${trip.id}: date=${dateStr}, time=${timeStr}, time24h=${time24h}, combined=${fullDateTimeStr}`);
         } catch (e) {
