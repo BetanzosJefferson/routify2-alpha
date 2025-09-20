@@ -666,7 +666,7 @@ function PeriodBalancePageContent() {
          
                 {periodBalance.trips && periodBalance.trips.length > 0 && (
                   <div className="space-y-3">
-                    {periodBalance.trips.slice(0, 5).map((trip) => {
+                    {periodBalance.trips.map((trip) => {
                       const mainTrip = trip.tripData?.find((t: any) => t.isMainTrip);
                       if (!mainTrip) return null;
                       
@@ -746,11 +746,6 @@ function PeriodBalancePageContent() {
                       );
                     })}
                     
-                    {periodBalance.trips.length > 5 && (
-                      <div className="text-center text-sm text-muted-foreground">
-                        ... y {periodBalance.trips.length - 5} viajes más
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>
