@@ -10634,12 +10634,28 @@ function setupPackageRoutes(app: Express) {
           return false;
         }
         
+        // Debugging específico para reservación 683
+        if (reservation.id === 683) {
+          console.log(`[DEBUG 683] Reservación 683 encontrada:`);
+          console.log(`[DEBUG 683]   commissionPaid: ${reservation.commissionPaid}`);
+          console.log(`[DEBUG 683]   createdAt: ${reservation.createdAt}`);
+          console.log(`[DEBUG 683]   startDateTime: ${startDateTime}`);
+          console.log(`[DEBUG 683]   endDateTime: ${endDateTime}`);
+        }
+        
         // Verificar que la reservación esté en el rango de fechas usando el mismo criterio que las transacciones
         try {
           // Convertir createdAt a zona horaria de México para comparar
           const reservationDate = new Date(reservation.createdAt);
-          // Usar UTC para comparar con el rango de fechas startDateTime/endDateTime
-          return reservationDate >= startDateTime && reservationDate <= endDateTime;
+          const isInRange = reservationDate >= startDateTime && reservationDate <= endDateTime;
+          
+          // Debugging específico para reservación 683
+          if (reservation.id === 683) {
+            console.log(`[DEBUG 683]   reservationDate: ${reservationDate}`);
+            console.log(`[DEBUG 683]   isInRange: ${isInRange}`);
+          }
+          
+          return isInRange;
         } catch (e) {
           console.log(`[GET /period-balance] Error parsing reservation date for ${reservation.id}:`, e);
           return false;
