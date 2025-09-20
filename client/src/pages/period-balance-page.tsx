@@ -535,7 +535,12 @@ function PeriodBalancePageContent() {
                             <div className="flex items-center gap-2">
                               <User className="w-3 h-3" />
                               <span className="text-muted-foreground">Pasajero:</span>
-                              <span>{reservation.passengerName || 'No especificado'}</span>
+                              <span>
+                                {reservation.passenger ? 
+                                  reservation.passenger.fullName : 
+                                  'No especificado'
+                                }
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-3 h-3" />

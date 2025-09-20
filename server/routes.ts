@@ -10686,7 +10686,7 @@ function setupPackageRoutes(app: Express) {
           // Obtener información del pasajero desde la tabla passengers
           let passengerInfo = null;
           try {
-            const passengers = await storage.getPassengersByReservation(reservation.id);
+            const passengers = await storage.getPassengers(reservation.id);
             if (passengers && passengers.length > 0) {
               const passenger = passengers[0]; // Tomar el primer pasajero
               passengerInfo = {
