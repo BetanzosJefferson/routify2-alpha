@@ -4389,7 +4389,6 @@ export class DatabaseStorage implements IStorage {
           tripDetails: tripDetails
         };
         
-        console.log(`DB Storage: [OPTIMIZED] Paquete ${pkg.id} - Origen: ${result.tripOrigin}, Destino: ${result.tripDestination}${creator ? `, Creado por: ${creator.firstName} ${creator.lastName}` : ''}${operatorInfo.operatorFirstName ? `, Operador: ${operatorInfo.operatorFirstName} ${operatorInfo.operatorLastName}` : ''}`);
         
         return result;
       }));
@@ -4428,12 +4427,10 @@ export class DatabaseStorage implements IStorage {
       `);
       
       if (!packageResult.rows || packageResult.rows.length === 0) {
-        console.log(`DB Storage: [OPTIMIZED] Paquete ${id} no encontrado`);
         return undefined;
       }
 
       const packageData = packageResult.rows[0] as any;
-      console.log(`DB Storage: [OPTIMIZED] Paquete ${id} encontrado`);
 
       // Obtener información de usuarios relacionados (creador, paid_by, delivered_by)
       const userIds = [packageData.created_by, packageData.paid_by, packageData.delivered_by].filter(Boolean);
@@ -4552,7 +4549,6 @@ export class DatabaseStorage implements IStorage {
         trip: trip
       };
 
-      console.log(`DB Storage: [OPTIMIZED] Paquete ${id} procesado exitosamente`);
       return result;
     } catch (error) {
       console.error(`DB Storage: Error al obtener paquete con información del viaje ${id}:`, error);
@@ -4569,7 +4565,6 @@ export class DatabaseStorage implements IStorage {
         .values(packageData)
         .returning();
       
-      console.log(`DB Storage: Paquete creado exitosamente con ID ${newPackage.id}`);
       return newPackage;
     } catch (error) {
       console.error(`DB Storage: Error al crear paquete:`, error);
