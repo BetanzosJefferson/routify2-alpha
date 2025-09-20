@@ -10488,12 +10488,31 @@ function setupPackageRoutes(app: Express) {
         };
       });
 
+      // Función auxiliar para convertir formato AM/PM a 24 horas
+      function convertTo24Hour(time12h: string): string {
+        try {
+          const [time, modifier] = time12h.split(' ');
+          let [hours, minutes] = time.split(':').map(Number);
+          
+          if (hours === 12) {
+            hours = modifier === 'AM' ? 0 : 12;
+          } else {
+            hours = modifier === 'AM' ? hours : hours + 12;
+          }
+          
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        } catch (e) {
+          console.log(`Error converting time ${time12h}:`, e);
+          return '00:00'; // fallback
+        }
+      }
+
       // Obtener viajes realizados en el período (solo viajes padre)
       const trips = await storage.getTrips(userCompany, false); // false = solo viajes principales
       
       console.log(`[GET /period-balance] Total viajes obtenidos: ${trips.length}`);
       
-      // Filtrado corregido: usar comparación directa de strings de fecha sin conversiones de timezone
+      // Filtrado corregido: usar fecha y hora completa combinando departureDate + departureTime
       const tripsInPeriod = trips.filter(trip => {
         // Parsing defensivo para tripData que puede ser string JSON en producción
         let parsedTripData;
@@ -10524,12 +10543,23 @@ function setupPackageRoutes(app: Express) {
           return false;
         }
         
-        // Extraer fecha y hora completa para comparar exactamente igual que las transacciones
+        // Combinar departureDate y departureTime para obtener la fecha y hora completa
         let tripDateTime;
         try {
-          tripDateTime = new Date(mainTrip.departureDate);
+          // departureDate tiene la fecha, departureTime tiene la hora
+          const dateStr = mainTrip.departureDate.split('T')[0]; // "2025-09-19"
+          const timeStr = mainTrip.departureTime; // "17:50 PM" o "10:00 AM"
+          
+          // Convertir formato AM/PM a 24 horas
+          const time24h = convertTo24Hour(timeStr);
+          
+          // Combinar fecha y hora
+          const fullDateTimeStr = `${dateStr}T${time24h}:00.000Z`;
+          tripDateTime = new Date(fullDateTimeStr);
+          
+          console.log(`🕰 VIAJE ${trip.id}: date=${dateStr}, time=${timeStr}, time24h=${time24h}, combined=${fullDateTimeStr}`);
         } catch (e) {
-          console.log(`[GET /period-balance] Error parsing departureDate para viaje ${trip.id}:`, e);
+          console.log(`[GET /period-balance] Error parsing date/time para viaje ${trip.id}:`, e);
           return false;
         }
         
