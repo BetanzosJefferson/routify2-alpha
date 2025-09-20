@@ -1725,6 +1725,9 @@ export class DatabaseStorage implements IStorage {
       // OPTIMIZACIÓN CRÍTICA: Usar batch loading optimizado para evitar consultas IN grandes
       console.log(`[OPTIMIZED] Cargando datos relacionados: ${tripIds.size} trips, ${createdByIds.size} users, ${reservationIds.size} passengers`);
       
+      // PERFORMANCE LOG: Inicio de carga de datos relacionados
+      const relatedDataStartTime = Date.now();
+      
       const [trips, creators, allPassengers] = await Promise.all([
         tripIds.size > 0 
           ? this.batchLoad(Array.from(tripIds), async (batchIds: number[]) => {
@@ -1744,6 +1747,10 @@ export class DatabaseStorage implements IStorage {
           : Promise.resolve([])
       ]);
       
+      // PERFORMANCE LOG: Primera fase de carga completada
+      const firstPhaseTime = Date.now() - relatedDataStartTime;
+      console.log(`[PERF] Primera fase de carga (trips, creators, passengers): ${firstPhaseTime}ms`);
+      
       // Recolectar IDs adicionales de los trips
       const routeIds = new Set<number>();
       const vehicleIds = new Set<number>();
@@ -1754,6 +1761,9 @@ export class DatabaseStorage implements IStorage {
         if (trip.vehicleId) vehicleIds.add(trip.vehicleId);
         if (trip.driverId) driverIds.add(trip.driverId);
       });
+      
+      // PERFORMANCE LOG: Inicio de segunda fase de carga
+      const secondPhaseStartTime = Date.now();
       
       // OPTIMIZACIÓN: Batch loading para segunda ronda con cache para routes y vehicles
       const [routes, vehicles, drivers] = await Promise.all([
@@ -1789,6 +1799,11 @@ export class DatabaseStorage implements IStorage {
           : Promise.resolve([])
       ]);
       
+      // PERFORMANCE LOG: Segunda fase de carga completada
+      const secondPhaseTime = Date.now() - secondPhaseStartTime;
+      console.log(`[PERF] Segunda fase de carga (routes, vehicles, drivers): ${secondPhaseTime}ms`);
+      console.log(`[PERF] Tiempo total de carga de datos relacionados: ${Date.now() - relatedDataStartTime}ms`);
+      
       // Crear mapas para acceso rápido
       const tripMap = new Map(trips.map(t => [t.id, t]));
       const routeMap = new Map(routes.map(r => [r.id, r]));
@@ -1806,10 +1821,17 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`[OPTIMIZED] Datos relacionados cargados en ${Date.now() - startTime}ms`);
       
+      // PERFORMANCE LOG: Inicio del procesamiento de reservaciones
+      const processingStartTime = Date.now();
+      console.log(`[PERF] Iniciando procesamiento de ${reservations.length} reservaciones`);
+      
       // Ensamblar resultados
       const results: ReservationWithDetails[] = [];
+      let missingTripsCount = 0;
+      let processedCount = 0;
       
       for (const reservation of reservations) {
+        processedCount++;
         // Parse tripDetails
         let tripDetails = null;
         try {
@@ -1830,7 +1852,9 @@ export class DatabaseStorage implements IStorage {
         const numericRecordId = parseInt(tripDetails.recordId);
         const tripRecord = tripMap.get(numericRecordId);
         if (!tripRecord) {
+          missingTripsCount++;
           console.warn(`[OPTIMIZED] Trip record ${tripDetails.recordId} (converted to ${numericRecordId}) not found`);
+          console.log(`[PERF] ❌ Missing trip ${numericRecordId} for reservation ${reservation.id} (${missingTripsCount} total missing)`);
           continue;
         }
         
@@ -2016,7 +2040,19 @@ export class DatabaseStorage implements IStorage {
         results.push(reservationResult);
       }
       
+      const processingTime = Date.now() - processingStartTime;
       const totalTime = Date.now() - startTime;
+      
+      // PERFORMANCE LOG: Resumen completo de rendimiento
+      console.log(`[PERF] === RESUMEN DE RENDIMIENTO ===`);
+      console.log(`[PERF] Consulta inicial: ${relatedDataStartTime - startTime}ms`);
+      console.log(`[PERF] Carga de datos relacionados: ${Date.now() - relatedDataStartTime - processingTime}ms`);
+      console.log(`[PERF] Procesamiento de reservaciones: ${processingTime}ms`);
+      console.log(`[PERF] Reservaciones procesadas: ${processedCount}, resultados válidos: ${results.length}`);
+      console.log(`[PERF] Trips no encontrados: ${missingTripsCount} (causa de lentitud)`);
+      console.log(`[PERF] TIEMPO TOTAL: ${totalTime}ms`);
+      console.log(`[PERF] === FIN RESUMEN ===`);
+      
       console.log(`[OPTIMIZED] Reservaciones procesadas: ${results.length}, tiempo total: ${totalTime}ms`);
       console.log(`[OPTIMIZED] Mejora de rendimiento: Eliminadas consultas N+1, tiempo total: ${totalTime}ms`);
       
