@@ -5103,8 +5103,10 @@ export class DatabaseStorage implements IStorage {
   // Método para obtener historial de transacciones con filtros
   async getTransactionHistory(params: {
     companyId: string;
-    startDate?: string;
-    endDate?: string;
+    startDate?: string;      // Mantener para compatibilidad
+    endDate?: string;        // Mantener para compatibilidad
+    startDateTime?: string;  // NUEVO: Filtro por fecha y hora específica
+    endDateTime?: string;    // NUEVO: Filtro por fecha y hora específica
     userId?: number;
     cutoffId?: number;
     paymentMethod?: string;
@@ -5139,13 +5141,22 @@ export class DatabaseStorage implements IStorage {
       if (params.transactionId) {
         baseConditions.push(eq(schema.transacciones.id, params.transactionId));
       } else {
-        // Filtros de fecha solo si no hay búsqueda por ID (búsqueda global por ID ignora fechas)
-        if (params.startDate) {
-          // Convertir fecha a zona horaria de Ciudad de México y obtener el inicio del día
+        // Filtros de fecha y hora - priorizar filtros precisos con hora
+        if (params.startDateTime) {
+          // FIX: Filtro preciso por fecha y hora (nuevo comportamiento)
+          console.log(`DB Storage: Aplicando filtro startDateTime >= ${params.startDateTime}`);
+          baseConditions.push(sql`${schema.transacciones.createdAt} AT TIME ZONE 'America/Mexico_City' >= ${params.startDateTime}`);
+        } else if (params.startDate) {
+          // Filtro legacy por fecha completa (mantener compatibilidad)
           baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') >= ${params.startDate}`);
         }
-        if (params.endDate) {
-          // Convertir fecha a zona horaria de Ciudad de México y obtener el final del día
+        
+        if (params.endDateTime) {
+          // FIX: Filtro preciso por fecha y hora (nuevo comportamiento)
+          console.log(`DB Storage: Aplicando filtro endDateTime <= ${params.endDateTime}`);
+          baseConditions.push(sql`${schema.transacciones.createdAt} AT TIME ZONE 'America/Mexico_City' <= ${params.endDateTime}`);
+        } else if (params.endDate) {
+          // Filtro legacy por fecha completa (mantener compatibilidad)
           baseConditions.push(sql`DATE(${schema.transacciones.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE 'America/Mexico_City') <= ${params.endDate}`);
         }
       }

@@ -10398,10 +10398,11 @@ function setupPackageRoutes(app: Express) {
       const userCompany = user.companyId || user.company;
       
       // Obtener transacciones (ingresos) en el rango de fechas con información del usuario
+      // FIX: Enviar fecha completa con hora en zona horaria local CDMX
       const transactions = await storage.getTransactionHistory({
         companyId: userCompany,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
+        startDateTime: startDate.toISOString(), // Fecha completa con hora
+        endDateTime: endDate.toISOString()      // Fecha completa con hora
       });
       
       // Extraer el monto correcto de la estructura de transacciones
