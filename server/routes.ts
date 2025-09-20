@@ -10524,23 +10524,23 @@ function setupPackageRoutes(app: Express) {
           return false;
         }
         
-        // Extraer fecha como string directamente, sin conversiones de timezone
-        let tripDateStr;
+        // Extraer fecha y hora completa para comparar exactamente igual que las transacciones
+        let tripDateTime;
         try {
-          tripDateStr = mainTrip.departureDate.split('T')[0]; // "2025-09-12"
+          tripDateTime = new Date(mainTrip.departureDate);
         } catch (e) {
           console.log(`[GET /period-balance] Error parsing departureDate para viaje ${trip.id}:`, e);
           return false;
         }
         
-        // Extraer fechas del rango también como strings directos
-        const startDateStr = (startDateTime as string).split('T')[0]; // "2025-09-10"
-        const endDateStr = (endDateTime as string).split('T')[0]; // "2025-09-11"
+        // Usar mismo filtrado por fecha y hora que las transacciones
+        const startDate = new Date(startDateTime as string);
+        const endDate = new Date(endDateTime as string);
         
-        console.log(`[GET /period-balance] Viaje ${trip.id}: fecha=${tripDateStr}, rango=${startDateStr} - ${endDateStr}`);
+        console.log(`🔥 VIAJE ${trip.id}: departureDateTime=${tripDateTime.toISOString()}, rango=${startDate.toISOString()} - ${endDate.toISOString()}`);
         
-        const isInRange = tripDateStr >= startDateStr && tripDateStr <= endDateStr;
-        console.log(`[GET /period-balance] Viaje ${trip.id}: ${isInRange ? 'INCLUIDO' : 'EXCLUIDO'}`);
+        const isInRange = tripDateTime >= startDate && tripDateTime <= endDate;
+        console.log(`🔥 VIAJE ${trip.id}: ${isInRange ? 'INCLUIDO ✅' : 'EXCLUIDO ❌'}`);
         
         return isInRange;
       });
