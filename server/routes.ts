@@ -10669,14 +10669,34 @@ function setupPackageRoutes(app: Express) {
       // Obtener detalles de comisionistas y viajes para las reservaciones pendientes
       const pendingCommissionsWithDetails = await Promise.all(
         pendingCommissionsInPeriod.map(async (reservation) => {
-          // Obtener información del comisionista
+          // Obtener información del comisionista - usar createdBy como comisionista
           let commissionAgent = null;
-          if (reservation.commissionUserId) {
+          if (reservation.createdBy) {
             try {
-              commissionAgent = await storage.getUser(reservation.commissionUserId);
+              const user = await storage.getUser(reservation.createdBy);
+              // Solo asignar como comisionista si el rol es comisionista
+              if (user && user.role === 'comisionista') {
+                commissionAgent = user;
+              }
             } catch (error) {
-              console.log(`[GET /period-balance] Error getting commission agent ${reservation.commissionUserId}:`, error);
+              console.log(`[GET /period-balance] Error getting commission agent ${reservation.createdBy}:`, error);
             }
+          }
+          
+          // Obtener información del pasajero desde la tabla passengers
+          let passengerInfo = null;
+          try {
+            const passengers = await storage.getPassengersByReservation(reservation.id);
+            if (passengers && passengers.length > 0) {
+              const passenger = passengers[0]; // Tomar el primer pasajero
+              passengerInfo = {
+                firstName: passenger.firstName,
+                lastName: passenger.lastName,
+                fullName: `${passenger.firstName} ${passenger.lastName}`.trim()
+              };
+            }
+          } catch (error) {
+            console.log(`[GET /period-balance] Error getting passenger for reservation ${reservation.id}:`, error);
           }
           
           // Obtener información del viaje - buscar por recordId o tripId
@@ -10716,6 +10736,7 @@ function setupPackageRoutes(app: Express) {
           
           return {
             ...reservation,
+            passenger: passengerInfo,
             commissionAgent: commissionAgent ? {
               id: commissionAgent.id,
               firstName: commissionAgent.firstName,
