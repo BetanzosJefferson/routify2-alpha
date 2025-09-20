@@ -10622,6 +10622,38 @@ function setupPackageRoutes(app: Express) {
       // Calcular total de gastos por viaje
       const totalTripExpenses = allTripExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
       
+      // Calcular comisiones pendientes en el período
+      console.log(`[GET /period-balance] Calculando comisiones pendientes...`);
+      const allReservations = await storage.getReservations(userCompany);
+      
+      // Filtrar reservaciones con comisiones pendientes en el período de tiempo
+      const pendingCommissionsInPeriod = allReservations.filter(reservation => {
+        // Solo incluir reservaciones con comisiones pendientes
+        if (reservation.commissionPaid) {
+          return false;
+        }
+        
+        // Verificar que la reservación esté en el rango de fechas
+        try {
+          const reservationDate = new Date(reservation.createdAt);
+          return reservationDate >= startDate && reservationDate <= endDate;
+        } catch (e) {
+          console.log(`[GET /period-balance] Error parsing reservation date for ${reservation.id}:`, e);
+          return false;
+        }
+      });
+      
+      // Calcular monto total de comisiones pendientes
+      const totalPendingCommissions = pendingCommissionsInPeriod.reduce((sum, reservation) => {
+        // Calcular comisión basada en el porcentaje del usuario comisionista
+        // Por ahora usaremos un 4.44% como default si no se encuentra
+        const commissionRate = 0.0444; // 4.44%
+        const commissionAmount = (reservation.totalAmount || 0) * commissionRate;
+        return sum + commissionAmount;
+      }, 0);
+      
+      console.log(`[GET /period-balance] Comisiones pendientes: ${pendingCommissionsInPeriod.length} reservaciones, monto total: ${totalPendingCommissions}`);
+      
       const balance = totalIncome - totalExpenses;
       
       const response = {
@@ -10635,7 +10667,9 @@ function setupPackageRoutes(app: Express) {
         tripsCount: tripsInPeriod.length,
         trips: tripsWithOperatorAndExpenses, // Viajes con operador y gastos
         tripExpenses: allTripExpenses, // Todos los gastos de viajes
-        totalTripExpenses: totalTripExpenses // Total de gastos por viaje
+        totalTripExpenses: totalTripExpenses, // Total de gastos por viaje
+        pendingCommissions: totalPendingCommissions, // Total de comisiones pendientes
+        pendingCommissionsCount: pendingCommissionsInPeriod.length // Cantidad de comisiones pendientes
       };
 
       console.log(`[GET /period-balance] Balance calculado: Ingresos=${totalIncome}, Gastos=${totalExpenses}, Balance=${balance}`);
