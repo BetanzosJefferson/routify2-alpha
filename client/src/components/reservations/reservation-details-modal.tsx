@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, User, Mail, Phone, MapPin, Calendar, Clock, CheckCircle, X, ArrowRightLeft, Eye, Download, Printer, QrCode, RefreshCw, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatPrice, generateReservationId } from "@/lib/utils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, cacheInvalidation } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { hasRequiredRole } from "@/lib/role-based-permissions";
 import { formatTripTime, extractDayIndicator } from "@/lib/trip-utils";
@@ -155,9 +155,8 @@ export default function ReservationDetailsModal({
     } finally {
       setIsCanceling(false);
 
-      // Invalidar todas las consultas de reservaciones para actualizar la lista
-      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
+      // Usar el nuevo sistema unificado de invalidación
+      await cacheInvalidation.fullRefresh({ reservations: true, trips: true });
     }
   };
 
@@ -182,8 +181,7 @@ export default function ReservationDetailsModal({
       
       // Refrescar datos
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/reservations"] });
+      await cacheInvalidation.allReservations();
       
     } catch (error) {
       toast({
@@ -252,9 +250,7 @@ export default function ReservationDetailsModal({
       
       // Refrescar datos
       await refetch();
-      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reservations/archived"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/public/reservations"] });
+      await cacheInvalidation.fullRefresh({ reservations: true, trips: true });
       
       // Cerrar el modal
       onOpenChange(false);
