@@ -10645,13 +10645,17 @@ function setupPackageRoutes(app: Express) {
         
         // Verificar que la reservación esté en el rango de fechas usando el mismo criterio que las transacciones
         try {
-          // Convertir createdAt a zona horaria de México para comparar
           const reservationDate = new Date(reservation.createdAt);
-          const isInRange = reservationDate >= startDateTime && reservationDate <= endDateTime;
+          // Convertir startDateTime y endDateTime a objetos Date para comparar correctamente
+          const startDateObj = new Date(startDateTime);
+          const endDateObj = new Date(endDateTime);
+          const isInRange = reservationDate >= startDateObj && reservationDate <= endDateObj;
           
           // Debugging específico para reservación 683
           if (reservation.id === 683) {
             console.log(`[DEBUG 683]   reservationDate: ${reservationDate}`);
+            console.log(`[DEBUG 683]   startDateObj: ${startDateObj}`);
+            console.log(`[DEBUG 683]   endDateObj: ${endDateObj}`);
             console.log(`[DEBUG 683]   isInRange: ${isInRange}`);
           }
           
