@@ -4829,7 +4829,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'auth' && data.userId) {
           const userId = data.userId.toString();
           clients.set(userId, ws);
-          console.log(`[WebSocket] Usuario ${userId} autenticado`);
+          
+          // Obtener información del usuario para el log (sin await)
+          storage.getUser(parseInt(userId)).then(user => {
+            if (user) {
+              console.log(`[WebSocket] Usuario ${userId} autenticado - ${user.firstName} ${user.lastName} (${user.role})`);
+            } else {
+              console.log(`[WebSocket] Usuario ${userId} autenticado`);
+            }
+          }).catch(() => {
+            console.log(`[WebSocket] Usuario ${userId} autenticado`);
+          });
           
           // Confirmar autenticación al cliente
           ws.send(JSON.stringify({ 
@@ -4850,7 +4860,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clients.forEach((client, userId) => {
         if (client === ws) {
           clients.delete(userId);
-          console.log(`[WebSocket] Usuario ${userId} desconectado`);
+          
+          // Obtener información del usuario para el log (sin await en forEach)
+          storage.getUser(parseInt(userId)).then(user => {
+            if (user) {
+              console.log(`[WebSocket] Usuario ${userId} desconectado - ${user.firstName} ${user.lastName} (${user.role})`);
+            } else {
+              console.log(`[WebSocket] Usuario ${userId} desconectado`);
+            }
+          }).catch(() => {
+            console.log(`[WebSocket] Usuario ${userId} desconectado`);
+          });
         }
       });
     });
