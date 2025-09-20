@@ -79,6 +79,7 @@ function PeriodBalancePageContent() {
   const [isTransactionsExpanded, setIsTransactionsExpanded] = useState(true);
   const [isTripExpensesExpanded, setIsTripExpensesExpanded] = useState(true);
   const [isTripExpensesSummaryExpanded, setIsTripExpensesSummaryExpanded] = useState(false);
+  const [isPendingCommissionsExpanded, setIsPendingCommissionsExpanded] = useState(false);
 
   // Generar valores por defecto para las fechas
   const generateDefaultDates = () => {
@@ -361,20 +362,69 @@ function PeriodBalancePageContent() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Comisiones Pendientes</CardTitle>
-                <FileText className="h-4 w-4 text-yellow-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">
-                  {formatCurrency(periodBalance.pendingCommissions || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {periodBalance.pendingCommissionsCount || 0} comisión{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 'es' : ''} pendiente{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 's' : ''}
-                </p>
-              </CardContent>
-            </Card>
+            <Collapsible.Root open={isPendingCommissionsExpanded} onOpenChange={setIsPendingCommissionsExpanded}>
+              <Card>
+                <Collapsible.Trigger asChild>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div>
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-yellow-600" />
+                        Comisiones Pendientes
+                      </CardTitle>
+                      <div className="text-2xl font-bold text-yellow-600 mt-1">
+                        {formatCurrency(periodBalance.pendingCommissions || 0)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {periodBalance.pendingCommissionsCount || 0} comisión{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 'es' : ''} pendiente{(periodBalance.pendingCommissionsCount || 0) !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    {isPendingCommissionsExpanded ? (
+                      <ChevronUp className="h-5 w-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-500" />
+                    )}
+                  </CardHeader>
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Desglose de comisiones pendientes */}
+                      {periodBalance.pendingCommissionsDetails && periodBalance.pendingCommissionsDetails.length > 0 ? (
+                        periodBalance.pendingCommissionsDetails.map((reservation) => (
+                          <div key={reservation.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <User className="w-4 h-4 text-yellow-600" />
+                                <span className="font-medium">Reservación #{reservation.id}</span>
+                                <span className="text-sm text-muted-foreground">- {reservation.passengerName}</span>
+                              </div>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p>Comisionista: {reservation.commissionAgent ? `${reservation.commissionAgent.firstName} ${reservation.commissionAgent.lastName}` : 'No asignado'}</p>
+                                <p>Viaje: {reservation.trip ? `${reservation.trip.origin} → ${reservation.trip.destination}` : 'Información no disponible'}</p>
+                                <p>Fecha: {new Date(reservation.createdAt).toLocaleDateString('es-MX')}</p>
+                                <p>Monto reservación: {formatCurrency(reservation.totalAmount)}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-semibold text-yellow-600">
+                                {formatCurrency(reservation.commissionAmount)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                4.44% comisión
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-muted-foreground py-4">
+                          No hay comisiones pendientes en este período
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Collapsible.Content>
+              </Card>
+            </Collapsible.Root>
           </div>
 
 

@@ -10643,13 +10643,48 @@ function setupPackageRoutes(app: Express) {
         }
       });
       
+      // Obtener detalles de comisionistas y viajes para las reservaciones pendientes
+      const pendingCommissionsWithDetails = await Promise.all(
+        pendingCommissionsInPeriod.map(async (reservation) => {
+          // Obtener información del comisionista
+          let commissionAgent = null;
+          if (reservation.commissionUserId) {
+            commissionAgent = await storage.getUser(reservation.commissionUserId);
+          }
+          
+          // Obtener información del viaje
+          let trip = null;
+          if (reservation.tripId) {
+            trip = await storage.getTrip(reservation.tripId);
+          }
+          
+          // Calcular comisión
+          const commissionRate = 0.0444; // 4.44%
+          const commissionAmount = (reservation.totalAmount || 0) * commissionRate;
+          
+          return {
+            ...reservation,
+            commissionAgent: commissionAgent ? {
+              id: commissionAgent.id,
+              firstName: commissionAgent.firstName,
+              lastName: commissionAgent.lastName,
+              email: commissionAgent.email
+            } : null,
+            trip: trip ? {
+              id: trip.id,
+              origin: trip.origin,
+              destination: trip.destination,
+              departureDate: trip.departureDate,
+              departureTime: trip.departureTime
+            } : null,
+            commissionAmount
+          };
+        })
+      );
+      
       // Calcular monto total de comisiones pendientes
-      const totalPendingCommissions = pendingCommissionsInPeriod.reduce((sum, reservation) => {
-        // Calcular comisión basada en el porcentaje del usuario comisionista
-        // Por ahora usaremos un 4.44% como default si no se encuentra
-        const commissionRate = 0.0444; // 4.44%
-        const commissionAmount = (reservation.totalAmount || 0) * commissionRate;
-        return sum + commissionAmount;
+      const totalPendingCommissions = pendingCommissionsWithDetails.reduce((sum, reservation) => {
+        return sum + (reservation.commissionAmount || 0);
       }, 0);
       
       console.log(`[GET /period-balance] Comisiones pendientes: ${pendingCommissionsInPeriod.length} reservaciones, monto total: ${totalPendingCommissions}`);
@@ -10669,7 +10704,8 @@ function setupPackageRoutes(app: Express) {
         tripExpenses: allTripExpenses, // Todos los gastos de viajes
         totalTripExpenses: totalTripExpenses, // Total de gastos por viaje
         pendingCommissions: totalPendingCommissions, // Total de comisiones pendientes
-        pendingCommissionsCount: pendingCommissionsInPeriod.length // Cantidad de comisiones pendientes
+        pendingCommissionsCount: pendingCommissionsInPeriod.length, // Cantidad de comisiones pendientes
+        pendingCommissionsDetails: pendingCommissionsWithDetails // Detalles de comisiones pendientes
       };
 
       console.log(`[GET /period-balance] Balance calculado: Ingresos=${totalIncome}, Gastos=${totalExpenses}, Balance=${balance}`);
