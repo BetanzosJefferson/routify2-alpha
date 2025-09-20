@@ -60,6 +60,91 @@ export async function prefetchCriticalData() {
 // Remove duplicate function definition since it's already defined below
 
 /**
+ * Sistema unificado de invalidación de caché
+ * Resuelve el problema de datos no actualizados en tiempo real
+ */
+export const cacheInvalidation = {
+  // Invalidar todas las reservaciones (más agresivo)
+  allReservations: async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.includes('reservations');
+      }
+    });
+  },
+
+  // Invalidar reservaciones específicas por parámetros
+  reservationsByParams: async (params: { tripId?: number; date?: string; archived?: boolean } = {}) => {
+    await Promise.all([
+      // Invalidar consultas exactas
+      queryClient.invalidateQueries({
+        queryKey: ["/api/reservations", params]
+      }),
+      // Invalidar todas las variantes relacionadas
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [endpoint, queryParams] = query.queryKey;
+          return endpoint === "/api/reservations" && 
+                 (!params.tripId || (queryParams as any)?.tripId === params.tripId) &&
+                 (!params.date || (queryParams as any)?.date === params.date);
+        }
+      })
+    ]);
+  },
+
+  // Invalidar trips relacionados (para actualizar asientos disponibles)
+  relatedTrips: async (tripId?: number) => {
+    if (tripId) {
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [endpoint, params] = query.queryKey;
+          return endpoint === "/api/trips" || 
+                 endpoint === "/api/admin-trips" ||
+                 (params as any)?.tripId === tripId;
+        }
+      });
+    } else {
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && (key.includes('trips') || key.includes('admin-trips'));
+        }
+      });
+    }
+  },
+
+  // Invalidación completa tras mutaciones críticas (crear/eliminar reservaciones)
+  fullRefresh: async (includedData: { reservations?: boolean; trips?: boolean; packages?: boolean } = {}) => {
+    const { reservations = true, trips = true, packages = false } = includedData;
+    
+    const invalidations = [];
+    
+    if (reservations) {
+      invalidations.push(cacheInvalidation.allReservations());
+    }
+    
+    if (trips) {
+      invalidations.push(cacheInvalidation.relatedTrips());
+    }
+    
+    if (packages) {
+      invalidations.push(
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.includes('packages');
+          }
+        })
+      );
+    }
+
+    await Promise.all(invalidations);
+    console.log("🔄 Cache completamente invalidado - datos frescos garantizados");
+  }
+};
+
+/**
  * Helper function for API requests with proper error handling
  */
 export async function apiRequest(

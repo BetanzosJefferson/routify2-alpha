@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, cacheInvalidation } from "@/lib/queryClient";
 import { formatPrice, generateReservationId } from "@/lib/utils";
 import QRCode from "qrcode";
 import { Check, X, CalendarIcon, CreditCard, MapPin, Phone, User, Printer } from "lucide-react";
@@ -103,15 +103,12 @@ export default function ReservationRequestsPage() {
       });
       return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Invalidar las solicitudes de reservación para actualizar la lista
       queryClient.invalidateQueries({ queryKey: ["/api/reservation-requests"] });
       
-      // Invalidar también las consultas de viajes para actualizar los asientos disponibles en tiempo real
-      queryClient.invalidateQueries({ queryKey: ["/api/trips"] });
-      
-      // Invalidar las reservaciones
-      queryClient.invalidateQueries({ queryKey: ["/api/reservations"] });
+      // Usar el nuevo sistema unificado de invalidación para datos más frescos
+      await cacheInvalidation.fullRefresh({ reservations: true, trips: true });
       
       console.log("Solicitud procesada correctamente. Actualizando datos en tiempo real...");
       

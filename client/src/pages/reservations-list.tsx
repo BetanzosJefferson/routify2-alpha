@@ -13,6 +13,7 @@ import { ReservationWithDetails } from "@shared/schema";
 import DefaultLayout from "@/components/layout/default-layout";
 import { ReservationDetailsSidebar } from "@/components/reservations/reservation-details-sidebar";
 import { useQueryClient } from "@tanstack/react-query";
+import { cacheInvalidation } from "@/lib/queryClient";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { withErrorHandling } from "@/lib/error-handler";
 
@@ -597,14 +598,9 @@ function ReservationsListContent() {
             tripInfo={selectedTrip.tripInfo}
             reservations={selectedTrip.reservations}
             onClose={() => setSelectedTrip(null)}
-            onReservationUpdate={() => {
-              // Invalidar queries con el queryKey exacto que usa useReservations
-              queryClient.invalidateQueries({ 
-                queryKey: ["/api/reservations", { tripId: undefined, includeRelated: false, date: undefined, archived: false }] 
-              });
-              queryClient.invalidateQueries({ 
-                predicate: (query) => query.queryKey[0] === '/api/reservations'
-              });
+            onReservationUpdate={async () => {
+              // Usar el nuevo sistema unificado de invalidación
+              await cacheInvalidation.fullRefresh({ reservations: true, trips: true });
             }}
           />
         </ErrorBoundary>
