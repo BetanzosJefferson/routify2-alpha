@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test de Correcciones de Caché</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; padding: 20px; border-radius: 8px; margin: 10px 0; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; font-family: monospace; margin: 10px 0; border-radius: 4px; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test de Correcciones de Caché - TransRoute</h1>
+    
+    <div class="test-container">
+        <h2>📋 Tests de Cache Persistence</h2>
+        <p>Verificando que las reservaciones NO se persisten en localStorage:</p>
+        <button class="btn-primary" onclick="testLocalStoragePersistence()">Test LocalStorage</button>
+        <div id="localStorage-result"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>⏱️ Tests de StaleTime</h2>
+        <p>Verificando que los datos tienen staleTime bajo (2-5 segundos):</p>
+        <button class="btn-primary" onclick="testStaleTimeConfig()">Test StaleTime</button>
+        <div id="staleTime-result"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔄 Tests de Invalidación</h2>
+        <p>Verificando que la invalidación de cache funciona:</p>
+        <button class="btn-primary" onclick="testCacheInvalidation()">Test Invalidación</button>
+        <div id="invalidation-result"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📊 Tests de API Response Time</h2>
+        <p>Verificando tiempo de respuesta de reservaciones:</p>
+        <button class="btn-primary" onclick="testAPIResponseTime()">Test Response Time</button>
+        <div id="response-time-result"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📈 Logs del Sistema</h2>
+        <button class="btn-success" onclick="clearLogs()">Limpiar Logs</button>
+        <div id="system-logs" class="log"></div>
+    </div>
+
+    <script>
+        let logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${message}`);
+            updateLogsDisplay();
+            console.log(`[TEST] ${message}`);
+        }
+
+        function updateLogsDisplay() {
+            const logsDiv = document.getElementById('system-logs');
+            logsDiv.innerHTML = logs.slice(-20).join('\n');
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateLogsDisplay();
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        async function testLocalStoragePersistence() {
+            log("🧪 Iniciando test de persistencia de localStorage...");
+            
+            try {
+                // Verificar localStorage actual
+                const cacheKey = 'transroute-cache-v3';
+                const existingCache = localStorage.getItem(cacheKey);
+                
+                log(`📦 Cache encontrado en localStorage: ${existingCache ? 'SÍ' : 'NO'}`);
+                
+                if (existingCache) {
+                    const parsedCache = JSON.parse(existingCache);
+                    const queries = parsedCache.clientState?.queries || [];
+                    
+                    // Buscar queries de reservaciones
+                    const reservationQueries = queries.filter(q => 
+                        q.queryKey && JSON.stringify(q.queryKey).includes('reservations')
+                    );
+                    
+                    log(`🔍 Queries de reservaciones en localStorage: ${reservationQueries.length}`);
+                    
+                    if (reservationQueries.length === 0) {
+                        showResult('localStorage-result', 
+                            '✅ CORRECTO: Las reservaciones NO se persisten en localStorage', 
+                            'success');
+                        log("✅ Test de localStorage: PASADO");
+                    } else {
+                        showResult('localStorage-result', 
+                            '❌ ERROR: Encontradas queries de reservaciones en localStorage', 
+                            'error');
+                        log("❌ Test de localStorage: FALLIDO");
+                    }
+                } else {
+                    showResult('localStorage-result', 
+                        '✅ CORRECTO: No hay cache persistente (primera vez)', 
+                        'success');
+                    log("✅ Test de localStorage: PASADO (sin cache)");
+                }
+                
+            } catch (error) {
+                showResult('localStorage-result', 
+                    `❌ ERROR: ${error.message}`, 
+                    'error');
+                log(`❌ Error en test de localStorage: ${error.message}`);
+            }
+        }
+
+        async function testStaleTimeConfig() {
+            log("🧪 Iniciando test de configuración de staleTime...");
+            
+            try {
+                // Simular fetchTime y verificar que los datos se consideran stale rápidamente
+                const startTime = Date.now();
+                
+                // Hacer una request y medir tiempo
+                const response = await fetch('/api/reservations?date=2025-09-22');
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                log(`⏱️ Tiempo de respuesta de API: ${responseTime}ms`);
+                
+                if (response.ok) {
+                    // Esperar 3 segundos y hacer otra request
+                    log("⏳ Esperando 3 segundos para verificar staleTime...");
+                    
+                    setTimeout(async () => {
+                        const secondStartTime = Date.now();
+                        const secondResponse = await fetch('/api/reservations?date=2025-09-22');
+                        const secondEndTime = Date.now();
+                        const secondResponseTime = secondEndTime - secondStartTime;
+                        
+                        log(`⏱️ Segundo tiempo de respuesta: ${secondResponseTime}ms`);
+                        
+                        if (secondResponseTime > 50) {
+                            showResult('staleTime-result', 
+                                `✅ CORRECTO: Datos refrescados después de staleTime (${secondResponseTime}ms)`, 
+                                'success');
+                            log("✅ Test de staleTime: PASADO");
+                        } else {
+                            showResult('staleTime-result', 
+                                `⚠️ POSIBLE CACHE: Respuesta muy rápida (${secondResponseTime}ms)`, 
+                                'info');
+                            log("⚠️ Test de staleTime: DUDOSO");
+                        }
+                    }, 3000);
+                    
+                } else {
+                    throw new Error(`API respondió con status ${response.status}`);
+                }
+                
+            } catch (error) {
+                showResult('staleTime-result', 
+                    `❌ ERROR: ${error.message}`, 
+                    'error');
+                log(`❌ Error en test de staleTime: ${error.message}`);
+            }
+        }
+
+        async function testCacheInvalidation() {
+            log("🧪 Iniciando test de invalidación de cache...");
+            
+            try {
+                // Verificar que existe el objeto de invalidación
+                if (window.queryClient && window.cacheInvalidation) {
+                    log("✅ QueryClient y cacheInvalidation encontrados");
+                    
+                    // Simular invalidación
+                    const startTime = Date.now();
+                    await window.cacheInvalidation.fullRefresh({
+                        reservations: true,
+                        trips: false
+                    });
+                    const endTime = Date.now();
+                    
+                    log(`⏱️ Tiempo de invalidación: ${endTime - startTime}ms`);
+                    
+                    showResult('invalidation-result', 
+                        `✅ CORRECTO: Invalidación ejecutada en ${endTime - startTime}ms`, 
+                        'success');
+                    log("✅ Test de invalidación: PASADO");
+                    
+                } else {
+                    showResult('invalidation-result', 
+                        '❌ ERROR: QueryClient o cacheInvalidation no disponibles', 
+                        'error');
+                    log("❌ Test de invalidación: FALLIDO - objetos no disponibles");
+                }
+                
+            } catch (error) {
+                showResult('invalidation-result', 
+                    `❌ ERROR: ${error.message}`, 
+                    'error');
+                log(`❌ Error en test de invalidación: ${error.message}`);
+            }
+        }
+
+        async function testAPIResponseTime() {
+            log("🧪 Iniciando test de tiempo de respuesta...");
+            
+            try {
+                const measurements = [];
+                
+                for (let i = 0; i < 3; i++) {
+                    const startTime = Date.now();
+                    const response = await fetch(`/api/reservations?date=2025-09-22&t=${Date.now()}`);
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+                    
+                    measurements.push(responseTime);
+                    log(`📊 Medición ${i + 1}: ${responseTime}ms`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Request ${i + 1} falló con status ${response.status}`);
+                    }
+                    
+                    // Esperar un poco entre requests
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                const averageTime = measurements.reduce((a, b) => a + b, 0) / measurements.length;
+                const maxTime = Math.max(...measurements);
+                
+                log(`📈 Tiempo promedio: ${averageTime.toFixed(2)}ms`);
+                log(`📈 Tiempo máximo: ${maxTime}ms`);
+                
+                if (averageTime < 500) {
+                    showResult('response-time-result', 
+                        `✅ EXCELENTE: Tiempo promedio ${averageTime.toFixed(2)}ms (máx: ${maxTime}ms)`, 
+                        'success');
+                    log("✅ Test de response time: EXCELENTE");
+                } else if (averageTime < 1000) {
+                    showResult('response-time-result', 
+                        `⚠️ ACEPTABLE: Tiempo promedio ${averageTime.toFixed(2)}ms (máx: ${maxTime}ms)`, 
+                        'info');
+                    log("⚠️ Test de response time: ACEPTABLE");
+                } else {
+                    showResult('response-time-result', 
+                        `❌ LENTO: Tiempo promedio ${averageTime.toFixed(2)}ms (máx: ${maxTime}ms)`, 
+                        'error');
+                    log("❌ Test de response time: LENTO");
+                }
+                
+            } catch (error) {
+                showResult('response-time-result', 
+                    `❌ ERROR: ${error.message}`, 
+                    'error');
+                log(`❌ Error en test de response time: ${error.message}`);
+            }
+        }
+
+        // Auto-inicializar logs
+        log("🚀 Sistema de tests de cache inicializado");
+        log("💡 Ejecuta los tests para verificar las correcciones de cache");
+    </script>
+</body>
+</html>

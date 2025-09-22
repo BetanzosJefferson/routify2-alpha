@@ -68,9 +68,12 @@ function ReservationsListContent() {
   const handleSearch = async () => {
     // Starting search
     
-    // Invalidar cache específico para la nueva fecha
+    // CORREGIDO: Invalidar cache usando queryKeys exactos para evitar problemas de invalidación
     await queryClient.invalidateQueries({
-      queryKey: ["/api/reservations", { date: selectedDate }]
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.includes('/api/reservations');
+      }
     });
     
     // Aplicar filtro de fecha

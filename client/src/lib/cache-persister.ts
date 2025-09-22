@@ -62,18 +62,21 @@ export async function initializeOfficialCrossTabCache(queryClient: QueryClient):
     await persistQueryClient({
       queryClient,
       persister: localStoragePersister,
-      maxAge: 10 * 60 * 1000, // 10 minutos - mismo que gcTime
+      maxAge: 2 * 60 * 1000, // CRÍTICO: 2 minutos máximo para evitar datos obsoletos
       buster: CACHE_VERSION.toString(),
-      // Solo persistir queries importantes
+      // Solo persistir queries estables - EXCLUIR reservaciones que cambian constantemente
       dehydrateOptions: {
         shouldDehydrateQuery: (query) => {
           const queryKey = query.queryKey[0] as string;
-          // Solo persistir queries que benefician del sharing
+          // EXCLUIR reservaciones del localStorage persistente para evitar datos obsoletos
+          if (queryKey && queryKey.includes('/api/reservations')) {
+            return false; // NO persistir reservaciones
+          }
+          // Solo persistir queries que benefician del sharing y son estables
           return queryKey && (
-            queryKey.includes('/api/reservations') ||
-            queryKey.includes('/api/trips') ||
-            queryKey.includes('/api/packages') ||
-            queryKey.includes('/api/routes')
+            queryKey.includes('/api/routes') || // Rutas cambian raramente
+            queryKey.includes('/api/route-templates') || // Templates son estables
+            queryKey.includes('/api/users') // Usuarios son relativamente estables
           ) && !queryKey.includes('/api/auth'); // Excluir auth sensible
         }
       }

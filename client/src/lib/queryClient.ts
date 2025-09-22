@@ -7,7 +7,7 @@ export const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: true, // OPTIMIZACIÓN: Mantener refetch en focus
       retry: 2, // Aumentamos los reintentos a 2
-      staleTime: 30000, // OPTIMIZACIÓN: 30 segundos para datos más frescos
+      staleTime: 5000, // CRÍTICO: 5 segundos para datos críticos (reservaciones y viajes cambian frecuentemente)
       gcTime: 10 * 60 * 1000, // Mantener en caché por 10 minutos (antes llamado cacheTime)
       // Asegurar que datos compartidos entre secciones estén disponibles
       structuralSharing: true,
@@ -118,14 +118,46 @@ export const cacheInvalidation = {
   fullRefresh: async (includedData: { reservations?: boolean; trips?: boolean; packages?: boolean } = {}) => {
     const { reservations = true, trips = true, packages = false } = includedData;
     
+    console.log("🔄 Iniciando invalidación completa de cache...");
+    
     const invalidations = [];
     
     if (reservations) {
-      invalidations.push(cacheInvalidation.allReservations());
+      // Invalidación más agresiva para reservaciones
+      invalidations.push(
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.includes('reservations');
+          }
+        }),
+        // También remover queries de reservaciones del cache para forzar refetch
+        queryClient.removeQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.includes('reservations');
+          }
+        })
+      );
     }
     
     if (trips) {
-      invalidations.push(cacheInvalidation.relatedTrips());
+      // Invalidación más agresiva para viajes
+      invalidations.push(
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.includes('trips');
+          }
+        }),
+        // También remover queries de trips para forzar refetch
+        queryClient.removeQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === 'string' && key.includes('trips');
+          }
+        })
+      );
     }
     
     if (packages) {
@@ -140,7 +172,7 @@ export const cacheInvalidation = {
     }
 
     await Promise.all(invalidations);
-    console.log("🔄 Cache completamente invalidado - datos frescos garantizados");
+    console.log("✅ Cache completamente invalidado y removido - datos ultra-frescos garantizados");
   }
 };
 

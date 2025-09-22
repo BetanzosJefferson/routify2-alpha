@@ -31,7 +31,7 @@ export function useReservations(options: UseReservationsOptions = {}) {
       parentTripFilter 
     }),
     enabled: !!user && enabled,
-    staleTime: 15000, // OPTIMIZACIÓN: 15 segundos para datos más frescos (reservaciones cambian frecuentemente)
+    staleTime: 2000, // CRÍTICO: 2 segundos para datos ultra-frescos (reservaciones cambian constantemente)
     refetchInterval: false, // Desactivar polling automático - usar WebSocket para updates
     refetchOnWindowFocus: true, // Mantener refetch en focus para actualizaciones importantes
     refetchOnMount: true, // CRÍTICO: Refetch al montar para datos frescos
