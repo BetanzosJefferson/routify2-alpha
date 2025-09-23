@@ -81,11 +81,19 @@ function ReservationsListContent() {
     setCurrentPage(1);
   };
 
-  // Actualizar fecha seleccionada SIN hacer búsqueda automática
-  const handleDateChange = (newDate: string) => {
+  // Actualizar fecha seleccionada CON búsqueda automática
+  const handleDateChange = async (newDate: string) => {
     setSelectedDate(newDate);
-    // NO hacer búsqueda automática - solo actualizar la fecha seleccionada
-    // La búsqueda se hará cuando el usuario haga clic en "Buscar" o presione Enter
+    setSearchDate(newDate); // Actualizar inmediatamente para búsqueda automática
+    setCurrentPage(1);
+    
+    // Invalidar cache automáticamente
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.includes('/api/reservations');
+      }
+    });
   };
   
   // Búsqueda con Enter
@@ -334,14 +342,10 @@ function ReservationsListContent() {
               <Button
                 onClick={handleSearch}
                 size="sm"
-                className={`whitespace-nowrap ${
-                  selectedDate !== searchDate 
-                    ? "bg-orange-600 hover:bg-orange-700 animate-pulse" 
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
+                className="whitespace-nowrap bg-blue-600 hover:bg-blue-700"
                 disabled={isLoading}
               >
-                {isLoading ? "Buscando..." : selectedDate !== searchDate ? "Buscar fecha" : "Buscar"}
+                {isLoading ? "Buscando..." : "Actualizar"}
               </Button>
              
             
