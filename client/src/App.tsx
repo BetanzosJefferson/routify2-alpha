@@ -45,6 +45,7 @@ import TransactionHistoryPageRoute from "@/pages/transaction-history-page";
 import OperatorTimelinePageRoute from "@/pages/operator-timeline-page";
 import ExpensesPageRoute from "@/pages/expenses-page";
 import PeriodBalancePageRoute from "@/pages/period-balance-page";
+import StatisticsPageRoute from "@/pages/statistics-page";
 
 function Router() {
   return (
@@ -79,6 +80,7 @@ function Router() {
       <ProtectedRoute path="/operator-timeline" component={OperatorTimelinePageRoute} />
       <ProtectedRoute path="/expenses" component={ExpensesPageRoute} />
       <ProtectedRoute path="/period-balance" component={PeriodBalancePageRoute} />
+      <ProtectedRoute path="/statistics" component={StatisticsPageRoute} />
       <ProtectedRoute path="/profile" component={ProfilePageRoute} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/register/:token" component={RegisterPage} />
