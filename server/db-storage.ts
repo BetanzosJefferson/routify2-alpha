@@ -5170,96 +5170,90 @@ export class DatabaseStorage implements IStorage {
     console.log(`DB Storage: Obteniendo estadísticas de mejor rendimiento para compañía ${companyId}, fechas: ${startDate} - ${endDate}`);
     
     try {
-      // Construir condiciones de filtrado
-      const baseConditions = [
-        eq(schema.reservations.companyId, companyId),
-        ne(schema.reservations.status, 'canceled')
-      ];
-
-      // Agregar filtros de fecha si se proporcionan
+      // Construir la cláusula WHERE con SQL directo
+      let whereClause = `r.company_id = '${companyId}' AND r.status != 'canceled'`;
+      
       if (startDate) {
-        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) >= ${startDate}`);
+        whereClause += ` AND DATE(r.created_at) >= '${startDate}'`;
       }
       if (endDate) {
-        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) <= ${endDate}`);
+        whereClause += ` AND DATE(r.created_at) <= '${endDate}'`;
       }
 
       // Obtener estadísticas por día de la semana
-      const dayStats = await db
-        .select({
-          dayNumber: sql<number>`EXTRACT(DOW FROM ${schema.trips.departureDate})`,
-          dayOfWeek: sql<string>`
-            CASE EXTRACT(DOW FROM ${schema.trips.departureDate})
-              WHEN 0 THEN 'Domingo'
-              WHEN 1 THEN 'Lunes'
-              WHEN 2 THEN 'Martes'
-              WHEN 3 THEN 'Miércoles'
-              WHEN 4 THEN 'Jueves'
-              WHEN 5 THEN 'Viernes'
-              WHEN 6 THEN 'Sábado'
-            END
-          `,
-          totalReservations: sql<number>`COUNT(*)`,
-          totalPassengers: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
-          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
-          averageTicketPrice: sql<number>`
-            CASE 
-              WHEN SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)) > 0 
-              THEN SUM(${schema.reservations.totalAmount}) / SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER))
-              ELSE 0
-            END
-          `
-        })
-        .from(schema.reservations)
-        .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
-        .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
-        .groupBy(sql`EXTRACT(DOW FROM ${schema.trips.departureDate})`)
-        .orderBy(sql`COUNT(*) DESC`);
+      const dayStatsQuery = `
+        SELECT 
+          EXTRACT(DOW FROM t.departure_date) as "dayNumber",
+          CASE EXTRACT(DOW FROM t.departure_date)
+            WHEN 0 THEN 'Domingo'
+            WHEN 1 THEN 'Lunes'
+            WHEN 2 THEN 'Martes'
+            WHEN 3 THEN 'Miércoles'
+            WHEN 4 THEN 'Jueves'
+            WHEN 5 THEN 'Viernes'
+            WHEN 6 THEN 'Sábado'
+          END as "dayOfWeek",
+          COUNT(*) as "totalReservations",
+          COALESCE(SUM(CAST(r.trip_details->>'seats' AS INTEGER)), 0) as "totalPassengers",
+          COALESCE(SUM(r.total_amount), 0) as "totalRevenue",
+          CASE 
+            WHEN SUM(CAST(r.trip_details->>'seats' AS INTEGER)) > 0 
+            THEN SUM(r.total_amount) / SUM(CAST(r.trip_details->>'seats' AS INTEGER))
+            ELSE 0
+          END as "averageTicketPrice"
+        FROM reservations r
+        INNER JOIN trips t ON r.trip_id = t.id
+        WHERE ${whereClause}
+        GROUP BY EXTRACT(DOW FROM t.departure_date)
+        ORDER BY COUNT(*) DESC
+      `;
+
+      const dayStats = await db.execute(sql.raw(dayStatsQuery));
 
       // Obtener estadísticas por horario
-      const timeStats = await db
-        .select({
-          timeSlot: schema.trips.departureTime,
-          totalReservations: sql<number>`COUNT(*)`,
-          totalPassengers: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
-          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
-          averageTicketPrice: sql<number>`
-            CASE 
-              WHEN SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)) > 0 
-              THEN SUM(${schema.reservations.totalAmount}) / SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER))
-              ELSE 0
-            END
-          `
-        })
-        .from(schema.reservations)
-        .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
-        .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
-        .groupBy(schema.trips.departureTime)
-        .orderBy(sql`COUNT(*) DESC`)
-        .limit(10);
+      const timeStatsQuery = `
+        SELECT 
+          t.departure_time as "timeSlot",
+          COUNT(*) as "totalReservations",
+          COALESCE(SUM(CAST(r.trip_details->>'seats' AS INTEGER)), 0) as "totalPassengers",
+          COALESCE(SUM(r.total_amount), 0) as "totalRevenue",
+          CASE 
+            WHEN SUM(CAST(r.trip_details->>'seats' AS INTEGER)) > 0 
+            THEN SUM(r.total_amount) / SUM(CAST(r.trip_details->>'seats' AS INTEGER))
+            ELSE 0
+          END as "averageTicketPrice"
+        FROM reservations r
+        INNER JOIN trips t ON r.trip_id = t.id
+        WHERE ${whereClause}
+        GROUP BY t.departure_time
+        ORDER BY COUNT(*) DESC
+        LIMIT 10
+      `;
+
+      const timeStats = await db.execute(sql.raw(timeStatsQuery));
 
       // Obtener estadísticas generales
-      const overallStats = await db
-        .select({
-          totalReservations: sql<number>`COUNT(*)`,
-          totalPassengers: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
-          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
-          averageTicketPrice: sql<number>`
-            CASE 
-              WHEN SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)) > 0 
-              THEN SUM(${schema.reservations.totalAmount}) / SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER))
-              ELSE 0
-            END
-          `
-        })
-        .from(schema.reservations)
-        .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
-        .where(baseConditions.length > 0 ? and(...baseConditions) : undefined);
+      const overallStatsQuery = `
+        SELECT 
+          COUNT(*) as "totalReservations",
+          COALESCE(SUM(CAST(r.trip_details->>'seats' AS INTEGER)), 0) as "totalPassengers",
+          COALESCE(SUM(r.total_amount), 0) as "totalRevenue",
+          CASE 
+            WHEN SUM(CAST(r.trip_details->>'seats' AS INTEGER)) > 0 
+            THEN SUM(r.total_amount) / SUM(CAST(r.trip_details->>'seats' AS INTEGER))
+            ELSE 0
+          END as "averageTicketPrice"
+        FROM reservations r
+        INNER JOIN trips t ON r.trip_id = t.id
+        WHERE ${whereClause}
+      `;
 
-      console.log(`DB Storage: Encontradas estadísticas de ${dayStats.length} días y ${timeStats.length} horarios para compañía ${companyId}`);
+      const overallStats = await db.execute(sql.raw(overallStatsQuery));
+
+      console.log(`DB Storage: Encontradas estadísticas de ${dayStats.rows.length} días y ${timeStats.rows.length} horarios para compañía ${companyId}`);
       
       return {
-        bestDays: dayStats.map(row => ({
+        bestDays: dayStats.rows.map((row: any) => ({
           dayOfWeek: row.dayOfWeek || 'Desconocido',
           dayNumber: Number(row.dayNumber),
           totalReservations: Number(row.totalReservations),
@@ -5267,7 +5261,7 @@ export class DatabaseStorage implements IStorage {
           totalRevenue: Number(row.totalRevenue),
           averageTicketPrice: Number(row.averageTicketPrice)
         })),
-        bestTimeSlots: timeStats.map(row => ({
+        bestTimeSlots: timeStats.rows.map((row: any) => ({
           timeSlot: row.timeSlot || 'Sin horario',
           totalReservations: Number(row.totalReservations),
           totalPassengers: Number(row.totalPassengers),
@@ -5275,10 +5269,10 @@ export class DatabaseStorage implements IStorage {
           averageTicketPrice: Number(row.averageTicketPrice)
         })),
         overall: {
-          totalReservations: Number(overallStats[0]?.totalReservations || 0),
-          totalPassengers: Number(overallStats[0]?.totalPassengers || 0),
-          totalRevenue: Number(overallStats[0]?.totalRevenue || 0),
-          averageTicketPrice: Number(overallStats[0]?.averageTicketPrice || 0)
+          totalReservations: Number(overallStats.rows[0]?.totalReservations || 0),
+          totalPassengers: Number(overallStats.rows[0]?.totalPassengers || 0),
+          totalRevenue: Number(overallStats.rows[0]?.totalRevenue || 0),
+          averageTicketPrice: Number(overallStats.rows[0]?.averageTicketPrice || 0)
         }
       };
     } catch (error) {
