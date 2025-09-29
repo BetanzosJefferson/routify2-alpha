@@ -5181,10 +5181,11 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Obtener estadísticas por día de la semana
+      // trip_data es un array JSON, necesitamos expandirlo y buscar el tripId correcto
       const dayStatsQuery = `
         SELECT 
-          EXTRACT(DOW FROM t.departure_date) as "dayNumber",
-          CASE EXTRACT(DOW FROM t.departure_date)
+          EXTRACT(DOW FROM TO_DATE(trip_element->>'departureDate', 'YYYY-MM-DD')) as "dayNumber",
+          CASE EXTRACT(DOW FROM TO_DATE(trip_element->>'departureDate', 'YYYY-MM-DD'))
             WHEN 0 THEN 'Domingo'
             WHEN 1 THEN 'Lunes'
             WHEN 2 THEN 'Martes'
@@ -5202,9 +5203,11 @@ export class DatabaseStorage implements IStorage {
             ELSE 0
           END as "averageTicketPrice"
         FROM reservations r
-        INNER JOIN trips t ON CAST(r.trip_details->>'tripId' AS INTEGER) = t.id
+        INNER JOIN trips t ON t.id = CAST(r.trip_details->>'recordId' AS INTEGER)
+        CROSS JOIN LATERAL jsonb_array_elements(t.trip_data) as trip_element
         WHERE ${whereClause}
-        GROUP BY EXTRACT(DOW FROM t.departure_date)
+          AND CAST(trip_element->>'tripId' AS BIGINT) = CAST(r.trip_details->>'tripId' AS BIGINT)
+        GROUP BY EXTRACT(DOW FROM TO_DATE(trip_element->>'departureDate', 'YYYY-MM-DD'))
         ORDER BY COUNT(*) DESC
       `;
 
@@ -5213,7 +5216,7 @@ export class DatabaseStorage implements IStorage {
       // Obtener estadísticas por horario
       const timeStatsQuery = `
         SELECT 
-          t.departure_time as "timeSlot",
+          trip_element->>'departureTime' as "timeSlot",
           COUNT(*) as "totalReservations",
           COALESCE(SUM(CAST(r.trip_details->>'seats' AS INTEGER)), 0) as "totalPassengers",
           COALESCE(SUM(r.total_amount), 0) as "totalRevenue",
@@ -5223,9 +5226,11 @@ export class DatabaseStorage implements IStorage {
             ELSE 0
           END as "averageTicketPrice"
         FROM reservations r
-        INNER JOIN trips t ON CAST(r.trip_details->>'tripId' AS INTEGER) = t.id
+        INNER JOIN trips t ON t.id = CAST(r.trip_details->>'recordId' AS INTEGER)
+        CROSS JOIN LATERAL jsonb_array_elements(t.trip_data) as trip_element
         WHERE ${whereClause}
-        GROUP BY t.departure_time
+          AND CAST(trip_element->>'tripId' AS BIGINT) = CAST(r.trip_details->>'tripId' AS BIGINT)
+        GROUP BY trip_element->>'departureTime'
         ORDER BY COUNT(*) DESC
         LIMIT 10
       `;
@@ -5244,8 +5249,10 @@ export class DatabaseStorage implements IStorage {
             ELSE 0
           END as "averageTicketPrice"
         FROM reservations r
-        INNER JOIN trips t ON CAST(r.trip_details->>'tripId' AS INTEGER) = t.id
+        INNER JOIN trips t ON t.id = CAST(r.trip_details->>'recordId' AS INTEGER)
+        CROSS JOIN LATERAL jsonb_array_elements(t.trip_data) as trip_element
         WHERE ${whereClause}
+          AND CAST(trip_element->>'tripId' AS BIGINT) = CAST(r.trip_details->>'tripId' AS BIGINT)
       `;
 
       const overallStats = await db.execute(sql.raw(overallStatsQuery));
