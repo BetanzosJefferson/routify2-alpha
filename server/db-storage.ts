@@ -5202,7 +5202,7 @@ export class DatabaseStorage implements IStorage {
             ELSE 0
           END as "averageTicketPrice"
         FROM reservations r
-        INNER JOIN trips t ON r.trip_id = t.id
+        INNER JOIN trips t ON CAST(r.trip_details->>'tripId' AS INTEGER) = t.id
         WHERE ${whereClause}
         GROUP BY EXTRACT(DOW FROM t.departure_date)
         ORDER BY COUNT(*) DESC
@@ -5223,7 +5223,7 @@ export class DatabaseStorage implements IStorage {
             ELSE 0
           END as "averageTicketPrice"
         FROM reservations r
-        INNER JOIN trips t ON r.trip_id = t.id
+        INNER JOIN trips t ON CAST(r.trip_details->>'tripId' AS INTEGER) = t.id
         WHERE ${whereClause}
         GROUP BY t.departure_time
         ORDER BY COUNT(*) DESC
@@ -5244,7 +5244,7 @@ export class DatabaseStorage implements IStorage {
             ELSE 0
           END as "averageTicketPrice"
         FROM reservations r
-        INNER JOIN trips t ON r.trip_id = t.id
+        INNER JOIN trips t ON CAST(r.trip_details->>'tripId' AS INTEGER) = t.id
         WHERE ${whereClause}
       `;
 
