@@ -2943,6 +2943,78 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getConfirmedBoxCutoffs(companyId?: string, filterDate?: string): Promise<any[]> {
+    try {
+      console.log(`DB Storage: Obteniendo cortes confirmados${companyId ? ` para compañía ${companyId}` : ''}${filterDate ? ` filtrados por fecha ${filterDate}` : ''}`);
+      
+      // Construir condiciones para la consulta
+      const conditions = [eq(schema.boxCutoff.check, true)];
+      
+      // Aplicar filtro por compañía si se especifica
+      if (companyId) {
+        conditions.push(eq(schema.boxCutoff.companyId, companyId));
+      }
+      
+      // Aplicar filtro por fecha si se especifica
+      if (filterDate) {
+        // Crear fechas sin conversión UTC usando los componentes directamente
+        const dateComponents = filterDate.split('-');
+        const year = parseInt(dateComponents[0], 10);
+        const month = parseInt(dateComponents[1], 10) - 1; // mes es 0-indexed
+        const day = parseInt(dateComponents[2], 10);
+        
+        // Crear fechas locales sin problema de zona horaria
+        const startOfDay = new Date(year, month, day, 0, 0, 0, 0);
+        const endOfDay = new Date(year, month, day, 23, 59, 59, 999);
+        
+        console.log(`DB Storage: Filtrando cortes confirmados entre ${startOfDay.toISOString()} y ${endOfDay.toISOString()}`);
+        console.log(`DB Storage: Fecha original: ${filterDate}, Procesada como: ${year}-${month + 1}-${day}`);
+        
+        conditions.push(
+          and(
+            gte(schema.boxCutoff.check_at, startOfDay),
+            lte(schema.boxCutoff.check_at, endOfDay)
+          )
+        );
+      }
+      
+      // Construir query con todas las condiciones
+      const query = this.db
+        .select({
+          id: schema.boxCutoff.id,
+          fecha_inicio: schema.boxCutoff.fecha_inicio,
+          fecha_fin: schema.boxCutoff.fecha_fin,
+          total_ingresos: schema.boxCutoff.total_ingresos,
+          total_efectivo: schema.boxCutoff.total_efectivo,
+          total_transferencias: schema.boxCutoff.total_transferencias,
+          user_id: schema.boxCutoff.user_id,
+          createdAt: schema.boxCutoff.createdAt,
+          updatedAt: schema.boxCutoff.updatedAt,
+          companyId: schema.boxCutoff.companyId,
+          check: schema.boxCutoff.check,
+          check_by: schema.boxCutoff.check_by,
+          check_at: schema.boxCutoff.check_at,
+          // Información del usuario que creó el corte
+          createdByName: sql<string>`CONCAT(${schema.users.firstName}, ' ', ${schema.users.lastName})`.as('createdByName'),
+          // Información del usuario que confirmó el corte
+          confirmedByName: sql<string>`CONCAT(confirmer.first_name, ' ', confirmer.last_name)`.as('confirmedByName')
+        })
+        .from(schema.boxCutoff)
+        .leftJoin(schema.users, eq(schema.boxCutoff.user_id, schema.users.id))
+        .leftJoin(sql`${schema.users} AS confirmer`, sql`${schema.boxCutoff.check_by} = confirmer.id`)
+        .where(and(...conditions));
+      
+      // Ordenar por fecha de confirmación (más recientes primero)
+      const confirmedCutoffs = await query.orderBy(desc(schema.boxCutoff.check_at));
+      
+      console.log(`DB Storage: Encontrados ${confirmedCutoffs.length} cortes confirmados`);
+      return confirmedCutoffs;
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener cortes confirmados:`, error);
+      return [];
+    }
+  }
+
   async updateTransaccion(id: number, data: Partial<schema.Transaccion>, userId?: number): Promise<schema.Transaccion | undefined> {
     try {
       const whereClause = userId 

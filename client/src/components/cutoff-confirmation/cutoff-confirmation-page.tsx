@@ -32,7 +32,9 @@ import {
   Phone,
   Calendar,
   Edit,
-  Trash2
+  Trash2,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -85,6 +87,8 @@ export default function CutoffConfirmationPage() {
   const [searchedCutoffId, setSearchedCutoffId] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [filterDate, setFilterDate] = useState('');
+  const [selectedCutoffs, setSelectedCutoffs] = useState<number[]>([]);
+  const [showConfirmed, setShowConfirmed] = useState(false);
   
   // Estados para edición y eliminación de transacciones
   const [showEditModal, setShowEditModal] = useState(false);
@@ -110,6 +114,20 @@ export default function CutoffConfirmationPage() {
       if (!response.ok) throw new Error('Error al obtener cortes pendientes');
       return response.json();
     }
+  });
+
+  // Query para obtener cortes confirmados
+  const { data: confirmedCutoffs, isLoading: isLoadingConfirmed } = useQuery<BoxCutoff[]>({
+    queryKey: ['/api/cutoffs/confirmed', filterDate],
+    queryFn: async () => {
+      const url = filterDate 
+        ? `/api/cutoffs/confirmed?date=${filterDate}`
+        : '/api/cutoffs/confirmed';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Error al obtener cortes confirmados');
+      return response.json();
+    },
+    enabled: showConfirmed
   });
 
   // Query para obtener información del corte
@@ -142,7 +160,22 @@ export default function CutoffConfirmationPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cutoffs', searchedCutoffId] });
       queryClient.invalidateQueries({ queryKey: ['/api/cutoffs/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cutoffs/confirmed'] });
       setShowConfirmModal(false);
+    }
+  });
+
+  // Mutation para confirmar múltiples cortes
+  const confirmMultipleCutoffsMutation = useMutation({
+    mutationFn: async (cutoffIds: number[]) => {
+      return Promise.all(
+        cutoffIds.map(id => apiRequest('POST', `/api/cutoffs/${id}/confirm`))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cutoffs/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cutoffs/confirmed'] });
+      setSelectedCutoffs([]);
     }
   });
 
@@ -221,6 +254,33 @@ export default function CutoffConfirmationPage() {
   const handleConfirmDelete = () => {
     if (deletingTransaction) {
       deleteTransactionMutation.mutate(deletingTransaction.id);
+    }
+  };
+
+  // Manejar selección de cortes
+  const handleToggleCutoff = (cutoffId: number) => {
+    setSelectedCutoffs(prev => 
+      prev.includes(cutoffId) 
+        ? prev.filter(id => id !== cutoffId)
+        : [...prev, cutoffId]
+    );
+  };
+
+  // Seleccionar todos los cortes pendientes
+  const handleSelectAll = () => {
+    if (pendingCutoffs) {
+      if (selectedCutoffs.length === pendingCutoffs.length) {
+        setSelectedCutoffs([]);
+      } else {
+        setSelectedCutoffs(pendingCutoffs.map(c => c.id));
+      }
+    }
+  };
+
+  // Confirmar todos los cortes seleccionados
+  const handleConfirmSelected = () => {
+    if (selectedCutoffs.length > 0) {
+      confirmMultipleCutoffsMutation.mutate(selectedCutoffs);
     }
   };
 
@@ -609,51 +669,103 @@ export default function CutoffConfirmationPage() {
         {pendingCutoffs && pendingCutoffs.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                Cortes Pendientes de Confirmación ({pendingCutoffs.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                  Cortes Pendientes de Confirmación ({pendingCutoffs.length})
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-2"
+                  >
+                    {selectedCutoffs.length === pendingCutoffs.length ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                    {selectedCutoffs.length === pendingCutoffs.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                  </Button>
+                  {selectedCutoffs.length > 0 && (
+                    <Button
+                      onClick={handleConfirmSelected}
+                      disabled={confirmMultipleCutoffsMutation.isPending}
+                      className="flex items-center gap-2"
+                    >
+                      {confirmMultipleCutoffsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Confirmando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Confirmar seleccionados ({selectedCutoffs.length})
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {pendingCutoffs.map((cutoff) => (
                   <div 
                     key={cutoff.id} 
-                    className="border rounded-lg p-4 bg-yellow-50 hover:bg-yellow-100 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setCutoffId(cutoff.id.toString());
-                      setSearchedCutoffId(cutoff.id);
-                    }}
+                    className="border rounded-lg p-4 bg-yellow-50 hover:bg-yellow-100 transition-colors"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="font-medium text-lg">Corte #{cutoff.id}</div>
-                        <div className="text-sm text-gray-600">
-                          Creado por: {cutoff.createdByName || `Usuario ID: ${cutoff.user_id}`}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Fecha: {format(new Date(cutoff.createdAt), 'PPp', { locale: es })}
-                        </div>
+                    <div className="flex items-start gap-3">
+                      <div 
+                        className="flex-shrink-0 pt-1 cursor-pointer"
+                        onClick={() => handleToggleCutoff(cutoff.id)}
+                      >
+                        {selectedCutoffs.includes(cutoff.id) ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-400" />
+                        )}
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-600 mb-1">Total Ingresos</div>
-                        <div className="font-semibold text-green-600 text-lg">
-                          {formatCurrency(cutoff.total_ingresos)}
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => {
+                          setCutoffId(cutoff.id.toString());
+                          setSearchedCutoffId(cutoff.id);
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="font-medium text-lg">Corte #{cutoff.id}</div>
+                            <div className="text-sm text-gray-600">
+                              Creado por: {cutoff.createdByName || `Usuario ID: ${cutoff.user_id}`}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Fecha: {format(new Date(cutoff.createdAt), 'PPp', { locale: es })}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-gray-600 mb-1">Total Ingresos</div>
+                            <div className="font-semibold text-green-600 text-lg">
+                              {formatCurrency(cutoff.total_ingresos)}
+                            </div>
+                            <Badge variant="outline" className="text-yellow-600 mt-1">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Pendiente
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="outline" className="text-yellow-600 mt-1">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Pendiente
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Efectivo: </span>
-                        <span className="font-medium">{formatCurrency(cutoff.total_efectivo)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Transferencias: </span>
-                        <span className="font-medium">{formatCurrency(cutoff.total_transferencias)}</span>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Efectivo: </span>
+                            <span className="font-medium">{formatCurrency(cutoff.total_efectivo)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Transferencias: </span>
+                            <span className="font-medium">{formatCurrency(cutoff.total_transferencias)}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -682,6 +794,97 @@ export default function CutoffConfirmationPage() {
               Error al cargar cortes pendientes: {pendingError.message}
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Toggle para mostrar cortes confirmados */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                Cortes Confirmados
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowConfirmed(!showConfirmed)}
+              >
+                {showConfirmed ? 'Ocultar' : 'Mostrar'}
+              </Button>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        {/* Lista de cortes confirmados */}
+        {showConfirmed && confirmedCutoffs && confirmedCutoffs.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                Cortes Confirmados ({confirmedCutoffs.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {confirmedCutoffs.map((cutoff) => (
+                  <div 
+                    key={cutoff.id} 
+                    className="border rounded-lg p-4 bg-green-50 hover:bg-green-100 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setCutoffId(cutoff.id.toString());
+                      setSearchedCutoffId(cutoff.id);
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="font-medium text-lg">Corte #{cutoff.id}</div>
+                        <div className="text-sm text-gray-600">
+                          Creado por: {cutoff.createdByName || `Usuario ID: ${cutoff.user_id}`}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Confirmado: {cutoff.check_at ? format(new Date(cutoff.check_at), 'PPp', { locale: es }) : 'N/A'}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Por: {cutoff.confirmedByName || `Usuario ID: ${cutoff.check_by}`}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600 mb-1">Total Ingresos</div>
+                        <div className="font-semibold text-green-600 text-lg">
+                          {formatCurrency(cutoff.total_ingresos)}
+                        </div>
+                        <Badge className="bg-green-100 text-green-800 mt-1">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Confirmado
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Efectivo: </span>
+                        <span className="font-medium">{formatCurrency(cutoff.total_efectivo)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Transferencias: </span>
+                        <span className="font-medium">{formatCurrency(cutoff.total_transferencias)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Mensaje cuando no hay cortes confirmados */}
+        {showConfirmed && confirmedCutoffs && confirmedCutoffs.length === 0 && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay cortes confirmados</h3>
+              <p className="text-gray-600">No se encontraron cortes confirmados en este momento.</p>
+            </CardContent>
+          </Card>
         )}
 
       

@@ -9348,6 +9348,44 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // Endpoint para obtener cortes confirmados
+  app.get(apiRouter("/cutoffs/confirmed"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /cutoffs/confirmed] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver cortes confirmados (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver cortes confirmados" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      const filterDate = req.query.date as string;
+      
+      console.log(`[GET /cutoffs/confirmed] Obteniendo cortes confirmados para compañía: ${companyId}${filterDate ? `, fecha: ${filterDate}` : ''}`);
+      
+      const confirmedCutoffs = await storage.getConfirmedBoxCutoffs(companyId, filterDate);
+      
+      console.log(`[GET /cutoffs/confirmed] Encontrados ${confirmedCutoffs.length} cortes confirmados`);
+      
+      res.json(confirmedCutoffs);
+    } catch (error: any) {
+      console.error("[GET /cutoffs/confirmed] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener cortes confirmados",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para obtener información de un corte específico
   app.get(apiRouter("/cutoffs/:id"), isAuthenticated, async (req: Request, res: Response) => {
     try {
