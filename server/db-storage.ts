@@ -5181,7 +5181,8 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Obtener estadísticas por día de la semana
-      // trip_data es un array JSON, necesitamos expandirlo y buscar el tripId correcto
+      // trip_data es un array JSON. Cuando tripId == recordId, usamos isMainTrip=true
+      // De lo contrario, buscamos el elemento correcto del array
       const dayStatsQuery = `
         SELECT 
           EXTRACT(DOW FROM TO_DATE(trip_element->>'departureDate', 'YYYY-MM-DD')) as "dayNumber",
@@ -5206,7 +5207,11 @@ export class DatabaseStorage implements IStorage {
         INNER JOIN trips t ON t.id = CAST(r.trip_details->>'recordId' AS INTEGER)
         CROSS JOIN LATERAL jsonb_array_elements(t.trip_data) as trip_element
         WHERE ${whereClause}
-          AND CAST(trip_element->>'tripId' AS BIGINT) = CAST(r.trip_details->>'tripId' AS BIGINT)
+          AND (
+            (r.trip_details->>'tripId' = r.trip_details->>'recordId' AND trip_element->>'isMainTrip' = 'true')
+            OR 
+            (r.trip_details->>'tripId' != r.trip_details->>'recordId')
+          )
         GROUP BY EXTRACT(DOW FROM TO_DATE(trip_element->>'departureDate', 'YYYY-MM-DD'))
         ORDER BY COUNT(*) DESC
       `;
@@ -5229,7 +5234,11 @@ export class DatabaseStorage implements IStorage {
         INNER JOIN trips t ON t.id = CAST(r.trip_details->>'recordId' AS INTEGER)
         CROSS JOIN LATERAL jsonb_array_elements(t.trip_data) as trip_element
         WHERE ${whereClause}
-          AND CAST(trip_element->>'tripId' AS BIGINT) = CAST(r.trip_details->>'tripId' AS BIGINT)
+          AND (
+            (r.trip_details->>'tripId' = r.trip_details->>'recordId' AND trip_element->>'isMainTrip' = 'true')
+            OR 
+            (r.trip_details->>'tripId' != r.trip_details->>'recordId')
+          )
         GROUP BY trip_element->>'departureTime'
         ORDER BY COUNT(*) DESC
         LIMIT 10
@@ -5252,7 +5261,11 @@ export class DatabaseStorage implements IStorage {
         INNER JOIN trips t ON t.id = CAST(r.trip_details->>'recordId' AS INTEGER)
         CROSS JOIN LATERAL jsonb_array_elements(t.trip_data) as trip_element
         WHERE ${whereClause}
-          AND CAST(trip_element->>'tripId' AS BIGINT) = CAST(r.trip_details->>'tripId' AS BIGINT)
+          AND (
+            (r.trip_details->>'tripId' = r.trip_details->>'recordId' AND trip_element->>'isMainTrip' = 'true')
+            OR 
+            (r.trip_details->>'tripId' != r.trip_details->>'recordId')
+          )
       `;
 
       const overallStats = await db.execute(sql.raw(overallStatsQuery));
