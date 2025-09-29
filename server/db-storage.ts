@@ -5170,15 +5170,18 @@ export class DatabaseStorage implements IStorage {
     console.log(`DB Storage: Obteniendo estadísticas de mejor rendimiento para compañía ${companyId}, fechas: ${startDate} - ${endDate}`);
     
     try {
-      // Construir condiciones de filtrado base
-      let whereConditions = sql`${schema.reservations.companyId} = ${companyId} AND ${schema.reservations.status} != 'canceled'`;
+      // Construir condiciones de filtrado
+      const baseConditions = [
+        eq(schema.reservations.companyId, companyId),
+        ne(schema.reservations.status, 'canceled')
+      ];
 
       // Agregar filtros de fecha si se proporcionan
       if (startDate) {
-        whereConditions = sql`${whereConditions} AND DATE(${schema.reservations.createdAt}) >= ${startDate}`;
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) >= ${startDate}`);
       }
       if (endDate) {
-        whereConditions = sql`${whereConditions} AND DATE(${schema.reservations.createdAt}) <= ${endDate}`;
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) <= ${endDate}`);
       }
 
       // Obtener estadísticas por día de la semana
@@ -5209,7 +5212,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(schema.reservations)
         .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
-        .where(whereConditions)
+        .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
         .groupBy(sql`EXTRACT(DOW FROM ${schema.trips.departureDate})`)
         .orderBy(sql`COUNT(*) DESC`);
 
@@ -5230,7 +5233,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(schema.reservations)
         .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
-        .where(whereConditions)
+        .where(baseConditions.length > 0 ? and(...baseConditions) : undefined)
         .groupBy(schema.trips.departureTime)
         .orderBy(sql`COUNT(*) DESC`)
         .limit(10);
@@ -5251,7 +5254,7 @@ export class DatabaseStorage implements IStorage {
         })
         .from(schema.reservations)
         .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
-        .where(whereConditions);
+        .where(baseConditions.length > 0 ? and(...baseConditions) : undefined);
 
       console.log(`DB Storage: Encontradas estadísticas de ${dayStats.length} días y ${timeStats.length} horarios para compañía ${companyId}`);
       
