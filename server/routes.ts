@@ -9138,6 +9138,53 @@ function setupPackageRoutes(app: Express) {
     }
   });
 
+  // Endpoint para estadísticas de mejor día y horario
+  app.get(apiRouter("/statistics/best-performance"), isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { user } = req as any;
+      
+      if (!user) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      console.log(`[GET /statistics/best-performance] Usuario: ${user.firstName} ${user.lastName}, Rol: ${user.role}`);
+      
+      // Verificar que el usuario tenga permisos para ver estadísticas (solo dueño y admin)
+      if (user.role !== UserRole.OWNER && user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ 
+          error: "Acceso denegado", 
+          details: "Solo los dueños y administradores pueden ver estadísticas" 
+        });
+      }
+      
+      const companyId = user.companyId || user.company;
+      if (!companyId) {
+        return res.status(400).json({ 
+          error: "Compañía no definida", 
+          details: "Usuario sin compañía asignada" 
+        });
+      }
+      
+      // Obtener parámetros de fecha
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      console.log(`[GET /statistics/best-performance] Obteniendo estadísticas para compañía: ${companyId}, fechas: ${startDate} - ${endDate}`);
+      
+      const statistics = await storage.getBestPerformanceStatistics(companyId, startDate, endDate);
+      
+      console.log(`[GET /statistics/best-performance] Estadísticas obtenidas exitosamente`);
+      
+      res.json(statistics);
+    } catch (error: any) {
+      console.error("[GET /statistics/best-performance] Error:", error);
+      res.status(500).json({ 
+        error: "Error al obtener estadísticas de mejor rendimiento",
+        details: error.message 
+      });
+    }
+  });
+
   // Endpoint para obtener usuarios que tienen transacciones en la compañía
   app.get(apiRouter("/transaction-users"), isAuthenticated, async (req: Request, res: Response) => {
     try {

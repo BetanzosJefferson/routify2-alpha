@@ -5143,6 +5143,151 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Método para obtener estadísticas de mejor rendimiento por día y horario
+  async getBestPerformanceStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    bestDays: {
+      dayOfWeek: string;
+      dayNumber: number;
+      totalReservations: number;
+      totalPassengers: number;
+      totalRevenue: number;
+      averageTicketPrice: number;
+    }[];
+    bestTimeSlots: {
+      timeSlot: string;
+      totalReservations: number;
+      totalPassengers: number;
+      totalRevenue: number;
+      averageTicketPrice: number;
+    }[];
+    overall: {
+      totalReservations: number;
+      totalPassengers: number;
+      totalRevenue: number;
+      averageTicketPrice: number;
+    };
+  }> {
+    console.log(`DB Storage: Obteniendo estadísticas de mejor rendimiento para compañía ${companyId}, fechas: ${startDate} - ${endDate}`);
+    
+    try {
+      // Construir condiciones de filtrado
+      const baseConditions = [
+        eq(schema.reservations.companyId, companyId),
+        ne(schema.reservations.status, 'canceled'),
+        ne(schema.reservations.status, 'canceledAndRefund')
+      ];
+
+      // Agregar filtros de fecha si se proporcionan
+      if (startDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) >= ${startDate}`);
+      }
+      if (endDate) {
+        baseConditions.push(sql`DATE(${schema.reservations.createdAt}) <= ${endDate}`);
+      }
+
+      // Obtener estadísticas por día de la semana
+      const dayStats = await db
+        .select({
+          dayNumber: sql<number>`EXTRACT(DOW FROM ${schema.trips.departureDate})`,
+          dayOfWeek: sql<string>`
+            CASE EXTRACT(DOW FROM ${schema.trips.departureDate})
+              WHEN 0 THEN 'Domingo'
+              WHEN 1 THEN 'Lunes'
+              WHEN 2 THEN 'Martes'
+              WHEN 3 THEN 'Miércoles'
+              WHEN 4 THEN 'Jueves'
+              WHEN 5 THEN 'Viernes'
+              WHEN 6 THEN 'Sábado'
+            END
+          `,
+          totalReservations: sql<number>`COUNT(*)`,
+          totalPassengers: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
+          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
+          averageTicketPrice: sql<number>`
+            CASE 
+              WHEN SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)) > 0 
+              THEN SUM(${schema.reservations.totalAmount}) / SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER))
+              ELSE 0
+            END
+          `
+        })
+        .from(schema.reservations)
+        .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
+        .where(and(...baseConditions))
+        .groupBy(sql`EXTRACT(DOW FROM ${schema.trips.departureDate})`)
+        .orderBy(sql`COUNT(*) DESC`);
+
+      // Obtener estadísticas por horario
+      const timeStats = await db
+        .select({
+          timeSlot: schema.trips.departureTime,
+          totalReservations: sql<number>`COUNT(*)`,
+          totalPassengers: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
+          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
+          averageTicketPrice: sql<number>`
+            CASE 
+              WHEN SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)) > 0 
+              THEN SUM(${schema.reservations.totalAmount}) / SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER))
+              ELSE 0
+            END
+          `
+        })
+        .from(schema.reservations)
+        .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
+        .where(and(...baseConditions))
+        .groupBy(schema.trips.departureTime)
+        .orderBy(sql`COUNT(*) DESC`)
+        .limit(10);
+
+      // Obtener estadísticas generales
+      const overallStats = await db
+        .select({
+          totalReservations: sql<number>`COUNT(*)`,
+          totalPassengers: sql<number>`COALESCE(SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)), 0)`,
+          totalRevenue: sql<number>`COALESCE(SUM(${schema.reservations.totalAmount}), 0)`,
+          averageTicketPrice: sql<number>`
+            CASE 
+              WHEN SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER)) > 0 
+              THEN SUM(${schema.reservations.totalAmount}) / SUM(CAST(${schema.reservations.tripDetails}->>'seats' AS INTEGER))
+              ELSE 0
+            END
+          `
+        })
+        .from(schema.reservations)
+        .innerJoin(schema.trips, eq(schema.reservations.tripId, schema.trips.id))
+        .where(and(...baseConditions));
+
+      console.log(`DB Storage: Encontradas estadísticas de ${dayStats.length} días y ${timeStats.length} horarios para compañía ${companyId}`);
+      
+      return {
+        bestDays: dayStats.map(row => ({
+          dayOfWeek: row.dayOfWeek || 'Desconocido',
+          dayNumber: Number(row.dayNumber),
+          totalReservations: Number(row.totalReservations),
+          totalPassengers: Number(row.totalPassengers),
+          totalRevenue: Number(row.totalRevenue),
+          averageTicketPrice: Number(row.averageTicketPrice)
+        })),
+        bestTimeSlots: timeStats.map(row => ({
+          timeSlot: row.timeSlot || 'Sin horario',
+          totalReservations: Number(row.totalReservations),
+          totalPassengers: Number(row.totalPassengers),
+          totalRevenue: Number(row.totalRevenue),
+          averageTicketPrice: Number(row.averageTicketPrice)
+        })),
+        overall: {
+          totalReservations: Number(overallStats[0]?.totalReservations || 0),
+          totalPassengers: Number(overallStats[0]?.totalPassengers || 0),
+          totalRevenue: Number(overallStats[0]?.totalRevenue || 0),
+          averageTicketPrice: Number(overallStats[0]?.averageTicketPrice || 0)
+        }
+      };
+    } catch (error) {
+      console.error(`DB Storage: Error al obtener estadísticas de mejor rendimiento:`, error);
+      throw error;
+    }
+  }
+
   // Método para obtener usuarios únicos que tienen transacciones en la compañía
   async getUsersWithTransactions(companyId: string): Promise<{
     id: number;

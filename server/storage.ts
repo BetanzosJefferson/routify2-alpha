@@ -310,6 +310,30 @@ export interface IStorage {
     averageRevenuePerReservation: number;
   }[]>;
 
+  getBestPerformanceStatistics(companyId: string, startDate?: string, endDate?: string): Promise<{
+    bestDays: {
+      dayOfWeek: string;
+      dayNumber: number;
+      totalReservations: number;
+      totalPassengers: number;
+      totalRevenue: number;
+      averageTicketPrice: number;
+    }[];
+    bestTimeSlots: {
+      timeSlot: string;
+      totalReservations: number;
+      totalPassengers: number;
+      totalRevenue: number;
+      averageTicketPrice: number;
+    }[];
+    overall: {
+      totalReservations: number;
+      totalPassengers: number;
+      totalRevenue: number;
+      averageTicketPrice: number;
+    };
+  }>;
+
   // ===== MÉTODOS DE GASTOS DE LA EMPRESA =====
   createExpense(expense: InsertExpense): Promise<Expense>;
   getExpenses(companyId: string): Promise<Expense[]>;

@@ -5,6 +5,7 @@ import { BarChart3, TrendingUp, Users, Target, Route, UserCheck } from "lucide-r
 import CouponUsageStatistics from "@/components/statistics/coupon-usage-statistics";
 import PopularRoutesStatistics from "@/components/statistics/popular-routes-statistics";
 import PassengerIntakeStatistics from "@/components/statistics/passenger-intake-statistics";
+import BestPerformanceStatistics from "@/components/statistics/best-performance-statistics";
 
 export default function StatisticsSection() {
   const [activeTab, setActiveTab] = useState("coupons");
@@ -33,9 +34,9 @@ export default function StatisticsSection() {
             <UserCheck className="h-4 w-4" />
             Pasajeros
           </TabsTrigger>
-          <TabsTrigger value="trips" className="flex items-center gap-2" disabled>
-            <BarChart3 className="h-4 w-4" />
-            Viajes
+          <TabsTrigger value="trips" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Rendimiento
           </TabsTrigger>
         </TabsList>
 
@@ -52,19 +53,7 @@ export default function StatisticsSection() {
         </TabsContent>
 
         <TabsContent value="trips" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Estadísticas de Viajes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center h-32">
-                <div className="text-gray-500">Próximamente...</div>
-              </div>
-            </CardContent>
-          </Card>
+          <BestPerformanceStatistics />
         </TabsContent>
       </Tabs>
     </div>
