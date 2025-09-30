@@ -10492,11 +10492,11 @@ function setupPackageRoutes(app: Express) {
       const userCompany = user.companyId || user.company;
       
       // Obtener transacciones (ingresos) en el rango de fechas con información del usuario
-      // FIX: Enviar fecha completa con hora en zona horaria local CDMX
+      // FIX: Enviar fecha sin convertir a ISO, usar formato original del frontend
       const transactions = await storage.getTransactionHistory({
         companyId: userCompany,
-        startDateTime: startDate.toISOString(), // Fecha completa con hora
-        endDateTime: endDate.toISOString()      // Fecha completa con hora
+        startDateTime: startDateTime as string, // Formato: YYYY-MM-DDTHH:mm
+        endDateTime: endDateTime as string      // Formato: YYYY-MM-DDTHH:mm
       });
       
       // Calcular ingresos totales y por método de pago
