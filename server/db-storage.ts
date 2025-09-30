@@ -5380,9 +5380,9 @@ export class DatabaseStorage implements IStorage {
         // Filtros de fecha y hora - priorizar filtros precisos con hora
         console.log(`DEBUG: Evaluando filtros - startDateTime=${params.startDateTime}, endDateTime=${params.endDateTime}`);
         if (params.startDateTime) {
-          // FIX: Filtro preciso por fecha y hora (nuevo comportamiento)
+          // FIX: Filtro preciso por fecha y hora - convertir el parámetro a TIMESTAMPTZ correctamente
           console.log(`🔥 DB Storage: APLICANDO FILTRO startDateTime >= ${params.startDateTime}`);
-          baseConditions.push(sql`${schema.transacciones.createdAt} AT TIME ZONE 'America/Mexico_City' >= ${params.startDateTime}`);
+          baseConditions.push(sql`${schema.transacciones.createdAt} >= (${params.startDateTime}::timestamp AT TIME ZONE 'America/Mexico_City')`);
         } else if (params.startDate) {
           // Filtro legacy por fecha completa (mantener compatibilidad)
           console.log(`⚠️ DB Storage: APLICANDO FILTRO LEGACY startDate >= ${params.startDate}`);
@@ -5390,9 +5390,9 @@ export class DatabaseStorage implements IStorage {
         }
         
         if (params.endDateTime) {
-          // FIX: Filtro preciso por fecha y hora (nuevo comportamiento)
+          // FIX: Filtro preciso por fecha y hora - convertir el parámetro a TIMESTAMPTZ correctamente
           console.log(`🔥 DB Storage: APLICANDO FILTRO endDateTime <= ${params.endDateTime}`);
-          baseConditions.push(sql`${schema.transacciones.createdAt} AT TIME ZONE 'America/Mexico_City' <= ${params.endDateTime}`);
+          baseConditions.push(sql`${schema.transacciones.createdAt} <= (${params.endDateTime}::timestamp AT TIME ZONE 'America/Mexico_City')`);
         } else if (params.endDate) {
           // Filtro legacy por fecha completa (mantener compatibilidad)
           console.log(`⚠️ DB Storage: APLICANDO FILTRO LEGACY endDate <= ${params.endDate}`);
